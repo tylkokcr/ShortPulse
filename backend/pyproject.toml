@@ -14,3 +14,8 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# The database tests share one asyncpg pool across a module. A pool is
+# bound to the loop that created it, so tests and fixtures have to run on
+# that same loop rather than a fresh per-test one.
+asyncio_default_fixture_loop_scope = "module"
+asyncio_default_test_loop_scope = "module"

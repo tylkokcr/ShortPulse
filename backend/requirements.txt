@@ -25,6 +25,9 @@ pillow>=10.0
 imageio>=2.34            # required by diffusers' export_to_video for ai_video mode
 imageio-ffmpeg>=0.5
 
+# --- Persistence ---------------------------------------------------------
+asyncpg>=0.29           # Postgres driver; Supabase in prod, container locally
+
 # --- Rendering --------------------------------------------------------
 ffmpeg-python>=0.2.0     # thin wrapper kept for future use; core pipeline shells out directly
 
