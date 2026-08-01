@@ -30,6 +30,13 @@ from app.schemas.project import MusicConfig, Scene, SubtitleStyle
 
 logger = logging.getLogger(__name__)
 
+# Every scene clip is encoded with these exact audio parameters. The
+# concat step below stream-copies, which produces a corrupt AAC stream if
+# clips disagree on sample rate or channel count — and they otherwise would,
+# since TTS voices vary (Piper is 22.05kHz mono) and stock footage carries
+# 48kHz stereo. Pinning them here is what makes the copy safe.
+_CLIP_AUDIO_FORMAT = ("-ar", "48000", "-ac", "1")
+
 _VIDEO_EXTENSIONS = {".mp4", ".mov", ".webm", ".mkv"}
 _IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 
@@ -120,6 +127,8 @@ async def _render_image_scene_clip(
         "-i", str(scene.visual.asset_path),
         "-i", str(scene.audio.audio_path),
         "-t", f"{exact_duration:.6f}",
+        "-map", "0:v:0",
+        "-map", "1:a:0",
         "-vf", video_filter,
         "-af", f"apad=whole_dur={exact_duration:.6f}",
         "-c:v", "libx264",
@@ -127,6 +136,7 @@ async def _render_image_scene_clip(
         "-pix_fmt", "yuv420p",
         "-c:a", "aac",
         "-b:a", "192k",
+        *_CLIP_AUDIO_FORMAT,
         str(output_path),
     ]
     await _run_ffmpeg(args, ffmpeg_binary)
@@ -154,6 +164,13 @@ async def _render_video_scene_clip(
         "-i", str(scene.visual.asset_path),
         "-i", str(scene.audio.audio_path),
         "-t", f"{exact_duration:.6f}",
+        # Stock footage often carries its own audio track. Without an
+        # explicit map, ffmpeg's default stream selection prefers it over
+        # the voiceover (it picks the "best" audio stream, and a 48kHz
+        # stereo camera track beats 22kHz mono TTS), silently dropping the
+        # narration for that scene.
+        "-map", "0:v:0",
+        "-map", "1:a:0",
         "-vf", video_filter,
         "-af", f"apad=whole_dur={exact_duration:.6f}",
         "-c:v", "libx264",
@@ -161,6 +178,7 @@ async def _render_video_scene_clip(
         "-pix_fmt", "yuv420p",
         "-c:a", "aac",
         "-b:a", "192k",
+        *_CLIP_AUDIO_FORMAT,
         str(output_path),
     ]
     await _run_ffmpeg(args, ffmpeg_binary)
@@ -195,8 +213,13 @@ async def render_scene_clip(
 
 
 async def concat_scene_clips(clip_paths: list[Path], output_dir: Path, ffmpeg_binary: str = "ffmpeg") -> Path:
-    """Stream-copy concat. Safe because every clip was produced with
-    identical codec/resolution/fps/pix_fmt above."""
+    """Stream-copy concat.
+
+    Safe only because every clip above is produced with identical codec,
+    resolution, fps, pix_fmt *and* audio parameters (see
+    _CLIP_AUDIO_FORMAT). Copying mismatched AAC streams doesn't error — it
+    silently emits a stream whose later packets decode as garbage.
+    """
     concat_list_path = output_dir / "concat_list.txt"
     concat_list_path.write_text(
         "\n".join(f"file '{p.resolve()}'" for p in clip_paths), encoding="utf-8"
