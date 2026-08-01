@@ -220,6 +220,11 @@ class Project(BaseModel):
     script: ScriptOutput | None = None
     output_path: str | None = None
     error: str | None = None
+    # What this render was charged, recorded on the project so the amount
+    # refunded on failure is the amount taken — not a price recomputed
+    # later, which could have changed in between. 0 on self-hosted
+    # installs, where there is no billing at all.
+    credits_cost: int = 0
 
 
 # --------------------------------------------------------------------------

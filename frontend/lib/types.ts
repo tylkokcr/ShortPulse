@@ -155,6 +155,29 @@ export interface Project {
   script?: ScriptOutput | null;
   output_path?: string | null;
   error?: string | null;
+  /** Credits this render was charged. Always 0 on a self-hosted install,
+   *  where there is no billing. */
+  credits_cost: number;
+}
+
+/** GET /api/credits. `enabled: false` means self-hosted — hide the credit
+ *  UI entirely rather than showing a balance of zero. */
+export interface CreditSummary {
+  enabled: boolean;
+  balance: number;
+  entries: CreditEntry[];
+  /** Keyed `"<visual_mode>:<video_length>"`, so the UI can quote a price
+   *  before the user submits. */
+  pricing: Record<string, number>;
+}
+
+export interface CreditEntry {
+  id: number;
+  delta: number;
+  reason: "purchase" | "grant" | "render" | "refund" | "adjustment";
+  project_id?: string | null;
+  note?: string | null;
+  created_at: string;
 }
 
 export interface RenderProgress {

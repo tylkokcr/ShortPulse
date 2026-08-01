@@ -28,6 +28,8 @@ class ProjectStore(Protocol):
     async def list_projects(self, user_id: str | None = ...) -> list[Project]: ...
     async def update_project(self, project_id: str, **updates) -> Project: ...
     async def delete_project(self, project_id: str) -> None: ...
+    async def list_interrupted(self) -> list[str]: ...
+    async def owner_of(self, project_id: str) -> str | None: ...
 
 
 class InMemoryProjectStore:
@@ -57,6 +59,15 @@ class InMemoryProjectStore:
     async def delete_project(self, project_id: str) -> None:
         self._projects.pop(project_id, None)
 
+    async def list_interrupted(self) -> list[str]:
+        # Nothing survives a restart here, so there is never anything left
+        # over to recover.
+        return []
+
+    async def owner_of(self, project_id: str) -> str | None:
+        # This backend only runs where there are no accounts.
+        return None
+
 
 class PostgresProjectStore:
     """Durable store. Survives restarts, and lets a reconciler find renders
@@ -76,6 +87,7 @@ class PostgresProjectStore:
             script=json.loads(row["script"]) if row["script"] else None,
             output_path=row["output_path"],
             error=row["error"],
+            credits_cost=row["credits_cost"],
         )
 
     async def create_project(self, config: ProjectConfig, user_id: str | None = None) -> Project:
@@ -92,7 +104,10 @@ class PostgresProjectStore:
 
     async def get_project(self, project_id: str) -> Project | None:
         row = await self._pool.fetchrow(
-            "select config, status, script, output_path, error from projects where id = $1",
+            """
+            select config, status, script, output_path, error, credits_cost
+            from projects where id = $1
+            """,
             project_id,
         )
         return self._row_to_project(row) if row else None
@@ -101,14 +116,14 @@ class PostgresProjectStore:
         if user_id is None:
             rows = await self._pool.fetch(
                 """
-                select config, status, script, output_path, error
+                select config, status, script, output_path, error, credits_cost
                 from projects order by created_at desc limit 100
                 """
             )
         else:
             rows = await self._pool.fetch(
                 """
-                select config, status, script, output_path, error
+                select config, status, script, output_path, error, credits_cost
                 from projects where user_id = $1 order by created_at desc limit 100
                 """,
                 user_id,
@@ -135,7 +150,7 @@ class PostgresProjectStore:
             f"""
             update projects set {', '.join(sets)}, updated_at = now()
             where id = $1
-            returning config, status, script, output_path, error
+            returning config, status, script, output_path, error, credits_cost
             """,
             project_id,
             *values,
@@ -146,6 +161,26 @@ class PostgresProjectStore:
 
     async def delete_project(self, project_id: str) -> None:
         await self._pool.execute("delete from projects where id = $1", project_id)
+
+    async def list_interrupted(self) -> list[str]:
+        """Projects still marked `rendering`.
+
+        Nothing but a crashed or restarted process can leave a project in
+        that state: the pipeline always moves it to complete or failed.
+        Called once at startup so those renders get refunded instead of
+        being silently kept, and reported as failed instead of spinning
+        forever in the UI.
+        """
+        rows = await self._pool.fetch(
+            "select id from projects where status = 'rendering'"
+        )
+        return [str(r["id"]) for r in rows]
+
+    async def owner_of(self, project_id: str) -> str | None:
+        owner = await self._pool.fetchval(
+            "select user_id from projects where id = $1", project_id
+        )
+        return str(owner) if owner else None
 
 
 # --------------------------------------------------------------------------
@@ -190,3 +225,11 @@ async def update_project(project_id: str, **updates) -> Project:
 
 async def delete_project(project_id: str) -> None:
     await _store.delete_project(project_id)
+
+
+async def list_interrupted() -> list[str]:
+    return await _store.list_interrupted()
+
+
+async def owner_of(project_id: str) -> str | None:
+    return await _store.owner_of(project_id)

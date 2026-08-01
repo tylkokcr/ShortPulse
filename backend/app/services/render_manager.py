@@ -24,7 +24,7 @@ from app.schemas.project import (
     SceneVisual,
     VisualMode,
 )
-from app.services import project_store
+from app.services import credits, db, project_store
 from app.services.connection_manager import connection_manager
 
 logger = logging.getLogger(__name__)
@@ -261,6 +261,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
     except Exception as exc:  # noqa: BLE001 - surface any pipeline failure to the client
         logger.exception("Render pipeline failed for project %s", project_id)
         await project_store.update_project(project_id, status=ProjectStatus.FAILED, error=str(exc))
+        await _refund_failed_render(project_id, reason=str(exc))
         await _emit(
             project_id,
             stage=RenderStage.FAILED,
@@ -268,6 +269,60 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             message="Render failed.",
             error=str(exc),
         )
+
+
+async def _refund_failed_render(project_id: str, *, reason: str) -> None:
+    """Give the credits back when a render doesn't produce a video.
+
+    Deliberately swallows its own errors: a ledger problem must not replace
+    the pipeline error the user actually needs to see, and the refund is
+    idempotent, so the startup reconciler will pick up anything missed here.
+    """
+    pool = db.optional_pool()
+    if pool is None:
+        return
+    try:
+        await credits.refund_project(pool, project_id, note=f"render failed: {reason}"[:200])
+    except Exception:  # noqa: BLE001
+        logger.exception(
+            "Could not refund project %s after a failed render; the startup "
+            "reconciler will retry",
+            project_id,
+        )
+
+
+async def reconcile_interrupted_renders() -> int:
+    """Clean up renders that were in flight when the process died.
+
+    A project only sits in `rendering` while a worker is driving it, and
+    workers don't survive a restart — so anything found in that state at
+    startup is abandoned. Left alone it would show as an eternally
+    in-progress render that the user had already paid for. Refund it and
+    mark it failed so they can retry.
+
+    Returns how many were recovered.
+    """
+    stale = await project_store.list_interrupted()
+    if not stale:
+        return 0
+
+    pool = db.optional_pool()
+    for project_id in stale:
+        if pool is not None:
+            try:
+                await credits.refund_project(
+                    pool, project_id, note="render interrupted by a server restart"
+                )
+            except Exception:  # noqa: BLE001
+                logger.exception("Could not refund interrupted project %s", project_id)
+        await project_store.update_project(
+            project_id,
+            status=ProjectStatus.FAILED,
+            error="Render was interrupted by a server restart. Please try again.",
+        )
+
+    logger.warning("Recovered %d render(s) interrupted by a restart", len(stale))
+    return len(stale)
 
 
 class RenderTaskQueue:

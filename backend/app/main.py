@@ -11,10 +11,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import projects, render
+from app.api.routes import credits, projects, render
 from app.core.config import get_settings
 from app.services import db, project_store
-from app.services.render_manager import RenderTaskQueue
+from app.services.render_manager import RenderTaskQueue, reconcile_interrupted_renders
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -32,6 +32,11 @@ async def lifespan(app: FastAPI):
         await db.apply_migrations(pool)
     project_store.configure(pool)
     app.state.db_pool = pool
+
+    # Anything still marked `rendering` was abandoned when the previous
+    # process died. Refund and fail it before accepting new work, so the
+    # user isn't left paying for a render that will never finish.
+    await reconcile_interrupted_renders()
 
     render_queue = RenderTaskQueue(settings)
     render_queue.start()
@@ -62,6 +67,7 @@ app.add_middleware(
 
 app.include_router(projects.router)
 app.include_router(render.router)
+app.include_router(credits.router)
 
 
 @app.get("/api/health")

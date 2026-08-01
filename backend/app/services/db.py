@@ -41,6 +41,15 @@ def pool() -> asyncpg.Pool:
     return _pool
 
 
+def optional_pool() -> asyncpg.Pool | None:
+    """The pool if one is configured, else None.
+
+    For code that has to work in both shapes of the product — a
+    self-hosted install has no database and that is not an error.
+    """
+    return _pool
+
+
 async def apply_migrations(target: asyncpg.Pool | asyncpg.Connection | None = None) -> list[str]:
     """Apply every .sql file in migrations/ in filename order.
 
