@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+app/storage/projects/*
+!app/storage/projects/.gitkeep
+.pytest_cache/
+.ruff_cache/

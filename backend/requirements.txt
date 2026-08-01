@@ -1,0 +1,33 @@
+# --- Web framework -----------------------------------------------------
+fastapi>=0.111
+uvicorn[standard]>=0.30
+pydantic>=2.7
+pydantic-settings>=2.3
+websockets>=12.0
+httpx>=0.27
+python-multipart>=0.0.9
+
+# --- LLM ------------------------------------------------------------
+openai>=1.35            # optional: only needed if using the OpenAI provider
+
+# --- TTS / ASR --------------------------------------------------------
+edge-tts>=6.1
+faster-whisper>=1.0
+# TTS>=0.22              # optional: Coqui XTTS-v2 voice cloning, uncomment to enable
+
+# --- Visual generation --------------------------------------------------
+torch>=2.3
+diffusers>=0.29
+transformers>=4.42
+accelerate>=0.31
+pillow>=10.0
+imageio>=2.34            # required by diffusers' export_to_video for ai_video mode
+imageio-ffmpeg>=0.5
+
+# --- Rendering --------------------------------------------------------
+ffmpeg-python>=0.2.0     # thin wrapper kept for future use; core pipeline shells out directly
+
+# --- Dev / testing ------------------------------------------------------
+pytest>=8.2
+pytest-asyncio>=0.23
+ruff>=0.5
