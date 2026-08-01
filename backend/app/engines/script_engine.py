@@ -222,6 +222,14 @@ def _first_present(d: dict, keys: list[str]) -> str | None:
 
 
 def _to_script_output(topic: str, parsed: dict) -> ScriptOutput:
+    # The model is asked for a top-level object, but occasionally returns a
+    # bare array of scenes (or something else entirely). Raise the engine's
+    # own error type so generate_script's retry loop can catch it.
+    if not isinstance(parsed, dict):
+        raise ScriptGenerationError(
+            f"Model returned {type(parsed).__name__}, expected a JSON object"
+        )
+
     scenes: list[Scene] = []
     for raw_index, raw_scene in enumerate(parsed.get("scenes", [])):
         # One malformed scene shouldn't sink an otherwise-good script (and
@@ -229,6 +237,12 @@ def _to_script_output(topic: str, parsed: dict) -> ScriptOutput:
         # catches ScriptGenerationError) — so any parsing failure here,
         # not just missing keys, results in skipping the scene.
         try:
+            # Models occasionally emit a bare string (or a list) where a
+            # scene object belongs, which would otherwise AttributeError on
+            # the .get() below and escape the retry loop entirely.
+            if not isinstance(raw_scene, dict):
+                raise TypeError(f"expected a scene object, got {type(raw_scene).__name__}")
+
             # `.get(..., 4)` alone isn't enough: models sometimes emit an
             # explicit `"duration_s": null`, which .get() happily returns
             # instead of falling back to the default.
@@ -249,7 +263,7 @@ def _to_script_output(topic: str, parsed: dict) -> ScriptOutput:
                 visual=SceneVisual(prompt=visual_prompt),
                 audio=SceneAudio(voiceover_line=voiceover_line),
             )
-        except (ValueError, TypeError, ValidationError) as exc:
+        except (ValueError, TypeError, AttributeError, ValidationError) as exc:
             logger.warning("Skipping scene %d (%s): %r", raw_index, exc, raw_scene)
             continue
 
