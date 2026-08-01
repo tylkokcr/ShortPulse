@@ -127,8 +127,20 @@ class ScriptOutput(BaseModel):
 
 
 class VoiceConfig(BaseModel):
-    provider: TTSProvider = TTSProvider.EDGE_TTS
-    voice_id: str = "en-US-AndrewNeural"
+    """Voice settings.
+
+    Defaults to Piper: fully local, MIT licensed, and therefore usable in a
+    commercial/hosted context. edge-tts sounds good and needs no key, but it
+    calls an undocumented Microsoft endpoint meant for the Edge browser's
+    read-aloud feature — fine for personal use, not something to build a
+    paid product on.
+    """
+
+    provider: TTSProvider = TTSProvider.PIPER
+    # Empty means "pick the default voice for the project's language" (see
+    # audio_engine.PIPER_VOICE_BY_LANGUAGE). Set explicitly to override.
+    voice_id: str = ""
+    # edge-tts only; Piper exposes speed differently and ignores these.
     rate: str = "+0%"
     pitch: str = "+0Hz"
 

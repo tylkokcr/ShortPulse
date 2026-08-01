@@ -63,15 +63,21 @@ async def synthesize_scene_audio(
     scene: Scene,
     voice: VoiceConfig,
     output_dir: Path,
+    language: str = "en",
 ) -> Path:
-    """Generate the voiceover .mp3 for a single scene and return its path."""
-    output_path = output_dir / f"scene_{scene.index:02d}.mp3"
+    """Generate the voiceover audio for a single scene and return its path.
+
+    Extension follows the engine — Piper writes WAV, the others MP3 —
+    since everything downstream (whisper, ffmpeg) reads either.
+    """
     text = clean_text_for_tts(scene.audio.voiceover_line)
+    suffix = "wav" if voice.provider == TTSProvider.PIPER else "mp3"
+    output_path = output_dir / f"scene_{scene.index:02d}.{suffix}"
 
     if voice.provider == TTSProvider.EDGE_TTS:
         await _synthesize_edge_tts(text, voice, output_path)
     elif voice.provider == TTSProvider.PIPER:
-        await _synthesize_piper(text, voice, output_path)
+        await _synthesize_piper(text, voice, output_path, language)
     elif voice.provider == TTSProvider.COQUI_XTTS:
         await _synthesize_xtts(text, voice, output_path)
     else:
@@ -92,27 +98,99 @@ async def _synthesize_edge_tts(text: str, voice: VoiceConfig, output_path: Path)
     await communicate.save(str(output_path))
 
 
-async def _synthesize_piper(text: str, voice: VoiceConfig, output_path: Path) -> None:
-    """Offline fallback using a local Piper ONNX voice model.
+# Default Piper voice per language. Every entry is a real medium-quality
+# voice in rhasspy/piper-voices (MIT), verified present in that repo's
+# voices.json. Piper covers 9 of the 10 languages ShortPulse offers —
+# Japanese has no Piper voice, which _resolve_piper_voice reports clearly
+# rather than failing deep inside synthesis.
+# Repo layout is "<lang>/<locale>/<speaker>/<quality>/<name>" — the leading
+# language directory is easy to miss and yields a 404 without it.
+PIPER_VOICE_BY_LANGUAGE: dict[str, str] = {
+    "en": "en/en_US/ryan/medium/en_US-ryan-medium",
+    "tr": "tr/tr_TR/dfki/medium/tr_TR-dfki-medium",
+    "es": "es/es_ES/davefx/medium/es_ES-davefx-medium",
+    "fr": "fr/fr_FR/tom/medium/fr_FR-tom-medium",
+    "de": "de/de_DE/thorsten/medium/de_DE-thorsten-medium",
+    "pt": "pt/pt_BR/faber/medium/pt_BR-faber-medium",
+    "ar": "ar/ar_JO/kareem/medium/ar_JO-kareem-medium",
+    "ru": "ru/ru_RU/dmitri/medium/ru_RU-dmitri-medium",
+    "it": "it/it_IT/paola/medium/it_IT-paola-medium",
+}
 
-    Requires the `piper-tts` CLI and a downloaded .onnx voice file at
-    `voice.voice_id` (a filesystem path in this mode).
+_PIPER_REPO = "rhasspy/piper-voices"
+
+# Loading a voice costs a few hundred ms and every scene reuses the same
+# one, so keep them for the process lifetime (same reasoning as the
+# faster-whisper cache above).
+_piper_voice_cache: dict[str, object] = {}
+
+
+def _resolve_piper_voice(voice: VoiceConfig, language: str) -> str:
+    """Piper voice key for this request.
+
+    `voice.voice_id` wins if it already looks like a Piper voice (a path or
+    a bare voice name); otherwise fall back to the language default. This
+    lets the same VoiceConfig.voice_id field carry an edge-tts name like
+    "tr-TR-AhmetNeural" without it being mistaken for a Piper voice.
+    """
+    candidate = (voice.voice_id or "").strip()
+    if candidate and ("/" in candidate or candidate.endswith(".onnx")):
+        return candidate
+
+    key = PIPER_VOICE_BY_LANGUAGE.get(language)
+    if key is None:
+        raise ValueError(
+            f"Piper has no voice for language {language!r}. "
+            f"Supported: {sorted(PIPER_VOICE_BY_LANGUAGE)}. "
+            "Pick another TTS provider for this language."
+        )
+    return key
+
+
+def _load_piper_voice(voice_key: str):
+    """Load (downloading and caching on first use) a Piper ONNX voice."""
+    if voice_key in _piper_voice_cache:
+        return _piper_voice_cache[voice_key]
+
+    from huggingface_hub import hf_hub_download
+    from piper import PiperVoice
+
+    if voice_key.endswith(".onnx") and Path(voice_key).exists():
+        model_path, config_path = voice_key, f"{voice_key}.json"
+    else:
+        # Repo paths are "<locale>/<speaker>/<quality>/<name>"; the model and
+        # its config sit side by side under that prefix.
+        base = voice_key[: -len(".onnx")] if voice_key.endswith(".onnx") else voice_key
+        logger.info("Downloading Piper voice %s", base)
+        model_path = hf_hub_download(_PIPER_REPO, f"{base}.onnx")
+        config_path = hf_hub_download(_PIPER_REPO, f"{base}.onnx.json")
+
+    _piper_voice_cache[voice_key] = PiperVoice.load(model_path, config_path=config_path)
+    return _piper_voice_cache[voice_key]
+
+
+async def _synthesize_piper(
+    text: str, voice: VoiceConfig, output_path: Path, language: str = "en"
+) -> None:
+    """Fully local synthesis with a Piper ONNX voice (MIT licensed).
+
+    Unlike edge-tts this runs entirely on the machine — no network call, no
+    third-party terms to comply with — which is what makes it viable as the
+    default for a hosted service.
     """
     import asyncio
+    import wave
 
-    proc = await asyncio.create_subprocess_exec(
-        "piper",
-        "--model",
-        voice.voice_id,
-        "--output_file",
-        str(output_path),
-        stdin=asyncio.subprocess.PIPE,
-        stdout=asyncio.subprocess.DEVNULL,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    _, stderr = await proc.communicate(input=text.encode("utf-8"))
-    if proc.returncode != 0:
-        raise RuntimeError(f"piper-tts failed: {stderr.decode(errors='ignore')}")
+    voice_key = _resolve_piper_voice(voice, language)
+
+    def _run() -> None:
+        piper_voice = _load_piper_voice(voice_key)
+        # Piper emits WAV; the rest of the pipeline is format-agnostic since
+        # ffmpeg reads whatever the scene clip step is handed.
+        with wave.open(str(output_path), "wb") as wav:
+            piper_voice.synthesize_wav(text, wav)
+
+    await asyncio.to_thread(_run)
 
 
 async def _synthesize_xtts(text: str, voice: VoiceConfig, output_path: Path) -> None:
@@ -188,7 +266,7 @@ async def process_scene_audio(
     """
     import asyncio
 
-    audio_path = await synthesize_scene_audio(scene, voice, output_dir)
+    audio_path = await synthesize_scene_audio(scene, voice, output_dir, language or "en")
     words = await asyncio.to_thread(
         transcribe_word_timestamps,
         audio_path,

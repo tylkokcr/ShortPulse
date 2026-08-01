@@ -4,19 +4,17 @@ Open-source AI video agent that turns a topic or script into a ready-to-post
 vertical video (1080x1920, TikTok/Reels/Shorts). Runs on your own machine —
 no subscription, no paid API.
 
-**What "local" means here, precisely:** scripting (Ollama), transcription
-(faster-whisper), image/video generation (SDXL/RealVisXL/LTX-Video) and
-rendering (FFmpeg) all run offline on your hardware. Two things reach the
-network by default: `edge-tts` uses Microsoft's free Edge voices
-(`speech.platform.bing.com` — no key, no account, but it *is* a network
-call), and the `stock_media` visual mode obviously fetches from Pexels. For
-a fully offline pipeline, switch `VoiceConfig.provider` to `piper` (a local
-ONNX voice) and avoid `stock_media`.
+**What "local" means here, precisely:** scripting (Ollama), voiceover
+(Piper), transcription (faster-whisper), image/video generation
+(SDXL/RealVisXL/LTX-Video) and rendering (FFmpeg) all run offline on your
+hardware. The only stage that reaches the network is the `stock_media`
+visual mode, which fetches footage from Pexels — pick another visual mode
+and the whole pipeline is offline after the one-time model downloads.
 
 Give it a topic (or your own script), and it will:
 
 1. Break it into a punchy, high-retention scene script (Ollama or OpenAI).
-2. Synthesize voiceover per scene (`edge-tts`, free neural voices).
+2. Synthesize voiceover per scene (Piper, local MIT-licensed voices).
 3. Transcribe word-level timing (`faster-whisper`) for karaoke-style captions.
 4. Generate visuals per scene — AI stills + Ken Burns, local AI video, or free
    stock footage.
@@ -24,10 +22,11 @@ Give it a topic (or your own script), and it will:
    auto-ducking, an optional branded closing card, and a final `.mp4`.
 
 Extras:
-- **10 languages** — English, Turkish, Spanish, French, German, Portuguese,
-  Japanese, Arabic, Russian, Italian. The script, voiceover and subtitles are
-  produced in the chosen language; image prompts stay in English, which is
-  what the diffusion models respond to best.
+- **9 languages** — English, Turkish, Spanish, French, German, Portuguese,
+  Arabic, Russian, Italian. The script, voiceover and subtitles are produced
+  in the chosen language; image prompts stay in English, which is what the
+  diffusion models respond to best. Voices download on first use from
+  `rhasspy/piper-voices` (~60MB each).
 - **Video length presets** — Short (~15-25s), Medium (~30-45s), Long (~60s+);
   the LLM is asked for a matching scene count per preset.
 - **Background music by default** — falls back to a bundled royalty-free track
@@ -145,11 +144,11 @@ Better to know up front than to discover them mid-render:
 - **Projects are stored in memory.** Restarting the backend clears the project
   list and cancels in-flight renders. Finished `.mp4` files persist on disk
   under `backend/app/storage/projects/`.
-- **Default TTS is not offline.** `edge-tts` is free and keyless but calls
-  Microsoft's servers. `piper` and `coqui_xtts` providers are wired in
-  `audio_engine.py` for a fully offline setup, but they need their own
-  model/binary installed and have not been exercised as thoroughly as the
-  edge-tts path.
+- **No Japanese voiceover.** Piper ships no Japanese voice, so Japanese is
+  not offered in the language picker even though the script engine could
+  write it. `edge-tts` covers it but has no commercial licence, so it isn't
+  the default; set `VoiceConfig.provider` to `edge_tts` explicitly if you
+  only need it for personal use.
 
 ## Status
 

@@ -5,7 +5,6 @@ import {
   DEFAULT_OUTRO_CONFIG,
   DEFAULT_SUBTITLE_STYLE,
   DEFAULT_VOICE_CONFIG,
-  LANGUAGE_OPTIONS,
   type LanguageCode,
   type Project,
   type ProjectConfig,
@@ -51,7 +50,6 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
   setDraft: (patch) => set((state) => ({ draft: { ...state.draft, ...patch } })),
   toProjectConfig: () => {
     const { draft } = get();
-    const languageOption = LANGUAGE_OPTIONS.find((l) => l.code === draft.language) ?? LANGUAGE_OPTIONS[0];
     return {
       topic: draft.topic,
       raw_script: draft.rawScript.trim() ? draft.rawScript : null,
@@ -61,7 +59,9 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
       aspect_ratio: "9:16",
       fps: 30,
       llm: DEFAULT_LLM_CONFIG,
-      voice: { ...DEFAULT_VOICE_CONFIG, voice_id: languageOption.voiceId },
+      // voice_id stays empty — the backend picks the Piper voice for
+      // `language` (see audio_engine.PIPER_VOICE_BY_LANGUAGE).
+      voice: DEFAULT_VOICE_CONFIG,
       subtitles: DEFAULT_SUBTITLE_STYLE,
       music: DEFAULT_MUSIC_CONFIG,
       outro: {

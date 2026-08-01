@@ -15,21 +15,28 @@ export type LanguageCode = "en" | "tr" | "es" | "fr" | "de" | "pt" | "ja" | "ar"
 export interface LanguageOption {
   code: LanguageCode;
   label: string;
-  /** Real edge-tts ShortName, verified against edge_tts.list_voices(). */
-  voiceId: string;
 }
 
+/**
+ * Languages with a local Piper voice, mirroring
+ * audio_engine.PIPER_VOICE_BY_LANGUAGE. The backend resolves the actual
+ * voice model from the language, so no voice id is sent from here.
+ *
+ * Japanese ("ja") is deliberately absent: the script engine can write it,
+ * but Piper ships no Japanese voice, and the only alternative today is
+ * edge-tts, which has no commercial licence. Re-add it once a licensed
+ * local engine covers Japanese (Kokoro-82M does).
+ */
 export const LANGUAGE_OPTIONS: LanguageOption[] = [
-  { code: "en", label: "English", voiceId: "en-US-AndrewNeural" },
-  { code: "tr", label: "Türkçe", voiceId: "tr-TR-AhmetNeural" },
-  { code: "es", label: "Español", voiceId: "es-ES-AlvaroNeural" },
-  { code: "fr", label: "Français", voiceId: "fr-FR-HenriNeural" },
-  { code: "de", label: "Deutsch", voiceId: "de-DE-ConradNeural" },
-  { code: "pt", label: "Português", voiceId: "pt-BR-AntonioNeural" },
-  { code: "ja", label: "日本語", voiceId: "ja-JP-KeitaNeural" },
-  { code: "ar", label: "العربية", voiceId: "ar-SA-HamedNeural" },
-  { code: "ru", label: "Русский", voiceId: "ru-RU-DmitryNeural" },
-  { code: "it", label: "Italiano", voiceId: "it-IT-DiegoNeural" },
+  { code: "en", label: "English" },
+  { code: "tr", label: "Türkçe" },
+  { code: "es", label: "Español" },
+  { code: "fr", label: "Français" },
+  { code: "de", label: "Deutsch" },
+  { code: "pt", label: "Português" },
+  { code: "ar", label: "العربية" },
+  { code: "ru", label: "Русский" },
+  { code: "it", label: "Italiano" },
 ];
 
 export type RenderStage =
@@ -166,9 +173,11 @@ export interface RenderProgress {
 // Sane client-side defaults, mirroring the Pydantic field defaults.
 // --------------------------------------------------------------------------
 
+// Piper: fully local and MIT licensed. An empty voice_id tells the backend
+// to pick the default voice for the project's language.
 export const DEFAULT_VOICE_CONFIG: VoiceConfig = {
-  provider: "edge_tts",
-  voice_id: "en-US-AndrewNeural",
+  provider: "piper",
+  voice_id: "",
   rate: "+0%",
   pitch: "+0Hz",
 };

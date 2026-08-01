@@ -11,7 +11,8 @@ python-multipart>=0.0.9
 openai>=1.35            # optional: only needed if using the OpenAI provider
 
 # --- TTS / ASR --------------------------------------------------------
-edge-tts>=6.1
+piper-tts>=1.2            # default: local, MIT-licensed ONNX voices
+edge-tts>=6.1             # optional fallback; free but no commercial licence
 faster-whisper>=1.0
 # TTS>=0.22              # optional: Coqui XTTS-v2 voice cloning, uncomment to enable
 
