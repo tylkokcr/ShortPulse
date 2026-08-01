@@ -1,8 +1,17 @@
 # ShortPulse
 
-Open-source, fully local AI video agent that turns a topic or script into a
-ready-to-post vertical video (1080x1920, TikTok/Reels/Shorts) — no monthly
-SaaS subscription required.
+Open-source AI video agent that turns a topic or script into a ready-to-post
+vertical video (1080x1920, TikTok/Reels/Shorts). Runs on your own machine —
+no subscription, no paid API.
+
+**What "local" means here, precisely:** scripting (Ollama), transcription
+(faster-whisper), image/video generation (SDXL/RealVisXL/LTX-Video) and
+rendering (FFmpeg) all run offline on your hardware. Two things reach the
+network by default: `edge-tts` uses Microsoft's free Edge voices
+(`speech.platform.bing.com` — no key, no account, but it *is* a network
+call), and the `stock_media` visual mode obviously fetches from Pexels. For
+a fully offline pipeline, switch `VoiceConfig.provider` to `piper` (a local
+ONNX voice) and avoid `stock_media`.
 
 Give it a topic (or your own script), and it will:
 
@@ -136,6 +145,11 @@ Better to know up front than to discover them mid-render:
 - **Projects are stored in memory.** Restarting the backend clears the project
   list and cancels in-flight renders. Finished `.mp4` files persist on disk
   under `backend/app/storage/projects/`.
+- **Default TTS is not offline.** `edge-tts` is free and keyless but calls
+  Microsoft's servers. `piper` and `coqui_xtts` providers are wired in
+  `audio_engine.py` for a fully offline setup, but they need their own
+  model/binary installed and have not been exercised as thoroughly as the
+  edge-tts path.
 
 ## Status
 
