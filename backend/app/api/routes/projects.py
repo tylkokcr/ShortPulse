@@ -14,19 +14,19 @@ router = APIRouter(prefix="/api/projects", tags=["projects"])
 @router.post("", response_model=Project, status_code=201)
 async def create_project(config: ProjectConfig, request: Request) -> Project:
     """Create a project and enqueue it for rendering immediately."""
-    project = project_store.create_project(config)
+    project = await project_store.create_project(config)
     await request.app.state.render_queue.submit(project)
     return project
 
 
 @router.get("", response_model=list[Project])
 async def list_projects() -> list[Project]:
-    return project_store.list_projects()
+    return await project_store.list_projects()
 
 
 @router.get("/{project_id}", response_model=Project)
 async def get_project(project_id: str) -> Project:
-    project = project_store.get_project(project_id)
+    project = await project_store.get_project(project_id)
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
     return project
@@ -34,14 +34,14 @@ async def get_project(project_id: str) -> Project:
 
 @router.delete("/{project_id}", status_code=204)
 async def delete_project(project_id: str) -> None:
-    if project_store.get_project(project_id) is None:
+    if await project_store.get_project(project_id) is None:
         raise HTTPException(status_code=404, detail="Project not found")
-    project_store.delete_project(project_id)
+    await project_store.delete_project(project_id)
 
 
 @router.get("/{project_id}/download")
 async def download_project_video(project_id: str) -> FileResponse:
-    project = project_store.get_project(project_id)
+    project = await project_store.get_project(project_id)
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
     if not project.output_path:

@@ -55,6 +55,13 @@ class Settings(BaseSettings):
     default_fps: int = 30
     default_resolution: tuple[int, int] = (1080, 1920)
 
+    # Persistence
+    # Postgres connection string (Supabase gives you one under
+    # Settings -> Database). Leave empty to keep projects in memory, which
+    # is fine for a single-user local install but loses everything on
+    # restart — including any render that was in flight.
+    database_url: str | None = None
+
     # Server
     # Next.js dev falls back to 3001/3002 when 3000 is taken, so allow the
     # range rather than pinning a single port.

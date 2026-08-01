@@ -85,7 +85,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
     timings = StageTimings()
 
     try:
-        project_store.update_project(project_id, status=ProjectStatus.RENDERING)
+        await project_store.update_project(project_id, status=ProjectStatus.RENDERING)
 
         # 1. Script generation -------------------------------------------------
         await _emit(
@@ -114,7 +114,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 )
             )
 
-        project = project_store.update_project(project_id, script=script)
+        await project_store.update_project(project_id, script=script)
         total_scenes = len(script.scenes)
 
         # 2. Audio synthesis + transcription per scene --------------------------
@@ -247,7 +247,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             summary["stages_s"],
         )
 
-        project_store.update_project(
+        await project_store.update_project(
             project_id, status=ProjectStatus.COMPLETE, output_path=str(final_path)
         )
         await _emit(
@@ -260,7 +260,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
 
     except Exception as exc:  # noqa: BLE001 - surface any pipeline failure to the client
         logger.exception("Render pipeline failed for project %s", project_id)
-        project_store.update_project(project_id, status=ProjectStatus.FAILED, error=str(exc))
+        await project_store.update_project(project_id, status=ProjectStatus.FAILED, error=str(exc))
         await _emit(
             project_id,
             stage=RenderStage.FAILED,

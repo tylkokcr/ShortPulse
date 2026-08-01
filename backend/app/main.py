@@ -13,14 +13,26 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import projects, render
 from app.core.config import get_settings
+from app.services import db, project_store
 from app.services.render_manager import RenderTaskQueue
 
+logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
+
+    # Postgres is optional: without DATABASE_URL the app falls back to an
+    # in-memory store, so the self-hosted path needs no infrastructure.
+    pool = None
+    if settings.database_url:
+        pool = await db.connect(settings.database_url)
+        await db.apply_migrations(pool)
+    project_store.configure(pool)
+    app.state.db_pool = pool
+
     render_queue = RenderTaskQueue(settings)
     render_queue.start()
     app.state.render_queue = render_queue
@@ -29,6 +41,7 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         await render_queue.stop()
+        await db.disconnect()
 
 
 app = FastAPI(

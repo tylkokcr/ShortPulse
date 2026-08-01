@@ -141,9 +141,12 @@ Better to know up front than to discover them mid-render:
 - **Stock clips don't always match the scene.** Pexels returns the closest
   match for the scene's visual prompt, which can be loose. Under heavy use the
   API also returns transient 403s.
-- **Projects are stored in memory.** Restarting the backend clears the project
-  list and cancels in-flight renders. Finished `.mp4` files persist on disk
-  under `backend/app/storage/projects/`.
+- **Projects are in memory unless you set `DATABASE_URL`.** Without it,
+  restarting the backend clears the project list and orphans in-flight
+  renders. Point it at any Postgres (Supabase included) and projects,
+  status and scripts survive restarts; migrations apply automatically at
+  startup. Rendered `.mp4` files always persist on disk under
+  `backend/app/storage/projects/`.
 - **No Japanese voiceover.** Piper ships no Japanese voice, so Japanese is
   not offered in the language picker even though the script engine could
   write it. `edge-tts` covers it but has no commercial licence, so it isn't
