@@ -28,6 +28,11 @@ imageio-ffmpeg>=0.5
 # --- Persistence ---------------------------------------------------------
 asyncpg>=0.29           # Postgres driver; Supabase in prod, container locally
 
+# --- Auth (hosted deployment only; unused when SUPABASE_URL is unset) -----
+# [crypto] pulls in `cryptography`, needed for the ES256/RS256 asymmetric
+# signing keys Supabase issues. Without it PyJWT can only do HMAC.
+pyjwt[crypto]>=2.9
+
 # --- Rendering --------------------------------------------------------
 ffmpeg-python>=0.2.0     # thin wrapper kept for future use; core pipeline shells out directly
 

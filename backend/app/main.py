@@ -11,10 +11,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.middleware import SupabaseAuthMiddleware
 from app.api.routes import credits, projects, render
 from app.core.config import get_settings
 from app.services import db, project_store
 from app.services.render_manager import RenderTaskQueue, reconcile_interrupted_renders
+from app.services.supabase_auth import SupabaseTokenVerifier
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -63,6 +65,15 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Runs before the routes, so request.state.user_id is populated by the time
+# any handler (or the billing layer behind it) asks who is calling.
+app.add_middleware(
+    SupabaseAuthMiddleware,
+    verifier=SupabaseTokenVerifier(settings.supabase_url) if settings.supabase_url else None,
+    require_auth=settings.require_auth,
+    signup_grant=settings.signup_credit_grant,
 )
 
 app.include_router(projects.router)

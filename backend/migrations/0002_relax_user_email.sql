@@ -1,0 +1,16 @@
+-- Drop the unique constraint on app_users.email.
+--
+-- 0001 declared `email text unique`, which turns out to be a liability
+-- rather than a safeguard. Supabase owns identity and already enforces
+-- whatever uniqueness it wants on its side; our column is only a
+-- convenience copy for support and admin queries.
+--
+-- Keeping it unique means a user who deletes their Supabase account and
+-- signs up again with the same address gets a *new* uuid and the same
+-- email, so the mirror insert in services/users.py raises a unique
+-- violation on every single authenticated request. That is a permanent
+-- lockout for that user, caused by a constraint that protects nothing.
+--
+-- Named explicitly because Postgres derives it from the column: an inline
+-- `unique` on app_users(email) is always app_users_email_key.
+alter table app_users drop constraint if exists app_users_email_key;

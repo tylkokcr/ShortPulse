@@ -62,6 +62,20 @@ class Settings(BaseSettings):
     # restart — including any render that was in flight.
     database_url: str | None = None
 
+    # Auth (hosted deployment only)
+    # Supabase project URL, e.g. https://abcdefgh.supabase.co. Setting it
+    # turns on token verification; leaving it empty means anonymous access,
+    # which is the self-hosted install. No secret is needed either way —
+    # tokens are checked against the project's public JWKS.
+    supabase_url: str | None = None
+    # Reject unauthenticated requests outright. Must be true on any public
+    # deployment: without it an anonymous caller looks like a self-hoster
+    # and renders for free.
+    require_auth: bool = False
+    # Credits handed to a user the first time they authenticate. This is
+    # real compute given away, so it defaults to none — set it deliberately.
+    signup_credit_grant: int = 0
+
     # Server
     # Next.js dev falls back to 3001/3002 when 3000 is taken, so allow the
     # range rather than pinning a single port.
