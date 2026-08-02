@@ -5,6 +5,7 @@ import {
   DEFAULT_OUTRO_CONFIG,
   DEFAULT_SUBTITLE_STYLE,
   DEFAULT_VOICE_CONFIG,
+  type CreditSummary,
   type LanguageCode,
   type Project,
   type ProjectConfig,
@@ -34,6 +35,11 @@ interface ShortPulseState {
 
   renderProgress: RenderProgress | null;
   setRenderProgress: (progress: RenderProgress | null) => void;
+
+  /** Null until the backend has been asked. `enabled: false` means this
+   *  install has no billing at all — see CreditSummary. */
+  credits: CreditSummary | null;
+  setCredits: (credits: CreditSummary | null) => void;
 }
 
 export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
@@ -74,6 +80,9 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
 
   activeProject: null,
   setActiveProject: (project) => set({ activeProject: project }),
+
+  credits: null,
+  setCredits: (credits) => set({ credits }),
 
   renderProgress: null,
   setRenderProgress: (progress) => set({ renderProgress: progress }),

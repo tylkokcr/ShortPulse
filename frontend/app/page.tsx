@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
-import { createProject } from "@/lib/api";
+import { createProject, InsufficientCreditsError } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -12,10 +12,20 @@ import { DurationSelector } from "@/components/editor/DurationSelector";
 import { LanguageSelector } from "@/components/editor/LanguageSelector";
 import { OutroToggle } from "@/components/editor/OutroToggle";
 import { VisualSelector } from "@/components/visual/VisualSelector";
+import { AccountBar } from "@/components/auth/AccountBar";
+import { RequireAuth } from "@/components/auth/RequireAuth";
 
 export default function HomePage() {
+  return (
+    <RequireAuth>
+      <CreateVideo />
+    </RequireAuth>
+  );
+}
+
+function CreateVideo() {
   const router = useRouter();
-  const { draft, toProjectConfig } = useShortPulseStore();
+  const { draft, toProjectConfig, credits } = useShortPulseStore();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,13 +41,26 @@ export default function HomePage() {
       const project = await createProject(toProjectConfig());
       router.push(`/project/${project.config.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create project");
+      setError(
+        err instanceof InsufficientCreditsError
+          ? `This render costs ${err.required} credits and you have ${err.balance}.`
+          : err instanceof Error
+            ? err.message
+            : "Failed to create project"
+      );
       setSubmitting(false);
     }
   }
 
+  // Quoted from the same table the backend charges from, so the number
+  // shown here is the number taken. Absent on a self-hosted install.
+  const price = credits?.enabled
+    ? credits.pricing[`${draft.visualMode}:${draft.videoLength}`]
+    : undefined;
+
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-6 px-6 py-16">
+      <AccountBar />
       <div>
         <h1 className="text-2xl font-semibold">ShortPulse</h1>
         <p className="mt-1 text-sm text-white/50">
@@ -69,7 +92,11 @@ export default function HomePage() {
 
         <Button onClick={handleGenerate} disabled={!canSubmit}>
           <Sparkles size={16} />
-          {submitting ? "Starting render..." : "Generate video"}
+          {submitting
+            ? "Starting render..."
+            : price === undefined
+              ? "Generate video"
+              : `Generate video — ${price} credit${price === 1 ? "" : "s"}`}
         </Button>
       </Card>
     </main>
