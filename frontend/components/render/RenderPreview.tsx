@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import type { RefObject } from "react";
 import { downloadUrl, getProject, subscribeToRenderProgress } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
+import type { RenderStage } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Timeline } from "./Timeline";
@@ -36,6 +37,13 @@ export function RenderPreview({ projectId, videoRef, onTimeUpdate }: RenderPrevi
 
   const isDone = activeProject?.status === "complete";
   const isFailed = activeProject?.status === "failed" || renderProgress?.stage === "failed";
+
+  // Opening the page after a render has finished gets no progress events —
+  // those only arrive over the WebSocket while it runs. Without this
+  // fallback the timeline sits entirely grey on a completed project, as if
+  // nothing had happened.
+  const timelineStage: RenderStage | undefined =
+    renderProgress?.stage ?? (isDone ? "done" : isFailed ? "failed" : undefined);
 
   return (
     <Card className="flex flex-col gap-4">
@@ -71,7 +79,7 @@ export function RenderPreview({ projectId, videoRef, onTimeUpdate }: RenderPrevi
         )}
       </div>
 
-      <Timeline currentStage={renderProgress?.stage} />
+      <Timeline currentStage={timelineStage} />
 
       {isDone && (
         <Button variant="secondary" onClick={() => window.open(downloadUrl(projectId), "_blank")}>
