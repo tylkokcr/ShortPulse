@@ -7,6 +7,7 @@ import { useShortPulseStore } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
 import { RenderPreview } from "@/components/render/RenderPreview";
 import { TranscriptPanel } from "@/components/render/TranscriptPanel";
+import { StockCredits } from "@/components/render/StockCredits";
 
 export default function ProjectPage({ params }: { params: { id: string } }) {
   const activeProject = useShortPulseStore((s) => s.activeProject);
@@ -39,6 +40,7 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
           ) : (
             <TranscriptPanel script={script} currentTime={currentTime} onSeek={handleSeek} />
           )}
+          {script && <StockCredits script={script} />}
         </Card>
 
         <RenderPreview projectId={params.id} videoRef={videoRef} onTimeUpdate={setCurrentTime} />

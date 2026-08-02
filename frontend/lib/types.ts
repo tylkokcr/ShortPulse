@@ -66,12 +66,24 @@ export interface SceneAudio {
   words: Word[];
 }
 
+/** Credit for a stock clip. Pexels' API terms require a visible link back
+ *  to Pexels and, where possible, to the photographer — so this must be
+ *  rendered, not just carried. */
+export interface StockAttribution {
+  provider: string;
+  provider_url: string;
+  author?: string | null;
+  author_url?: string | null;
+  source_url?: string | null;
+}
+
 export interface SceneVisual {
   prompt: string;
   negative_prompt?: string | null;
   mode: VisualMode;
   asset_path?: string | null;
-  source_attribution?: string | null;
+  /** Stock scenes only; AI-generated visuals have nobody to credit. */
+  attribution?: StockAttribution | null;
 }
 
 export interface Scene {

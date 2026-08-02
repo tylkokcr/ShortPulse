@@ -120,6 +120,19 @@ local mode fails — so a missing GPU degrades gracefully rather than erroring.
 https://www.pexels.com/api/ (email only, no card, takes a couple of minutes)
 and put it in `backend/.env` as `PEXELS_API_KEY`.
 
+**Attribution is a condition of the licence, not a courtesy.** Pexels'
+API terms require a visible link back to Pexels from any app using the
+API, and crediting the videographer where possible. The pipeline records
+who shot each clip at fetch time and the project page displays it with
+working links, plus a copy button — the credit doesn't travel inside the
+`.mp4`, so paste it into your post description when you publish. Don't
+remove that panel.
+
+**Rate limits.** The free tier allows 200 requests/hour and 20,000/month.
+One request per scene means roughly 40 videos/hour and 4,000/month before
+you hit the ceiling; Pexels grants higher limits on request if you meet
+their terms.
+
 ## Known limitations
 
 These are real, measured on an Apple Silicon Mac with 32GB unified memory.

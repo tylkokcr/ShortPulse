@@ -114,6 +114,10 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 )
             )
 
+        # Saved early so the UI can show the scene breakdown while the slow
+        # stages run. Note this snapshot is incomplete — everything below
+        # mutates the scenes further, and the final save at the end of the
+        # pipeline is what persists that.
         await project_store.update_project(project_id, script=script)
         total_scenes = len(script.scenes)
 
@@ -247,8 +251,18 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             summary["stages_s"],
         )
 
+        # Save the script again, not just the status. Every stage above
+        # mutated the scenes in place — audio paths and word timings,
+        # visual asset paths, and the stock-footage attribution that
+        # Pexels' terms require us to display. The snapshot taken right
+        # after script generation has none of it, so without this the
+        # finished project reads back missing everything the render
+        # actually produced.
         await project_store.update_project(
-            project_id, status=ProjectStatus.COMPLETE, output_path=str(final_path)
+            project_id,
+            status=ProjectStatus.COMPLETE,
+            output_path=str(final_path),
+            script=script,
         )
         await _emit(
             project_id,

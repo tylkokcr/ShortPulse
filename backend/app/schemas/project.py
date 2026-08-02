@@ -90,12 +90,37 @@ class SceneAudio(BaseModel):
     words: list[Word] = Field(default_factory=list)
 
 
+class StockAttribution(BaseModel):
+    """Credit for a stock clip.
+
+    Pexels' API terms require a prominent link back to Pexels from any
+    application using the API, and crediting the photographer where
+    possible. That is a condition of the licence, not a courtesy, so the
+    pieces needed to render a real link are captured at fetch time —
+    reconstructing them later is impossible once the clip is downloaded.
+    """
+
+    provider: str                      # "Pexels" / "Pixabay"
+    provider_url: str
+    author: str | None = None
+    author_url: str | None = None
+    source_url: str | None = None      # the clip's own page
+
+    def as_text(self) -> str:
+        """One line a user can paste into a post description."""
+        if self.author:
+            return f"Video by {self.author} on {self.provider}"
+        return f"Video from {self.provider}"
+
+
 class SceneVisual(BaseModel):
     prompt: str
     negative_prompt: str | None = None
     mode: VisualMode = VisualMode.FAST_HYBRID
     asset_path: str | None = None
-    source_attribution: str | None = None  # e.g. Pexels photographer credit
+    # Populated for stock_media scenes only; AI-generated visuals have
+    # nobody to credit.
+    attribution: StockAttribution | None = None
 
 
 class Scene(BaseModel):

@@ -17,11 +17,12 @@ returns the path, which is stored on `scene.visual.asset_path`.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 
 import httpx
 
-from app.schemas.project import Scene, VisualMode
+from app.schemas.project import Scene, StockAttribution, VisualMode
 
 logger = logging.getLogger(__name__)
 
@@ -221,19 +222,34 @@ async def _generate_fast_hybrid_image(scene: Scene, output_dir: Path, settings) 
 # --------------------------------------------------------------------------
 
 
+@dataclass(frozen=True)
+class StockClip:
+    """A stock clip plus the credit its licence requires.
+
+    The two travel together deliberately. Pexels' API terms make
+    attribution a condition of use, and once the file is downloaded there
+    is nothing left to derive the photographer's name from — so a function
+    that returned only a URL would make compliance impossible by
+    construction.
+    """
+
+    url: str
+    attribution: StockAttribution
+
+
 async def _fetch_stock_media(scene: Scene, output_dir: Path, settings) -> Path:
     output_path = output_dir / f"scene_{scene.index:02d}_stock.mp4"
 
-    if settings.pexels_api_key:
-        video_url = await _search_pexels(scene.visual.prompt, settings.pexels_api_key)
-        if video_url:
-            await _download(video_url, output_path)
-            return output_path
-
-    if settings.pixabay_api_key:
-        video_url = await _search_pixabay(scene.visual.prompt, settings.pixabay_api_key)
-        if video_url:
-            await _download(video_url, output_path)
+    for search, api_key in (
+        (_search_pexels, settings.pexels_api_key),
+        (_search_pixabay, settings.pixabay_api_key),
+    ):
+        if not api_key:
+            continue
+        clip = await search(scene.visual.prompt, api_key)
+        if clip:
+            await _download(clip.url, output_path)
+            scene.visual.attribution = clip.attribution
             return output_path
 
     raise RuntimeError(
@@ -242,7 +258,7 @@ async def _fetch_stock_media(scene: Scene, output_dir: Path, settings) -> Path:
     )
 
 
-async def _search_pexels(query: str, api_key: str) -> str | None:
+async def _search_pexels(query: str, api_key: str) -> StockClip | None:
     async with httpx.AsyncClient(timeout=20.0) as client:
         response = await client.get(
             "https://api.pexels.com/videos/search",
@@ -254,13 +270,24 @@ async def _search_pexels(query: str, api_key: str) -> str | None:
         videos = data.get("videos", [])
         if not videos:
             return None
-        files = sorted(videos[0]["video_files"], key=lambda f: f.get("height", 0), reverse=True)
+        video = videos[0]
+        files = sorted(video["video_files"], key=lambda f: f.get("height", 0), reverse=True)
         portrait_files = [f for f in files if f.get("height", 0) >= f.get("width", 1)]
         chosen = (portrait_files or files)[0]
-        return chosen["link"]
+        user = video.get("user") or {}
+        return StockClip(
+            url=chosen["link"],
+            attribution=StockAttribution(
+                provider="Pexels",
+                provider_url="https://www.pexels.com",
+                author=user.get("name"),
+                author_url=user.get("url"),
+                source_url=video.get("url"),
+            ),
+        )
 
 
-async def _search_pixabay(query: str, api_key: str) -> str | None:
+async def _search_pixabay(query: str, api_key: str) -> StockClip | None:
     async with httpx.AsyncClient(timeout=20.0) as client:
         response = await client.get(
             "https://pixabay.com/api/videos/",
@@ -271,7 +298,21 @@ async def _search_pixabay(query: str, api_key: str) -> str | None:
         hits = data.get("hits", [])
         if not hits:
             return None
-        return hits[0]["videos"]["medium"]["url"]
+        hit = hits[0]
+        return StockClip(
+            url=hit["videos"]["medium"]["url"],
+            attribution=StockAttribution(
+                provider="Pixabay",
+                provider_url="https://pixabay.com",
+                author=hit.get("user"),
+                author_url=(
+                    f"https://pixabay.com/users/{hit['user']}-{hit['user_id']}/"
+                    if hit.get("user") and hit.get("user_id")
+                    else None
+                ),
+                source_url=hit.get("pageURL"),
+            ),
+        )
 
 
 async def _download(url: str, output_path: Path) -> None:
