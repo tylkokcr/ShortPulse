@@ -338,3 +338,53 @@ async def test_an_owned_project_is_not_reachable_without_authentication(pool, us
     async with _client(anon_app) as client:
         assert (await client.get(f"/api/projects/{project_id}")).status_code == 404
         assert (await client.get(f"/api/projects/{project_id}/download")).status_code == 404
+
+
+async def test_reconciler_does_not_steal_a_render_that_just_finished(pool, user, monkeypatch):
+    """The race seen live: the reconciler reads `rendering`, the pipeline
+    finishes, and only then does the reconciler write. A blind write left a
+    `complete` render carrying a "was interrupted" error — and refunded a
+    video the user had already received.
+
+    The stale read is injected rather than ordered, because reconcile does
+    its own listing: without this the project is already `complete` by the
+    time it looks, the reconciler correctly does nothing, and the test
+    proves nothing at all.
+    """
+    await credits.grant(pool, user, 20)
+    app, _ = _build_app(pool, user)
+    async with _client(app) as client:
+        project_id = (await client.post("/api/projects", json=_payload())).json()["config"]["id"]
+
+    # The pipeline has already finished by the time the reconciler writes...
+    await project_store.update_project(
+        project_id, status=ProjectStatus.COMPLETE, output_path="/tmp/final.mp4", error=None
+    )
+    # ...but the reconciler is working from a listing taken before that.
+    monkeypatch.setattr(project_store, "list_interrupted", lambda: _returns([project_id]))
+
+    await render_manager.reconcile_interrupted_renders()
+
+    project = await project_store.get_project(project_id)
+    assert project.status == ProjectStatus.COMPLETE, "reconciler overwrote a finished render"
+    assert project.error is None, "finished render left carrying an interruption error"
+    assert await credits.balance(pool, user) == 17, "refunded a video the user actually got"
+
+
+async def _returns(value):
+    return value
+
+
+async def test_a_genuinely_abandoned_render_is_still_recovered(pool, user):
+    """The guard must not stop the reconciler doing its job."""
+    await credits.grant(pool, user, 20)
+    app, _ = _build_app(pool, user)
+    async with _client(app) as client:
+        project_id = (await client.post("/api/projects", json=_payload())).json()["config"]["id"]
+
+    await project_store.update_project(project_id, status=ProjectStatus.RENDERING)
+    await render_manager.reconcile_interrupted_renders()
+
+    project = await project_store.get_project(project_id)
+    assert project.status == ProjectStatus.FAILED
+    assert await credits.balance(pool, user) == 20

@@ -111,6 +111,36 @@ async def test_a_valid_token_identifies_and_bills_the_right_user(pool, jwks, sig
     assert await project_store.owner_of(created.json()["config"]["id"]) == user_id
 
 
+async def test_anonymous_listing_never_exposes_owned_projects(pool, jwks, signer):
+    """Found in a live end-to-end run: single-project reads checked
+    ownership but the listing didn't, so an unauthenticated GET /api/projects
+    returned every user's work."""
+    user_id = str(uuid.uuid4())
+    app, _ = _build_app(pool, jwks, signup_grant=20)
+    async with _client(app) as client:
+        owned = (await client.post(
+            "/api/projects", json=PAYLOAD, headers=_auth(signer.token(sub=user_id))
+        )).json()["config"]["id"]
+
+    anon_app, _ = _build_app(pool, jwks)
+    async with _client(anon_app) as client:
+        listed = (await client.get("/api/projects")).json()
+
+    ids = {p["config"]["id"] for p in listed}
+    assert owned not in ids, "owned project exposed to an unauthenticated caller"
+
+
+async def test_anonymous_listing_still_shows_self_hosted_projects(pool, jwks):
+    """The self-hosted install has no accounts, so its own unowned projects
+    must stay visible — the fix above must not empty that list."""
+    app, _ = _build_app(pool, jwks)
+    async with _client(app) as client:
+        mine = (await client.post("/api/projects", json=PAYLOAD)).json()["config"]["id"]
+        listed = (await client.get("/api/projects")).json()
+
+    assert mine in {p["config"]["id"] for p in listed}
+
+
 async def test_a_user_only_sees_their_own_projects(pool, jwks, signer):
     alice, bob = str(uuid.uuid4()), str(uuid.uuid4())
     app, _ = _build_app(pool, jwks, signup_grant=20)

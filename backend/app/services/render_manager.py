@@ -263,6 +263,8 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             status=ProjectStatus.COMPLETE,
             output_path=str(final_path),
             script=script,
+            # Clear any error left by a reconciler that raced this render.
+            error=None,
         )
         await _emit(
             project_id,
@@ -321,7 +323,18 @@ async def reconcile_interrupted_renders() -> int:
         return 0
 
     pool = db.optional_pool()
+    recovered = 0
     for project_id in stale:
+        # Claim it first. The write only lands while the project is still
+        # `rendering`, so a pipeline that finished in the meantime keeps
+        # its result — and we don't refund a video the user received.
+        if not await project_store.fail_if_rendering(
+            project_id, "Render was interrupted by a server restart. Please try again."
+        ):
+            logger.info("Project %s finished before it could be recovered", project_id)
+            continue
+
+        recovered += 1
         if pool is not None:
             try:
                 await credits.refund_project(
@@ -329,14 +342,10 @@ async def reconcile_interrupted_renders() -> int:
                 )
             except Exception:  # noqa: BLE001
                 logger.exception("Could not refund interrupted project %s", project_id)
-        await project_store.update_project(
-            project_id,
-            status=ProjectStatus.FAILED,
-            error="Render was interrupted by a server restart. Please try again.",
-        )
 
-    logger.warning("Recovered %d render(s) interrupted by a restart", len(stale))
-    return len(stale)
+    if recovered:
+        logger.warning("Recovered %d render(s) interrupted by a restart", recovered)
+    return recovered
 
 
 class RenderTaskQueue:

@@ -30,6 +30,7 @@ class ProjectStore(Protocol):
     async def delete_project(self, project_id: str) -> None: ...
     async def list_interrupted(self) -> list[str]: ...
     async def owner_of(self, project_id: str) -> str | None: ...
+    async def fail_if_rendering(self, project_id: str, error: str) -> bool: ...
 
 
 class InMemoryProjectStore:
@@ -67,6 +68,15 @@ class InMemoryProjectStore:
     async def owner_of(self, project_id: str) -> str | None:
         # This backend only runs where there are no accounts.
         return None
+
+    async def fail_if_rendering(self, project_id: str, error: str) -> bool:
+        project = self._projects.get(project_id)
+        if project is None or project.status != ProjectStatus.RENDERING:
+            return False
+        self._projects[project_id] = project.model_copy(
+            update={"status": ProjectStatus.FAILED, "error": error}
+        )
+        return True
 
 
 class PostgresProjectStore:
@@ -113,11 +123,19 @@ class PostgresProjectStore:
         return self._row_to_project(row) if row else None
 
     async def list_projects(self, user_id: str | None = None) -> list[Project]:
+        """Projects the caller may see.
+
+        An anonymous caller gets only unowned projects — the ones a
+        self-hosted install creates. It must never be "everything", which
+        would hand every user's work to any unauthenticated request. Same
+        rule as _visible_project in the projects route: a row with an owner
+        is reachable only by that owner.
+        """
         if user_id is None:
             rows = await self._pool.fetch(
                 """
                 select config, status, script, output_path, error, credits_cost
-                from projects order by created_at desc limit 100
+                from projects where user_id is null order by created_at desc limit 100
                 """
             )
         else:
@@ -182,6 +200,26 @@ class PostgresProjectStore:
         )
         return str(owner) if owner else None
 
+    async def fail_if_rendering(self, project_id: str, error: str) -> bool:
+        """Mark a render failed, but only while it is still `rendering`.
+
+        The guard is the point. A blind write races a pipeline that is
+        finishing: the reconciler would refund a video that then gets
+        delivered anyway, and leave a `complete` project carrying a
+        "render was interrupted" error. Returning False means someone else
+        got there first and the render is not ours to fail.
+        """
+        claimed = await self._pool.fetchval(
+            """
+            update projects set status = 'failed', error = $2, updated_at = now()
+            where id = $1 and status = 'rendering'
+            returning id
+            """,
+            project_id,
+            error,
+        )
+        return claimed is not None
+
 
 # --------------------------------------------------------------------------
 # Module-level facade, so callers don't care which backend is active.
@@ -233,3 +271,7 @@ async def list_interrupted() -> list[str]:
 
 async def owner_of(project_id: str) -> str | None:
     return await _store.owner_of(project_id)
+
+
+async def fail_if_rendering(project_id: str, error: str) -> bool:
+    return await _store.fail_if_rendering(project_id, error)
