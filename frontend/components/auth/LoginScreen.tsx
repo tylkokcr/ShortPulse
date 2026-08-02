@@ -7,6 +7,29 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
 /**
+ * Supabase's auth errors are written for developers. Rewrite the ones a
+ * user can actually act on; pass anything else through rather than
+ * inventing a friendlier message for a problem we haven't identified.
+ */
+function explain(message: string): string {
+  const text = message.toLowerCase();
+  if (text.includes("rate limit")) {
+    return (
+      "Too many sign-in emails in a short time. Check your inbox — including spam — " +
+      "for a link we already sent, or try again in an hour."
+    );
+  }
+  if (text.includes("invalid") && text.includes("email")) {
+    return "That doesn't look like a valid email address.";
+  }
+  if (text.includes("signups not allowed") || text.includes("signup is disabled")) {
+    return "This address isn't allowed to sign up yet.";
+  }
+  return message;
+}
+
+
+/**
  * Magic-link sign-in.
  *
  * No password field on purpose: passwords would mean a reset flow, a
@@ -31,7 +54,7 @@ export function LoginScreen() {
     });
 
     if (sendError) {
-      setError(sendError.message);
+      setError(explain(sendError.message));
       setStatus("idle");
       return;
     }
@@ -56,7 +79,7 @@ export function LoginScreen() {
             </div>
             <p className="text-sm text-white/50">
               We sent a sign-in link to <span className="text-white/70">{email}</span>. It opens
-              this page already signed in.
+              this page already signed in. If it isn&apos;t there in a minute, check spam.
             </p>
             <button
               onClick={() => setStatus("idle")}
