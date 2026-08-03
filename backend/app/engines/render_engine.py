@@ -37,6 +37,13 @@ logger = logging.getLogger(__name__)
 # 48kHz stereo. Pinning them here is what makes the copy safe.
 _CLIP_AUDIO_FORMAT = ("-ar", "48000", "-ac", "1")
 
+# Move the moov atom (the index a player needs to know what's in the file)
+# from the end to the front. Without it a browser has to download the whole
+# file before it can show a single frame: a <video> element sits at
+# readyState 0 with no error, looking like a broken player rather than a
+# slow one. Costs one extra pass over the output at write time.
+_FASTSTART = ("-movflags", "+faststart")
+
 _VIDEO_EXTENSIONS = {".mp4", ".mov", ".webm", ".mkv"}
 _IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 
@@ -276,6 +283,7 @@ async def finalize_render(
             "-r", str(target.fps),
             "-c:a", "aac",
             "-b:a", "192k",
+            *_FASTSTART,
             "-shortest",
             str(output_path),
         ]
@@ -290,6 +298,7 @@ async def finalize_render(
             "-r", str(target.fps),
             "-c:a", "aac",
             "-b:a", "192k",
+            *_FASTSTART,
             str(output_path),
         ]
 

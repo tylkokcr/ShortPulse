@@ -75,6 +75,13 @@ class Settings(BaseSettings):
     # Credits handed to a user the first time they authenticate. This is
     # real compute given away, so it defaults to none — set it deliberately.
     signup_credit_grant: int = 0
+    # Signs the short-lived tokens in video URLs. A <video> tag can't send
+    # an Authorization header, so playback of an owned project needs the
+    # credential in the URL — same shape as an S3 presigned link. Leave
+    # unset and one is generated per process: fine for a single local
+    # instance, but links then break on restart and across replicas.
+    media_url_secret: str | None = None
+    media_url_ttl_s: int = 900  # 15 minutes: long enough to watch, short enough to leak harmlessly
 
     # Server
     # Next.js dev falls back to 3001/3002 when 3000 is taken, so allow the

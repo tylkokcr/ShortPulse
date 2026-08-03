@@ -18,21 +18,38 @@ from pathlib import Path
 import pytest
 
 from app.engines import render_engine
-from app.schemas.project import Scene, SceneAudio, SceneVisual
+from app.engines.subtitle_engine import build_ass_subtitles
+from app.schemas.project import (
+    MusicConfig,
+    Scene,
+    SceneAudio,
+    SceneVisual,
+    SubtitleStyle,
+    Word,
+)
 
 FFMPEG = os.environ.get("FFMPEG_BINARY") or shutil.which("ffmpeg") or "ffmpeg"
 FFPROBE = os.environ.get("FFPROBE_BINARY") or shutil.which("ffprobe") or "ffprobe"
 
 
-def _has_ffmpeg() -> bool:
+def _has_usable_ffmpeg() -> bool:
+    """ffmpeg present *and* built with libass.
+
+    The subtitle burn-in step needs the `ass` filter, and Homebrew's default
+    formula ships without it (see the README). Checking only for the binary
+    turns that into a confusing mid-test ffmpeg error instead of a skip.
+    """
     try:
-        subprocess.run([FFMPEG, "-version"], capture_output=True, check=True)
-        return True
+        out = subprocess.run([FFMPEG, "-version"], capture_output=True, check=True)
     except (OSError, subprocess.CalledProcessError):
         return False
+    return b"--enable-libass" in out.stdout
 
 
-pytestmark = pytest.mark.skipif(not _has_ffmpeg(), reason="ffmpeg not available")
+pytestmark = pytest.mark.skipif(
+    not _has_usable_ffmpeg(),
+    reason=f"{FFMPEG} is missing or built without libass; set FFMPEG_BINARY",
+)
 
 
 def _run(args: list[str]) -> None:
@@ -91,6 +108,22 @@ def _decode_errors(path: Path) -> str:
         capture_output=True,
     )
     return result.stderr.decode()
+
+
+def _atom_order(path: Path) -> list[str]:
+    """Top-level MP4 atoms in file order, as ffprobe sees them."""
+    result = subprocess.run(
+        [FFPROBE, "-v", "trace", str(path)],
+        capture_output=True,
+    )
+    order = []
+    for line in result.stderr.decode(errors="replace").splitlines():
+        if "parent:'root'" not in line:
+            continue
+        name = line.split("type:'")[1].split("'")[0]
+        if name in ("moov", "mdat") and name not in order:
+            order.append(name)
+    return order
 
 
 def _scene(index: int, visual: Path, audio: Path, duration: float = 3.0) -> Scene:
@@ -164,3 +197,37 @@ async def test_concatenating_mixed_source_clips_decodes_cleanly(tmp_path, target
     assert errors.strip() == "", f"concatenated audio does not decode cleanly:\n{errors[:1000]}"
     # And the narration is still there afterwards.
     assert _mean_volume_db(concatenated) > -40
+
+
+async def test_the_final_video_starts_playing_before_it_finishes_downloading(tmp_path, target):
+    """The moov atom must come before mdat.
+
+    It's the index a player needs to know what's in the file. At the end,
+    a browser has to fetch the whole thing before it can show one frame —
+    a <video> element sits at readyState 0 with no error, which looks like
+    a broken player rather than a slow one. Caught exactly that way: the
+    preview spun forever while the URL itself served fine over curl.
+    """
+    voice = _audible_voiceover(tmp_path / "voice.wav")
+    still = tmp_path / "still.png"
+    _run(["-f", "lavfi", "-i", "color=c=red:s=320x240:d=1", "-frames:v", "1", str(still)])
+    scene = _scene(0, still, voice)
+    scene.audio.words = [Word(text="hello", start_ms=0, end_ms=800)]
+    clip = await render_engine.render_scene_clip(
+        scene, target, tmp_path, ffmpeg_binary=FFMPEG, ffprobe_binary=FFPROBE
+    )
+    concatenated = await render_engine.concat_scene_clips([clip], tmp_path, ffmpeg_binary=FFMPEG)
+    captions = build_ass_subtitles([scene], SubtitleStyle(), tmp_path / "captions.ass")
+
+    final = await render_engine.finalize_render(
+        concatenated,
+        captions,
+        MusicConfig(enabled=False),
+        tmp_path / "final.mp4",
+        target=target,
+        ffmpeg_binary=FFMPEG,
+    )
+
+    assert _atom_order(final) == ["moov", "mdat"], (
+        "moov is not first — the browser must download the whole file before playback"
+    )

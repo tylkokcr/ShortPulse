@@ -78,8 +78,25 @@ export function getCredits(): Promise<CreditSummary> {
   return request<CreditSummary>("/credits");
 }
 
-export function downloadUrl(projectId: string): string {
-  return `${API_BASE}/projects/${projectId}/download`;
+export interface MediaUrl {
+  /** Inline — what a <video> element needs. Served as an attachment, Chrome
+   *  silently refuses to play it. */
+  url: string;
+  /** Attachment — saves with a sensible filename. */
+  download_url: string;
+  expires_at: number;
+}
+
+/**
+ * A short-lived URL for the rendered video.
+ *
+ * A <video> tag can't send an Authorization header, so ownership is
+ * checked here — on a request that can — and the returned URL carries a
+ * signed token instead. Fetch a fresh one rather than holding onto it:
+ * they expire in minutes.
+ */
+export function getMediaUrl(projectId: string): Promise<MediaUrl> {
+  return request<MediaUrl>(`/projects/${projectId}/media-url`);
 }
 
 /**

@@ -1,9 +1,9 @@
 "use client";
 
 import { Download, Loader2 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
-import { downloadUrl, getProject, subscribeToRenderProgress } from "@/lib/api";
+import { getMediaUrl, getProject, subscribeToRenderProgress } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
 import type { RenderStage } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
@@ -22,6 +22,7 @@ export function RenderPreview({ projectId, videoRef, onTimeUpdate }: RenderPrevi
   const { activeProject, setActiveProject, renderProgress, setRenderProgress } = useShortPulseStore();
   const internalVideoRef = useRef<HTMLVideoElement>(null);
   const resolvedVideoRef = videoRef ?? internalVideoRef;
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     getProject(projectId).then(setActiveProject).catch(console.error);
@@ -35,6 +36,13 @@ export function RenderPreview({ projectId, videoRef, onTimeUpdate }: RenderPrevi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
+  // The video URL is signed and short-lived, so it can't be derived from
+  // the project id — it has to be requested once the render is done.
+  useEffect(() => {
+    if (activeProject?.status !== "complete") return;
+    getMediaUrl(projectId).then((m) => setVideoUrl(m.url)).catch(console.error);
+  }, [projectId, activeProject?.status]);
+
   const isDone = activeProject?.status === "complete";
   const isFailed = activeProject?.status === "failed" || renderProgress?.stage === "failed";
 
@@ -44,6 +52,18 @@ export function RenderPreview({ projectId, videoRef, onTimeUpdate }: RenderPrevi
   // nothing had happened.
   const timelineStage: RenderStage | undefined =
     renderProgress?.stage ?? (isDone ? "done" : isFailed ? "failed" : undefined);
+
+  // Mint a fresh link rather than reusing the one the player got: a page
+  // left open outlives the token, and a download that 403s looks like the
+  // video is gone.
+  async function download() {
+    try {
+      const { download_url } = await getMediaUrl(projectId);
+      window.open(download_url, "_blank");
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   return (
     <Card className="flex flex-col gap-4">
@@ -58,10 +78,10 @@ export function RenderPreview({ projectId, videoRef, onTimeUpdate }: RenderPrevi
       </div>
 
       <div className="mx-auto flex aspect-[9/16] w-full max-w-[280px] items-center justify-center overflow-hidden rounded-lg bg-black">
-        {isDone && activeProject?.output_path ? (
+        {isDone && videoUrl ? (
           <video
             ref={resolvedVideoRef}
-            src={downloadUrl(projectId)}
+            src={videoUrl}
             controls
             autoPlay
             loop
@@ -74,7 +94,11 @@ export function RenderPreview({ projectId, videoRef, onTimeUpdate }: RenderPrevi
           </p>
         ) : (
           <p className="p-4 text-center text-xs text-white/40">
-            {renderProgress?.message ?? "Waiting to start..."}
+            {isDone
+              ? // Render finished, but the signed URL is still being fetched.
+                // "Waiting to start" here would say the opposite of the truth.
+                "Loading video..."
+              : (renderProgress?.message ?? "Waiting to start...")}
           </p>
         )}
       </div>
@@ -82,7 +106,7 @@ export function RenderPreview({ projectId, videoRef, onTimeUpdate }: RenderPrevi
       <Timeline currentStage={timelineStage} />
 
       {isDone && (
-        <Button variant="secondary" onClick={() => window.open(downloadUrl(projectId), "_blank")}>
+        <Button variant="secondary" onClick={download}>
           <Download size={16} />
           Download .mp4
         </Button>

@@ -15,6 +15,7 @@ from app.api.middleware import SupabaseAuthMiddleware
 from app.api.routes import credits, projects, render
 from app.core.config import get_settings
 from app.services import db, project_store
+from app.services.media_tokens import MediaTokenSigner
 from app.services.render_manager import RenderTaskQueue, reconcile_interrupted_renders
 from app.services.supabase_auth import SupabaseTokenVerifier
 
@@ -44,6 +45,9 @@ async def lifespan(app: FastAPI):
     render_queue.start()
     app.state.render_queue = render_queue
     app.state.settings = settings
+    app.state.media_signer = MediaTokenSigner(
+        settings.media_url_secret, ttl_s=settings.media_url_ttl_s
+    )
     try:
         yield
     finally:

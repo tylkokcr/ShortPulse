@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import os
 import uuid
+from pathlib import Path
 
 import asyncpg
 import httpx
@@ -23,6 +24,7 @@ from app.api.routes import credits as credits_route
 from app.api.routes import projects as projects_route
 from app.schemas.project import Project, ProjectStatus, VideoLength, VisualMode
 from app.services import credits, db, project_store, render_manager
+from app.services.media_tokens import MediaTokenSigner
 
 TEST_DSN = os.environ.get(
     "SHORTPULSE_TEST_DATABASE_URL",
@@ -78,6 +80,7 @@ def _build_app(pool, user_id: str | None) -> tuple[FastAPI, FakeQueue]:
     queue = FakeQueue()
     app.state.db_pool = pool
     app.state.render_queue = queue
+    app.state.media_signer = MediaTokenSigner("test-secret", ttl_s=900)
     app.dependency_overrides[current_user_id] = lambda: user_id
     return app, queue
 
@@ -388,3 +391,101 @@ async def test_a_genuinely_abandoned_render_is_still_recovered(pool, user):
     project = await project_store.get_project(project_id)
     assert project.status == ProjectStatus.FAILED
     assert await credits.balance(pool, user) == 20
+
+
+# --- signed media URLs ---------------------------------------------------
+
+
+async def _completed_project(pool, user, video: Path):
+    """A finished project whose video really exists on disk.
+
+    The file has to be real: without it a leak shows up as "file not found"
+    instead of the request succeeding, which hides whether the access check
+    ran at all.
+    """
+    app, _ = _build_app(pool, user)
+    async with _client(app) as client:
+        pid = (await client.post("/api/projects", json=_payload())).json()["config"]["id"]
+    video.write_bytes(b"not really an mp4, but it exists")
+    await project_store.update_project(
+        pid, status=ProjectStatus.COMPLETE, output_path=str(video)
+    )
+    return app, pid
+
+
+async def test_the_owner_gets_a_playable_url(pool, user, tmp_path):
+    await credits.grant(pool, user, 20)
+    app, pid = await _completed_project(pool, user, tmp_path / "a.mp4")
+
+    async with _client(app) as client:
+        body = (await client.get(f"/api/projects/{pid}/media-url")).json()
+        played = await client.get(body["url"])
+
+    assert body["url"].startswith(f"/api/projects/{pid}/download?token=")
+    assert played.status_code == 200
+    assert played.content == b"not really an mp4, but it exists"
+
+
+async def test_a_stranger_cannot_mint_a_url_for_someone_elses_video(pool, user, tmp_path):
+    """Ownership is enforced where it can be — on the request that mints
+    the link, which is the one that can carry an Authorization header."""
+    await credits.grant(pool, user, 20)
+    _, pid = await _completed_project(pool, user, tmp_path / "a.mp4")
+
+    intruder = str(await pool.fetchval(
+        "insert into app_users (email) values ($1) returning id", f"{uuid.uuid4()}@example.test"))
+    app, _ = _build_app(pool, intruder)
+    async with _client(app) as client:
+        assert (await client.get(f"/api/projects/{pid}/media-url")).status_code == 404
+
+
+async def test_a_token_for_one_video_does_not_open_another(pool, user, tmp_path):
+    """The failure that would matter most: one shared link unlocking the
+    whole service."""
+    await credits.grant(pool, user, 40)
+    app, mine = await _completed_project(pool, user, tmp_path / "mine.mp4")
+
+    other_user = str(await pool.fetchval(
+        "insert into app_users (email) values ($1) returning id", f"{uuid.uuid4()}@example.test"))
+    await credits.grant(pool, other_user, 20)
+    _, theirs = await _completed_project(pool, other_user, tmp_path / "theirs.mp4")
+
+    async with _client(app) as client:
+        url = (await client.get(f"/api/projects/{mine}/media-url")).json()["url"]
+        token = url.split("token=")[1]
+        stolen = await client.get(f"/api/projects/{theirs}/download?token={token}")
+
+    assert stolen.status_code == 403
+
+
+async def test_a_tampered_token_is_refused(pool, user, tmp_path):
+    await credits.grant(pool, user, 20)
+    app, pid = await _completed_project(pool, user, tmp_path / "a.mp4")
+
+    async with _client(app) as client:
+        url = (await client.get(f"/api/projects/{pid}/media-url")).json()["url"]
+        token = url.split("token=")[1]
+        expiry, signature = token.split(".", 1)
+        forged = f"{int(expiry) + 999999}.{signature}"
+        response = await client.get(f"/api/projects/{pid}/download?token={forged}")
+
+    assert response.status_code == 403
+
+
+async def test_download_without_any_credential_is_still_refused(pool, user, tmp_path):
+    """The gap this whole mechanism exists to close: before it, an
+    unauthenticated GET on the download URL served an owned video."""
+    await credits.grant(pool, user, 20)
+    _, pid = await _completed_project(pool, user, tmp_path / "a.mp4")
+
+    anon, _ = _build_app(pool, None)
+    async with _client(anon) as client:
+        assert (await client.get(f"/api/projects/{pid}/download")).status_code == 404
+
+
+async def test_a_media_url_is_refused_before_the_render_finishes(pool, user):
+    await credits.grant(pool, user, 20)
+    app, _ = _build_app(pool, user)
+    async with _client(app) as client:
+        pid = (await client.post("/api/projects", json=_payload())).json()["config"]["id"]
+        assert (await client.get(f"/api/projects/{pid}/media-url")).status_code == 409
