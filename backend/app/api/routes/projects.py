@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app.api.deps import billing_enabled, current_user_id, db_pool
+from app.core.storage import discard_project_files
 from app.schemas.project import Project, ProjectConfig
 from app.services import credits, project_store
 from app.services.media_tokens import InvalidMediaToken
@@ -107,6 +108,32 @@ async def delete_project(
 ) -> None:
     await _visible_project(project_id, user_id)
     await project_store.delete_project(project_id)
+    # The row was the only thing pointing at these files. Removing it
+    # without them leaves the video, its audio, stills and subtitles on
+    # disk forever — tens of megabytes per project that nothing will ever
+    # reference again, and a user who asked for their video to be gone
+    # would still have it sitting on the server.
+    discard_project_files(project_id)
+
+
+class StreamToken(BaseModel):
+    token: str
+    expires_at: int
+
+
+@router.get("/{project_id}/stream-token", response_model=StreamToken)
+async def get_stream_token(
+    project_id: str, request: Request, user_id: str | None = Depends(current_user_id)
+) -> StreamToken:
+    """A credential the render-progress WebSocket can carry.
+
+    Separate from /media-url because it has to work while the render is
+    still running — that's the whole point of watching progress — whereas
+    a media URL only exists once there's a file.
+    """
+    await _visible_project(project_id, user_id)
+    token, expires_at = request.app.state.media_signer.sign(project_id)
+    return StreamToken(token=token, expires_at=expires_at)
 
 
 class MediaUrl(BaseModel):

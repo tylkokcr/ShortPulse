@@ -23,8 +23,8 @@ import uuid
 import asyncpg
 import pytest
 
-from app.services import credits, db
 from app.schemas.project import ProjectConfig, VideoLength, VisualMode
+from app.services import credits, db
 
 TEST_DSN = os.environ.get(
     "SHORTPULSE_TEST_DATABASE_URL",

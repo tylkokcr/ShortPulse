@@ -10,46 +10,45 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # --------------------------------------------------------------------------
 # Enums
 # --------------------------------------------------------------------------
 
 
-class VisualMode(str, Enum):
+class VisualMode(StrEnum):
     AI_VIDEO = "ai_video"  # Mode A: LTX-Video / CogVideoX
     FAST_HYBRID = "fast_hybrid"  # Mode B: Flux/SDXL stills + Ken Burns (default)
     STOCK_MEDIA = "stock_media"  # Mode C: Pexels / Pixabay footage
 
 
-class TTSProvider(str, Enum):
+class TTSProvider(StrEnum):
     EDGE_TTS = "edge_tts"
     PIPER = "piper"
     COQUI_XTTS = "coqui_xtts"
 
 
-class LLMProvider(str, Enum):
+class LLMProvider(StrEnum):
     OLLAMA = "ollama"
     OPENAI = "openai"
 
 
-class AspectRatio(str, Enum):
+class AspectRatio(StrEnum):
     VERTICAL_9_16 = "9:16"
     SQUARE_1_1 = "1:1"
     HORIZONTAL_16_9 = "16:9"
 
 
-class VideoLength(str, Enum):
+class VideoLength(StrEnum):
     SHORT = "short"  # ~15-25s, 5-6 scenes
     MEDIUM = "medium"  # ~30-45s, 8-10 scenes
     LONG = "long"  # ~60s+, 12-15 scenes
 
 
-class RenderStage(str, Enum):
+class RenderStage(StrEnum):
     QUEUED = "queued"
     SCRIPT_GENERATION = "script_generation"
     AUDIO_SYNTHESIS = "audio_synthesis"
@@ -61,7 +60,7 @@ class RenderStage(str, Enum):
     FAILED = "failed"
 
 
-class ProjectStatus(str, Enum):
+class ProjectStatus(StrEnum):
     DRAFT = "draft"
     RENDERING = "rendering"
     COMPLETE = "complete"

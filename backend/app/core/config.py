@@ -45,7 +45,6 @@ class Settings(BaseSettings):
     sdxl_model_variant: str | None = "fp16"  # halves download + resident size
     sdxl_num_inference_steps: int = 25
     sdxl_guidance_scale: float = 7.0
-    flux_model_id: str = "black-forest-labs/FLUX.1-schnell"
     ltx_video_model_id: str = "Lightricks/LTX-Video"
     diffusion_device: str = "cpu"
 

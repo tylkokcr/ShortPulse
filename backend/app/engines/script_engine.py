@@ -20,7 +20,15 @@ import re
 import httpx
 from pydantic import ValidationError
 
-from app.schemas.project import LLMConfig, LLMProvider, Scene, SceneAudio, SceneVisual, ScriptOutput, VideoLength
+from app.schemas.project import (
+    LLMConfig,
+    LLMProvider,
+    Scene,
+    SceneAudio,
+    SceneVisual,
+    ScriptOutput,
+    VideoLength,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -109,7 +109,10 @@ def main() -> None:
     for mode in ("fast_hybrid",):
         c_hi = rented_gpu(mode, lo)  # slower GPU -> higher cost
         c_lo = rented_gpu(mode, hi)
-        print(f"rented GPU, {mode:12s} ${c_lo:.4f} – ${c_hi:.4f}   (assumes {lo:.0f}-{hi:.0f}x faster than MPS)")
+        print(
+            f"rented GPU, {mode:12s} ${c_lo:.4f} – ${c_hi:.4f}   "
+            f"(assumes {lo:.0f}-{hi:.0f}x faster than MPS)"
+        )
     print(f"per-image API (Replicate)  ${image_api():.4f}   (5 x ${IMAGE_API_USD_PER_IMAGE}/image + CPU)")
     print(f"stock_media (no AI images) ${stock_media_cpu():.4f}   (CPU only)")
     print()
@@ -129,7 +132,10 @@ def main() -> None:
     print("=" * 66)
     for gross in (1, 5, 10, 25):
         fee = stripe_take(gross)
-        print(f"  ${gross:>5.2f} purchase -> ${fee:.2f} fees ({fee / gross * 100:4.1f}%) -> ${gross - fee:.2f} net")
+        print(
+            f"  ${gross:>5.2f} purchase -> ${fee:.2f} fees "
+            f"({fee / gross * 100:4.1f}%) -> ${gross - fee:.2f} net"
+        )
     print()
     print("Stripe's fixed $0.30 makes tiny credit packs uneconomic; the fee")
     print("outweighs the compute by an order of magnitude at these volumes.")

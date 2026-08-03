@@ -59,6 +59,11 @@ class RenderTarget:
     fps: int = 30
 
 
+# Shared default so it isn't constructed in a function signature, where it
+# would be evaluated once at import and shared anyway — just less visibly.
+_DEFAULT_TARGET = RenderTarget()
+
+
 async def _run_ffmpeg(args: list[str], ffmpeg_binary: str = "ffmpeg") -> None:
     cmd = [ffmpeg_binary, "-y", "-hide_banner", "-loglevel", "error", *args]
     logger.debug("ffmpeg %s", " ".join(cmd))
@@ -120,7 +125,7 @@ async def _render_image_scene_clip(
     # Oversize the source so zoompan always has room to pan without
     # revealing empty edges, then pan diagonally across the frame.
     pan_x = "iw/2-(iw/zoom/2)" if scene.index % 4 < 2 else "0"
-    pan_y = "'ih/2-(ih/zoom/2)+(on/{tf})*50'".format(tf=total_frames)
+    pan_y = f"'ih/2-(ih/zoom/2)+(on/{total_frames})*50'"
 
     zoompan = (
         f"scale=8000:-2,"
@@ -313,7 +318,7 @@ async def render_project(
     music: MusicConfig,
     output_dir: Path,
     final_output_path: Path,
-    target: RenderTarget = RenderTarget(),
+    target: RenderTarget = _DEFAULT_TARGET,
     ffmpeg_binary: str = "ffmpeg",
     ffprobe_binary: str = "ffprobe",
     on_scene_rendered=None,

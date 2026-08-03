@@ -154,6 +154,13 @@ Better to know up front than to discover them mid-render:
 - **Stock clips don't always match the scene.** Pexels returns the closest
   match for the scene's visual prompt, which can be loose. Under heavy use the
   API also returns transient 403s.
+- **Rendered files are never cleaned up automatically.** Each video leaves
+  its stills, audio, subtitles and final `.mp4` under
+  `backend/app/storage/projects/` — tens of megabytes per render, and
+  deleting a project only removes files from that point on. Older renders,
+  and anything left by a crashed session, stay until you remove them:
+  `python scripts/prune_storage.py` reports what has no project behind it,
+  `--delete` removes it.
 - **Projects are in memory unless you set `DATABASE_URL`.** Without it,
   restarting the backend clears the project list and orphans in-flight
   renders. Point it at any Postgres (Supabase included) and projects,

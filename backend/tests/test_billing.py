@@ -22,6 +22,7 @@ from fastapi import FastAPI
 from app.api.deps import current_user_id
 from app.api.routes import credits as credits_route
 from app.api.routes import projects as projects_route
+from app.api.routes import render as render_route
 from app.schemas.project import Project, ProjectStatus, VideoLength, VisualMode
 from app.services import credits, db, project_store, render_manager
 from app.services.media_tokens import MediaTokenSigner
@@ -76,6 +77,7 @@ def _build_app(pool, user_id: str | None) -> tuple[FastAPI, FakeQueue]:
     app = FastAPI()
     app.include_router(projects_route.router)
     app.include_router(credits_route.router)
+    app.include_router(render_route.router)
 
     queue = FakeQueue()
     app.state.db_pool = pool
@@ -489,3 +491,23 @@ async def test_a_media_url_is_refused_before_the_render_finishes(pool, user):
     async with _client(app) as client:
         pid = (await client.post("/api/projects", json=_payload())).json()["config"]["id"]
         assert (await client.get(f"/api/projects/{pid}/media-url")).status_code == 409
+
+
+# --- render-progress socket ----------------------------------------------
+#
+# The socket's own auth logic lives in test_progress_socket.py: driving a
+# real WebSocket needs TestClient, which runs its own event loop and can't
+# share this module's asyncpg pool.
+
+
+async def test_a_stranger_cannot_get_a_stream_token(pool, user):
+    await credits.grant(pool, user, 20)
+    app, _ = _build_app(pool, user)
+    async with _client(app) as client:
+        pid = (await client.post("/api/projects", json=_payload())).json()["config"]["id"]
+
+    other = str(await pool.fetchval(
+        "insert into app_users (email) values ($1) returning id", f"{uuid.uuid4()}@example.test"))
+    intruder, _ = _build_app(pool, other)
+    async with _client(intruder) as client:
+        assert (await client.get(f"/api/projects/{pid}/stream-token")).status_code == 404

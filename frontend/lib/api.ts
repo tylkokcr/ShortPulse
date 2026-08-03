@@ -99,6 +99,12 @@ export function getMediaUrl(projectId: string): Promise<MediaUrl> {
   return request<MediaUrl>(`/projects/${projectId}/media-url`);
 }
 
+/** A credential for the progress WebSocket, which can't carry a header
+ *  either. Available while the render is still running, unlike a media URL. */
+export function getStreamToken(projectId: string): Promise<{ token: string; expires_at: number }> {
+  return request(`/projects/${projectId}/stream-token`);
+}
+
 /**
  * Opens the render-progress WebSocket for a project. Returns a cleanup
  * function to close the socket; call it from a useEffect teardown.
@@ -107,17 +113,38 @@ export function subscribeToRenderProgress(
   projectId: string,
   onProgress: (progress: RenderProgress) => void
 ): () => void {
-  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-  // The Next.js dev server proxy only rewrites /api/*, so the WebSocket
-  // talks to the FastAPI backend directly. Same env var as next.config.mjs
-  // (see frontend/.env.local.example) so both targets move together.
-  const socket = new WebSocket(
-    `${protocol}://${window.location.hostname}:${BACKEND_PORT}/ws/render/${projectId}`
-  );
+  let socket: WebSocket | null = null;
+  let closed = false;
 
-  socket.onmessage = (event) => {
-    onProgress(JSON.parse(event.data) as RenderProgress);
+  // The token has to be fetched first, so the socket opens a moment after
+  // this returns. The cleanup flag covers a component that unmounts in
+  // between — without it the socket would open with nobody listening and
+  // never be closed.
+  (async () => {
+    let query = "";
+    try {
+      const { token } = await getStreamToken(projectId);
+      query = `?token=${encodeURIComponent(token)}`;
+    } catch {
+      // Self-hosted installs have no accounts and the socket needs no
+      // token there; anything else will be refused by the server.
+    }
+    if (closed) return;
+
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    // The Next.js dev server proxy only rewrites /api/*, so the WebSocket
+    // talks to the FastAPI backend directly. Same env var as next.config.mjs
+    // (see frontend/.env.local.example) so both targets move together.
+    socket = new WebSocket(
+      `${protocol}://${window.location.hostname}:${BACKEND_PORT}/ws/render/${projectId}${query}`
+    );
+    socket.onmessage = (event) => {
+      onProgress(JSON.parse(event.data) as RenderProgress);
+    };
+  })();
+
+  return () => {
+    closed = true;
+    socket?.close();
   };
-
-  return () => socket.close();
 }

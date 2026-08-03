@@ -208,7 +208,11 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
         target = render_engine.RenderTarget(width=width, height=height, fps=config.fps)
         output_path = paths / "output" / "final.mp4"
 
-        if config.music.enabled and not config.music.track_path and settings.default_music_track_path.exists():
+        if (
+            config.music.enabled
+            and not config.music.track_path
+            and settings.default_music_track_path.exists()
+        ):
             config.music.track_path = str(settings.default_music_track_path)
 
         with timings.stage("ffmpeg_assembly"):
