@@ -93,9 +93,6 @@ Currently true, and deliberately listed rather than quietly omitted:
   for starting renders. With several instances the effective limit is
   multiplied by the instance count; moving the counters to Postgres or
   Redis would fix that at the cost of a round trip per request.
-- **Next.js has two open high-severity advisories.** Fixing them requires
-  jumping two major versions. Neither is reachable here (no `next/image`,
-  no server actions), but they are real for anyone self-hosting.
 - **Renders are not isolated.** FFmpeg and the diffusion models run in the
   API process, with the same filesystem access.
 - **A restarting instance fails renders another instance is running.** A
@@ -103,6 +100,12 @@ Currently true, and deliberately listed rather than quietly omitted:
   still missing.
 - **Prompts reach a local LLM unfiltered.** There is no moderation on what
   a user can ask for.
+
+## Dependencies
+
+`pip-audit` and `npm audit` both report no known vulnerabilities. Re-check
+before each release rather than trusting this line — it was true when
+written, which is a different claim.
 
 ## How this code was reviewed
 
