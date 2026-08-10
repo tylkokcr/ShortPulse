@@ -149,6 +149,9 @@ class PostgresProjectStore:
         return [self._row_to_project(r) for r in rows]
 
     async def update_project(self, project_id: str, **updates) -> Project:
+        # This is the one query built by string interpolation, so the
+        # whitelist is load-bearing: column names may only ever come from
+        # _COLUMNS, never from a caller. Values stay parameterised.
         unknown = set(updates) - self._COLUMNS
         if unknown:
             raise ValueError(f"Cannot persist unknown project fields: {sorted(unknown)}")

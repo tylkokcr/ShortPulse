@@ -182,6 +182,11 @@ LTX-Video, Whisper) download on first use via `diffusers`/`faster-whisper`.
 
 Contributions welcome.
 
+## Security
+
+See [SECURITY.md](SECURITY.md) — what the code protects, what it does not,
+and what must be configured before exposing it publicly.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

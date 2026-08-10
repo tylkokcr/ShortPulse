@@ -202,3 +202,25 @@ async def test_update_rejects_fields_it_cannot_persist(pool):
 
     with pytest.raises(ValueError, match="unknown project fields"):
         await store.update_project(config.id, not_a_column="x")
+
+
+async def test_column_names_cannot_be_injected(pool):
+    """update_project is the only query assembled with an f-string, so the
+    whitelist is what stands between a caller-supplied key and the SQL. A
+    field name that isn't a real column must be refused before it reaches
+    the database, not quoted and hoped for."""
+    config = _config()
+    store = PostgresProjectStore(pool)
+    await store.create_project(config)
+
+    attacks = {
+        "status = 'complete', error = (select 'pwned')": "x",
+        "output_path); drop table projects; --": "x",
+        "user_id": "00000000-0000-0000-0000-000000000000",  # real column, still not ours to set
+    }
+    for field, value in attacks.items():
+        with pytest.raises(ValueError, match="unknown project fields"):
+            await store.update_project(config.id, **{field: value})
+
+    # And the table is still there with the project intact.
+    assert (await store.get_project(config.id)) is not None
