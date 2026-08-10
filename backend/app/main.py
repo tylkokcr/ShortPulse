@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.middleware import SupabaseAuthMiddleware
+from app.api.middleware import RateLimitMiddleware, SupabaseAuthMiddleware
 from app.api.routes import credits, projects, render
 from app.core.config import get_settings
 from app.services import db, project_store
@@ -69,6 +69,15 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Starlette runs middleware in reverse registration order, so this is added
+# first and therefore runs *after* authentication — which is what lets it
+# throttle per user rather than lumping everyone behind a NAT together.
+app.add_middleware(
+    RateLimitMiddleware,
+    renders_per_hour=settings.render_submissions_per_hour,
+    requests_per_minute=settings.api_requests_per_minute,
 )
 
 # Runs before the routes, so request.state.user_id is populated by the time

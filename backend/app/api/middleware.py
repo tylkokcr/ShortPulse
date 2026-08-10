@@ -25,6 +25,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.services import users
+from app.services.rate_limit import TokenBucketLimiter
 from app.services.supabase_auth import AuthError, SupabaseTokenVerifier
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,50 @@ logger = logging.getLogger(__name__)
 # Reachable without a token even when auth is required, so load balancers
 # and uptime checks don't need credentials.
 _PUBLIC_PATHS = {"/api/health", "/docs", "/openapi.json", "/redoc"}
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Throttle by user, falling back to client address for anonymous calls.
+
+    Two budgets, because the costs differ by orders of magnitude: starting
+    a render occupies a GPU for minutes, while reading a project is a
+    single query. One shared limit would either leave renders unprotected
+    or make ordinary browsing feel broken.
+
+    Runs after authentication so it can key off the user — otherwise
+    everyone behind one NAT would share a bucket.
+    """
+
+    def __init__(self, app, *, renders_per_hour: int, requests_per_minute: int) -> None:
+        super().__init__(app)
+        self._renders = TokenBucketLimiter(capacity=renders_per_hour, per_seconds=3600)
+        self._general = TokenBucketLimiter(capacity=requests_per_minute, per_seconds=60)
+
+    async def dispatch(self, request: Request, call_next):
+        if request.url.path in _PUBLIC_PATHS:
+            return await call_next(request)
+
+        user_id = getattr(request.state, "user_id", None)
+        who = user_id or (request.client.host if request.client else "unknown")
+
+        submitting_render = request.method == "POST" and request.url.path == "/api/projects"
+        limiter = self._renders if submitting_render else self._general
+
+        retry_after = limiter.check(who)
+        if retry_after is not None:
+            logger.info("Rate limited %s on %s", who, request.url.path)
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "detail": (
+                        "Too many renders started. Try again shortly."
+                        if submitting_render
+                        else "Too many requests. Slow down."
+                    )
+                },
+                headers={"Retry-After": str(max(1, int(retry_after)))},
+            )
+        return await call_next(request)
 
 
 class SupabaseAuthMiddleware(BaseHTTPMiddleware):

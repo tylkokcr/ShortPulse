@@ -80,7 +80,14 @@ class Settings(BaseSettings):
     # unset and one is generated per process: fine for a single local
     # instance, but links then break on restart and across replicas.
     media_url_secret: str | None = None
-    media_url_ttl_s: int = 900  # 15 minutes: long enough to watch, short enough to leak harmlessly
+    media_url_ttl_s: int = 900
+
+    # Throttling. Credits bound what a render costs, not how fast someone
+    # can ask — one account could otherwise fill the render queue ahead of
+    # everyone else. Counted per authenticated user, or per client address
+    # when there is no user.
+    render_submissions_per_hour: int = 30
+    api_requests_per_minute: int = 120  # 15 minutes: long enough to watch, short enough to leak harmlessly
 
     # Server
     # Next.js dev falls back to 3001/3002 when 3000 is taken, so allow the

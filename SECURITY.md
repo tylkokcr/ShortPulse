@@ -88,8 +88,11 @@ fails if that whitelist is removed.
 
 Currently true, and deliberately listed rather than quietly omitted:
 
-- **No rate limiting.** Credits bound what a render costs, not how many
-  requests a client can make.
+- **Rate limiting is per-process.** Requests are throttled per user (or
+  per client address when anonymous), with a separate, much tighter budget
+  for starting renders. With several instances the effective limit is
+  multiplied by the instance count; moving the counters to Postgres or
+  Redis would fix that at the cost of a round trip per request.
 - **Next.js has two open high-severity advisories.** Fixing them requires
   jumping two major versions. Neither is reachable here (no `next/image`,
   no server actions), but they are real for anyone self-hosting.
