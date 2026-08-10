@@ -14,7 +14,7 @@ interface RenderPreviewProps {
   projectId: string;
   /** Shares the <video> element with a sibling TranscriptPanel so clicking
    * a scene can seek playback. Falls back to an internal ref when omitted. */
-  videoRef?: RefObject<HTMLVideoElement>;
+  videoRef?: RefObject<HTMLVideoElement | null>;
   onTimeUpdate?: (seconds: number) => void;
 }
 

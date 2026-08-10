@@ -5,9 +5,9 @@ import { useShortPulseStore } from "@/lib/store";
 import type { VideoLength } from "@/lib/types";
 
 const OPTIONS: { length: VideoLength; label: string; description: string }[] = [
-  { length: "short", label: "Kısa", description: "~15-25s, 5-6 sahne" },
-  { length: "medium", label: "Orta", description: "~30-45s, 8-10 sahne" },
-  { length: "long", label: "Uzun", description: "~60s+, 12-15 sahne" },
+  { length: "short", label: "Short", description: "~15-25s, 5-6 scenes" },
+  { length: "medium", label: "Medium", description: "~30-45s, 8-10 scenes" },
+  { length: "long", label: "Long", description: "~60s+, 12-15 scenes" },
 ];
 
 export function DurationSelector() {

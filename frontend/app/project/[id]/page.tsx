@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { use, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useShortPulseStore } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
@@ -9,7 +9,10 @@ import { RenderPreview } from "@/components/render/RenderPreview";
 import { TranscriptPanel } from "@/components/render/TranscriptPanel";
 import { StockCredits } from "@/components/render/StockCredits";
 
-export default function ProjectPage({ params }: { params: { id: string } }) {
+export default function ProjectPage(props: { params: Promise<{ id: string }> }) {
+  // Next 15 made route params a promise. This is a client component, so it
+  // unwraps with use() rather than await.
+  const { id } = use(props.params);
   const activeProject = useShortPulseStore((s) => s.activeProject);
   const script = activeProject?.script;
 
@@ -43,7 +46,7 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
           {script && <StockCredits script={script} />}
         </Card>
 
-        <RenderPreview projectId={params.id} videoRef={videoRef} onTimeUpdate={setCurrentTime} />
+        <RenderPreview projectId={id} videoRef={videoRef} onTimeUpdate={setCurrentTime} />
       </div>
     </main>
   );
