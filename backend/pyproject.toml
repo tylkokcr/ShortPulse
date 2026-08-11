@@ -11,6 +11,18 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
+[tool.ruff.lint.flake8-bugbear]
+# B008 exists because a mutable default is evaluated once at import and
+# then shared. FastAPI's parameter markers are how the framework declares
+# where an argument comes from — they are evaluated once by design and
+# hold no state, so the rule doesn't apply to them.
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.File",
+    "fastapi.Form",
+    "fastapi.Query",
+]
+
 [tool.ruff.lint.per-file-ignores]
 # The .ass subtitle format defines one header field per line; wrapping the
 # Format:/Style: lines to satisfy the line-length rule would produce a file
@@ -25,3 +37,8 @@ testpaths = ["tests"]
 # that same loop rather than a fresh per-test one.
 asyncio_default_fixture_loop_scope = "module"
 asyncio_default_test_loop_scope = "module"
+markers = [
+    # Reaches a third-party service. Skips itself when unreachable, so it
+    # is safe in the default run and still catches a mistyped voice id.
+    "network: hits an external API",
+]

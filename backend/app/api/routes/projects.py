@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from app.api.deps import billing_enabled, current_user_id, db_pool
 from app.api.routes import music
+from app.core.config import project_dir
 from app.core.storage import discard_project_files
 from app.schemas.project import Project, ProjectConfig
 from app.services import credits, project_store
@@ -147,6 +148,7 @@ async def get_stream_token(
 class MediaUrl(BaseModel):
     url: str          # inline — for a <video> element
     download_url: str # attachment — saves with a sensible filename
+    poster_url: str   # still frame, for the library grid and <video poster>
     expires_at: int
 
 
@@ -169,8 +171,39 @@ async def get_media_url(
     return MediaUrl(
         url=f"/api/projects/{project_id}/download?token={token}",
         download_url=f"/api/projects/{project_id}/download?token={token}&download=1",
+        poster_url=f"/api/projects/{project_id}/poster?token={token}",
         expires_at=expires_at,
     )
+
+
+@router.get("/{project_id}/poster")
+async def project_poster(
+    project_id: str,
+    request: Request,
+    token: str | None = Query(default=None),
+    user_id: str | None = Depends(current_user_id),
+) -> FileResponse:
+    """The still frame extracted after the render.
+
+    Same two ways in as the video itself, and deliberately the same token:
+    a poster is a frame of the video, so anything that can already see the
+    video can see it. Minting a second credential would imply it were more
+    sensitive than the thing it is a picture of.
+    """
+    if token is not None:
+        try:
+            request.app.state.media_signer.verify(project_id, token)
+        except InvalidMediaToken as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+    else:
+        await _visible_project(project_id, user_id)
+
+    poster = project_dir(project_id) / "output" / "poster.jpg"
+    if not poster.is_file():
+        # Renders from before posters existed, and any render whose
+        # thumbnail step failed. The client falls back to a placeholder.
+        raise HTTPException(status_code=404, detail="No poster for this project")
+    return FileResponse(poster, media_type="image/jpeg")
 
 
 @router.get("/{project_id}/download")
