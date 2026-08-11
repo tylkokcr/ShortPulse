@@ -67,6 +67,40 @@ def cost_for(config: ProjectConfig) -> int:
 
 
 @dataclass(frozen=True)
+class CreditPack:
+    """A one-off purchase of credits.
+
+    Deliberately not a subscription: the pitch against the $20-50/month
+    incumbents is that you pay for renders you actually run, so nothing
+    here renews and nothing expires. Prices are in minor units (cents) to
+    keep them integers all the way to the payment processor.
+    """
+
+    id: str
+    credits: int
+    price_cents: int
+    popular: bool = False
+
+    @property
+    def price_usd(self) -> float:
+        return self.price_cents / 100
+
+
+# The ledger has no expiry column and none of the code prunes it, so
+# "credits never expire" below is a property of the schema, not a promise
+# the UI is making on its own.
+CREDIT_PACKS: tuple[CreditPack, ...] = (
+    CreditPack(id="starter", credits=100, price_cents=900),
+    CreditPack(id="creator", credits=400, price_cents=2900, popular=True),
+    CreditPack(id="studio", credits=1200, price_cents=7900),
+)
+
+
+def pack_by_id(pack_id: str) -> CreditPack | None:
+    return next((pack for pack in CREDIT_PACKS if pack.id == pack_id), None)
+
+
+@dataclass(frozen=True)
 class LedgerEntry:
     id: int
     delta: int

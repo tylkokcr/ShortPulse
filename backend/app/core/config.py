@@ -72,8 +72,11 @@ class Settings(BaseSettings):
     # and renders for free.
     require_auth: bool = False
     # Credits handed to a user the first time they authenticate. This is
-    # real compute given away, so it defaults to none — set it deliberately.
-    signup_credit_grant: int = 0
+    # real compute given away, so it is a deliberate number rather than a
+    # round one: 15 buys five short fast_hybrid renders — enough to judge
+    # the output quality before paying, and not enough to be worth farming
+    # new addresses for.
+    signup_credit_grant: int = 15
     # Signs the short-lived tokens in video URLs. A <video> tag can't send
     # an Authorization header, so playback of an owned project needs the
     # credential in the URL — same shape as an S3 presigned link. Leave
