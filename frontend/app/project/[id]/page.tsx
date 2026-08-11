@@ -89,8 +89,7 @@ export default function ProjectPage(props: { params: Promise<{ id: string }> }) 
             </div>
 
             {tab === "scenes" ? (
-              <Card className="flex flex-col gap-4">
-                <h3 className="text-sm font-medium text-white/70">Scene breakdown</h3>
+              <Card className="flex flex-col gap-4 p-4">
                 {!script ? (
                   <p className="text-sm text-white/40">
                     {project?.config.source === "upload"

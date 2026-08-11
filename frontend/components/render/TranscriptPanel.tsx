@@ -36,43 +36,83 @@ export function TranscriptPanel({
   const ranges = computeSceneRanges(script);
 
   return (
-    <div className="flex flex-col gap-3">
-      <p className="rounded-lg border border-accent/30 bg-accent/10 p-3 text-sm">
-        <span className="font-medium text-accent">Hook: </span>
-        {script.hook}
-      </p>
+    <div className="flex flex-col">
+      <div className="flex gap-3 pb-4">
+        <span className="mt-0.5 w-10 shrink-0 font-mono text-[10px] uppercase tracking-widest text-accent">
+          hook
+        </span>
+        <p className="text-sm leading-relaxed">{script.hook}</p>
+      </div>
 
-      {script.scenes.map((scene, i) => {
-        const range = ranges[i];
-        const isActive = currentTime >= range.startS && currentTime < range.endS;
-        return (
-          <button
-            key={scene.id}
-            type="button"
-            onClick={() => onSeek(range.startS)}
-            className={clsx(
-              "rounded-lg border p-3 text-left transition-colors",
-              isActive ? "border-accent bg-accent/10" : "border-border hover:bg-surface-hover"
-            )}
-          >
-            <div className="mb-1 flex items-center justify-between text-xs text-white/40">
-              <span>Scene {scene.index + 1}</span>
-              <span>{scene.duration_s.toFixed(1)}s</span>
-            </div>
-            <p className={clsx("text-sm", isActive ? "font-medium text-white" : "text-white/90")}>
-              {scene.audio.voiceover_line}
-            </p>
-            <p className="mt-1.5 text-xs italic text-white/40">{scene.visual.prompt}</p>
-          </button>
-        );
-      })}
+      {/* A continuous rail down the left, with each scene hanging off it.
+          Reads as a shot list rather than a stack of identical cards —
+          which is what it is, and the card-per-scene version gave every
+          scene the same visual weight as the whole. */}
+      <ol className="relative flex flex-col border-l border-border pl-0">
+        {script.scenes.map((scene, i) => {
+          const range = ranges[i];
+          const isActive = currentTime >= range.startS && currentTime < range.endS;
+          return (
+            <li key={scene.id} className="relative">
+              {/* Marks the scene playing right now, on the rail itself. */}
+              <span
+                aria-hidden
+                className={clsx(
+                  "absolute -left-px top-0 h-full w-px transition-colors duration-200",
+                  isActive ? "bg-accent" : "bg-transparent"
+                )}
+              />
+              <button
+                type="button"
+                onClick={() => onSeek(range.startS)}
+                className={clsx(
+                  "group flex w-full gap-3 py-3 pl-4 pr-2 text-left transition-colors",
+                  isActive ? "bg-accent/[0.06]" : "hover:bg-surface-hover"
+                )}
+              >
+                <span
+                  className={clsx(
+                    "mt-0.5 w-10 shrink-0 font-mono text-[10px] tabular-nums transition-colors",
+                    isActive ? "text-accent" : "text-white/30 group-hover:text-white/50"
+                  )}
+                >
+                  {formatTimecode(range.startS)}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={clsx(
+                      "block text-sm leading-relaxed",
+                      isActive ? "text-white" : "text-white/80"
+                    )}
+                  >
+                    {scene.audio.voiceover_line}
+                  </span>
+                  <span className="mt-1 block truncate text-[11px] text-white/30">
+                    {scene.visual.prompt}
+                  </span>
+                </span>
+                <span className="mt-0.5 shrink-0 font-mono text-[10px] text-white/25">
+                  {scene.duration_s.toFixed(1)}s
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
 
       {script.call_to_action && (
-        <p className="text-sm text-white/60">
-          <span className="font-medium">CTA: </span>
-          {script.call_to_action}
-        </p>
+        <div className="flex gap-3 pt-4">
+          <span className="mt-0.5 w-10 shrink-0 font-mono text-[10px] uppercase tracking-widest text-white/30">
+            cta
+          </span>
+          <p className="text-sm leading-relaxed text-white/60">{script.call_to_action}</p>
+        </div>
       )}
     </div>
   );
+}
+
+function formatTimecode(seconds: number): string {
+  const total = Math.max(Math.floor(seconds), 0);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }

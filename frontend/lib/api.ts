@@ -8,6 +8,7 @@ import type {
   Project,
   ProjectConfig,
   RenderProgress,
+  RenderTimings,
   TextOverlay,
   Voice,
 } from "./types";
@@ -248,6 +249,13 @@ export interface MediaUrl {
  */
 export function getMediaUrl(projectId: string): Promise<MediaUrl> {
   return request<MediaUrl>(`/projects/${projectId}/media-url`);
+}
+
+/** Per-stage timings for a finished render. Resolves to an empty object
+ *  when the project has none rather than throwing — a missing report is
+ *  not an error worth surfacing. */
+export function getRenderTimings(projectId: string): Promise<RenderTimings> {
+  return request<RenderTimings>(`/projects/${projectId}/timings`);
 }
 
 /** A credential for the progress WebSocket, which can't carry a header

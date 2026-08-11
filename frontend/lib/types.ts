@@ -250,6 +250,24 @@ export interface Project {
   credits_cost: number;
 }
 
+/**
+ * GET /api/projects/{id}/timings — per-stage wall clock, written by the
+ * pipeline next to the output. Empty for renders that predate it and for
+ * uploads that failed before the report was written, so every field is
+ * optional.
+ */
+export interface RenderTimings {
+  total_s?: number;
+  stages_s?: Record<string, number>;
+  stage_share_pct?: Record<string, number>;
+  video_duration_s?: number;
+  scene_count?: number;
+  word_count?: number;
+  visual_mode?: string;
+  diffusion_device?: string;
+  language?: string;
+}
+
 /** GET /api/credits. `enabled: false` means self-hosted — hide the credit
  *  UI entirely rather than showing a balance of zero. */
 export interface CreditSummary {

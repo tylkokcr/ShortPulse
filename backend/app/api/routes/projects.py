@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -247,6 +248,32 @@ async def edit_project(
         captions=edit.captions,
         output_path=str(final_path),
     )
+
+
+@router.get("/{project_id}/timings")
+async def project_timings(
+    project_id: str, user_id: str | None = Depends(current_user_id)
+) -> dict:
+    """Per-stage wall clock for the render.
+
+    The pipeline has always written this next to the output, and nothing
+    ever read it back. It is the most honest thing this product can show
+    about itself — where the minutes actually went, on the machine that
+    did the work — so it is served rather than left on disk.
+
+    Returns an empty object rather than 404 when absent: renders from
+    before this file existed, and uploads, simply have nothing to report,
+    and that is not an error worth a red box in the UI.
+    """
+    await _visible_project(project_id, user_id)
+    path = project_dir(project_id) / "timings.json"
+    if not path.is_file():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        logger.warning("Unreadable timings.json for project %s", project_id)
+        return {}
 
 
 @router.get("/{project_id}/poster")
