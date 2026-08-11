@@ -39,6 +39,7 @@ def test_a_prompt_made_entirely_of_stopwords_still_searches_for_something():
 class _Settings:
     pexels_api_key = "pexels-key"
     pixabay_api_key = "pixabay-key"
+    ffmpeg_binary = "ffmpeg"
 
 
 async def test_a_blocked_provider_falls_through_to_the_next(tmp_path, monkeypatch):
@@ -51,7 +52,7 @@ async def test_a_blocked_provider_falls_through_to_the_next(tmp_path, monkeypatc
         audio=SceneAudio(voiceover_line="line"),
     )
 
-    async def blocked(query, api_key):
+    async def blocked(query, api_key, target_height=1920):
         raise httpx.HTTPStatusError(
             "403", request=httpx.Request("GET", "https://api.pexels.com"),
             response=httpx.Response(403),
@@ -59,7 +60,7 @@ async def test_a_blocked_provider_falls_through_to_the_next(tmp_path, monkeypatc
 
     calls = []
 
-    async def works(query, api_key):
+    async def works(query, api_key, target_height=1920):
         calls.append(query)
         from app.engines import visual_engine
 
@@ -68,12 +69,12 @@ async def test_a_blocked_provider_falls_through_to_the_next(tmp_path, monkeypatc
             attribution=None,
         )
 
-    async def fake_download(url, path):
+    async def fake_download(url, path, seconds=0, ffmpeg_binary="ffmpeg"):
         path.write_bytes(b"")
 
     monkeypatch.setattr("app.engines.visual_engine._search_pexels", blocked)
     monkeypatch.setattr("app.engines.visual_engine._search_pixabay", works)
-    monkeypatch.setattr("app.engines.visual_engine._download", fake_download)
+    monkeypatch.setattr("app.engines.visual_engine._download_head", fake_download)
 
     path = await _fetch_stock_media(scene, tmp_path, _Settings())
 
@@ -89,7 +90,7 @@ async def test_every_provider_failing_is_still_an_error(tmp_path, monkeypatch):
         audio=SceneAudio(voiceover_line="line"),
     )
 
-    async def blocked(query, api_key):
+    async def blocked(query, api_key, target_height=1920):
         raise httpx.ConnectError("down")
 
     monkeypatch.setattr("app.engines.visual_engine._search_pexels", blocked)
@@ -97,3 +98,53 @@ async def test_every_provider_failing_is_still_an_error(tmp_path, monkeypatch):
 
     with pytest.raises(RuntimeError, match="No stock media provider"):
         await _fetch_stock_media(scene, tmp_path, _Settings())
+
+
+# --------------------------------------------------------------------------
+# Rendition choice — the single biggest lever on how long a stock render takes
+# --------------------------------------------------------------------------
+
+
+def _file(width: int, height: int) -> dict:
+    return {"width": width, "height": height, "link": f"https://x/{width}x{height}.mp4"}
+
+
+LADDER = [
+    _file(2160, 3840),
+    _file(1440, 2560),
+    _file(1080, 1920),
+    _file(720, 1280),
+    _file(360, 640),
+]
+
+
+def test_the_smallest_rendition_that_covers_the_render_is_chosen():
+    """Measured on a real clip: the 4K master is 33MB and 26s to fetch,
+    the 1080 rendition 7MB and 3s — and ffmpeg scales the 4K back down to
+    1080 anyway."""
+    from app.engines.visual_engine import _pick_rendition
+
+    assert _pick_rendition(LADDER, 1920)["height"] == 1920
+
+
+def test_a_smaller_render_takes_a_smaller_rendition():
+    from app.engines.visual_engine import _pick_rendition
+
+    assert _pick_rendition(LADDER, 1080)["height"] == 1280
+
+
+def test_nothing_tall_enough_falls_back_to_the_largest_available():
+    from app.engines.visual_engine import _pick_rendition
+
+    assert _pick_rendition([_file(360, 640), _file(540, 960)], 1920)["height"] == 960
+
+
+def test_portrait_renditions_win_over_bigger_landscape_ones():
+    """A landscape source is centre-cropped to a vertical frame and loses
+    most of its width, so a smaller portrait file is the better source."""
+    from app.engines.visual_engine import _pick_rendition
+
+    mixed = [_file(3840, 2160), _file(1080, 1920)]
+    chosen = _pick_rendition(mixed, 1920)
+
+    assert (chosen["width"], chosen["height"]) == (1080, 1920)

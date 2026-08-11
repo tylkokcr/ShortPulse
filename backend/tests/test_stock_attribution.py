@@ -73,14 +73,15 @@ class Settings:
     def __init__(self, pexels=None, pixabay=None):
         self.pexels_api_key = pexels
         self.pixabay_api_key = pixabay
+        self.ffmpeg_binary = "ffmpeg"
 
 
 @pytest.fixture(autouse=True)
 def _no_real_downloads(monkeypatch, tmp_path):
-    async def fake_download(url: str, output_path: Path) -> None:
+    async def fake_download(url: str, output_path: Path, seconds=0.0, ffmpeg_binary="ffmpeg") -> None:
         output_path.write_bytes(b"fake mp4")
 
-    monkeypatch.setattr(visual_engine, "_download", fake_download)
+    monkeypatch.setattr(visual_engine, "_download_head", fake_download)
 
 
 def _serve(monkeypatch, payload: dict) -> None:
@@ -130,11 +131,11 @@ async def test_the_portrait_file_is_still_chosen(scene, tmp_path, pexels, monkey
     are vertical videos."""
     captured = {}
 
-    async def capture(url: str, output_path: Path) -> None:
+    async def capture(url: str, output_path: Path, seconds=0.0, ffmpeg_binary="ffmpeg") -> None:
         captured["url"] = url
         output_path.write_bytes(b"x")
 
-    monkeypatch.setattr(visual_engine, "_download", capture)
+    monkeypatch.setattr(visual_engine, "_download_head", capture)
     await visual_engine._fetch_stock_media(scene, tmp_path, Settings(pexels="key"))
 
     assert captured["url"].endswith("hd.mp4")  # the 1080x1920 one

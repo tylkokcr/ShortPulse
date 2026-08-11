@@ -202,16 +202,20 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 ),
             )
 
-        with timings.stage("visuals"):
-            for i, scene in enumerate(script.scenes):
-                await _emit(
-                    project_id,
-                    stage=RenderStage.VISUAL_GENERATION,
-                    progress_pct=30 + (i / total_scenes) * 35,
-                    message=f"Generating visuals for scene {i + 1}/{total_scenes} ({config.visual_mode})...",
-                    current_scene=i + 1,
-                    total_scenes=total_scenes,
-                )
+        # How many scenes may be worked on at once.
+        #
+        # Stock media is network-bound — a search and a download per scene —
+        # and running those one at a time was two thirds of a stock render's
+        # wall clock for no reason. The local generation modes share one
+        # GPU/accelerator, where concurrency buys nothing and costs memory,
+        # so they stay sequential.
+        visual_concurrency = 4 if config.visual_mode == VisualMode.STOCK_MEDIA else 1
+        limit = asyncio.Semaphore(visual_concurrency)
+        completed = 0
+
+        async def build_visual(scene: Scene) -> None:
+            nonlocal completed
+            async with limit:
                 if scene.is_outro:
                     outro_path = paths / "visuals" / f"scene_{scene.index:02d}_outro.png"
                     visual_engine.generate_outro_card(
@@ -232,7 +236,30 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                         settings,
                         art_style=art_styles.by_id(config.art_style),
                         size=visual_engine.sdxl_size_for(render_width, render_height),
+                        render_size=(render_width, render_height),
                     )
+            # Reported on completion rather than on start: with several in
+            # flight, "scene 3 of 5" as a starting announcement would jump
+            # around and go backwards.
+            completed += 1
+            await _emit(
+                project_id,
+                stage=RenderStage.VISUAL_GENERATION,
+                progress_pct=30 + (completed / total_scenes) * 35,
+                message=f"Visuals: {completed}/{total_scenes} scenes ({config.visual_mode})...",
+                current_scene=completed,
+                total_scenes=total_scenes,
+            )
+
+        with timings.stage("visuals"):
+            await _emit(
+                project_id,
+                stage=RenderStage.VISUAL_GENERATION,
+                progress_pct=30,
+                message=f"Generating visuals for {total_scenes} scenes ({config.visual_mode})...",
+                total_scenes=total_scenes,
+            )
+            await asyncio.gather(*(build_visual(scene) for scene in script.scenes))
 
         # 4. Render scene clips, then build subtitles from each clip's real,
         # frame-quantized duration (not the pre-render estimate), then

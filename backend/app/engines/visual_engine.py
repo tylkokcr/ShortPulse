@@ -98,6 +98,7 @@ async def generate_scene_visual(
     settings,
     art_style: ArtStyle | None = None,
     size: tuple[int, int] | None = None,
+    render_size: tuple[int, int] | None = None,
 ) -> Scene:
     """Populate scene.visual.asset_path using the requested mode, with a
     stock-media fallback if a local generation mode fails (e.g. no GPU).
@@ -107,13 +108,14 @@ async def generate_scene_visual(
     are, and the render step crops it to fit.
     """
     style = art_style or art_styles.DEFAULT_ART_STYLE
+    render_height = (render_size or (1080, 1920))[1]
     try:
         if mode == VisualMode.AI_VIDEO:
             path = await _generate_ai_video(scene, output_dir, settings, style)
         elif mode == VisualMode.FAST_HYBRID:
             path = await _generate_fast_hybrid_image(scene, output_dir, settings, style, size)
         elif mode == VisualMode.STOCK_MEDIA:
-            path = await _fetch_stock_media(scene, output_dir, settings)
+            path = await _fetch_stock_media(scene, output_dir, settings, render_height)
         else:
             raise ValueError(f"Unsupported visual mode: {mode}")
     except Exception:
@@ -122,7 +124,7 @@ async def generate_scene_visual(
             scene.index,
             mode,
         )
-        path = await _fetch_stock_media(scene, output_dir, settings)
+        path = await _fetch_stock_media(scene, output_dir, settings, render_height)
 
     scene.visual.asset_path = str(path)
     return scene
@@ -316,7 +318,9 @@ def stock_search_terms(prompt: str) -> str:
     return " ".join(keywords[:_MAX_SEARCH_WORDS]) or prompt[:60]
 
 
-async def _fetch_stock_media(scene: Scene, output_dir: Path, settings) -> Path:
+async def _fetch_stock_media(
+    scene: Scene, output_dir: Path, settings, target_height: int = 1920
+) -> Path:
     output_path = output_dir / f"scene_{scene.index:02d}_stock.mp4"
     query = stock_search_terms(scene.visual.prompt)
 
@@ -331,7 +335,7 @@ async def _fetch_stock_media(scene: Scene, output_dir: Path, settings) -> Path:
         # from Pexels raised straight out and lost every scene rendered so
         # far.
         try:
-            clip = await search(query, api_key)
+            clip = await search(query, api_key, target_height)
         except (httpx.HTTPError, KeyError, ValueError) as exc:
             logger.warning(
                 "Stock provider %s failed for scene %s (%r); trying the next one",
@@ -341,7 +345,11 @@ async def _fetch_stock_media(scene: Scene, output_dir: Path, settings) -> Path:
             )
             continue
         if clip:
-            await _download(clip.url, output_path)
+            needed = max(
+                (scene.audio.duration_ms or 0) / 1000 + _STOCK_HEAD_MARGIN_S,
+                _STOCK_MIN_HEAD_S,
+            )
+            await _download_head(clip.url, output_path, needed, settings.ffmpeg_binary)
             scene.visual.attribution = clip.attribution
             return output_path
 
@@ -351,7 +359,29 @@ async def _fetch_stock_media(scene: Scene, output_dir: Path, settings) -> Path:
     )
 
 
-async def _search_pexels(query: str, api_key: str) -> StockClip | None:
+def _pick_rendition(files: list[dict], target_height: int) -> dict:
+    """The smallest file that still covers the render height.
+
+    Stock libraries serve the same clip at up to 4K, and this used to take
+    the largest of them: for a 1080x1920 render that meant fetching a
+    2160x3840 master — measured at 33MB and 26s where the 1080 rendition
+    was 7MB and 3s — only to have ffmpeg scale it back down. Downloading
+    is most of what the visuals stage spends its time on, so this is the
+    single biggest lever on how long a stock render takes.
+
+    Portrait renditions are preferred where they exist, since a landscape
+    source gets centre-cropped and loses most of its width. If nothing
+    reaches the target height, the largest available is the best on offer.
+    """
+    portrait = [f for f in files if (f.get("height") or 0) >= (f.get("width") or 1)]
+    candidates = portrait or files
+    tall_enough = [f for f in candidates if (f.get("height") or 0) >= target_height]
+    if tall_enough:
+        return min(tall_enough, key=lambda f: f.get("height") or 0)
+    return max(candidates, key=lambda f: f.get("height") or 0)
+
+
+async def _search_pexels(query: str, api_key: str, target_height: int = 1920) -> StockClip | None:
     async with httpx.AsyncClient(timeout=20.0) as client:
         response = await client.get(
             "https://api.pexels.com/videos/search",
@@ -364,9 +394,7 @@ async def _search_pexels(query: str, api_key: str) -> StockClip | None:
         if not videos:
             return None
         video = videos[0]
-        files = sorted(video["video_files"], key=lambda f: f.get("height", 0), reverse=True)
-        portrait_files = [f for f in files if f.get("height", 0) >= f.get("width", 1)]
-        chosen = (portrait_files or files)[0]
+        chosen = _pick_rendition(video["video_files"], target_height)
         user = video.get("user") or {}
         return StockClip(
             url=chosen["link"],
@@ -380,7 +408,12 @@ async def _search_pexels(query: str, api_key: str) -> StockClip | None:
         )
 
 
-async def _search_pixabay(query: str, api_key: str) -> StockClip | None:
+async def _search_pixabay(
+    query: str, api_key: str, target_height: int = 1920
+) -> StockClip | None:
+    """Pixabay serves a fixed set of named sizes rather than a ladder, and
+    `medium` already sits near 1080 — so `target_height` is accepted for a
+    uniform signature with the Pexels search and not otherwise used."""
     async with httpx.AsyncClient(timeout=20.0) as client:
         response = await client.get(
             "https://pixabay.com/api/videos/",
@@ -415,6 +448,57 @@ async def _download(url: str, output_path: Path) -> None:
             with open(output_path, "wb") as f:
                 async for chunk in response.aiter_bytes(chunk_size=1 << 16):
                     f.write(chunk)
+
+
+# A scene is a few seconds long, so pulling a whole stock clip to use the
+# start of it is nearly all waste. Measured on one 5-scene render: 238MB
+# fetched for 18 seconds of finished video, including a 13s clip that was
+# 113MB on its own — these are high-bitrate masters.
+#
+# A little more than the scene needs, because the render step loops a clip
+# that comes up short and a hard cut at exactly the scene length leaves no
+# margin for keyframe alignment.
+_STOCK_HEAD_MARGIN_S = 2.0
+_STOCK_MIN_HEAD_S = 5.0
+
+
+async def _download_head(
+    url: str, output_path: Path, seconds: float, ffmpeg_binary: str = "ffmpeg"
+) -> None:
+    """Fetch only the first `seconds` of a remote clip.
+
+    ffmpeg reads the URL directly and stops once it has enough, so the
+    transfer ends early instead of pulling the whole master. Stream-copied,
+    not re-encoded: this is a fetch, and the real encode happens later in
+    the render engine.
+
+    Falls back to downloading the file whole if ffmpeg can't read the URL —
+    a clip that arrives slowly is better than a render that fails.
+    """
+    import asyncio
+
+    args = [
+        ffmpeg_binary, "-y", "-hide_banner", "-loglevel", "error",
+        "-i", url,
+        "-t", f"{seconds:.2f}",
+        "-map", "0:v:0",
+        "-c", "copy",
+        "-movflags", "+faststart",
+        str(output_path),
+    ]
+    proc = await asyncio.create_subprocess_exec(
+        *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    )
+    _, stderr = await proc.communicate()
+    if proc.returncode == 0 and output_path.is_file() and output_path.stat().st_size > 0:
+        return
+
+    logger.warning(
+        "Trimmed fetch failed for %s (%s); downloading the whole clip",
+        url,
+        stderr.decode(errors="ignore").strip()[:160],
+    )
+    await _download(url, output_path)
 
 
 # --------------------------------------------------------------------------
