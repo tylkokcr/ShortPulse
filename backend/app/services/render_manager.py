@@ -146,6 +146,9 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 raw_script=config.raw_script,
                 video_length=config.video_length,
                 language=config.language,
+                # Stock mode turns this into a keyword search, so asking
+                # for prose here would be generated and then discarded.
+                visual_mode=str(config.visual_mode),
             )
         if config.outro.enabled:
             outro_text = config.outro.text or script.call_to_action or "Thanks for watching!"

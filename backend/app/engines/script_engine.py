@@ -57,6 +57,31 @@ LANGUAGE_NAMES: dict[str, str] = {
     "it": "Italian",
 }
 
+# Descriptive: this text is fed to a diffusion model, where subject,
+# lighting and mood all change the image.
+VISUAL_PROMPT_RULE_GENERATED = """\
+- For every scene, write a concrete, visually descriptive image/video \
+generation prompt (subject, setting, lighting, camera angle, mood). The \
+image model cannot render legible text, so "visual_prompt" must never \
+describe labels, signs, jar labels, packaging text, book covers, screens \
+with text, infographics, diagrams with captions/arrows, or any other \
+readable writing appearing in the shot — describe the physical scene only \
+(e.g. "a jar of honey on a wooden table" rather than "a jar with a label \
+reading...")."""
+
+# Terse: this text becomes a stock-library search, which matches on
+# keywords. The long form was being generated a token at a time and then
+# reduced to its nouns before the query was sent (see
+# visual_engine.stock_search_terms) — paying for words that were thrown
+# away, and at ~21 tokens/sec that is real wall clock.
+VISUAL_PROMPT_RULE_STOCK = """\
+- For every scene, write "visual_prompt" as 2 to 4 plain search keywords \
+naming what should be on screen — the subject and its setting, nothing \
+else. No lighting, camera, mood or style words, no articles, no full \
+sentences. It is used to search a stock footage library, so it must \
+describe a thing that can be filmed (e.g. "honey jar wooden table", \
+"volcano eruption night")."""
+
 SYSTEM_PROMPT_TEMPLATE = """\
 You are a viral short-form video scriptwriter for TikTok, YouTube Shorts and \
 Instagram Reels. Given a topic, produce a tightly paced vertical video script.
@@ -70,14 +95,7 @@ question, bold claim, or pattern interrupt. Never start with "Have you ever".
 {language_name}. Always write "visual_prompt" in English regardless of the \
 target language — the image-generation model responds best to English \
 prompts.
-- For every scene, write a concrete, visually descriptive image/video \
-generation prompt (subject, setting, lighting, camera angle, mood). The \
-image model cannot render legible text, so "visual_prompt" must never \
-describe labels, signs, jar labels, packaging text, book covers, screens \
-with text, infographics, diagrams with captions/arrows, or any other \
-readable writing appearing in the shot — describe the physical scene only \
-(e.g. "a jar of honey on a wooden table" rather than "a jar with a label \
-reading...").
+{visual_prompt_rule}
 - "voiceover_line" must NEVER be empty, even for topics about visual or \
 non-verbal cues (body language, micro-expressions, etc.) — the narrator \
 always explains the point out loud in words; the visual is a separate, \
@@ -100,10 +118,18 @@ Respond with ONLY valid JSON, no markdown fences, matching this shape:
 """
 
 
-def _build_system_prompt(video_length: VideoLength, language: str) -> str:
+def _build_system_prompt(
+    video_length: VideoLength, language: str, visual_mode: str = "fast_hybrid"
+) -> str:
     min_scenes, max_scenes = SCENE_COUNT_BY_LENGTH[video_length]
     language_name = LANGUAGE_NAMES.get(language, language)
+    visual_prompt_rule = (
+        VISUAL_PROMPT_RULE_STOCK
+        if visual_mode == "stock_media"
+        else VISUAL_PROMPT_RULE_GENERATED
+    )
     return SYSTEM_PROMPT_TEMPLATE.format(
+        visual_prompt_rule=visual_prompt_rule,
         min_scenes=min_scenes, max_scenes=max_scenes, language_name=language_name
     )
 
@@ -179,6 +205,7 @@ async def generate_script(
     raw_script: str | None = None,
     video_length: VideoLength = VideoLength.SHORT,
     language: str = "en",
+    visual_mode: str = "fast_hybrid",
     max_attempts: int = 3,
 ) -> ScriptOutput:
     """Run the LLM and convert its response into a validated ScriptOutput.
@@ -192,7 +219,9 @@ async def generate_script(
     last_error: ScriptGenerationError | None = None
     for attempt in range(1, max_attempts + 1):
         try:
-            return await _generate_script_once(topic, config, raw_script, video_length, language)
+            return await _generate_script_once(
+                topic, config, raw_script, video_length, language, visual_mode
+            )
         except ScriptGenerationError as exc:
             last_error = exc
             logger.warning("Script generation attempt %d/%d failed: %s", attempt, max_attempts, exc)
@@ -206,8 +235,9 @@ async def _generate_script_once(
     raw_script: str | None,
     video_length: VideoLength,
     language: str,
+    visual_mode: str = "fast_hybrid",
 ) -> ScriptOutput:
-    system_prompt = _build_system_prompt(video_length, language)
+    system_prompt = _build_system_prompt(video_length, language, visual_mode)
     user_prompt = _build_user_prompt(topic, raw_script)
 
     if config.provider == LLMProvider.OLLAMA:
