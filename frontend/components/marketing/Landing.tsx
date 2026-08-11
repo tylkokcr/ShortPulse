@@ -206,14 +206,16 @@ export function Landing() {
           <SectionHeading eyebrow="Pipeline" title="Five local stages, one finished .mp4" />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {PIPELINE.map((step, i) => (
-              <Card key={step.title} interactive className="flex flex-col gap-3 bg-grain">
-                <div className="flex items-center justify-between">
-                  <step.icon size={20} className="text-accent" />
-                  <span className="font-mono text-xs text-white/30">0{i + 1}</span>
-                </div>
-                <h3 className="text-sm font-semibold">{step.title}</h3>
-                <p className="text-xs leading-relaxed text-white/50">{step.detail}</p>
-              </Card>
+              <Reveal key={step.title} delay={i * 70} className="h-full">
+                <Card interactive className="flex h-full flex-col gap-3 bg-grain">
+                  <div className="flex items-center justify-between">
+                    <step.icon size={20} className="text-accent" />
+                    <span className="font-mono text-xs text-white/30">0{i + 1}</span>
+                  </div>
+                  <h3 className="text-sm font-semibold">{step.title}</h3>
+                  <p className="text-xs leading-relaxed text-white/50">{step.detail}</p>
+                </Card>
+              </Reveal>
             ))}
           </div>
         </section>
@@ -224,12 +226,14 @@ export function Landing() {
         <section className="mx-auto max-w-6xl px-6 py-16">
           <SectionHeading eyebrow="What's built in" title="Everything short-form video needs, none of it gated" />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((feature) => (
-              <Card key={feature.title} className="flex flex-col gap-3">
-                <feature.icon size={20} className="text-white/40" />
-                <h3 className="text-sm font-semibold">{feature.title}</h3>
-                <p className="text-xs leading-relaxed text-white/50">{feature.detail}</p>
-              </Card>
+            {FEATURES.map((feature, i) => (
+              <Reveal key={feature.title} delay={(i % 3) * 70} className="h-full">
+                <Card className="flex h-full flex-col gap-3">
+                  <feature.icon size={20} className="text-white/40" />
+                  <h3 className="text-sm font-semibold">{feature.title}</h3>
+                  <p className="text-xs leading-relaxed text-white/50">{feature.detail}</p>
+                </Card>
+              </Reveal>
             ))}
           </div>
         </section>

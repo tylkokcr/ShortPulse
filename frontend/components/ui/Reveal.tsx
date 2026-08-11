@@ -29,6 +29,14 @@ const OBSERVER_GRACE_MS = 1000;
  * `threshold: 0` matters too: these sections are often taller than the
  * viewport, and a percentage threshold on an element you can never see all
  * of is a trap.
+ *
+ * `delay` staggers items in a row or grid. It waits before switching to
+ * the shown state rather than setting an animation-delay, so the element
+ * stays in the hidden state throughout the wait. Doing it in CSS would
+ * need `animation-fill-mode: backwards` to avoid a flash of the finished
+ * state during the delay — and fill-mode is exactly what pins content
+ * invisible when the animation never advances, which is the failure this
+ * component exists to avoid.
  */
 export function Reveal({ className, style, delay = 0, children, ...props }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -54,12 +62,18 @@ export function Reveal({ className, style, delay = 0, children, ...props }: Reve
     setState("hidden");
 
     let delivered = false;
+    let stagger: number | undefined;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         delivered = true;
         if (entry.isIntersecting) {
-          setState("shown");
           observer.disconnect();
+          if (delay) {
+            stagger = window.setTimeout(() => setState("shown"), delay);
+          } else {
+            setState("shown");
+          }
         }
       },
       { threshold: 0, rootMargin: "0px 0px -40px 0px" }
@@ -75,16 +89,17 @@ export function Reveal({ className, style, delay = 0, children, ...props }: Reve
 
     return () => {
       window.clearTimeout(grace);
+      if (stagger) window.clearTimeout(stagger);
       observer.disconnect();
     };
-  }, []);
+  }, [delay]);
 
   return (
     <div
       ref={ref}
       data-reveal={state === "initial" ? undefined : state}
       className={className}
-      style={{ transitionDelay: delay ? `${delay}ms` : undefined, ...style }}
+      style={style}
       {...props}
     >
       {children}

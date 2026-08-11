@@ -10,6 +10,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { AccountBar } from "@/components/auth/AccountBar";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { ProjectCard } from "@/components/library/ProjectCard";
+import { Reveal } from "@/components/ui/Reveal";
 
 /**
  * Everything the signed-in user has made.
@@ -108,9 +109,15 @@ function Library() {
         )}
 
         {projects && projects.length > 0 && (
-          <div className="animate-fade-up mt-8 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">
-            {projects.map((project) => (
-              <ProjectCard key={project.config.id} project={project} onDelete={handleDelete} />
+          <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">
+            {projects.map((project, i) => (
+              // Staggered by column rather than by absolute index: a
+              // library of eighty projects would otherwise have the last
+              // one waiting four seconds. The row resets the delay, so
+              // each row deals itself out as it scrolls into view.
+              <Reveal key={project.config.id} delay={(i % 5) * 55}>
+                <ProjectCard project={project} onDelete={handleDelete} />
+              </Reveal>
             ))}
           </div>
         )}
