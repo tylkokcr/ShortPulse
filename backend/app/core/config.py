@@ -122,6 +122,6 @@ def get_settings() -> Settings:
 def project_dir(project_id: str) -> Path:
     """Root directory for a single project's generated assets."""
     path = get_settings().storage_root / project_id
-    for sub in ("audio", "visuals", "subtitles", "output"):
+    for sub in ("audio", "visuals", "subtitles", "output", "source"):
         (path / sub).mkdir(parents=True, exist_ok=True)
     return path

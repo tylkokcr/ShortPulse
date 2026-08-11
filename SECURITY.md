@@ -56,6 +56,32 @@ keys off the row rather than the caller, so an unauthenticated request can
 never reach an owned project. Denials return 404 rather than 403 so
 project ids can't be probed for existence.
 
+### Uploaded video
+
+`POST /api/uploads` is the only endpoint that accepts a file. What arrives
+there is written to disk and then handed to ffmpeg, so three client-supplied
+things are treated as claims rather than facts:
+
+- **The filename.** Discarded outright. The stored path is derived from the
+  project id the server minted (`uploads.source_path_for`), so nothing an
+  attacker sends reaches the filesystem. Only a small allowlist of container
+  extensions is honoured, and anything else becomes `.mp4`.
+- **The size.** `Content-Length` is not trusted, and a chunked body may not
+  declare one at all. The 200MB cap is enforced against the bytes actually
+  arriving, and the partial file is deleted the moment it is exceeded — so a
+  client cannot fill the disk by understating its length.
+- **The content type.** A `.mp4` extension and a `video/mp4` header cost
+  nothing to forge. Acceptance depends on ffprobe finding a decodable video
+  stream with a real duration; a renamed archive gets no further.
+
+A rejected upload leaves nothing behind: the project row is deleted, and no
+credit is charged, because the charge happens only after the file is on disk
+and has been validated.
+
+The stored video is served through the same signed short-lived URLs as
+rendered output, so one user's upload is no more reachable than one user's
+render.
+
 ### Media and WebSocket credentials
 
 A `<video>` tag can't send an `Authorization` header, and neither can a

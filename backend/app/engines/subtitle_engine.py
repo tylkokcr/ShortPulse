@@ -95,18 +95,8 @@ def _events_for_line(line: SubtitleLine, style: SubtitleStyle) -> list[str]:
     return events
 
 
-def build_ass_subtitles(
-    scenes: list[Scene],
-    style: SubtitleStyle,
-    output_path: Path,
-    play_res: tuple[int, int] = (1080, 1920),
-) -> Path:
-    """Build a single .ass file covering the full timeline. Assumes each
-    scene's `audio.words` timestamps are relative to that scene's own
-    audio clip; `scene_offset_ms` accumulates so the final subtitle track
-    lines up with the concatenated render.
-    """
-    header = ASS_HEADER_TEMPLATE.format(
+def _header_for(style: SubtitleStyle, play_res: tuple[int, int]) -> str:
+    return ASS_HEADER_TEMPLATE.format(
         play_res_x=play_res[0],
         play_res_y=play_res[1],
         font_family=style.font_family,
@@ -118,23 +108,61 @@ def build_ass_subtitles(
         margin_v=_MARGIN_V_BY_POSITION.get(style.position, 260),
     )
 
-    all_events: list[str] = []
-    scene_offset_ms = 0
+
+def build_ass_from_words(
+    words: list[Word],
+    style: SubtitleStyle,
+    output_path: Path,
+    play_res: tuple[int, int] = (1080, 1920),
+) -> Path:
+    """Build an .ass file from words already timed against the finished
+    video.
+
+    This is the general form. A generated project's words start out timed
+    per scene and have to be offset first (see `build_ass_subtitles`); an
+    uploaded video's words come straight out of Whisper already absolute,
+    with no scenes to offset by. Both end up here.
+    """
+    events: list[str] = []
+    for line in _chunk_words(words, style.max_words_per_line):
+        events.extend(_events_for_line(line, style))
+
+    output_path.write_text(
+        _header_for(style, play_res) + "\n".join(events) + "\n", encoding="utf-8"
+    )
+    return output_path
+
+
+def absolute_words(scenes: list[Scene]) -> list[Word]:
+    """Flatten per-scene word timings onto the concatenated timeline.
+
+    Each scene's `audio.words` are relative to that scene's own audio clip,
+    so every scene's duration has to accumulate into the offset — the same
+    arithmetic the frontend's TranscriptPanel does to map a click back to a
+    playback position.
+    """
+    out: list[Word] = []
+    offset_ms = 0
     for scene in scenes:
-        offset_words = [
+        out.extend(
             Word(
                 text=w.text,
-                start_ms=w.start_ms + scene_offset_ms,
-                end_ms=w.end_ms + scene_offset_ms,
+                start_ms=w.start_ms + offset_ms,
+                end_ms=w.end_ms + offset_ms,
                 confidence=w.confidence,
             )
             for w in scene.audio.words
-        ]
-        for line in _chunk_words(offset_words, style.max_words_per_line):
-            all_events.extend(_events_for_line(line, style))
+        )
+        offset_ms += scene.audio.duration_ms or int(scene.duration_s * 1000)
+    return out
 
-        scene_duration_ms = scene.audio.duration_ms or int(scene.duration_s * 1000)
-        scene_offset_ms += scene_duration_ms
 
-    output_path.write_text(header + "\n".join(all_events) + "\n", encoding="utf-8")
-    return output_path
+def build_ass_subtitles(
+    scenes: list[Scene],
+    style: SubtitleStyle,
+    output_path: Path,
+    play_res: tuple[int, int] = (1080, 1920),
+) -> Path:
+    """Build a single .ass file covering the full timeline of a generated
+    project."""
+    return build_ass_from_words(absolute_words(scenes), style, output_path, play_res)

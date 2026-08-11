@@ -1,5 +1,13 @@
 import { supabase } from "./supabase";
-import type { CreditSummary, Project, ProjectConfig, RenderProgress } from "./types";
+import type {
+  ArtStyle,
+  CreditSummary,
+  MusicTrack,
+  Project,
+  ProjectConfig,
+  RenderProgress,
+  Voice,
+} from "./types";
 
 const API_BASE = "/api";
 
@@ -66,6 +74,76 @@ export function createProject(config: Partial<ProjectConfig> & { topic: string }
   });
 }
 
+/**
+ * Upload a video to be captioned.
+ *
+ * Uses XHR rather than fetch for one reason: upload progress. `fetch` has
+ * no equivalent of `upload.onprogress`, and a 200MB file over a phone
+ * connection with no progress bar looks like a hung page.
+ *
+ * The response is an ordinary Project, already queued — from here on the
+ * caller watches it over the same render-progress socket as a generated
+ * one.
+ */
+export async function uploadVideo(
+  file: File,
+  options: { language: string; title?: string },
+  onProgress?: (fraction: number) => void
+): Promise<Project> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("language", options.language);
+  form.append("title", options.title ?? "");
+
+  const headers = await authHeaders();
+
+  return new Promise<Project>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_BASE}/uploads`);
+    for (const [key, value] of Object.entries(headers)) {
+      xhr.setRequestHeader(key, value);
+    }
+    // Deliberately no Content-Type: the browser has to set it, because
+    // only it knows the multipart boundary it generated.
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress?.(event.loaded / event.total);
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 201) {
+        resolve(JSON.parse(xhr.responseText) as Project);
+        return;
+      }
+      if (xhr.status === 402) {
+        try {
+          const detail = JSON.parse(xhr.responseText).detail;
+          reject(new InsufficientCreditsError(detail.balance, detail.required));
+          return;
+        } catch {
+          // fall through to the generic error below
+        }
+      }
+      if (xhr.status === 422) {
+        // The server's reason is written for the user ("no audio track",
+        // "larger than the 200MB limit") — showing it beats a status code.
+        try {
+          reject(new Error(JSON.parse(xhr.responseText).detail));
+          return;
+        } catch {
+          // fall through
+        }
+      }
+      reject(new Error(`Upload failed (${xhr.status}): ${xhr.responseText.slice(0, 200)}`));
+    };
+
+    xhr.onerror = () => reject(new Error("Upload failed — check your connection."));
+    xhr.onabort = () => reject(new Error("Upload cancelled."));
+
+    xhr.send(form);
+  });
+}
+
 export function getProject(projectId: string): Promise<Project> {
   return request<Project>(`/projects/${projectId}`);
 }
@@ -74,8 +152,31 @@ export function listProjects(): Promise<Project[]> {
   return request<Project[]>("/projects");
 }
 
+/** Removes the row and everything it points at on disk. Irreversible. */
+export function deleteProject(projectId: string): Promise<void> {
+  return request<void>(`/projects/${projectId}`, { method: "DELETE" });
+}
+
 export function getCredits(): Promise<CreditSummary> {
   return request<CreditSummary>("/credits");
+}
+
+export function listMusic(): Promise<MusicTrack[]> {
+  return request<MusicTrack[]>("/music");
+}
+
+export function listArtStyles(): Promise<ArtStyle[]> {
+  return request<ArtStyle[]>("/art-styles");
+}
+
+export function listVoices(language: string): Promise<Voice[]> {
+  return request<Voice[]>(`/voices?language=${encodeURIComponent(language)}`);
+}
+
+/** Plain URL rather than a fetch: it feeds an <audio> element, which can't
+ *  carry an Authorization header — and the preview endpoint needs none. */
+export function voicePreviewUrl(voiceId: string): string {
+  return `${API_BASE}/voices/preview?voice_id=${encodeURIComponent(voiceId)}`;
 }
 
 export interface MediaUrl {
@@ -84,6 +185,9 @@ export interface MediaUrl {
   url: string;
   /** Attachment — saves with a sensible filename. */
   download_url: string;
+  /** Still frame extracted after the render. 404s for projects rendered
+   *  before posters existed — callers should tolerate it failing. */
+  poster_url: string;
   expires_at: number;
 }
 

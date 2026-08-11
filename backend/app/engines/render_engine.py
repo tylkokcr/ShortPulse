@@ -381,3 +381,42 @@ async def render_project(
     return await finalize_render(
         concatenated, subtitle_ass_path, music, final_output_path, target, ffmpeg_binary
     )
+
+
+async def extract_poster(
+    video_path: Path,
+    output_path: Path,
+    at_s: float = 1.5,
+    width: int = 360,
+    ffmpeg_binary: str = "ffmpeg",
+    ffprobe_binary: str = "ffprobe",
+) -> Path | None:
+    """Still frame for the library grid and the <video> poster attribute.
+
+    Seeks a little way in rather than to frame zero: the first frame of a
+    Ken Burns pan is often the least representative one, and a stock clip
+    frequently opens on a fade. `at_s` is clamped so a clip shorter than
+    the seek point still yields a frame instead of an empty file.
+
+    Returns None rather than raising. A project with no thumbnail is a
+    cosmetic problem; a render that reports failure because a thumbnail
+    didn't encode is a real one.
+    """
+    try:
+        duration_ms = await _probe_duration_ms(video_path, ffprobe_binary)
+        seek = min(at_s, max(duration_ms / 1000 - 0.1, 0))
+        await _run_ffmpeg(
+            [
+                "-ss", f"{seek:.3f}",
+                "-i", str(video_path),
+                "-frames:v", "1",
+                "-vf", f"scale={width}:-2:flags=lanczos",
+                "-q:v", "4",
+                str(output_path),
+            ],
+            ffmpeg_binary,
+        )
+        return output_path
+    except (RenderError, OSError) as exc:
+        logger.warning("Could not extract a poster frame from %s: %s", video_path, exc)
+        return None

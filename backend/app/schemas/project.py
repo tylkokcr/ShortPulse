@@ -48,6 +48,20 @@ class VideoLength(StrEnum):
     LONG = "long"  # ~60s+, 12-15 scenes
 
 
+class ProjectSource(StrEnum):
+    """Where the video came from.
+
+    A generated project runs the whole pipeline. An upload skips to the
+    end: the user already has the footage, and only wants the captioning
+    that the pipeline would have produced. Both converge on the same
+    finished object — a video file plus a caption track — which is what
+    lets one edit-and-reburn path serve both.
+    """
+
+    GENERATED = "generated"
+    UPLOAD = "upload"
+
+
 class RenderStage(StrEnum):
     QUEUED = "queued"
     SCRIPT_GENERATION = "script_generation"
@@ -189,8 +203,30 @@ class SubtitleStyle(BaseModel):
     uppercase: bool = True
 
 
+class CaptionTrack(BaseModel):
+    """Words timed against the finished video, plus how to draw them.
+
+    Deliberately not tied to scenes. A generated project's words start out
+    relative to each scene's own audio clip; an uploaded video has no
+    scenes at all. Materialising the track in absolute time is what makes
+    the two editable by the same code — and what makes a caption edit a
+    single ffmpeg pass instead of a re-run of the pipeline.
+    """
+
+    words: list[Word] = Field(default_factory=list)
+    style: SubtitleStyle = Field(default_factory=SubtitleStyle)
+
+
 class MusicConfig(BaseModel):
     enabled: bool = True
+    # What HTTP clients choose with: an id from GET /api/music, resolved
+    # server-side against the music directory.
+    track_id: str | None = None
+    # Absolute path handed to ffmpeg. Never trusted from an HTTP request —
+    # the projects route overwrites it from `track_id` — because ffmpeg
+    # would happily open any file the server can read and mix it into a
+    # video the caller then downloads. In-process callers (a self-hosted
+    # script) may still set it directly.
     track_path: str | None = None
     volume_db: float = -18.0
     duck_on_voice: bool = True
@@ -215,6 +251,7 @@ class ProjectConfig(BaseModel):
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     topic: str
+    source: ProjectSource = ProjectSource.GENERATED
     raw_script: str | None = Field(
         default=None, description="If provided, skips LLM scene generation"
     )
@@ -247,6 +284,14 @@ class Project(BaseModel):
     script: ScriptOutput | None = None
     output_path: str | None = None
     error: str | None = None
+    # The video this project started from, when it wasn't generated here.
+    # Always a server-derived path under the project's own directory —
+    # never a client-supplied one, which would hand ffmpeg an arbitrary
+    # file to open (same reasoning as MusicConfig.track_path).
+    source_path: str | None = None
+    # Materialised after the first render so captions can be corrected and
+    # reburned without re-running the pipeline. Absent until then.
+    captions: CaptionTrack | None = None
     # What this render was charged, recorded on the project so the amount
     # refunded on failure is the amount taken — not a price recomputed
     # later, which could have changed in between. 0 on self-hosted

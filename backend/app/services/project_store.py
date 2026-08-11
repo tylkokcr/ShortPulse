@@ -84,7 +84,16 @@ class PostgresProjectStore:
     that were interrupted mid-flight (see the projects_rendering_idx)."""
 
     # Columns that live in their own SQL column rather than inside `config`.
-    _COLUMNS = {"status", "script", "output_path", "error", "credits_cost"}
+    _COLUMNS = {
+        "status", "script", "output_path", "error", "credits_cost",
+        "source_path", "captions",
+    }
+
+    # Named once because it appeared verbatim in four queries, and a column
+    # added to only three of them fails at read time rather than at write.
+    _SELECT = (
+        "config, status, script, output_path, error, credits_cost, source_path, captions"
+    )
 
     def __init__(self, pool: asyncpg.Pool) -> None:
         self._pool = pool
@@ -98,6 +107,8 @@ class PostgresProjectStore:
             output_path=row["output_path"],
             error=row["error"],
             credits_cost=row["credits_cost"],
+            source_path=row["source_path"],
+            captions=json.loads(row["captions"]) if row["captions"] else None,
         )
 
     async def create_project(self, config: ProjectConfig, user_id: str | None = None) -> Project:
@@ -114,8 +125,8 @@ class PostgresProjectStore:
 
     async def get_project(self, project_id: str) -> Project | None:
         row = await self._pool.fetchrow(
-            """
-            select config, status, script, output_path, error, credits_cost
+            f"""
+            select {self._SELECT}
             from projects where id = $1
             """,
             project_id,
@@ -133,15 +144,15 @@ class PostgresProjectStore:
         """
         if user_id is None:
             rows = await self._pool.fetch(
-                """
-                select config, status, script, output_path, error, credits_cost
+                f"""
+                select {self._SELECT}
                 from projects where user_id is null order by created_at desc limit 100
                 """
             )
         else:
             rows = await self._pool.fetch(
-                """
-                select config, status, script, output_path, error, credits_cost
+                f"""
+                select {self._SELECT}
                 from projects where user_id = $1 order by created_at desc limit 100
                 """,
                 user_id,
@@ -159,7 +170,7 @@ class PostgresProjectStore:
         sets, values = [], []
         for i, (key, value) in enumerate(updates.items(), start=2):
             sets.append(f"{key} = ${i}")
-            if key == "script" and value is not None:
+            if key in ("script", "captions") and value is not None:
                 # Pydantic model -> JSONB
                 value = value.model_dump_json() if hasattr(value, "model_dump_json") else json.dumps(value)
                 sets[-1] = f"{key} = ${i}::jsonb"
@@ -171,7 +182,7 @@ class PostgresProjectStore:
             f"""
             update projects set {', '.join(sets)}, updated_at = now()
             where id = $1
-            returning config, status, script, output_path, error, credits_cost
+            returning {self._SELECT}
             """,
             project_id,
             *values,

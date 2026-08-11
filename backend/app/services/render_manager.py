@@ -13,9 +13,18 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from app.core.config import Settings, project_dir
-from app.engines import audio_engine, render_engine, script_engine, visual_engine
+from app.engines import (
+    audio_engine,
+    render_engine,
+    script_engine,
+    subtitle_engine,
+    visual_engine,
+)
 from app.schemas.project import (
+    AspectRatio,
+    CaptionTrack,
     Project,
+    ProjectSource,
     ProjectStatus,
     RenderProgress,
     RenderStage,
@@ -24,7 +33,7 @@ from app.schemas.project import (
     SceneVisual,
     VisualMode,
 )
-from app.services import art_styles, credits, db, project_store
+from app.services import art_styles, credits, db, project_store, uploads
 from app.services.connection_manager import connection_manager
 
 logger = logging.getLogger(__name__)
@@ -298,6 +307,15 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             summary["stages_s"],
         )
 
+        # Thumbnail for the library grid. Best-effort: a project without
+        # one still plays.
+        await render_engine.extract_poster(
+            final_path,
+            paths / "output" / "poster.jpg",
+            ffmpeg_binary=settings.ffmpeg_binary,
+            ffprobe_binary=settings.ffprobe_binary,
+        )
+
         # Save the script again, not just the status. Every stage above
         # mutated the scenes in place — audio paths and word timings,
         # visual asset paths, and the stock-footage attribution that
@@ -310,6 +328,16 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             status=ProjectStatus.COMPLETE,
             output_path=str(final_path),
             script=script,
+            # Flatten the per-scene word timings onto the finished
+            # timeline. The scenes keep their own relative timings (that's
+            # what they were measured against), but corrections have to be
+            # made against the video the user is actually watching — and
+            # reburning from this costs one ffmpeg pass instead of the
+            # whole pipeline.
+            captions=CaptionTrack(
+                words=subtitle_engine.absolute_words(script.scenes),
+                style=config.subtitles,
+            ),
             # Clear any error left by a reconciler that raced this render.
             error=None,
         )
@@ -330,6 +358,139 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             stage=RenderStage.FAILED,
             progress_pct=0,
             message="Render failed.",
+            error=str(exc),
+        )
+
+
+async def run_upload_pipeline(project: Project, settings: Settings) -> None:
+    """Caption a video the user already has.
+
+    Everything the generate path does before the burn-in — writing a
+    script, speaking it, finding footage — has already happened offline,
+    in whatever the user shot. So this runs the tail of the pipeline only:
+    transcribe the speech, build the caption track, burn it in.
+
+    It reports over the same WebSocket channel and moves through the same
+    RenderStage values as `run_pipeline`, because to the client this is the
+    same thing: a project that is rendering and then isn't.
+    """
+    config = project.config
+    project_id = config.id
+    paths = project_dir(project_id)
+    source = Path(project.source_path or "")
+    timings = StageTimings()
+
+    try:
+        await project_store.update_project(project_id, status=ProjectStatus.RENDERING)
+
+        if not source.is_file():
+            raise RuntimeError("The uploaded video is missing from storage.")
+
+        # 1. Transcription -----------------------------------------------------
+        await _emit(
+            project_id,
+            stage=RenderStage.TRANSCRIPTION,
+            progress_pct=10,
+            message="Listening to the video and timing every word...",
+        )
+        with timings.stage("transcription"):
+            # faster-whisper decodes the container itself, so the mp4 goes
+            # in directly — no separate audio extraction step.
+            words = await asyncio.to_thread(
+                audio_engine.transcribe_word_timestamps,
+                source,
+                settings.whisper_model_size,
+                settings.whisper_device,
+                settings.whisper_compute_type,
+                config.language,
+            )
+
+        if not words:
+            raise RuntimeError(
+                "No speech was found in that video, so there is nothing to caption."
+            )
+
+        # 2. Subtitles ---------------------------------------------------------
+        await _emit(
+            project_id,
+            stage=RenderStage.SUBTITLE_GENERATION,
+            progress_pct=55,
+            message=f"Building captions from {len(words)} words...",
+        )
+        probed = await uploads.probe(source, settings.ffprobe_binary)
+        with timings.stage("subtitles"):
+            ass_path = subtitle_engine.build_ass_from_words(
+                words,
+                config.subtitles,
+                paths / "subtitles" / "captions.ass",
+                # The caption canvas has to match the video it is drawn
+                # over, not our vertical default — burning a 1080x1920
+                # layout onto landscape footage puts the text off-screen.
+                play_res=(probed.width, probed.height),
+            )
+
+        # 3. Burn in -----------------------------------------------------------
+        await _emit(
+            project_id,
+            stage=RenderStage.ASSEMBLY,
+            progress_pct=70,
+            message="Burning the captions into the video...",
+        )
+        output_path = paths / "output" / "final.mp4"
+        with timings.stage("ffmpeg_assembly"):
+            final_path = await render_engine.finalize_render(
+                source,
+                ass_path,
+                config.music,
+                output_path,
+                target=render_engine.RenderTarget(probed.width, probed.height, config.fps),
+                ffmpeg_binary=settings.ffmpeg_binary,
+            )
+
+        timings.write(
+            paths / "timings.json",
+            extra={
+                "project_id": project_id,
+                "source": "upload",
+                "language": config.language,
+                "word_count": len(words),
+                "video_duration_s": round(probed.duration_s, 2),
+            },
+        )
+
+        # Thumbnail for the library grid. Best-effort: a project without
+        # one still plays.
+        await render_engine.extract_poster(
+            final_path,
+            paths / "output" / "poster.jpg",
+            ffmpeg_binary=settings.ffmpeg_binary,
+            ffprobe_binary=settings.ffprobe_binary,
+        )
+
+        await project_store.update_project(
+            project_id,
+            status=ProjectStatus.COMPLETE,
+            output_path=str(final_path),
+            captions=CaptionTrack(words=words, style=config.subtitles),
+            error=None,
+        )
+        await _emit(
+            project_id,
+            stage=RenderStage.DONE,
+            progress_pct=100,
+            message="Captions ready.",
+            output_path=str(final_path),
+        )
+
+    except Exception as exc:  # noqa: BLE001 - surface any failure to the client
+        logger.exception("Upload pipeline failed for project %s", project_id)
+        await project_store.update_project(project_id, status=ProjectStatus.FAILED, error=str(exc))
+        await _refund_failed_render(project_id, reason=str(exc))
+        await _emit(
+            project_id,
+            stage=RenderStage.FAILED,
+            progress_pct=0,
+            message="Captioning failed.",
             error=str(exc),
         )
 
@@ -421,6 +582,13 @@ class RenderTaskQueue:
         while True:
             project = await self._queue.get()
             try:
-                await run_pipeline(project, self._settings)
+                # Uploads and generated projects share this queue on
+                # purpose: both are ffmpeg- and Whisper-bound, so they
+                # compete for the same machine and should respect the same
+                # concurrency limit.
+                if project.config.source == ProjectSource.UPLOAD:
+                    await run_upload_pipeline(project, self._settings)
+                else:
+                    await run_pipeline(project, self._settings)
             finally:
                 self._queue.task_done()

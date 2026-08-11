@@ -19,7 +19,7 @@ from dataclasses import dataclass
 
 import asyncpg
 
-from app.schemas.project import ProjectConfig, VideoLength, VisualMode
+from app.schemas.project import ProjectConfig, ProjectSource, VideoLength, VisualMode
 
 logger = logging.getLogger(__name__)
 
@@ -58,9 +58,18 @@ _LENGTH_MULTIPLIER = {
 }
 
 
+# Captioning an upload skips script, voice and visuals entirely — the only
+# real cost is one Whisper pass and one ffmpeg pass. It isn't free, because
+# transcription is genuinely CPU-bound (a few seconds per minute of video),
+# but it is the cheapest thing the product does.
+AUTOCAPTION_COST = 1
+
+
 def cost_for(config: ProjectConfig) -> int:
     """Credits a render of this shape costs. Deterministic: the caller is
     quoted this before the render starts and charged exactly this."""
+    if config.source == ProjectSource.UPLOAD:
+        return AUTOCAPTION_COST
     mode = VisualMode(config.visual_mode)
     length = VideoLength(config.video_length)
     return _MODE_COST[mode] * _LENGTH_MULTIPLIER[length]
