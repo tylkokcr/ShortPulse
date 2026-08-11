@@ -231,3 +231,52 @@ async def test_the_final_video_starts_playing_before_it_finishes_downloading(tmp
     assert _atom_order(final) == ["moov", "mdat"], (
         "moov is not first — the browser must download the whole file before playback"
     )
+
+
+async def test_a_scene_keeps_its_last_syllable_and_pauses_before_the_next(tmp_path, target):
+    """The voiceover sounded like the narrator was interrupting themselves.
+
+    Two causes, both pinned here. `audio.duration_ms` is set from the end of
+    the last word Whisper transcribed, and Whisper puts that boundary at the
+    final vowel — so cutting the clip there dropped 80-250ms of trailing
+    consonant off every scene. And since clips are concatenated back to
+    back, the next sentence then began in the very same instant.
+
+    So: the clip must be at least as long as the voiceover file (nothing
+    clipped) plus the configured gap (a breath between lines).
+    """
+    still = tmp_path / "still.png"
+    _run(["-f", "lavfi", "-i", "color=c=red:s=320x240:d=1", "-frames:v", "1", str(still)])
+    voice = _audible_voiceover(tmp_path / "voice.wav", seconds=3.0)
+
+    scene = _scene(0, still, voice)
+    # What the audio engine really writes: the last word ends before the
+    # audio does. Trusting this number is the bug.
+    scene.audio.duration_ms = 2800
+    scene.audio.words = [Word(text="hello", start_ms=0, end_ms=2800)]
+
+    clip = await render_engine.render_scene_clip(
+        scene, target, tmp_path, ffmpeg_binary=FFMPEG, ffprobe_binary=FFPROBE, scene_gap_s=0.35
+    )
+
+    clip_s = await render_engine._probe_duration_ms(clip, FFPROBE) / 1000
+    assert clip_s >= 3.0, f"clip is {clip_s:.3f}s — shorter than the voiceover, so a word got cut"
+    assert clip_s == pytest.approx(3.35, abs=0.05), f"expected ~3.35s with the gap, got {clip_s:.3f}s"
+
+
+async def test_the_gap_is_silent_not_a_repeated_tail(tmp_path, target):
+    """A pause has to be actual silence. Padding with `-t` alone would let
+    ffmpeg loop or hold the audio instead, which sounds worse than no gap."""
+    still = tmp_path / "still.png"
+    _run(["-f", "lavfi", "-i", "color=c=red:s=320x240:d=1", "-frames:v", "1", str(still)])
+    voice = _audible_voiceover(tmp_path / "voice.wav", seconds=3.0)
+
+    clip = await render_engine.render_scene_clip(
+        _scene(0, still, voice), target, tmp_path,
+        ffmpeg_binary=FFMPEG, ffprobe_binary=FFPROBE, scene_gap_s=1.0,
+    )
+
+    tail = tmp_path / "tail.wav"
+    # Everything after the voiceover should be silence.
+    _run(["-i", str(clip), "-ss", "3.05", "-map", "0:a", str(tail)])
+    assert _mean_volume_db(tail) < -60, "the gap is not silent — the voiceover tail was padded out"

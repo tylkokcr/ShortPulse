@@ -75,18 +75,50 @@ async def _run_ffmpeg(args: list[str], ffmpeg_binary: str = "ffmpeg") -> None:
         raise RenderError(f"ffmpeg failed ({' '.join(cmd)}):\n{stderr.decode(errors='ignore')}")
 
 
-def _scene_duration_s(scene: Scene) -> float:
+# Silence appended after each scene's voiceover so consecutive sentences
+# don't run together. Without it every clip ended on the last syllable and
+# the next one started in the same instant, which sounds like the narrator
+# is interrupting themselves.
+DEFAULT_SCENE_GAP_S = 0.35
+
+
+async def _scene_duration_s(
+    scene: Scene, ffprobe_binary: str = "ffprobe", gap_s: float = DEFAULT_SCENE_GAP_S
+) -> float:
+    """How long this scene's clip should run: the voiceover's real length
+    plus a breath of silence.
+
+    Measured from the audio file rather than `audio.duration_ms`, which at
+    this point is the end of the *last transcribed word* — Whisper places
+    that boundary at the final vowel, so trusting it cut 80-250ms off every
+    scene, clipping trailing consonants and leaving no pause before the
+    next line. The probe is the ground truth; the word timings stay useful
+    for subtitles, which is what they were measured for.
+    """
+    if scene.audio.audio_path:
+        try:
+            return await _probe_duration_ms(Path(scene.audio.audio_path), ffprobe_binary) / 1000 + gap_s
+        except RenderError:
+            logger.warning(
+                "Could not probe audio for scene %s; falling back to script timing",
+                scene.index,
+            )
     if scene.audio.duration_ms:
-        return scene.audio.duration_ms / 1000
+        return scene.audio.duration_ms / 1000 + gap_s
     return scene.duration_s
 
 
 async def _probe_duration_ms(path: Path, ffprobe_binary: str) -> int:
-    """Exact rendered duration, in ms, of a clip's video stream. Frame-rate
-    quantization means a clip asked for e.g. 4.440s can't land on that
-    exactly (4.44s * 30fps = 133.2, not a whole frame count) — this reads
-    back what actually got encoded so downstream timing (subtitles) can be
-    based on ground truth instead of the pre-render request.
+    """Exact container duration, in ms, of a rendered clip or an audio file.
+
+    For clips: frame-rate quantization means one asked for e.g. 4.440s
+    can't land there exactly (4.44s * 30fps = 133.2, not a whole frame
+    count), so this reads back what actually got encoded and downstream
+    timing (subtitles) is based on ground truth rather than the request.
+
+    `format=duration` is a container property, so the `v:0` stream filter
+    below doesn't exclude audio-only inputs — the same helper measures a
+    voiceover file (see `_scene_duration_s`).
     """
     cmd = [
         ffprobe_binary,
@@ -106,12 +138,11 @@ async def _probe_duration_ms(path: Path, ffprobe_binary: str) -> int:
 
 
 async def _render_image_scene_clip(
-    scene: Scene, target: RenderTarget, output_path: Path, ffmpeg_binary: str
+    scene: Scene, target: RenderTarget, output_path: Path, ffmpeg_binary: str, duration: float
 ) -> None:
     """Ken Burns effect: slow zoom + pan across the still image, cropped to
     the vertical frame. Direction alternates per scene so consecutive
     clips don't all drift the same way."""
-    duration = _scene_duration_s(scene)
     total_frames = max(round(duration * target.fps), 1)
     # The video track can only ever be a whole number of frames long, so
     # pin the audio to that exact same frame-quantized length (via apad +
@@ -155,11 +186,10 @@ async def _render_image_scene_clip(
 
 
 async def _render_video_scene_clip(
-    scene: Scene, target: RenderTarget, output_path: Path, ffmpeg_binary: str
+    scene: Scene, target: RenderTarget, output_path: Path, ffmpeg_binary: str, duration: float
 ) -> None:
     """Scale-to-fill + center-crop a stock/AI video clip to the target
     aspect ratio, looping it if it's shorter than the scene's voiceover."""
-    duration = _scene_duration_s(scene)
     # Same reasoning as _render_image_scene_clip: pin both streams to the
     # same frame-quantized length explicitly instead of trusting
     # `-shortest`, which left video and audio a few tens of ms apart.
@@ -202,6 +232,7 @@ async def render_scene_clip(
     output_dir: Path,
     ffmpeg_binary: str = "ffmpeg",
     ffprobe_binary: str = "ffprobe",
+    scene_gap_s: float = DEFAULT_SCENE_GAP_S,
 ) -> Path:
     if not scene.visual.asset_path or not scene.audio.audio_path:
         raise RenderError(f"Scene {scene.index} is missing visual or audio assets")
@@ -209,10 +240,14 @@ async def render_scene_clip(
     ext = Path(scene.visual.asset_path).suffix.lower()
     output_path = output_dir / f"clip_{scene.index:02d}.mp4"
 
+    # Probed once here rather than inside each renderer: the two paths must
+    # agree on the clip length, and this keeps it to a single ffprobe call.
+    duration = await _scene_duration_s(scene, ffprobe_binary, scene_gap_s)
+
     if ext in _IMAGE_EXTENSIONS:
-        await _render_image_scene_clip(scene, target, output_path, ffmpeg_binary)
+        await _render_image_scene_clip(scene, target, output_path, ffmpeg_binary, duration)
     elif ext in _VIDEO_EXTENSIONS:
-        await _render_video_scene_clip(scene, target, output_path, ffmpeg_binary)
+        await _render_video_scene_clip(scene, target, output_path, ffmpeg_binary, duration)
     else:
         raise RenderError(f"Unrecognized visual asset type: {ext}")
 
@@ -321,6 +356,7 @@ async def render_project(
     target: RenderTarget = _DEFAULT_TARGET,
     ffmpeg_binary: str = "ffmpeg",
     ffprobe_binary: str = "ffprobe",
+    scene_gap_s: float = DEFAULT_SCENE_GAP_S,
     on_scene_rendered=None,
 ) -> Path:
     """Full assembly: render each scene clip, THEN build subtitles (using
@@ -330,7 +366,9 @@ async def render_project(
     async callback for progress reporting (see render_manager.py)."""
     clip_paths: list[Path] = []
     for scene in scenes:
-        clip_path = await render_scene_clip(scene, target, output_dir, ffmpeg_binary, ffprobe_binary)
+        clip_path = await render_scene_clip(
+            scene, target, output_dir, ffmpeg_binary, ffprobe_binary, scene_gap_s
+        )
         clip_paths.append(clip_path)
         if on_scene_rendered:
             await on_scene_rendered(scene.index + 1, len(scenes))

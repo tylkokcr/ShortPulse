@@ -51,6 +51,12 @@ class Settings(BaseSettings):
     # Rendering
     ffmpeg_binary: str = "ffmpeg"
     ffprobe_binary: str = "ffprobe"
+    # Silence appended after each scene's voiceover. Scene clips are
+    # concatenated back to back, so without a pause here one sentence ends
+    # and the next begins in the same instant — it sounds like the narrator
+    # is talking over themselves. 0.35s is a natural sentence break; raise
+    # it for a slower read, set 0 to butt the lines together.
+    scene_gap_s: float = 0.35
     default_fps: int = 30
     default_resolution: tuple[int, int] = (1080, 1920)
 

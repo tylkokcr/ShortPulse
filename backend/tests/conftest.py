@@ -9,13 +9,37 @@ against a verifier that checked nothing.
 from __future__ import annotations
 
 import json
+import os
 import time
 import uuid
+from pathlib import Path
 
 import httpx
 import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import ec
+
+
+def _adopt_ffmpeg_paths_from_dotenv() -> None:
+    """Let the render tests see the ffmpeg the app is configured to use.
+
+    They need a build with libass and skip without one. The app finds it
+    through pydantic-settings, which reads `.env`; pytest doesn't — so on a
+    machine set up exactly as the README describes, those tests skipped
+    silently and the suite still reported green. Anything already exported
+    wins, so CI can override.
+    """
+    dotenv = Path(__file__).resolve().parents[1] / ".env"
+    if not dotenv.exists():
+        return
+    for line in dotenv.read_text().splitlines():
+        key, _, value = line.partition("=")
+        key = key.strip()
+        if key in ("FFMPEG_BINARY", "FFPROBE_BINARY") and key not in os.environ:
+            os.environ[key] = value.strip()
+
+
+_adopt_ffmpeg_paths_from_dotenv()
 
 PROJECT_URL = "https://testproject.supabase.co"
 ISSUER = f"{PROJECT_URL}/auth/v1"

@@ -70,16 +70,29 @@ async def synthesize_scene_audio(
     Extension follows the engine — Piper writes WAV, the others MP3 —
     since everything downstream (whisper, ffmpeg) reads either.
     """
-    text = clean_text_for_tts(scene.audio.voiceover_line)
     suffix = "wav" if voice.provider == TTSProvider.PIPER else "mp3"
     output_path = output_dir / f"scene_{scene.index:02d}.{suffix}"
+    await synthesize_line(scene.audio.voiceover_line, voice, output_path, language)
+    return output_path
+
+
+async def synthesize_line(
+    text: str, voice: VoiceConfig, output_path: Path, language: str = "en"
+) -> Path:
+    """Speak one line to `output_path`.
+
+    Split out of `synthesize_scene_audio` so the voice-preview endpoint
+    goes through the same provider dispatch a real render does — a preview
+    produced by a different code path is a preview that can lie.
+    """
+    cleaned = clean_text_for_tts(text)
 
     if voice.provider == TTSProvider.EDGE_TTS:
-        await _synthesize_edge_tts(text, voice, output_path)
+        await _synthesize_edge_tts(cleaned, voice, output_path)
     elif voice.provider == TTSProvider.PIPER:
-        await _synthesize_piper(text, voice, output_path, language)
+        await _synthesize_piper(cleaned, voice, output_path, language)
     elif voice.provider == TTSProvider.COQUI_XTTS:
-        await _synthesize_xtts(text, voice, output_path)
+        await _synthesize_xtts(cleaned, voice, output_path)
     else:
         raise ValueError(f"Unsupported TTS provider: {voice.provider}")
 
@@ -278,5 +291,11 @@ async def process_scene_audio(
 
     scene.audio.audio_path = str(audio_path)
     scene.audio.words = words
+    # Note this is the end of the last transcribed *word*, not the length of
+    # the audio file — Whisper puts that boundary at the final vowel, so it
+    # runs short by 80-250ms. Good enough for a rough estimate, wrong as a
+    # clip length: cutting a scene here clips the trailing consonant. The
+    # renderer probes the file instead (render_engine._scene_duration_s) and
+    # overwrites this with the real encoded duration once the clip exists.
     scene.audio.duration_ms = words[-1].end_ms if words else int(scene.duration_s * 1000)
     return scene

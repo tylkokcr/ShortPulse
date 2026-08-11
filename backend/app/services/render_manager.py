@@ -268,6 +268,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 target=target,
                 ffmpeg_binary=settings.ffmpeg_binary,
                 ffprobe_binary=settings.ffprobe_binary,
+                scene_gap_s=settings.scene_gap_s,
                 on_scene_rendered=on_scene_rendered,
             )
 
