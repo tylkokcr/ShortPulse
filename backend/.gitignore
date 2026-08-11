@@ -7,3 +7,5 @@ app/storage/projects/*
 !app/storage/projects/.gitkeep
 .pytest_cache/
 .ruff_cache/
+# Synthesized voice samples, regenerated on demand
+app/storage/voice_previews/

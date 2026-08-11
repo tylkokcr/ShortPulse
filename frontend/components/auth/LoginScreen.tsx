@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Mail } from "lucide-react";
+import { Mail, ArrowRight } from "lucide-react";
+import clsx from "clsx";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -28,16 +29,17 @@ function explain(message: string): string {
   return message;
 }
 
-
 /**
- * Magic-link sign-in.
+ * Magic-link sign-in card. No password field on purpose: passwords would
+ * mean a reset flow, a strength policy, and somewhere for users to reuse a
+ * password they've already leaked elsewhere. A link to their inbox proves
+ * the same thing with none of that.
  *
- * No password field on purpose: passwords would mean a reset flow, a
- * strength policy, and somewhere for users to reuse a password they've
- * already leaked elsewhere. A link to their inbox proves the same thing
- * with none of that.
+ * Embedded directly in the landing hero (see components/marketing/Landing)
+ * rather than living behind its own route — the fastest path from "reading
+ * about the product" to "using it" is not making that a separate page.
  */
-export function LoginScreen() {
+export function LoginPanel({ className }: { className?: string }) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -62,57 +64,72 @@ export function LoginScreen() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-6">
-      <div>
-        <h1 className="text-2xl font-semibold">ShortPulse</h1>
-        <p className="mt-1 text-sm text-white/50">
-          Turn a topic into a ready-to-post vertical video.
-        </p>
-      </div>
+    <Card
+      id="sign-in"
+      className={clsx(
+        "relative flex flex-col gap-4 overflow-hidden bg-surface-raised shadow-2xl shadow-black/40",
+        className
+      )}
+    >
+      <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-accent-gradient opacity-20 blur-3xl" />
 
-      <Card className="flex flex-col gap-4">
-        {status === "sent" ? (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-sm text-white/80">
-              <Mail size={16} />
-              Check your inbox
-            </div>
-            <p className="text-sm text-white/50">
-              We sent a sign-in link to <span className="text-white/70">{email}</span>. It opens
-              this page already signed in. If it isn&apos;t there in a minute, check spam.
-            </p>
-            <button
-              onClick={() => setStatus("idle")}
-              className="self-start text-xs text-white/40 underline underline-offset-2 hover:text-white/70"
-            >
-              Use a different address
-            </button>
+      {status === "sent" ? (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-sm font-medium text-white">
+            <Mail size={16} className="text-accent" />
+            Check your inbox
           </div>
-        ) : (
-          <form onSubmit={sendLink} className="flex flex-col gap-3">
-            <label className="text-sm font-medium text-white/70" htmlFor="email">
-              Sign in with your email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="rounded-lg border border-border bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-accent focus:outline-none"
-            />
-            {error && <p className="text-sm text-red-400">{error}</p>}
-            <Button type="submit" disabled={status === "sending" || !email.trim()}>
-              {status === "sending" ? "Sending..." : "Email me a sign-in link"}
-            </Button>
-            <p className="text-xs text-white/30">
-              No password to remember, and nothing to reset.
+          <p className="text-sm text-white/50">
+            We sent a sign-in link to <span className="text-white/80">{email}</span>. It opens this
+            page already signed in. If it isn&apos;t there in a minute, check spam.
+          </p>
+          <button
+            onClick={() => setStatus("idle")}
+            className="self-start text-xs text-white/40 underline underline-offset-2 hover:text-white/70"
+          >
+            Use a different address
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={sendLink} className="flex flex-col gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-white">Start with 15 free credits</h2>
+            <p className="mt-1 text-sm text-white/50">
+              No card. One-time link, no password to leak or reset.
             </p>
-          </form>
-        )}
-      </Card>
-    </main>
+          </div>
+          <label className="sr-only" htmlFor="email">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            className="rounded-lg border border-border bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-accent focus:outline-none"
+          />
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          <Button type="submit" variant="gradient" disabled={status === "sending" || !email.trim()}>
+            {status === "sending" ? "Sending..." : "Email me a sign-in link"}
+            {status !== "sending" && <ArrowRight size={16} />}
+          </Button>
+          <p className="text-xs text-white/30">
+            Prefer to run it yourself?{" "}
+            <a
+              href="https://github.com/tylkokcr/ShortPulse"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2 hover:text-white/60"
+            >
+              Clone the repo
+            </a>{" "}
+            — MIT licensed, no account needed.
+          </p>
+        </form>
+      )}
+    </Card>
   );
 }

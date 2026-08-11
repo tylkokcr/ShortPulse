@@ -6,8 +6,22 @@
   color-scheme: dark;
 }
 
+/* Anchor links in the header glide instead of teleporting. Guarded so it
+   never overrides a user who has asked the OS for less motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 body {
   @apply bg-background text-white antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+::selection {
+  background-color: rgba(124, 92, 255, 0.35);
+  color: #fff;
 }
 
 ::-webkit-scrollbar {
@@ -16,4 +30,44 @@ body {
 }
 ::-webkit-scrollbar-thumb {
   @apply bg-border rounded-full;
+}
+
+/* Faint grain so dark panels read as material, not a flat vector fill —
+   the difference between a crafted UI and a generic gradient template.
+   Plain background-image at low opacity, deliberately no mix-blend-mode:
+   that combined with isolation triggered a black-frame compositing bug
+   during screenshot capture in testing. */
+.bg-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 40%, transparent 100%);
+}
+
+.text-gradient {
+  @apply bg-accent-gradient bg-clip-text text-transparent;
+}
+
+/* Scroll-triggered entrance.
+ *
+ * The revealed state is plain, unstyled visibility and the entrance is a
+ * keyframe animation with no fill-mode — deliberately, not incidentally.
+ * A transition between the two states leaves the element frozen at
+ * opacity 0 wherever the animation never advances (a backgrounded or
+ * non-composited tab does exactly that), and fill-mode would pin it to the
+ * from-state for the same reason. Written this way, an animation that
+ * never runs just means the section appears without ceremony. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-reveal="hidden"] {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  [data-reveal="shown"] {
+    animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
 }

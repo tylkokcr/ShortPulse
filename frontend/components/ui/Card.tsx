@@ -1,10 +1,20 @@
 import { type HTMLAttributes } from "react";
 import clsx from "clsx";
 
-export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+interface CardProps extends HTMLAttributes<HTMLDivElement> {
+  /** Lifts and brightens the border on hover — for cards that act like a
+   *  single clickable/selectable unit rather than a passive container. */
+  interactive?: boolean;
+}
+
+export function Card({ className, interactive, ...props }: CardProps) {
   return (
     <div
-      className={clsx("rounded-xl border border-border bg-surface p-5", className)}
+      className={clsx(
+        "rounded-xl border border-border bg-surface p-5 transition-colors duration-200",
+        interactive && "hover:border-border-strong hover:bg-surface-hover",
+        className
+      )}
       {...props}
     />
   );

@@ -19,3 +19,11 @@ frontend/next-env.d.ts
 
 # OS
 .DS_Store
+# Synthesized voice samples, regenerated on demand
+backend/app/storage/voice_previews/
+
+# Example renders shown on the landing page. The .mp4 masters are ~26MB
+# and are regenerated from the pipeline (see
+# frontend/public/examples/README.md); the .jpg posters stay tracked so a
+# fresh clone still renders the page with the right thumbnails.
+frontend/public/examples/*.mp4
