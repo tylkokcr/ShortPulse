@@ -284,20 +284,56 @@ async def finalize_render(
     output_path: Path,
     target: RenderTarget,
     ffmpeg_binary: str = "ffmpeg",
+    secondary_video: Path | None = None,
 ) -> Path:
-    """Burn in subtitles and, if enabled, mix background music under the
-    voiceover with sidechain-compression ducking (music volume drops
-    automatically whenever the voice track is speaking).
+    """The single composite pass: lay out the frame, burn in the text, mix
+    the audio, encode.
+
+    Everything that changes what the finished file looks like happens here,
+    in one ffmpeg invocation, which is what makes an edit cheap enough to
+    be free — see services/editing.py.
+
+    With `secondary_video`, the frame becomes the split-screen format: this
+    video on top, that one underneath, each scaled to fill its half and
+    centre-cropped. The soundtrack stays the top one's. Silencing the
+    bottom clip is not a stylistic choice — the format exists to put
+    ambient footage under narration, and two voices at once is unwatchable.
     """
     # ass filter paths must have colons/backslashes escaped for the ffmpeg
     # filtergraph parser, particularly on Windows-style paths.
     escaped_ass_path = str(subtitle_ass_path).replace("\\", "/").replace(":", "\\:")
     subtitles_filter = f"ass='{escaped_ass_path}'"
 
-    if music.enabled and music.track_path:
-        filter_complex = (
-            f"[0:v]{subtitles_filter}[vout];"
-            f"[1:a]volume={music.volume_db}dB,aloop=loop=-1:size=2e9[music];"
+    inputs: list[str] = []
+    if secondary_video is not None:
+        # Looped so a short clip underneath still covers the whole
+        # narration rather than freezing on its last frame. `-shortest`
+        # below is what stops the output being infinite.
+        inputs += ["-stream_loop", "-1", "-i", str(secondary_video)]
+    music_enabled = bool(music.enabled and music.track_path)
+    if music_enabled:
+        inputs += ["-i", str(music.track_path)]
+
+    if secondary_video is not None:
+        half = target.height // 2
+        # setsar=1 on both: vstack refuses inputs whose sample aspect
+        # ratios disagree, and stock footage frequently carries a
+        # non-square one.
+        video_chain = (
+            f"[0:v]scale={target.width}:{half}:force_original_aspect_ratio=increase,"
+            f"crop={target.width}:{half},setsar=1[top];"
+            f"[1:v]scale={target.width}:{half}:force_original_aspect_ratio=increase,"
+            f"crop={target.width}:{half},setsar=1[bot];"
+            f"[top][bot]vstack=inputs=2[stacked];"
+            f"[stacked]{subtitles_filter}[vout]"
+        )
+    else:
+        video_chain = f"[0:v]{subtitles_filter}[vout]"
+
+    if music_enabled:
+        music_index = 2 if secondary_video is not None else 1
+        audio_chain = (
+            f";[{music_index}:a]volume={music.volume_db}dB,aloop=loop=-1:size=2e9[music];"
             + (
                 "[music][0:a]sidechaincompress=threshold=0.05:ratio=8:attack=5:release=300[ducked];"
                 if music.duck_on_voice
@@ -310,37 +346,35 @@ async def finalize_render(
             # and the voice noticeably quieter than the no-music path.
             + "[0:a][ducked]amix=inputs=2:duration=first:dropout_transition=2:normalize=0[aout]"
         )
-        args = [
-            "-i", str(concatenated_video),
-            "-i", str(music.track_path),
-            "-filter_complex", filter_complex,
-            "-map", "[vout]",
-            "-map", "[aout]",
-            "-c:v", "libx264",
-            "-preset", "medium",
-            "-crf", "18",
-            "-pix_fmt", "yuv420p",
-            "-r", str(target.fps),
-            "-c:a", "aac",
-            "-b:a", "192k",
-            *_FASTSTART,
-            "-shortest",
-            str(output_path),
-        ]
+        audio_map = ["-map", "[aout]"]
     else:
-        args = [
-            "-i", str(concatenated_video),
-            "-vf", subtitles_filter,
-            "-c:v", "libx264",
-            "-preset", "medium",
-            "-crf", "18",
-            "-pix_fmt", "yuv420p",
-            "-r", str(target.fps),
-            "-c:a", "aac",
-            "-b:a", "192k",
-            *_FASTSTART,
-            str(output_path),
-        ]
+        audio_chain = ""
+        # Explicit, not default: with a second video input ffmpeg's stream
+        # selection would be free to prefer the bottom clip's audio track
+        # over the narration (see _render_video_scene_clip for the same
+        # trap costing a whole scene's voiceover).
+        audio_map = ["-map", "0:a?"]
+
+    args = [
+        "-i", str(concatenated_video),
+        *inputs,
+        "-filter_complex", video_chain + audio_chain,
+        "-map", "[vout]",
+        *audio_map,
+        "-c:v", "libx264",
+        "-preset", "medium",
+        "-crf", "18",
+        "-pix_fmt", "yuv420p",
+        "-r", str(target.fps),
+        "-c:a", "aac",
+        "-b:a", "192k",
+        *_FASTSTART,
+    ]
+    if music_enabled or secondary_video is not None:
+        # Both add an input that outlasts the video on purpose (music
+        # loops, the bottom clip loops), so the output needs an end.
+        args.append("-shortest")
+    args.append(str(output_path))
 
     await _run_ffmpeg(args, ffmpeg_binary)
     return output_path

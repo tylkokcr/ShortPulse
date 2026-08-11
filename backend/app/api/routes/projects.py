@@ -15,6 +15,7 @@ from app.core.storage import discard_project_files
 from app.schemas.project import (
     CaptionTrack,
     EditSpec,
+    Layout,
     Project,
     ProjectConfig,
     ProjectStatus,
@@ -193,6 +194,7 @@ class EditRequest(BaseModel):
 
     captions: CaptionTrack | None = None
     overlays: list[TextOverlay] = Field(default_factory=list, max_length=50)
+    layout: Layout = Layout.FULL
 
 
 @router.post("/{project_id}/edit", response_model=Project)
@@ -214,7 +216,18 @@ async def edit_project(
             status_code=409, detail="This video hasn't finished rendering yet."
         )
 
+    if body.layout == Layout.SPLIT_V and not (project.edit and project.edit.secondary_path):
+        raise HTTPException(
+            status_code=409,
+            detail="Upload a clip for the bottom half before switching to split screen.",
+        )
+
     edit = EditSpec(
+        layout=body.layout,
+        # Carried over from the project rather than taken from the request:
+        # this string becomes an ffmpeg input, so it only ever comes from
+        # the upload endpoint that wrote the file.
+        secondary_path=project.edit.secondary_path if project.edit else None,
         captions=body.captions or project.captions,
         overlays=body.overlays,
         music=project.config.music,

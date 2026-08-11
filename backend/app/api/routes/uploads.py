@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 
 from app.api.deps import billing_enabled, current_user_id, db_pool
 from app.core.config import get_settings, project_dir
-from app.schemas.project import Project, ProjectConfig, ProjectSource
+from app.schemas.project import EditSpec, Project, ProjectConfig, ProjectSource
 from app.services import credits, project_store, uploads
 
 logger = logging.getLogger(__name__)
@@ -118,3 +118,39 @@ async def upload_video(
     project = await project_store.update_project(config.id, source_path=str(destination))
     await request.app.state.render_queue.submit(project)
     return project
+
+
+@router.post("/{project_id}/secondary", response_model=Project)
+async def upload_secondary_clip(
+    project_id: str,
+    file: UploadFile = File(...),
+    user_id: str | None = Depends(current_user_id),
+) -> Project:
+    """Attach the bottom half of a split-screen layout.
+
+    Stored against the project rather than uploaded with the edit, because
+    the file is large and the edit is a small JSON document the user may
+    apply repeatedly while adjusting captions. Uploading once and
+    re-rendering many times is the shape that fits.
+
+    The path recorded here is the only one the renderer will use — the edit
+    endpoint takes a layout, never a location.
+    """
+    from app.api.routes.projects import _visible_project
+
+    settings = get_settings()
+    project = await _visible_project(project_id, user_id)
+
+    paths = project_dir(project_id)
+    suffix = Path(file.filename or "").suffix.lower()
+    destination = uploads.source_path_for(paths, suffix, name="secondary")
+
+    try:
+        await uploads.save_stream(_chunks(file), destination)
+        await uploads.probe(destination, settings.ffprobe_binary)
+    except uploads.UploadRejected as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    edit = project.edit or EditSpec(captions=project.captions)
+    edit = edit.model_copy(update={"secondary_path": str(destination)})
+    return await project_store.update_project(project_id, edit=edit)

@@ -280,3 +280,77 @@ async def test_the_gap_is_silent_not_a_repeated_tail(tmp_path, target):
     # Everything after the voiceover should be silence.
     _run(["-i", str(clip), "-ss", "3.05", "-map", "0:a", str(tail)])
     assert _mean_volume_db(tail) < -60, "the gap is not silent — the voiceover tail was padded out"
+
+
+async def _dimensions(path: Path) -> tuple[int, int]:
+    out = subprocess.run(
+        [FFPROBE, "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "stream=width,height", "-of", "csv=p=0:s=x", str(path)],
+        capture_output=True, check=True).stdout.decode().strip()
+    w, _, h = out.partition("x")
+    return int(w), int(h)
+
+
+async def test_a_split_stacks_both_clips_into_one_frame(tmp_path, target):
+    """The split-screen format: narration on top, ambient footage below."""
+    voice = _audible_voiceover(tmp_path / "voice.wav")
+    still = tmp_path / "still.png"
+    _run(["-f", "lavfi", "-i", "color=c=red:s=320x240:d=1", "-frames:v", "1", str(still)])
+    top = await render_engine.render_scene_clip(
+        _scene(0, still, voice), target, tmp_path, ffmpeg_binary=FFMPEG, ffprobe_binary=FFPROBE
+    )
+    bottom = _silent_stock_clip(tmp_path / "bottom.mp4", seconds=1.0)
+    captions = build_ass_subtitles([], SubtitleStyle(), tmp_path / "captions.ass")
+
+    final = await render_engine.finalize_render(
+        top, captions, MusicConfig(enabled=False), tmp_path / "split.mp4",
+        target=target, ffmpeg_binary=FFMPEG, secondary_video=bottom,
+    )
+
+    assert await _dimensions(final) == (target.width, target.height)
+
+
+async def test_a_short_bottom_clip_is_looped_not_frozen(tmp_path, target):
+    """A 1s clip under a 3s narration must keep moving. Without the loop
+    the output either ends early or holds the last frame."""
+    voice = _audible_voiceover(tmp_path / "voice.wav", seconds=3.0)
+    still = tmp_path / "still.png"
+    _run(["-f", "lavfi", "-i", "color=c=red:s=320x240:d=1", "-frames:v", "1", str(still)])
+    top = await render_engine.render_scene_clip(
+        _scene(0, still, voice), target, tmp_path, ffmpeg_binary=FFMPEG, ffprobe_binary=FFPROBE
+    )
+    bottom = _silent_stock_clip(tmp_path / "bottom.mp4", seconds=1.0)
+    captions = build_ass_subtitles([], SubtitleStyle(), tmp_path / "captions.ass")
+
+    final = await render_engine.finalize_render(
+        top, captions, MusicConfig(enabled=False), tmp_path / "split.mp4",
+        target=target, ffmpeg_binary=FFMPEG, secondary_video=bottom,
+    )
+
+    top_s = await render_engine._probe_duration_ms(top, FFPROBE) / 1000
+    final_s = await render_engine._probe_duration_ms(final, FFPROBE) / 1000
+    assert final_s == pytest.approx(top_s, abs=0.2), (
+        f"split is {final_s:.2f}s but the narration is {top_s:.2f}s"
+    )
+
+
+async def test_the_bottom_clip_never_takes_over_the_soundtrack(tmp_path, target):
+    """Same trap as scene clips: ffmpeg's default stream selection prefers
+    a 48kHz stereo track over 22kHz mono TTS, which would silence the
+    narration in favour of whatever the bottom clip was recorded with."""
+    voice = _audible_voiceover(tmp_path / "voice.wav")
+    still = tmp_path / "still.png"
+    _run(["-f", "lavfi", "-i", "color=c=red:s=320x240:d=1", "-frames:v", "1", str(still)])
+    top = await render_engine.render_scene_clip(
+        _scene(0, still, voice), target, tmp_path, ffmpeg_binary=FFMPEG, ffprobe_binary=FFPROBE
+    )
+    # Carries its own (silent) 48kHz stereo track, like real stock footage.
+    bottom = _silent_stock_clip(tmp_path / "bottom.mp4", seconds=3.0)
+    captions = build_ass_subtitles([], SubtitleStyle(), tmp_path / "captions.ass")
+
+    final = await render_engine.finalize_render(
+        top, captions, MusicConfig(enabled=False), tmp_path / "split.mp4",
+        target=target, ffmpeg_binary=FFMPEG, secondary_video=bottom,
+    )
+
+    assert _mean_volume_db(final) > -40, "the narration was replaced by the bottom clip's audio"

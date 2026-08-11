@@ -17,7 +17,7 @@ from pathlib import Path
 
 from app.core.config import Settings, project_dir
 from app.engines import render_engine, subtitle_engine
-from app.schemas.project import EditSpec, Project
+from app.schemas.project import EditSpec, Layout, Project
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +72,15 @@ async def apply_edit(project: Project, edit: EditSpec, settings: Settings) -> Pa
         overlays=edit.overlays,
     )
 
+    secondary = None
+    if edit.layout == Layout.SPLIT_V and edit.secondary_path:
+        candidate = Path(edit.secondary_path)
+        if not candidate.is_file():
+            raise NothingToReburn(
+                "The clip for the bottom half is no longer on disk. Upload it again."
+            )
+        secondary = candidate
+
     output_path = paths / "output" / "final.mp4"
     final_path = await render_engine.finalize_render(
         source,
@@ -80,6 +89,7 @@ async def apply_edit(project: Project, edit: EditSpec, settings: Settings) -> Pa
         output_path,
         target=render_engine.RenderTarget(probed[0], probed[1], project.config.fps),
         ffmpeg_binary=settings.ffmpeg_binary,
+        secondary_video=secondary,
     )
 
     # The thumbnail is a frame of a video that just changed.

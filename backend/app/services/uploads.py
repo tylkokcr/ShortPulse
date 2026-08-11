@@ -54,16 +54,21 @@ class ProbedMedia:
     has_audio: bool
 
 
-def source_path_for(project_dir_path: Path, suffix: str = ".mp4") -> Path:
-    """Where a project's uploaded source lives.
+def source_path_for(
+    project_dir_path: Path, suffix: str = ".mp4", *, name: str = "source"
+) -> Path:
+    """Where a project's uploaded video lives.
 
-    Derived entirely from the project directory the server chose. A caller
-    cannot influence it, which is the point: the result is passed to
-    ffmpeg.
+    Derived entirely from the project directory the server chose and a
+    fixed name. A caller cannot influence either, which is the point: the
+    result is passed to ffmpeg.
+
+    `name` distinguishes the project's own footage from the second clip in
+    a split-screen layout. It is never client-supplied.
     """
     if suffix not in ALLOWED_SUFFIXES:
         suffix = ".mp4"
-    return project_dir_path / "source" / f"source{suffix}"
+    return project_dir_path / "source" / f"{name}{suffix}"
 
 
 async def save_stream(chunks, destination: Path, max_bytes: int = MAX_UPLOAD_BYTES) -> int:

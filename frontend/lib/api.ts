@@ -4,6 +4,7 @@ import type {
   CreditSummary,
   MusicTrack,
   CaptionTrack,
+  Layout,
   Project,
   ProjectConfig,
   RenderProgress,
@@ -163,12 +164,39 @@ export function listProjects(): Promise<Project[]> {
  */
 export function editProject(
   projectId: string,
-  body: { captions?: CaptionTrack | null; overlays: TextOverlay[] }
+  body: { captions?: CaptionTrack | null; overlays: TextOverlay[]; layout?: Layout }
 ): Promise<Project> {
   return request<Project>(`/projects/${projectId}/edit`, {
     method: "POST",
     body: JSON.stringify(body),
   });
+}
+
+/**
+ * Attach the bottom half of a split-screen layout.
+ *
+ * Separate from the edit call because the file is large and the edit is a
+ * small document applied repeatedly — upload once, re-render as often as
+ * you like.
+ */
+export async function uploadSecondaryClip(projectId: string, file: File): Promise<Project> {
+  const form = new FormData();
+  form.append("file", file);
+  const response = await fetch(`${API_BASE}/uploads/${projectId}/secondary`, {
+    method: "POST",
+    headers: await authHeaders(),
+    body: form,
+  });
+  if (!response.ok) {
+    const body = await response.text();
+    try {
+      throw new Error(JSON.parse(body).detail);
+    } catch (err) {
+      if (err instanceof Error && err.message) throw err;
+      throw new Error(`Upload failed (${response.status})`);
+    }
+  }
+  return response.json() as Promise<Project>;
 }
 
 /** Removes the row and everything it points at on disk. Irreversible. */

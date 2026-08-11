@@ -1,10 +1,20 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, Loader2, Plus, Trash2, Type, TriangleAlert } from "lucide-react";
+import {
+  Check,
+  Loader2,
+  Plus,
+  Rows2,
+  Square,
+  Trash2,
+  Type,
+  TriangleAlert,
+  Upload,
+} from "lucide-react";
 import clsx from "clsx";
-import { editProject } from "@/lib/api";
-import type { CaptionTrack, Project, TextOverlay, Word } from "@/lib/types";
+import { editProject, uploadSecondaryClip } from "@/lib/api";
+import type { CaptionTrack, Layout, Project, TextOverlay, Word } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
@@ -87,6 +97,11 @@ export function EditPanel({
 
   const [lines, setLines] = useState<Line[]>(() => (track ? toLines(track) : []));
   const [overlays, setOverlays] = useState<TextOverlay[]>(project.edit?.overlays ?? []);
+  const [layout, setLayout] = useState<Layout>(project.edit?.layout ?? "full");
+  const [secondary, setSecondary] = useState<string | null>(
+    project.edit?.secondary_path ?? null
+  );
+  const [uploadingClip, setUploadingClip] = useState(false);
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +109,8 @@ export function EditPanel({
   const original = useMemo(() => (track ? toLines(track) : []), [track]);
   const dirty =
     lines.some((line, i) => line.text !== original[i]?.text) ||
-    JSON.stringify(overlays) !== JSON.stringify(project.edit?.overlays ?? []);
+    JSON.stringify(overlays) !== JSON.stringify(project.edit?.overlays ?? []) ||
+    layout !== (project.edit?.layout ?? "full");
 
   if (!track) {
     return (
@@ -114,6 +130,7 @@ export function EditPanel({
       const updated = await editProject(project.config.id, {
         captions: { words, style: track!.style },
         overlays,
+        layout,
       });
       onApplied(updated);
       // Re-derive from what came back rather than keeping what was typed.
@@ -169,6 +186,79 @@ export function EditPanel({
             </div>
           ))}
         </div>
+      </Card>
+
+      <Card className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <Rows2 size={13} className="text-white/40" />
+          <h3 className="text-sm font-semibold text-white/80">Layout</h3>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {([
+            { id: "full", label: "Full frame", icon: Square },
+            { id: "split_v", label: "Split screen", icon: Rows2 },
+          ] as const).map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setLayout(option.id)}
+              disabled={option.id === "split_v" && !secondary}
+              className={clsx(
+                "flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors duration-200",
+                layout === option.id
+                  ? "border-accent/50 bg-accent/10 text-white"
+                  : "border-border text-white/50 hover:border-border-strong",
+                option.id === "split_v" && !secondary && "cursor-not-allowed opacity-40"
+              )}
+            >
+              <option.icon size={14} />
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        <label
+          className={clsx(
+            "flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-xs transition-colors hover:border-accent/40",
+            uploadingClip && "pointer-events-none opacity-60"
+          )}
+        >
+          <Upload size={13} className="shrink-0 text-white/40" />
+          <span className="min-w-0 flex-1 truncate text-white/50">
+            {uploadingClip
+              ? "Uploading..."
+              : secondary
+                ? "Bottom clip attached — click to replace"
+                : "Add a clip for the bottom half"}
+          </span>
+          <input
+            type="file"
+            accept="video/mp4,video/quicktime,video/webm,video/x-matroska"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setUploadingClip(true);
+              setError(null);
+              try {
+                const updated = await uploadSecondaryClip(project.config.id, file);
+                setSecondary(updated.edit?.secondary_path ?? null);
+                setLayout("split_v");
+                onApplied(updated);
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "Could not attach the clip");
+              } finally {
+                setUploadingClip(false);
+              }
+            }}
+          />
+        </label>
+
+        <p className="text-[11px] leading-relaxed text-white/30">
+          The narration stays on top and keeps the soundtrack; the bottom clip is muted and
+          loops if it&apos;s shorter.
+        </p>
       </Card>
 
       <Card className="flex flex-col gap-3">

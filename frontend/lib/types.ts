@@ -222,10 +222,15 @@ export interface TextOverlay {
   color: string;
 }
 
+export type Layout = "full" | "split_v";
+
 export interface EditSpec {
-  layout: "full" | "split_v";
+  layout: Layout;
   captions?: CaptionTrack | null;
   overlays: TextOverlay[];
+  /** Server-derived path to the bottom clip. Present once one is uploaded;
+   *  the client never sends it, only the layout that uses it. */
+  secondary_path?: string | null;
 }
 
 export interface Project {
