@@ -40,8 +40,10 @@ export function VisualSelector() {
               type="button"
               onClick={() => setDraft({ visualMode: mode, aiVideoAcknowledged: mode === "ai_video" ? draft.aiVideoAcknowledged : false })}
               className={clsx(
-                "flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-colors",
-                selected ? "border-accent bg-accent/10" : "border-border bg-background hover:bg-surface-hover"
+                "flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-all duration-200",
+                selected
+                  ? "border-accent bg-accent/10 shadow-[0_0_0_1px] shadow-accent/40"
+                  : "border-border bg-background hover:border-border-strong hover:bg-surface-hover"
               )}
             >
               <Icon size={20} className={selected ? "text-accent" : "text-white/60"} />

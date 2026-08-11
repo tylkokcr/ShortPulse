@@ -221,6 +221,9 @@ class ProjectConfig(BaseModel):
     aspect_ratio: AspectRatio = AspectRatio.VERTICAL_9_16
     fps: int = 30
     visual_mode: VisualMode = VisualMode.FAST_HYBRID
+    # Id from app.services.art_styles. Only affects the locally generated
+    # modes — stock footage is whatever the videographer shot.
+    art_style: str = "photoreal"
     video_length: VideoLength = VideoLength.SHORT
     language: str = Field(
         default="en",

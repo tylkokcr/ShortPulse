@@ -131,9 +131,40 @@ export interface SubtitleStyle {
 
 export interface MusicConfig {
   enabled: boolean;
+  /** Id from GET /api/music. The server resolves it to a path — clients
+   *  can't name arbitrary files, so `track_path` is response-only. */
+  track_id?: string | null;
   track_path?: string | null;
   volume_db: number;
   duck_on_voice: boolean;
+}
+
+/** One entry in the background-music library. */
+export interface MusicTrack {
+  id: string;
+  name: string;
+}
+
+/** One art style. `sample` is a filename under /art-styles, produced by
+ *  the real pipeline rather than sourced elsewhere. */
+export interface ArtStyle {
+  id: string;
+  name: string;
+  description: string;
+  sample: string;
+  is_default: boolean;
+}
+
+/** A selectable Piper voice. `id` goes straight into VoiceConfig.voice_id.
+ *  Piper's catalog records no gender or tone, so the only descriptors here
+ *  are the ones it actually publishes — hence the audio preview. */
+export interface Voice {
+  id: string;
+  name: string;
+  language: string;
+  region: string;
+  quality: string;
+  is_default: boolean;
 }
 
 export interface OutroConfig {
@@ -144,13 +175,21 @@ export interface OutroConfig {
   accent_color: string;
 }
 
+/** Where the video came from. An upload skips generation entirely and
+ *  only runs the captioning tail of the pipeline. */
+export type ProjectSource = "generated" | "upload";
+
 export interface ProjectConfig {
   id: string;
   topic: string;
+  source: ProjectSource;
   raw_script?: string | null;
   aspect_ratio: AspectRatio;
   fps: number;
   visual_mode: VisualMode;
+  /** Id from GET /api/art-styles. Only affects the locally generated
+   *  modes — stock footage is whatever the videographer shot. */
+  art_style: string;
   video_length: VideoLength;
   language: string;
   llm: LLMConfig;
@@ -161,12 +200,23 @@ export interface ProjectConfig {
   created_at: string;
 }
 
+/** Words timed against the finished video. Materialised after the first
+ *  render so captions can be corrected and reburned without re-running the
+ *  pipeline. */
+export interface CaptionTrack {
+  words: Word[];
+  style: SubtitleStyle;
+}
+
 export interface Project {
   config: ProjectConfig;
   status: ProjectStatus;
   script?: ScriptOutput | null;
   output_path?: string | null;
   error?: string | null;
+  /** The uploaded video this project started from, if it wasn't generated. */
+  source_path?: string | null;
+  captions?: CaptionTrack | null;
   /** Credits this render was charged. Always 0 on a self-hosted install,
    *  where there is no billing. */
   credits_cost: number;
@@ -181,6 +231,17 @@ export interface CreditSummary {
   /** Keyed `"<visual_mode>:<video_length>"`, so the UI can quote a price
    *  before the user submits. */
   pricing: Record<string, number>;
+  /** Served even when `enabled` is false, so the marketing page renders
+   *  the same prices the ledger would charge. */
+  packs: CreditPack[];
+}
+
+/** One-off purchase — nothing here renews, and credits never expire. */
+export interface CreditPack {
+  id: string;
+  credits: number;
+  price_cents: number;
+  popular: boolean;
 }
 
 export interface CreditEntry {
@@ -238,7 +299,7 @@ export const DEFAULT_SUBTITLE_STYLE: SubtitleStyle = {
 
 export const DEFAULT_MUSIC_CONFIG: MusicConfig = {
   enabled: true,
-  track_path: null,
+  track_id: null,
   volume_db: -18.0,
   duck_on_voice: true,
 };

@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.middleware import RateLimitMiddleware, SupabaseAuthMiddleware
-from app.api.routes import credits, projects, render
+from app.api.routes import art_styles, credits, music, projects, render, voices
 from app.core.config import get_settings
 from app.services import db, project_store
 from app.services.media_tokens import MediaTokenSigner
@@ -92,6 +92,9 @@ app.add_middleware(
 app.include_router(projects.router)
 app.include_router(render.router)
 app.include_router(credits.router)
+app.include_router(music.router)
+app.include_router(voices.router)
+app.include_router(art_styles.router)
 
 
 @app.get("/api/health")

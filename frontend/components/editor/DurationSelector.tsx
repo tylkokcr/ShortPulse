@@ -23,8 +23,10 @@ export function DurationSelector() {
             type="button"
             onClick={() => setDraft({ videoLength: length })}
             className={clsx(
-              "flex flex-col items-center gap-1 rounded-lg border px-3 py-3 text-center transition-colors",
-              selected ? "border-accent bg-accent/10" : "border-border bg-background hover:bg-surface-hover"
+              "flex flex-col items-center gap-1 rounded-lg border px-3 py-3 text-center transition-all duration-200",
+              selected
+                ? "border-accent bg-accent/10 shadow-[0_0_0_1px] shadow-accent/40"
+                : "border-border bg-background hover:border-border-strong hover:bg-surface-hover"
             )}
           >
             <span className="text-sm font-medium">{label}</span>

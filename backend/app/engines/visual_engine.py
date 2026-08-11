@@ -23,6 +23,8 @@ from pathlib import Path
 import httpx
 
 from app.schemas.project import Scene, StockAttribution, VisualMode
+from app.services import art_styles
+from app.services.art_styles import ArtStyle
 
 logger = logging.getLogger(__name__)
 
@@ -40,13 +42,29 @@ DEFAULT_NEGATIVE_PROMPT = (
     "overly smooth, plastic, oversaturated"
 )
 
-# Appended to every fast_hybrid image prompt. Without it SDXL-Turbo tends
-# toward a glossy "stock photo" look; these push it to read as an actual
-# photograph rather than a rendering.
-PHOTOREALISTIC_STYLE_SUFFIX = (
-    ", shot on 35mm film, natural light, shallow depth of field, "
-    "subtle film grain, realistic textures, candid documentary photography"
-)
+# The photoreal wording that used to live here is now the "photoreal"
+# entry in app.services.art_styles, alongside the other looks — see
+# ArtStyle.prompt_template, and the note there about why the style has to
+# lead the prompt rather than trail it.
+
+# SDXL is trained around ~1MP; these are the standard buckets for each
+# orientation. Generating vertical and letting the renderer crop to
+# landscape would throw away most of the frame, so the shape asked for
+# here follows the project's aspect ratio.
+SDXL_SIZE_BY_ORIENTATION: dict[str, tuple[int, int]] = {
+    "vertical": (832, 1472),
+    "square": (1024, 1024),
+    "landscape": (1472, 832),
+}
+
+
+def sdxl_size_for(width: int, height: int) -> tuple[int, int]:
+    """Generation size matching the render target's orientation."""
+    if width > height:
+        return SDXL_SIZE_BY_ORIENTATION["landscape"]
+    if width == height:
+        return SDXL_SIZE_BY_ORIENTATION["square"]
+    return SDXL_SIZE_BY_ORIENTATION["vertical"]
 
 
 def is_model_fully_cached(model_id: str) -> bool:
@@ -78,14 +96,22 @@ async def generate_scene_visual(
     mode: VisualMode,
     output_dir: Path,
     settings,
+    art_style: ArtStyle | None = None,
+    size: tuple[int, int] | None = None,
 ) -> Scene:
     """Populate scene.visual.asset_path using the requested mode, with a
-    stock-media fallback if a local generation mode fails (e.g. no GPU)."""
+    stock-media fallback if a local generation mode fails (e.g. no GPU).
+
+    `art_style` and `size` only reach the locally generated modes: stock
+    footage is whatever was filmed, at whatever the clip's own dimensions
+    are, and the render step crops it to fit.
+    """
+    style = art_style or art_styles.DEFAULT_ART_STYLE
     try:
         if mode == VisualMode.AI_VIDEO:
-            path = await _generate_ai_video(scene, output_dir, settings)
+            path = await _generate_ai_video(scene, output_dir, settings, style)
         elif mode == VisualMode.FAST_HYBRID:
-            path = await _generate_fast_hybrid_image(scene, output_dir, settings)
+            path = await _generate_fast_hybrid_image(scene, output_dir, settings, style, size)
         elif mode == VisualMode.STOCK_MEDIA:
             path = await _fetch_stock_media(scene, output_dir, settings)
         else:
@@ -133,18 +159,21 @@ def _get_ltx_pipeline(model_id: str, device: str):
     return _ltx_pipeline_cache[model_id]
 
 
-async def _generate_ai_video(scene: Scene, output_dir: Path, settings) -> Path:
+async def _generate_ai_video(
+    scene: Scene, output_dir: Path, settings, style: ArtStyle | None = None
+) -> Path:
     import asyncio
 
     output_path = output_dir / f"scene_{scene.index:02d}.mp4"
+    style = style or art_styles.DEFAULT_ART_STYLE
 
     def _run() -> Path:
         from diffusers.utils import export_to_video
 
         pipeline = _get_ltx_pipeline(settings.ltx_video_model_id, settings.diffusion_device)
         result = pipeline(
-            prompt=scene.visual.prompt,
-            negative_prompt=scene.visual.negative_prompt or DEFAULT_NEGATIVE_PROMPT,
+            prompt=style.build_prompt(scene.visual.prompt),
+            negative_prompt=scene.visual.negative_prompt or style.negative_prompt,
             # LTXPipeline requires both dimensions divisible by 32. Kept
             # deliberately small (1/4 the pixel area of the previous
             # 768x1376) — this 13B model has no reliable low-memory path on
@@ -186,17 +215,25 @@ def _get_sdxl_pipeline(model_id: str, device: str, variant: str | None = None):
     return _sdxl_pipeline_cache[model_id]
 
 
-async def _generate_fast_hybrid_image(scene: Scene, output_dir: Path, settings) -> Path:
+async def _generate_fast_hybrid_image(
+    scene: Scene,
+    output_dir: Path,
+    settings,
+    style: ArtStyle | None = None,
+    size: tuple[int, int] | None = None,
+) -> Path:
     import asyncio
 
     output_path = output_dir / f"scene_{scene.index:02d}.png"
+    style = style or art_styles.DEFAULT_ART_STYLE
+    width, height = size or SDXL_SIZE_BY_ORIENTATION["vertical"]
 
     def _run() -> Path:
         pipeline = _get_sdxl_pipeline(
             settings.sdxl_model_id, settings.diffusion_device, settings.sdxl_model_variant
         )
         image = pipeline(
-            prompt=scene.visual.prompt + PHOTOREALISTIC_STYLE_SUFFIX,
+            prompt=style.build_prompt(scene.visual.prompt),
             # NOTE: with the default SDXL-Turbo settings (4 steps,
             # guidance_scale=0.0) diffusers disables classifier-free
             # guidance entirely, so negative_prompt has no effect —
@@ -205,9 +242,9 @@ async def _generate_fast_hybrid_image(scene: Scene, output_dir: Path, settings) 
             # equally malformed at guidance 1.8 / 8 steps, for 2.5x the
             # time). It does take effect when these settings are pointed
             # at a full SDXL fine-tune (see Settings.sdxl_* in core/config).
-            negative_prompt=scene.visual.negative_prompt or DEFAULT_NEGATIVE_PROMPT,
-            width=832,
-            height=1472,  # vertical-friendly base resolution, upscaled by render_engine
+            negative_prompt=scene.visual.negative_prompt or style.negative_prompt,
+            width=width,
+            height=height,
             num_inference_steps=settings.sdxl_num_inference_steps,
             guidance_scale=settings.sdxl_guidance_scale,
         ).images[0]

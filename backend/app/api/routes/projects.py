@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app.api.deps import billing_enabled, current_user_id, db_pool
+from app.api.routes import music
 from app.core.storage import discard_project_files
 from app.schemas.project import Project, ProjectConfig
 from app.services import credits, project_store
@@ -32,6 +33,13 @@ async def create_project(
     queued job fail minutes later. On a self-hosted install there is no
     user and no database, so this is free and the ledger is never touched.
     """
+    # `track_path` is fed to ffmpeg as an input. Anything the client sent
+    # is discarded and re-derived from the id, so a request can only ever
+    # name a file inside the music directory.
+    config.music.track_path = (
+        str(music.track_path_for(config.music.track_id)) if config.music.track_id else None
+    )
+
     pool = db_pool(request)
     project = await project_store.create_project(config, user_id)
 

@@ -24,7 +24,7 @@ from app.schemas.project import (
     SceneVisual,
     VisualMode,
 )
-from app.services import credits, db, project_store
+from app.services import art_styles, credits, db, project_store
 from app.services.connection_manager import connection_manager
 
 logger = logging.getLogger(__name__)
@@ -33,6 +33,36 @@ logger = logging.getLogger(__name__)
 async def _emit(project_id: str, **kwargs) -> None:
     progress = RenderProgress(project_id=project_id, **kwargs)
     await connection_manager.broadcast(progress)
+
+
+def resolution_for(
+    aspect_ratio: str, default: tuple[int, int]
+) -> tuple[int, int]:
+    """Pixel dimensions for an aspect ratio.
+
+    `aspect_ratio` was accepted by the API and stored on every project long
+    before anything read it — renders were hardcoded to the vertical
+    default, so asking for 1:1 silently produced a 9:16 video.
+
+    The short edge is pinned to the vertical default's width (1080 by
+    default), which lands on the sizes these platforms actually expect —
+    1080x1920, 1080x1080, 1920x1080 — rather than inflating the square case
+    to 1920x1920. Both dimensions are forced even: H.264 with yuv420p
+    cannot encode odd ones.
+    """
+    short_edge = min(default)
+    wide = round(short_edge * 16 / 9)
+    by_ratio = {
+        AspectRatio.VERTICAL_9_16: (short_edge, wide),
+        AspectRatio.SQUARE_1_1: (short_edge, short_edge),
+        AspectRatio.HORIZONTAL_16_9: (wide, short_edge),
+    }
+    try:
+        width, height = by_ratio[AspectRatio(aspect_ratio)]
+    except ValueError:
+        logger.warning("Unknown aspect ratio %r; falling back to %r", aspect_ratio, default)
+        width, height = default
+    return width - (width % 2), height - (height % 2)
 
 
 class StageTimings:
@@ -81,6 +111,12 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
     config = project.config
     project_id = config.id
     paths = project_dir(project_id)
+    # Every stage that produces pixels — outro card, scene clips, subtitle
+    # canvas — has to agree on this, so it is resolved once here rather
+    # than read from settings at each call site.
+    render_width, render_height = resolution_for(
+        config.aspect_ratio, settings.default_resolution
+    )
 
     timings = StageTimings()
 
@@ -175,13 +211,18 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                         logo_path=config.outro.logo_path,
                         background_color=config.outro.background_color,
                         accent_color=config.outro.accent_color,
-                        width=settings.default_resolution[0],
-                        height=settings.default_resolution[1],
+                        width=render_width,
+                        height=render_height,
                     )
                     scene.visual.asset_path = str(outro_path)
                 else:
                     await visual_engine.generate_scene_visual(
-                        scene, config.visual_mode, paths / "visuals", settings
+                        scene,
+                        config.visual_mode,
+                        paths / "visuals",
+                        settings,
+                        art_style=art_styles.by_id(config.art_style),
+                        size=visual_engine.sdxl_size_for(render_width, render_height),
                     )
 
         # 4. Render scene clips, then build subtitles from each clip's real,
@@ -204,8 +245,9 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 total_scenes=total,
             )
 
-        width, height = settings.default_resolution
-        target = render_engine.RenderTarget(width=width, height=height, fps=config.fps)
+        target = render_engine.RenderTarget(
+            width=render_width, height=render_height, fps=config.fps
+        )
         output_path = paths / "output" / "final.mp4"
 
         if (

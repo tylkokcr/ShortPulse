@@ -1,6 +1,20 @@
 "use client";
 
+import { Shuffle } from "lucide-react";
 import { useShortPulseStore } from "@/lib/store";
+
+/**
+ * Topics that have actually been through this pipeline end to end — the
+ * four on the landing page. Offering proven ones beats inventing
+ * plausible-sounding prompts: a first render that comes out well is what
+ * decides whether someone runs a second.
+ */
+const SUGGESTIONS = [
+  "Why honey never spoils",
+  "Why the ocean is salty",
+  "Why cats love cardboard boxes",
+  "A simple trick for better sleep",
+];
 
 /**
  * Topic/script input. Users either type a topic (LLM writes the script)
@@ -18,8 +32,25 @@ export function ScriptEditor() {
           value={draft.topic}
           onChange={(e) => setDraft({ topic: e.target.value })}
           placeholder="e.g. 3 psychology tricks that make people trust you instantly"
-          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent"
         />
+
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          <span className="flex items-center gap-1 text-[11px] text-white/30">
+            <Shuffle size={11} />
+            Try
+          </span>
+          {SUGGESTIONS.map((suggestion) => (
+            <button
+              key={suggestion}
+              type="button"
+              onClick={() => setDraft({ topic: suggestion })}
+              className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] text-white/50 transition-colors hover:border-accent/50 hover:bg-accent/10 hover:text-white"
+            >
+              {suggestion}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div>
@@ -31,7 +62,7 @@ export function ScriptEditor() {
           onChange={(e) => setDraft({ rawScript: e.target.value })}
           placeholder="Paste your own voiceover script here if you already have one..."
           rows={6}
-          className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent"
         />
       </div>
     </div>
