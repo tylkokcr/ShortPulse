@@ -274,8 +274,51 @@ class StockClip:
     attribution: StockAttribution
 
 
+# Words that carry no meaning for a stock-footage search. Kept short and
+# obvious on purpose: the goal is to get from a sentence to its nouns, not
+# to do linguistics.
+_SEARCH_STOPWORDS = frozenset(
+    """a an the of or and with in on at to for from by as is are was were be
+    being been that this these those it its their his her they we you your
+    some several various many much more most showing shows featuring depicting
+    depicts scene shot view image video footage clip
+    over under against during through between into onto above below behind
+    near around while before after out up down off
+    """.split()
+)
+
+# Stock search is keyword matching; a whole descriptive sentence is not what
+# these libraries index against.
+_MAX_SEARCH_WORDS = 6
+
+
+def stock_search_terms(prompt: str) -> str:
+    """Condense a scene's visual prompt into a keyword query.
+
+    Two reasons, one of which is not obvious.
+
+    The obvious one: Pexels and Pixabay match on keywords, and handing them
+    a fifteen-word sentence buries the two nouns that actually matter.
+
+    The other: Pexels sits behind Cloudflare, and long natural-language
+    queries intermittently trip a WAF rule that returns a 403 HTML page
+    rather than an API error. It is content-dependent and not reproducible
+    from length alone — "...various modules and" succeeds where
+    "...various modules and solar" is blocked. That killed whole renders,
+    because one blocked scene aborted the pipeline. Short keyword queries
+    have not been observed to trigger it.
+
+    Falls back to the original prompt if the filter leaves nothing, which
+    is better than searching for an empty string.
+    """
+    words = [w.strip(".,!?;:()[]\"'").lower() for w in prompt.split()]
+    keywords = [w for w in words if w and w not in _SEARCH_STOPWORDS]
+    return " ".join(keywords[:_MAX_SEARCH_WORDS]) or prompt[:60]
+
+
 async def _fetch_stock_media(scene: Scene, output_dir: Path, settings) -> Path:
     output_path = output_dir / f"scene_{scene.index:02d}_stock.mp4"
+    query = stock_search_terms(scene.visual.prompt)
 
     for search, api_key in (
         (_search_pexels, settings.pexels_api_key),
@@ -283,7 +326,20 @@ async def _fetch_stock_media(scene: Scene, output_dir: Path, settings) -> Path:
     ):
         if not api_key:
             continue
-        clip = await search(scene.visual.prompt, api_key)
+        # A provider being down, rate-limited or WAF-blocked is a reason to
+        # try the next one, not to fail the render. Previously any non-2xx
+        # from Pexels raised straight out and lost every scene rendered so
+        # far.
+        try:
+            clip = await search(query, api_key)
+        except (httpx.HTTPError, KeyError, ValueError) as exc:
+            logger.warning(
+                "Stock provider %s failed for scene %s (%r); trying the next one",
+                search.__name__,
+                scene.index,
+                exc,
+            )
+            continue
         if clip:
             await _download(clip.url, output_path)
             scene.visual.attribution = clip.attribution
