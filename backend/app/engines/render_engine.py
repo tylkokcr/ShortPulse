@@ -420,3 +420,28 @@ async def extract_poster(
     except (RenderError, OSError) as exc:
         logger.warning("Could not extract a poster frame from %s: %s", video_path, exc)
         return None
+
+
+async def probe_dimensions(path: Path, ffprobe_binary: str = "ffprobe") -> tuple[int, int]:
+    """Pixel dimensions of a video's first video stream.
+
+    Needed wherever something is drawn *onto* existing footage rather than
+    produced at a size we chose — a subtitle canvas has to match the frame
+    it is composited over, or the text lands off-screen.
+    """
+    cmd = [
+        ffprobe_binary,
+        "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=width,height",
+        "-of", "csv=p=0:s=x",
+        str(path),
+    ]
+    proc = await asyncio.create_subprocess_exec(
+        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    )
+    stdout, stderr = await proc.communicate()
+    if proc.returncode != 0:
+        raise RenderError(f"ffprobe failed ({' '.join(cmd)}):\n{stderr.decode(errors='ignore')}")
+    width, _, height = stdout.decode().strip().partition("x")
+    return int(width), int(height)

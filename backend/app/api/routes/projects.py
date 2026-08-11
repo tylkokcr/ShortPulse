@@ -6,14 +6,21 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.api.deps import billing_enabled, current_user_id, db_pool
 from app.api.routes import music
-from app.core.config import project_dir
+from app.core.config import get_settings, project_dir
 from app.core.storage import discard_project_files
-from app.schemas.project import Project, ProjectConfig
-from app.services import credits, project_store
+from app.schemas.project import (
+    CaptionTrack,
+    EditSpec,
+    Project,
+    ProjectConfig,
+    ProjectStatus,
+    TextOverlay,
+)
+from app.services import credits, editing, project_store
 from app.services.media_tokens import InvalidMediaToken
 
 logger = logging.getLogger(__name__)
@@ -173,6 +180,59 @@ async def get_media_url(
         download_url=f"/api/projects/{project_id}/download?token={token}&download=1",
         poster_url=f"/api/projects/{project_id}/poster?token={token}",
         expires_at=expires_at,
+    )
+
+
+class EditRequest(BaseModel):
+    """What a client may change about a finished video.
+
+    Deliberately narrower than EditSpec: `secondary_path` is absent,
+    because that becomes an ffmpeg input and is only ever derived
+    server-side (same rule as MusicConfig.track_path).
+    """
+
+    captions: CaptionTrack | None = None
+    overlays: list[TextOverlay] = Field(default_factory=list, max_length=50)
+
+
+@router.post("/{project_id}/edit", response_model=Project)
+async def edit_project(
+    project_id: str,
+    body: EditRequest,
+    user_id: str | None = Depends(current_user_id),
+) -> Project:
+    """Apply an edit and re-burn the video.
+
+    Free, and synchronous rather than queued. Both follow from the same
+    fact: this replays the burn-in pass over footage already on disk, so it
+    takes seconds and consumes nothing worth charging for. Queueing it
+    would make a fast operation feel like a render.
+    """
+    project = await _visible_project(project_id, user_id)
+    if project.status != ProjectStatus.COMPLETE:
+        raise HTTPException(
+            status_code=409, detail="This video hasn't finished rendering yet."
+        )
+
+    edit = EditSpec(
+        captions=body.captions or project.captions,
+        overlays=body.overlays,
+        music=project.config.music,
+    )
+
+    try:
+        final_path = await editing.apply_edit(project, edit, get_settings())
+    except editing.NothingToReburn as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    return await project_store.update_project(
+        project_id,
+        edit=edit,
+        # Keep `captions` as the current transcript, so re-opening the
+        # editor shows what the video says rather than what it originally
+        # said.
+        captions=edit.captions,
+        output_path=str(final_path),
     )
 
 

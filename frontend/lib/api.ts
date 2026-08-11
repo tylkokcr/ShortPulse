@@ -3,9 +3,11 @@ import type {
   ArtStyle,
   CreditSummary,
   MusicTrack,
+  CaptionTrack,
   Project,
   ProjectConfig,
   RenderProgress,
+  TextOverlay,
   Voice,
 } from "./types";
 
@@ -150,6 +152,23 @@ export function getProject(projectId: string): Promise<Project> {
 
 export function listProjects(): Promise<Project[]> {
   return request<Project[]>("/projects");
+}
+
+/**
+ * Apply an edit and re-burn the video.
+ *
+ * Free and quick — it replays the burn-in pass over footage already on
+ * disk rather than re-running the pipeline — so this resolves with the
+ * updated project rather than handing back a job to watch.
+ */
+export function editProject(
+  projectId: string,
+  body: { captions?: CaptionTrack | null; overlays: TextOverlay[] }
+): Promise<Project> {
+  return request<Project>(`/projects/${projectId}/edit`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
 
 /** Removes the row and everything it points at on disk. Irreversible. */

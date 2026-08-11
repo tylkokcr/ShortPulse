@@ -217,6 +217,35 @@ class CaptionTrack(BaseModel):
     style: SubtitleStyle = Field(default_factory=SubtitleStyle)
 
 
+class OverlayPosition(StrEnum):
+    TOP = "top"
+    MIDDLE = "middle"
+    BOTTOM = "bottom"
+
+
+class TextOverlay(BaseModel):
+    """A line of text the user placed on the video themselves.
+
+    Distinct from captions: captions are a transcript with timings derived
+    from speech, while this is authored — a title, a label, a joke. Both
+    end up as events in the same .ass file, which is why the renderer needs
+    only one pass and why the typography matches.
+    """
+
+    text: str = Field(max_length=200)
+    start_ms: int = Field(ge=0)
+    end_ms: int = Field(ge=0)
+    position: OverlayPosition = OverlayPosition.TOP
+    font_size: int = Field(default=72, ge=12, le=300)
+    color: str = "&H00FFFFFF"
+
+
+class Layout(StrEnum):
+    FULL = "full"
+    # The split-screen format: the video on top, a second clip underneath.
+    SPLIT_V = "split_v"
+
+
 class MusicConfig(BaseModel):
     enabled: bool = True
     # What HTTP clients choose with: an id from GET /api/music, resolved
@@ -230,6 +259,25 @@ class MusicConfig(BaseModel):
     track_path: str | None = None
     volume_db: float = -18.0
     duck_on_voice: bool = True
+
+
+class EditSpec(BaseModel):
+    """What the finished video should look like, as a document.
+
+    The pipeline produces one of these; editing mutates it; re-rendering
+    replays it. That separation is what makes an edit cheap — the burn-in
+    step already takes an arbitrary video plus a subtitle file, so applying
+    an edit is one ffmpeg pass over footage that is already on disk, not a
+    re-run of the LLM, the voice and the visuals.
+    """
+
+    layout: Layout = Layout.FULL
+    # Server-derived path to the bottom clip in a split. Never accepted
+    # from a client, for the same reason as MusicConfig.track_path.
+    secondary_path: str | None = None
+    captions: CaptionTrack | None = None
+    overlays: list[TextOverlay] = Field(default_factory=list, max_length=50)
+    music: MusicConfig | None = None
 
 
 class OutroConfig(BaseModel):
@@ -292,6 +340,10 @@ class Project(BaseModel):
     # Materialised after the first render so captions can be corrected and
     # reburned without re-running the pipeline. Absent until then.
     captions: CaptionTrack | None = None
+    # The user's edits on top of what was generated. Absent until they
+    # make one, at which point it — not `captions` — is what the video
+    # shows.
+    edit: EditSpec | None = None
     # What this render was charged, recorded on the project so the amount
     # refunded on failure is the amount taken — not a price recomputed
     # later, which could have changed in between. 0 on self-hosted

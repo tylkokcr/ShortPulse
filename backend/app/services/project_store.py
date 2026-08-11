@@ -86,13 +86,14 @@ class PostgresProjectStore:
     # Columns that live in their own SQL column rather than inside `config`.
     _COLUMNS = {
         "status", "script", "output_path", "error", "credits_cost",
-        "source_path", "captions",
+        "source_path", "captions", "edit",
     }
 
     # Named once because it appeared verbatim in four queries, and a column
     # added to only three of them fails at read time rather than at write.
     _SELECT = (
-        "config, status, script, output_path, error, credits_cost, source_path, captions"
+        "config, status, script, output_path, error, credits_cost, source_path, "
+        "captions, edit"
     )
 
     def __init__(self, pool: asyncpg.Pool) -> None:
@@ -109,6 +110,7 @@ class PostgresProjectStore:
             credits_cost=row["credits_cost"],
             source_path=row["source_path"],
             captions=json.loads(row["captions"]) if row["captions"] else None,
+            edit=json.loads(row["edit"]) if row["edit"] else None,
         )
 
     async def create_project(self, config: ProjectConfig, user_id: str | None = None) -> Project:
@@ -170,7 +172,7 @@ class PostgresProjectStore:
         sets, values = [], []
         for i, (key, value) in enumerate(updates.items(), start=2):
             sets.append(f"{key} = ${i}")
-            if key in ("script", "captions") and value is not None:
+            if key in ("script", "captions", "edit") and value is not None:
                 # Pydantic model -> JSONB
                 value = value.model_dump_json() if hasattr(value, "model_dump_json") else json.dumps(value)
                 sets[-1] = f"{key} = ${i}::jsonb"

@@ -16,7 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.schemas.project import Scene, SubtitleStyle, Word
+from app.schemas.project import Scene, SubtitleStyle, TextOverlay, Word
 
 ASS_HEADER_TEMPLATE = """[Script Info]
 Title: ShortPulse Auto Subtitles
@@ -77,7 +77,7 @@ def _render_line_text(line: SubtitleLine, active_index: int, style: SubtitleStyl
     parts: list[str] = []
     for i, word in enumerate(line.words):
         text = word.text.upper() if style.uppercase else word.text
-        text = text.replace("{", "").replace("}", "")  # strip user text that could break override tags
+        text = _sanitize(text)
         if i == active_index:
             parts.append(f"{{\\c{style.highlight_color}\\fscx112\\fscy112}}{text}{{\\r}}")
         else:
@@ -109,11 +109,50 @@ def _header_for(style: SubtitleStyle, play_res: tuple[int, int]) -> str:
     )
 
 
+# ASS alignment codes for a user-placed overlay. Same numpad geometry as
+# the caption alignments above, but always centred horizontally.
+_OVERLAY_ALIGNMENT = {"top": 8, "middle": 5, "bottom": 2}
+
+
+def _sanitize(text: str) -> str:
+    """Strip the two characters that delimit ASS override tags.
+
+    Everything drawn here is eventually user-supplied — a transcript the
+    user corrected, or an overlay they typed. A stray brace doesn't just
+    render wrong, it opens an override block and the rest of the line is
+    swallowed as formatting codes.
+    """
+    return text.replace("{", "").replace("}", "").replace("\n", " ")
+
+
+def _events_for_overlays(overlays: list[TextOverlay]) -> list[str]:
+    """Authored text, as events in the same file as the captions.
+
+    Drawn by libass rather than by a separate ffmpeg `drawtext` filter:
+    one burn-in pass instead of two, and the overlay inherits the same
+    font rendering and outline as the captions, so the two don't look like
+    they came from different tools.
+    """
+    events: list[str] = []
+    for overlay in overlays:
+        if overlay.end_ms <= overlay.start_ms or not overlay.text.strip():
+            continue
+        align = _OVERLAY_ALIGNMENT.get(str(overlay.position), 8)
+        tags = f"{{\\an{align}\\fs{overlay.font_size}\\c{overlay.color}}}"
+        events.append(
+            f"Dialogue: 1,{_format_timestamp(overlay.start_ms)},"
+            f"{_format_timestamp(overlay.end_ms)},Default,,0,0,0,,"
+            f"{tags}{_sanitize(overlay.text)}"
+        )
+    return events
+
+
 def build_ass_from_words(
     words: list[Word],
     style: SubtitleStyle,
     output_path: Path,
     play_res: tuple[int, int] = (1080, 1920),
+    overlays: list[TextOverlay] | None = None,
 ) -> Path:
     """Build an .ass file from words already timed against the finished
     video.
@@ -126,6 +165,9 @@ def build_ass_from_words(
     events: list[str] = []
     for line in _chunk_words(words, style.max_words_per_line):
         events.extend(_events_for_line(line, style))
+    # Layer 1, so authored text draws above the caption track where they
+    # happen to occupy the same moment.
+    events.extend(_events_for_overlays(overlays or []))
 
     output_path.write_text(
         _header_for(style, play_res) + "\n".join(events) + "\n", encoding="utf-8"

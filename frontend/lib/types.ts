@@ -208,6 +208,26 @@ export interface CaptionTrack {
   style: SubtitleStyle;
 }
 
+export type OverlayPosition = "top" | "middle" | "bottom";
+
+/** Text the user placed themselves, as opposed to the transcript. Both are
+ *  drawn by libass from the same .ass file, which is why one burn-in pass
+ *  covers both. */
+export interface TextOverlay {
+  text: string;
+  start_ms: number;
+  end_ms: number;
+  position: OverlayPosition;
+  font_size: number;
+  color: string;
+}
+
+export interface EditSpec {
+  layout: "full" | "split_v";
+  captions?: CaptionTrack | null;
+  overlays: TextOverlay[];
+}
+
 export interface Project {
   config: ProjectConfig;
   status: ProjectStatus;
@@ -217,6 +237,9 @@ export interface Project {
   /** The uploaded video this project started from, if it wasn't generated. */
   source_path?: string | null;
   captions?: CaptionTrack | null;
+  /** The user's edits on top of what was generated. Absent until they make
+   *  one, at which point it — not `captions` — is what the video shows. */
+  edit?: EditSpec | null;
   /** Credits this render was charged. Always 0 on a self-hosted install,
    *  where there is no billing. */
   credits_cost: number;
