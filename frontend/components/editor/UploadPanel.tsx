@@ -92,7 +92,7 @@ export function UploadPanel() {
           }}
           onClick={() => !uploading && inputRef.current?.click()}
           className={clsx(
-            "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed px-6 py-12 text-center transition-colors duration-200",
+            "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-md border border-dashed px-6 py-12 text-center transition-colors duration-200",
             dragging
               ? "border-accent bg-accent/5"
               : "border-border-strong hover:border-accent/50 hover:bg-surface-hover",
@@ -156,9 +156,9 @@ export function UploadPanel() {
             <span>{progress < 1 ? "Uploading..." : "Processing..."}</span>
             <span className="font-mono">{Math.round(progress * 100)}%</span>
           </div>
-          <div className="h-1 overflow-hidden rounded-full bg-border">
+          <div className="h-1 overflow-hidden bg-border">
             <div
-              className="h-full rounded-full bg-accent-gradient transition-[width] duration-200"
+              className="h-full bg-accent transition-[width] duration-200"
               style={{ width: `${Math.max(progress * 100, 2)}%` }}
             />
           </div>

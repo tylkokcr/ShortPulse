@@ -50,7 +50,7 @@ export function ArtStyles() {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         {styles.map((style) => (
           <figure key={style.id} className="group flex flex-col gap-2.5">
-            <div className="overflow-hidden rounded-xl border border-border transition-all duration-300 group-hover:border-border-strong group-hover:shadow-xl group-hover:shadow-black/40">
+            <div className="overflow-hidden rounded-md border border-border transition-all duration-300 group-hover:border-border-strong group-hover:shadow-xl group-hover:shadow-black/40">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={`/art-styles/${style.sample}`}

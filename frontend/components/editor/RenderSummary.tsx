@@ -72,7 +72,7 @@ export function RenderSummary() {
       </div>
 
       <div className="relative flex items-center gap-2 border-t border-border pt-4">
-        <span className="h-1 w-1 rounded-full bg-pulse" />
+        <span className="h-3 w-px bg-accent" />
         <h2 className="text-sm font-semibold text-white/80">This render</h2>
       </div>
 

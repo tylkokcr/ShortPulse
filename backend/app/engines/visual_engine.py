@@ -448,8 +448,8 @@ def generate_outro_card(
     text: str,
     output_path: Path,
     logo_path: str | None = None,
-    background_color: str = "#0b0b0f",
-    accent_color: str = "#7c5cff",
+    background_color: str = "#0a0a0a",
+    accent_color: str = "#ff5c1a",
     width: int = 1080,
     height: int = 1920,
 ) -> Path:

@@ -139,7 +139,7 @@ function ExampleCard({
       onMouseLeave={stop}
       {...props}
     >
-      <div className="relative overflow-hidden rounded-xl border border-border bg-black transition-all duration-300 hover:border-border-strong hover:shadow-xl hover:shadow-black/40">
+      <div className="relative overflow-hidden rounded-md border border-border bg-black transition-all duration-300 hover:border-border-strong hover:shadow-xl hover:shadow-black/40">
         <video
           ref={videoRef}
           src={`/examples/${example.slug}.mp4`}
@@ -175,7 +175,7 @@ function ExampleCard({
           tone="neutral"
           className={clsx(
             "absolute left-2 top-2 border-white/10 bg-black/60 px-2 py-0.5 text-[10px] text-white/70 backdrop-blur",
-            example.language !== "English" && "border-pulse/30 text-pulse"
+            example.language !== "English" && "border-accent/40 text-accent"
           )}
         >
           {example.language}

@@ -11,7 +11,7 @@ export function Card({ className, interactive, ...props }: CardProps) {
   return (
     <div
       className={clsx(
-        "rounded-xl border border-border bg-surface p-5 transition-colors duration-200",
+        "rounded-md border border-border bg-surface p-5 transition-colors duration-150",
         interactive && "hover:border-border-strong hover:bg-surface-hover",
         className
       )}

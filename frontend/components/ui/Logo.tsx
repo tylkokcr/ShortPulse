@@ -8,27 +8,24 @@ import clsx from "clsx";
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" fill="none" className={clsx("shrink-0", className)} aria-hidden>
-      <rect width="32" height="32" rx="8" className="fill-surface" />
+      {/* Square, not a rounded app-store tile, and a flat accent rather
+          than the old violet-to-teal ramp — the mark was the most visible
+          piece of the generated-template palette. */}
+      <rect width="32" height="32" rx="3" className="fill-surface stroke-border" strokeWidth="1" />
       <path
         d="M4 17h5l2.5-7L15 24l3-14 2 7h8"
-        stroke="url(#logo-gradient)"
+        className="stroke-accent"
         strokeWidth="2.4"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <defs>
-        <linearGradient id="logo-gradient" x1="4" y1="16" x2="28" y2="16" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#7c5cff" />
-          <stop offset="1" stopColor="#2dd4bf" />
-        </linearGradient>
-      </defs>
     </svg>
   );
 }
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <span className={clsx("inline-flex items-center gap-2 font-semibold tracking-tight", className)}>
+    <span className={clsx("inline-flex items-center gap-2 font-semibold tracking-[-0.01em]", className)}>
       <LogoMark className="h-7 w-7" />
       ShortPulse
     </span>

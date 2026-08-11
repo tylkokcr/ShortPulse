@@ -50,7 +50,7 @@ export function ProjectCard({
     <div className="group relative flex flex-col gap-2.5">
       <Link
         href={`/project/${id}`}
-        className="relative block aspect-[9/16] overflow-hidden rounded-xl border border-border bg-surface transition-all duration-300 hover:border-border-strong hover:shadow-xl hover:shadow-black/40"
+        className="relative block aspect-[9/16] overflow-hidden rounded-md border border-border bg-surface transition-all duration-300 hover:border-border-strong hover:shadow-xl hover:shadow-black/40"
       >
         {poster ? (
           // eslint-disable-next-line @next/next/no-img-element

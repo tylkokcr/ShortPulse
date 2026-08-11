@@ -71,7 +71,6 @@ export function LoginPanel({ className }: { className?: string }) {
         className
       )}
     >
-      <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-accent-gradient opacity-20 blur-3xl" />
 
       {status === "sent" ? (
         <div className="flex flex-col gap-2">

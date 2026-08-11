@@ -52,7 +52,7 @@ export function StudioPreview() {
     <div className="flex flex-col items-center gap-3">
       <div
         className={clsx(
-          "relative w-full overflow-hidden rounded-xl border border-border-strong bg-neutral-900 shadow-2xl shadow-black/50 transition-all duration-300",
+          "relative w-full overflow-hidden rounded-md border border-border-strong bg-neutral-900 shadow-2xl shadow-black/50 transition-all duration-300",
           ASPECT_CLASS[draft.aspectRatio],
           placement,
           "flex justify-center"

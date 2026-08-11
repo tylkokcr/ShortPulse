@@ -73,7 +73,7 @@ export function CaptionStyles() {
         <Card className="flex justify-center bg-surface-raised p-6">
           <div
             className={clsx(
-              "relative flex aspect-[9/16] w-full max-w-[260px] justify-center overflow-hidden rounded-xl bg-gradient-to-br from-neutral-600 via-neutral-800 to-neutral-900 p-5",
+              "relative flex aspect-[9/16] w-full max-w-[260px] justify-center overflow-hidden rounded-md bg-gradient-to-br from-neutral-600 via-neutral-800 to-neutral-900 p-5",
               align
             )}
           >

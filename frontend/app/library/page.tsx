@@ -55,11 +55,6 @@ function Library() {
     <div className="relative min-h-screen">
       <SiteHeader right={<AccountBar />} showLibrary />
 
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[320px] bg-radial-fade"
-      />
-
       <main className="mx-auto max-w-6xl px-6 pb-24 pt-10">
         <div className="animate-fade-up flex flex-wrap items-end justify-between gap-4">
           <div>

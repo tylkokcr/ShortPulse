@@ -65,7 +65,7 @@ export default function ProjectPage(props: { params: Promise<{ id: string }> }) 
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
           <div className="animate-fade-up flex flex-col gap-4">
-            <div className="inline-flex w-fit rounded-xl border border-border bg-surface p-1">
+            <div className="inline-flex w-fit rounded-md border border-border bg-surface p-1">
               {([
                 { id: "scenes", label: "Breakdown", icon: ListTree },
                 { id: "edit", label: "Edit", icon: Pencil },

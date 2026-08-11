@@ -336,6 +336,6 @@ export const DEFAULT_OUTRO_CONFIG: OutroConfig = {
   enabled: false,
   text: null,
   logo_path: null,
-  background_color: "#0b0b0f",
-  accent_color: "#7c5cff",
+  background_color: "#0a0a0a",
+  accent_color: "#ff5c1a",
 };

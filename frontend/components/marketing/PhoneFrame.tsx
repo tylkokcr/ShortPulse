@@ -162,7 +162,7 @@ function ActionRail({ handle }: { handle: string }) {
   return (
     <div className="flex shrink-0 flex-col items-center gap-4 pb-1">
       <div className="relative mb-1">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-gradient text-[10px] font-bold text-white ring-1 ring-white/80">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-white ring-1 ring-white/80">
           {handle.replace("@", "").slice(0, 2).toUpperCase()}
         </div>
         <span className="absolute -bottom-1.5 left-1/2 flex h-4 w-4 -translate-x-1/2 items-center justify-center rounded-full bg-[#fe2c55]">

@@ -100,7 +100,7 @@ const LIMITATIONS = [
 
 export function Landing() {
   return (
-    <div className="relative min-h-screen bg-radial-fade">
+    <div className="relative min-h-screen">
       {/* Decorative layer, not the content wrapper — mask-image masks an
           element's entire rendered content, children included, so it can't
           live on anything that also has to show real content beneath it. */}
@@ -139,7 +139,7 @@ export function Landing() {
             Open source · self-hosted or hosted
           </Badge>
           <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl">
-            Turn a topic into a <span className="text-gradient">ready-to-post</span> vertical video.
+            Turn a topic into a <span className="text-accent-emphasis">ready-to-post</span> vertical video.
           </h1>
           <p className="max-w-lg text-lg leading-relaxed text-white/60">
             Script, voiceover, word-synced captions, visuals and music — assembled by a pipeline you
@@ -226,7 +226,7 @@ export function Landing() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((feature) => (
               <Card key={feature.title} className="flex flex-col gap-3">
-                <feature.icon size={20} className="text-pulse" />
+                <feature.icon size={20} className="text-white/40" />
                 <h3 className="text-sm font-semibold">{feature.title}</h3>
                 <p className="text-xs leading-relaxed text-white/50">{feature.detail}</p>
               </Card>
@@ -258,7 +258,7 @@ export function Landing() {
                     <td className="px-5 py-3.5 text-white/50">{row.label}</td>
                     <td className="px-5 py-3.5 font-medium text-white">
                       <span className="inline-flex items-center gap-1.5">
-                        <Check size={14} className="text-pulse" />
+                        <Check size={14} className="text-accent" />
                         {row.us}
                       </span>
                     </td>

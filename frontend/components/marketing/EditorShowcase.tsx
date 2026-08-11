@@ -42,7 +42,7 @@ export function EditorShowcase() {
         <Card className="flex flex-col gap-3 bg-surface-raised">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium text-white/70">Scene breakdown</h3>
-            <Badge tone="pulse">Playing</Badge>
+            <Badge tone="live">Playing</Badge>
           </div>
 
           <p className="rounded-lg border border-accent/30 bg-accent/10 p-3 text-sm">
@@ -67,7 +67,7 @@ export function EditorShowcase() {
         </Card>
 
         <div className="flex flex-col gap-4">
-          <div className="mx-auto w-full max-w-[220px] overflow-hidden rounded-xl border border-border-strong bg-black">
+          <div className="mx-auto w-full max-w-[220px] overflow-hidden rounded-md border border-border-strong bg-black">
             <video
               src="/examples/honey.mp4"
               poster="/examples/honey.jpg"
@@ -82,7 +82,7 @@ export function EditorShowcase() {
           <ul className="flex flex-col gap-2.5">
             {CAPABILITIES.map((item) => (
               <li key={item.text} className="flex items-start gap-2 text-xs text-white/50">
-                <item.icon size={14} className="mt-0.5 shrink-0 text-pulse" />
+                <item.icon size={14} className="mt-0.5 shrink-0 text-accent" />
                 {item.text}
               </li>
             ))}

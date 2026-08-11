@@ -161,7 +161,7 @@ export function Pricing() {
 function Feature({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-2">
-      <Check size={13} className="mt-0.5 shrink-0 text-pulse" />
+      <Check size={13} className="mt-0.5 shrink-0 text-accent" />
       <span>{children}</span>
     </li>
   );

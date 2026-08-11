@@ -89,13 +89,6 @@ function CreateVideo() {
     <div className="relative min-h-screen">
       <SiteHeader right={<AccountBar />} showLibrary />
 
-      {/* Glow behind the masthead only — the rest of the page stays calm so
-          the controls read clearly. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-radial-fade"
-      />
-
       <main className="mx-auto max-w-5xl px-6 pb-32 pt-10">
         <div className="animate-fade-up flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -103,7 +96,7 @@ function CreateVideo() {
             {mode === "generate" ? (
               <>
                 <h1 className="mt-1.5 text-3xl font-semibold tracking-tight">
-                  What&apos;s this <span className="text-gradient">video</span> about?
+                  What&apos;s this <span className="text-accent-emphasis">video</span> about?
                 </h1>
                 <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/50">
                   Give it a topic — everything below already has a sensible default, so you can hit
@@ -113,7 +106,7 @@ function CreateVideo() {
             ) : (
               <>
                 <h1 className="mt-1.5 text-3xl font-semibold tracking-tight">
-                  Caption a video you <span className="text-gradient">already have</span>.
+                  Caption a video you <span className="text-accent-emphasis">already have</span>.
                 </h1>
                 <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/50">
                   Upload it and every spoken word gets timed and burned in — the same captions the
@@ -281,7 +274,7 @@ function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void 
   ];
 
   return (
-    <div className="animate-fade-up mt-6 inline-flex rounded-xl border border-border bg-surface p-1">
+    <div className="animate-fade-up mt-6 inline-flex rounded-md border border-border bg-surface p-1">
       {tabs.map((tab) => (
         <button
           key={tab.id}
@@ -352,7 +345,7 @@ function Section({
         aria-hidden
         className={clsx(
           "absolute inset-y-0 left-0 w-[2px] transition-opacity duration-300",
-          open ? "bg-accent-gradient opacity-100" : "opacity-0"
+          open ? "bg-accent opacity-100" : "opacity-0"
         )}
       />
 

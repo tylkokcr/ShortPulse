@@ -290,8 +290,10 @@ class OutroConfig(BaseModel):
         default=None, description="Falls back to the script's call_to_action if unset"
     )
     logo_path: str | None = None
-    background_color: str = "#0b0b0f"
-    accent_color: str = "#7c5cff"
+    # Matches the site's palette, because this card is the one piece of
+    # brand that ends up burned into the video itself.
+    background_color: str = "#0a0a0a"
+    accent_color: str = "#ff5c1a"
 
 
 class ProjectConfig(BaseModel):

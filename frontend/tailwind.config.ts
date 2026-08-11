@@ -1,31 +1,45 @@
 import type { Config } from "tailwindcss";
 
+/**
+ * The palette is monochrome plus one accent, on purpose.
+ *
+ * The previous one — violet accent, violet-to-teal gradient, a radial glow
+ * behind the hero, gradient text on the headline — is the exact set of
+ * choices every generated landing page arrives with, and a tool whose
+ * whole pitch is "look at what it actually produced" cannot afford to look
+ * auto-generated. So: no gradients as decoration, no glow, and colour used
+ * only where it means something.
+ *
+ * The greys are true neutrals rather than the usual blue-tinted near-black.
+ * Blue-black reads as a UI kit; neutral reads as a tool.
+ */
 const config: Config = {
   darkMode: "class",
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        background: "#0b0b0f",
-        surface: "#15151c",
-        "surface-hover": "#1d1d26",
-        "surface-raised": "#1a1a22",
-        border: "#26262f",
-        "border-strong": "#36363f",
-        accent: "#7c5cff",
-        "accent-hover": "#8f73ff",
-        // Second hue for the pulse/waveform motif — used sparingly (logo,
-        // one hero highlight, CTA glow), never as a wall-to-wall gradient.
-        pulse: "#2dd4bf",
-        "pulse-hover": "#45e0cc",
+        background: "#0a0a0a",
+        surface: "#121212",
+        "surface-hover": "#1a1a1a",
+        "surface-raised": "#161616",
+        border: "#242424",
+        "border-strong": "#383838",
+        // Signal orange. One accent, used for the thing you should look at
+        // and nothing else — the record-light association is doing real
+        // work for a video tool, which violet never did.
+        accent: "#ff5c1a",
+        "accent-hover": "#ff7438",
+        // Reserved for state that is genuinely live: a render in flight, a
+        // socket connected. Never decoration.
+        live: "#4ade80",
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        // Archivo over Inter: still a neutral grotesk, but with enough
+        // width and character in the caps that a headline doesn't read as
+        // the default of every framework starter.
+        sans: ["var(--font-archivo)", "system-ui", "sans-serif"],
         mono: ["var(--font-mono)", "ui-monospace", "monospace"],
-      },
-      backgroundImage: {
-        "accent-gradient": "linear-gradient(135deg, #7c5cff 0%, #5b8cff 55%, #2dd4bf 100%)",
-        "radial-fade": "radial-gradient(circle at top, rgba(124,92,255,0.16), transparent 60%)",
       },
       keyframes: {
         "fade-up": {

@@ -16,11 +16,10 @@
 
 body {
   @apply bg-background text-white antialiased;
-  font-feature-settings: "cv11", "ss01";
 }
 
 ::selection {
-  background-color: rgba(124, 92, 255, 0.35);
+  background-color: rgba(255, 92, 26, 0.3);
   color: #fff;
 }
 
@@ -41,16 +40,36 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
 }
 
+/* Blueprint rule, not a decorative backdrop. Fades out downward rather
+   than through a radial ellipse — the ellipse mask is the "glow" look this
+   design is getting away from, and a straight fade reads as a drawing
+   surface running out. */
 .bg-grid {
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 40px 40px;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 40%, transparent 100%);
+    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(to bottom, black, transparent 85%);
 }
 
-.text-gradient {
-  @apply bg-accent-gradient bg-clip-text text-transparent;
+/* Replaces the gradient-filled headline. Emphasis now comes from weight
+   and a single accent colour, which survives being screenshotted, printed,
+   or read by someone with a colour vision deficiency — none of which a
+   three-stop gradient does. */
+.text-accent-emphasis {
+  @apply text-accent;
+}
+
+/* Small caps label, the one piece of terminal vocabulary used throughout:
+   section eyebrows, stat labels, metadata. */
+.label {
+  @apply font-mono text-[11px] uppercase tracking-[0.18em] text-white/40;
+}
+
+/* Hairline separator. Used instead of a card border wherever the job is to
+   divide rather than to contain. */
+.rule {
+  @apply h-px w-full bg-border;
 }
 
 /* Scroll-triggered entrance.

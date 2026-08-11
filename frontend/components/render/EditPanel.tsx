@@ -152,7 +152,7 @@ export function EditPanel({
     <div className="flex flex-col gap-4">
       <Card className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
-          <span className="h-1 w-1 rounded-full bg-pulse" />
+          <span className="h-3 w-px bg-accent" />
           <h3 className="text-sm font-semibold text-white/80">Captions</h3>
           <span className="ml-auto font-mono text-[10px] text-white/30">
             {lines.length} lines
