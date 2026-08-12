@@ -1,0 +1,77 @@
+# Self-hosted ShortPulse: one command, one origin.
+#
+#     docker compose up --build
+#     open http://localhost:8080
+#
+# Everything is anonymous and free in this shape — no Supabase, no Stripe,
+# no accounts. See backend/.env.example for what turns the hosted shape on.
+
+services:
+  # Single entry point. Both the API and the render-progress WebSocket are
+  # served from the same origin as the UI, which is what makes the socket
+  # work at all: Next's rewrites don't proxy protocol upgrades, so without
+  # something in front the browser would need the backend on a port of its
+  # own — fine locally, not on a deployment behind one domain.
+  proxy:
+    image: caddy:2-alpine
+    depends_on: [web, api]
+    ports: ["8080:80"]
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        # Same origin as the page, routed to the API by the proxy above.
+        NEXT_PUBLIC_WS_ORIGIN: ${PUBLIC_WS_ORIGIN:-ws://localhost:8080}
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-}
+    environment:
+      BACKEND_ORIGIN: http://api:8000
+    restart: unless-stopped
+
+  api:
+    build: ./backend
+    env_file:
+      # Optional. Absent, every setting falls back to the defaults in
+      # app/core/config.py and the install runs in its self-hosted shape.
+      - path: ./backend/.env
+        required: false
+    environment:
+      # Ollama runs on the host, not in this compose file — it wants the
+      # machine's GPU and its own model cache.
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://shortpulse:shortpulse@db:5432/shortpulse}
+      CORS_ORIGINS: '["http://localhost:8080"]'
+    volumes:
+      # Renders and the downloaded Piper/Whisper models. Outside the image
+      # so a rebuild doesn't discard either.
+      - shortpulse-data:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db: { condition: service_healthy }
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: shortpulse
+      POSTGRES_PASSWORD: shortpulse
+      POSTGRES_DB: shortpulse
+    volumes:
+      - shortpulse-db:/var/lib/postgresql/data
+    healthcheck:
+      # The API applies its migrations at startup, so it must not start
+      # before Postgres can actually answer.
+      test: ["CMD-SHELL", "pg_isready -U shortpulse"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  shortpulse-data:
+  shortpulse-db:

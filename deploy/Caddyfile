@@ -1,0 +1,28 @@
+# One origin for the UI, the API and the WebSocket.
+#
+# Serving them separately is possible but means CORS on every request and a
+# second public port for the socket. Routing by path keeps the browser
+# talking to exactly one host, which is also what the media tokens and the
+# cookie-free auth assume.
+
+:80 {
+	encode gzip
+
+	# Render progress. Matched before /api/* because it is a protocol
+	# upgrade rather than a request/response, and Caddy proxies it as one.
+	handle /ws/* {
+		reverse_proxy api:8000
+	}
+
+	handle /api/* {
+		# Rendered video is served from here, and a long render can hold a
+		# request open — the default 30s would cut both off.
+		reverse_proxy api:8000 {
+			flush_interval -1
+		}
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}

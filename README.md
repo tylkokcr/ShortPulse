@@ -103,6 +103,42 @@ If you run the backend on a port other than 8000, copy
 `NEXT_PUBLIC_BACKEND_PORT` to match — it drives both the `/api` proxy and the
 render-progress WebSocket.
 
+## Running it in Docker
+
+```bash
+docker compose up --build
+open http://localhost:8080
+```
+
+That brings up the API, the web UI, Postgres, and a reverse proxy in front
+of all of them. Anonymous and free — no accounts, no billing. Renders and
+the downloaded Piper/Whisper models live in a volume, so a rebuild doesn't
+throw either away.
+
+Two things worth knowing before you deploy it somewhere:
+
+**Ollama is not in the compose file.** It wants the machine's GPU and its
+own model cache, so it stays on the host and the API reaches it at
+`host.docker.internal`. Point `OLLAMA_BASE_URL` wherever yours actually
+runs.
+
+**The image ships the `stock_media` pipeline only.** The diffusion stack
+for `fast_hybrid` and `ai_video` is ~3GB installed and needs a GPU to be
+worth running, so it is left out; asking for those modes falls back to
+stock footage rather than failing. Add `requirements-diffusion.txt` and a
+CUDA base image if you want them.
+
+Everything is served from **one origin** on purpose. Next's rewrites don't
+proxy protocol upgrades, so without something in front, the render-progress
+WebSocket would need the backend exposed on a port of its own — fine
+locally, awkward behind a single domain. The proxy routes `/ws` and `/api`
+to the API and everything else to the UI.
+
+For the hosted shape — accounts, credits, payments — fill in
+`backend/.env` (see `backend/.env.example`) and rebuild the web image with
+`NEXT_PUBLIC_SUPABASE_*` set; those are compiled into the client bundle, so
+they have to be present at build time rather than injected at startup.
+
 ## Visual modes
 
 | Mode | Engine | First-run download | Speed per scene | Notes |

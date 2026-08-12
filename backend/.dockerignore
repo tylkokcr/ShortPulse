@@ -1,0 +1,19 @@
+# Everything the image builds for itself, or must never contain.
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+tests/
+
+# Secrets. .env is the file with the Stripe key and the database password
+# in it; baking it into an image is how those end up in a registry.
+.env
+.env.*
+!.env.example
+
+# Renders from local use — gigabytes, and none of it belongs in an image.
+app/storage/projects/
+app/storage/voice_previews/
+
+.DS_Store

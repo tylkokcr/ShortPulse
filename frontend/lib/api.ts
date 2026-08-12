@@ -15,10 +15,25 @@ import type {
 
 const API_BASE = "/api";
 
-// Must match next.config.mjs's rewrite target. REST goes through the Next
-// proxy (/api/*), but the WebSocket connects to the backend directly, so
-// it needs the port explicitly. Override in frontend/.env.local.
-const BACKEND_PORT = process.env.NEXT_PUBLIC_BACKEND_PORT ?? "8000";
+/**
+ * Where the render-progress WebSocket connects.
+ *
+ * REST goes through the Next proxy at /api, but rewrites don't proxy
+ * protocol upgrades, so the socket has to reach the backend itself.
+ *
+ * In development that is the same host on the backend's port. In a
+ * deployment the backend is usually not on a port the browser can reach —
+ * it sits behind the same reverse proxy as everything else — so
+ * NEXT_PUBLIC_WS_ORIGIN overrides it with whatever address does work,
+ * typically `wss://<your-domain>` with the proxy routing /ws to the API.
+ */
+function wsOrigin(): string {
+  const configured = process.env.NEXT_PUBLIC_WS_ORIGIN;
+  if (configured) return configured.replace(/\/$/, "");
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  const port = process.env.NEXT_PUBLIC_BACKEND_PORT ?? "8000";
+  return `${protocol}://${window.location.hostname}:${port}`;
+}
 
 /**
  * The access token for the signed-in user, if there is one.
@@ -304,13 +319,7 @@ export function subscribeToRenderProgress(
     }
     if (closed) return;
 
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    // The Next.js dev server proxy only rewrites /api/*, so the WebSocket
-    // talks to the FastAPI backend directly. Same env var as next.config.mjs
-    // (see frontend/.env.local.example) so both targets move together.
-    socket = new WebSocket(
-      `${protocol}://${window.location.hostname}:${BACKEND_PORT}/ws/render/${projectId}${query}`
-    );
+    socket = new WebSocket(`${wsOrigin()}/ws/render/${projectId}${query}`);
     socket.onmessage = (event) => {
       onProgress(JSON.parse(event.data) as RenderProgress);
     };
