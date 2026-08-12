@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.middleware import RateLimitMiddleware, SupabaseAuthMiddleware
 from app.api.routes import art_styles, credits, music, projects, render, uploads, voices
+from app.core import readiness
 from app.core.config import get_settings
 from app.services import db, project_store
 from app.services.media_tokens import MediaTokenSigner
@@ -35,6 +36,11 @@ async def lifespan(app: FastAPI):
         await db.apply_migrations(pool)
     project_store.configure(pool)
     app.state.db_pool = pool
+
+    # Logged loudly rather than raised: refusing to boot would take a
+    # running service down over a setting that was already wrong, and the
+    # same list is on /api/health for anything that wants to gate on it.
+    readiness.log_at_startup(settings)
 
     # Anything still marked `rendering` was abandoned when the previous
     # process died. Refund and fail it before accepting new work, so the
@@ -99,5 +105,13 @@ app.include_router(uploads.router)
 
 
 @app.get("/api/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok"}
+async def health() -> dict:
+    """Liveness, plus anything about this deployment that is wrong in a way
+    nothing else would report. See core/readiness.py — a deploy can refuse
+    to promote a build that answers with warnings."""
+    warnings = readiness.check(get_settings())
+    return {
+        "status": "ok",
+        "ready_for_production": not warnings,
+        "warnings": [{"setting": w.setting, "problem": w.problem} for w in warnings],
+    }
