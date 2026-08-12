@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Clock, Coins, Film, Layers, Ratio, TriangleAlert } from "lucide-react";
 import { useShortPulseStore } from "@/lib/store";
 import type { AspectRatio, VideoLength, VisualMode } from "@/lib/types";
@@ -114,7 +115,11 @@ export function RenderSummary() {
       {shortfall && (
         <p className="relative flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-300">
           <TriangleAlert size={13} className="mt-0.5 shrink-0" />
-          You have {balance}. Pick a cheaper visual style or a shorter length, or top up.
+          You have {balance}. Pick a cheaper visual style or a shorter length, or{" "}
+          <Link href="/credits" className="underline underline-offset-2 hover:text-red-200">
+            top up
+          </Link>
+          .
         </p>
       )}
 

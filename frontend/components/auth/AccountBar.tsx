@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { Coins, LogOut } from "lucide-react";
 import { getCredits } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
@@ -29,10 +30,17 @@ export function AccountBar() {
     <div className="flex items-center justify-between gap-4 text-xs">
       <span className="truncate text-white/40">{session.user.email}</span>
       <div className="flex items-center gap-3">
-        <span className="flex items-center gap-1.5 text-white/70" title="Credits remaining">
+        {/* The balance is also the way to top it up — otherwise there is
+            nowhere in the app to buy credits, only the landing page's
+            pricing section, which signed-in users never see. */}
+        <Link
+          href="/credits"
+          title="Credits remaining — click to top up"
+          className="flex items-center gap-1.5 text-white/70 transition-colors hover:text-accent"
+        >
           <Coins size={13} />
           {credits.balance}
-        </span>
+        </Link>
         <button
           onClick={signOut}
           className="flex items-center gap-1 text-white/40 hover:text-white/80"

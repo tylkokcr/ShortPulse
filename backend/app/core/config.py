@@ -91,6 +91,19 @@ class Settings(BaseSettings):
     media_url_secret: str | None = None
     media_url_ttl_s: int = 900
 
+    # Payments (hosted deployment only)
+    # Without a secret key there is no checkout: the endpoints report
+    # themselves unavailable rather than half-working, and a self-hosted
+    # install never sees them.
+    stripe_secret_key: str | None = None
+    # Verifies that a webhook really came from Stripe. Mandatory whenever
+    # the webhook route is reachable — the handler grants credits, so an
+    # unverified one is a free-credits endpoint for anyone who finds it.
+    stripe_webhook_secret: str | None = None
+    # Where Stripe returns the customer. Must be a URL of *this* app.
+    checkout_success_url: str = "http://localhost:3000/library?purchase=ok"
+    checkout_cancel_url: str = "http://localhost:3000/#pricing"
+
     # Throttling. Credits bound what a render costs, not how fast someone
     # can ask — one account could otherwise fill the render queue ahead of
     # everyone else. Counted per authenticated user, or per client address

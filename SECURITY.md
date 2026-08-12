@@ -94,6 +94,32 @@ extended by editing the URL.
 Ownership is always checked on the request that *mints* the token — one
 that can carry a bearer header — not on the request that serves the bytes.
 
+### Payments
+
+Credits are granted from the Stripe webhook and nowhere else. The success
+URL is a page the customer's browser is sent to and anyone can open it, so
+granting there would give the product away; the webhook arrives signed.
+
+That makes the signature check load-bearing rather than ceremonial — the
+handler adds credits, so an unverified webhook route mints them for
+whoever finds the URL. Verification is refused outright when no webhook
+secret is configured, rather than falling back to trusting the payload: a
+deployment that forgot the secret would otherwise be wide open and look
+fine.
+
+What was bought is decided server-side. The browser sends a pack id;
+price and credit count are read from the server's own table, never from
+the request. The buyer is identified from signed session metadata rather
+than from the return URL, which is under their control by the time they
+are looking at it.
+
+Stripe retries a delivery until it gets a 2xx, and each retry carries a
+new event id — so the ledger's idempotency key is the *checkout session*,
+not the event, and the unique index on it is what stops one purchase
+paying out twice.
+
+Card details never reach this application.
+
 ### Credits
 
 The ledger is append-only; a balance is always `sum(delta)`, never a

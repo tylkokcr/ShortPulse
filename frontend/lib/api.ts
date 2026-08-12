@@ -251,6 +251,20 @@ export function getMediaUrl(projectId: string): Promise<MediaUrl> {
   return request<MediaUrl>(`/projects/${projectId}/media-url`);
 }
 
+/**
+ * Begin a credit-pack purchase and return the URL to send the buyer to.
+ *
+ * Only the pack id is sent. Price and credit count are resolved server
+ * side — a checkout that took an amount from the client would be a form
+ * where the customer sets their own price.
+ */
+export function startCheckout(packId: string): Promise<{ url: string }> {
+  return request<{ url: string }>("/credits/checkout", {
+    method: "POST",
+    body: JSON.stringify({ pack_id: packId }),
+  });
+}
+
 /** Per-stage timings for a finished render. Resolves to an empty object
  *  when the project has none rather than throwing — a missing report is
  *  not an error worth surfacing. */

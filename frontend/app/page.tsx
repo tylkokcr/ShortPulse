@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   FileText,
@@ -205,9 +206,18 @@ function CreateVideo() {
             </Section>
 
             {error && (
-              <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                {error}
-              </p>
+              <div className="flex flex-wrap items-center gap-3 rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                <span>{error}</span>
+                {/* Telling someone they are short of credits without
+                    offering the way to fix it is a dead end. */}
+                {error.includes("credit") && (
+                  <Link href="/credits" className="ml-auto">
+                    <Button size="sm" variant="secondary">
+                      Top up
+                    </Button>
+                  </Link>
+                )}
+              </div>
             )}
           </div>
 

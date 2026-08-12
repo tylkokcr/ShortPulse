@@ -33,6 +33,11 @@ asyncpg>=0.29           # Postgres driver; Supabase in prod, container locally
 # signing keys Supabase issues. Without it PyJWT can only do HMAC.
 pyjwt[crypto]>=2.9
 
+# --- Payments -----------------------------------------------------------
+# Only needed on a hosted deployment that sells credits. Absent keys, the
+# checkout endpoints report themselves unavailable and everything else runs.
+stripe>=10
+
 # --- Rendering --------------------------------------------------------
 ffmpeg-python>=0.2.0     # thin wrapper kept for future use; core pipeline shells out directly
 

@@ -1,0 +1,265 @@
+"""Buying credits.
+
+This is the one place in the product where money maps to something the
+user receives, so what is pinned here is mostly what must *not* happen:
+credits granted without a verified payment, granted twice for one
+purchase, or granted in an amount the buyer chose.
+"""
+
+from __future__ import annotations
+
+import json
+import time
+
+import pytest
+import stripe
+
+from app.services import payments
+from app.services.credits import pack_by_id
+
+
+class Settings:
+    def __init__(self, secret="sk_test_x", webhook_secret="whsec_test"):
+        self.stripe_secret_key = secret
+        self.stripe_webhook_secret = webhook_secret
+        self.checkout_success_url = "https://app.test/ok"
+        self.checkout_cancel_url = "https://app.test/no"
+
+
+def _signed(payload: dict, secret: str = "whsec_test") -> tuple[bytes, str]:
+    """A payload signed the way Stripe signs one."""
+    body = json.dumps(payload).encode()
+    timestamp = int(time.time())
+    signature = stripe.WebhookSignature._compute_signature(
+        f"{timestamp}.{body.decode()}", secret
+    )
+    return body, f"t={timestamp},v1={signature}"
+
+
+def _completed_session(**overrides) -> dict:
+    session = {
+        "id": "cs_test_123",
+        "payment_status": "paid",
+        "client_reference_id": "user-1",
+        "metadata": {"pack_id": "creator", "user_id": "user-1"},
+    }
+    session.update(overrides)
+    return {"type": "checkout.session.completed", "data": {"object": session}}
+
+
+# --------------------------------------------------------------------------
+# Webhook verification — the handler grants credits, so this is the door
+# --------------------------------------------------------------------------
+
+
+def test_an_unsigned_payload_is_refused():
+    """Anyone can POST to a webhook URL. Without the signature check this
+    endpoint mints credits for whoever finds it."""
+    with pytest.raises(payments.InvalidWebhook, match="Missing Stripe-Signature"):
+        payments.parse_webhook(Settings(), json.dumps(_completed_session()).encode(), None)
+
+
+def test_a_payload_signed_with_the_wrong_secret_is_refused():
+    body, signature = _signed(_completed_session(), secret="whsec_attacker")
+
+    with pytest.raises(payments.InvalidWebhook):
+        payments.parse_webhook(Settings(), body, signature)
+
+
+def test_a_tampered_payload_is_refused():
+    """The amount is not in the payload we trust, but the user id is —
+    re-pointing a real purchase at another account must not verify."""
+    body, signature = _signed(_completed_session())
+    tampered = body.replace(b"user-1", b"user-2")
+
+    with pytest.raises(payments.InvalidWebhook):
+        payments.parse_webhook(Settings(), tampered, signature)
+
+
+def test_a_correctly_signed_payload_is_accepted():
+    body, signature = _signed(_completed_session())
+
+    event = payments.parse_webhook(Settings(), body, signature)
+
+    assert event["type"] == "checkout.session.completed"
+
+
+def test_verification_is_refused_outright_with_no_secret_configured():
+    """Rather than falling back to trusting the payload — a deployment that
+    forgot the secret would otherwise be wide open and look fine."""
+    body, signature = _signed(_completed_session())
+
+    with pytest.raises(payments.InvalidWebhook, match="No webhook secret"):
+        payments.parse_webhook(Settings(webhook_secret=None), body, signature)
+
+
+# --------------------------------------------------------------------------
+# What a verified event is worth
+# --------------------------------------------------------------------------
+
+
+def test_a_paid_session_resolves_to_the_pack_the_server_knows():
+    user_id, pack, key = payments.purchase_from_event(_completed_session())
+
+    assert user_id == "user-1"
+    assert pack is pack_by_id("creator")
+    assert pack.credits == 400
+
+
+def test_an_unpaid_session_grants_nothing():
+    """Stripe fires checkout.session.completed for asynchronous payment
+    methods before the money arrives. Granting on the event name alone
+    hands out credits for a payment that may still fail."""
+    assert payments.purchase_from_event(_completed_session(payment_status="unpaid")) is None
+
+
+def test_other_event_types_are_ignored():
+    assert payments.purchase_from_event({"type": "payment_intent.created", "data": {}}) is None
+
+
+def test_an_unknown_pack_id_grants_nothing():
+    """Metadata could name a pack that has since been removed. Better to
+    grant nothing and have someone look than to guess an amount."""
+    event = _completed_session(metadata={"pack_id": "legendary", "user_id": "user-1"})
+
+    assert payments.purchase_from_event(event) is None
+
+
+def test_the_idempotency_key_is_the_session_not_the_event():
+    """Stripe retries a webhook until it gets a 2xx, and each delivery
+    carries a new event id. Keying on the event would pay out again on
+    every retry."""
+    first = payments.purchase_from_event(_completed_session())
+    retry = payments.purchase_from_event(_completed_session())
+
+    assert first[2] == retry[2] == "stripe:cs_test_123"
+
+
+def test_a_different_purchase_gets_a_different_key():
+    other = payments.purchase_from_event(_completed_session(id="cs_test_456"))
+
+    assert other[2] == "stripe:cs_test_456"
+
+
+# --------------------------------------------------------------------------
+# Checkout — the price is not the client's to choose
+# --------------------------------------------------------------------------
+
+
+async def test_the_amount_charged_comes_from_the_server_table(monkeypatch):
+    captured = {}
+
+    class FakeSessions:
+        def create(self, params):
+            captured.update(params)
+            return type("S", (), {"url": "https://checkout.stripe.test/s"})()
+
+    class FakeClient:
+        checkout = type("C", (), {"sessions": FakeSessions()})()
+
+    monkeypatch.setattr(payments, "_client", lambda settings: FakeClient())
+
+    url = await payments.create_checkout_session(Settings(), "starter", "user-1")
+
+    assert url == "https://checkout.stripe.test/s"
+    line = captured["line_items"][0]["price_data"]
+    assert line["unit_amount"] == pack_by_id("starter").price_cents
+    # The buyer is identified in signed metadata, not in the return URL.
+    assert captured["metadata"] == {"pack_id": "starter", "user_id": "user-1"}
+    assert captured["client_reference_id"] == "user-1"
+
+
+async def test_an_unknown_pack_cannot_be_bought():
+    with pytest.raises(ValueError, match="No such credit pack"):
+        await payments.create_checkout_session(Settings(), "free-money", "user-1")
+
+
+async def test_checkout_is_unavailable_without_a_key():
+    with pytest.raises(payments.PaymentsUnavailable):
+        await payments.create_checkout_session(Settings(secret=None), "starter", "user-1")
+
+
+# --------------------------------------------------------------------------
+# The routes — that the wiring actually calls the checks above
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture
+def api(monkeypatch):
+    from fastapi import FastAPI
+
+    from app.api.routes import credits as credits_route
+    from app.core import config as core_config
+
+    settings = core_config.get_settings()
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_x")
+    monkeypatch.setattr(settings, "stripe_webhook_secret", "whsec_test")
+
+    app = FastAPI()
+    app.include_router(credits_route.router)
+    app.state.db_pool = None
+    return app
+
+
+def _client(app):
+    import httpx
+
+    return httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test")
+
+
+async def test_the_webhook_route_rejects_an_unsigned_post(api):
+    """The route must not be reachable without a signature — this is the
+    endpoint that adds credits."""
+    async with _client(api) as client:
+        response = await client.post("/api/credits/webhook", json=_completed_session())
+
+    assert response.status_code == 400
+
+
+async def test_the_webhook_route_rejects_a_forged_signature(api):
+    body, _ = _signed(_completed_session())
+    async with _client(api) as client:
+        response = await client.post(
+            "/api/credits/webhook",
+            content=body,
+            headers={"Stripe-Signature": "t=1,v1=deadbeef"},
+        )
+
+    assert response.status_code == 400
+
+
+async def test_a_verified_webhook_with_no_ledger_does_not_pretend_to_succeed(api):
+    """Returning 200 here would tell Stripe the purchase was honoured and
+    stop it retrying, losing the grant silently."""
+    body, signature = _signed(_completed_session())
+    async with _client(api) as client:
+        response = await client.post(
+            "/api/credits/webhook", content=body, headers={"Stripe-Signature": signature}
+        )
+
+    assert response.status_code == 503
+
+
+async def test_anonymous_callers_cannot_start_a_checkout(api):
+    """Credits belong to an account, so there has to be one to credit."""
+    async with _client(api) as client:
+        response = await client.post("/api/credits/checkout", json={"pack_id": "starter"})
+
+    assert response.status_code == 401
+
+
+async def test_a_genuinely_parsed_stripe_event_is_readable():
+    """The regression that the plain-dict tests above could not catch.
+
+    `StripeObject` is not a dict subclass and has no `.get`, so code
+    written against dicts raises AttributeError on the first real webhook
+    while every unit test passes. This one goes through the actual parser.
+    """
+    body, signature = _signed(_completed_session())
+    event = payments.parse_webhook(Settings(), body, signature)
+
+    assert not isinstance(event["data"]["object"], dict)  # the trap
+
+    user_id, pack, key = payments.purchase_from_event(event)
+
+    assert (user_id, pack.credits, key) == ("user-1", 400, "stripe:cs_test_123")
