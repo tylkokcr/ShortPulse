@@ -122,6 +122,14 @@ class Settings(BaseSettings):
     checkout_success_url: str = "http://localhost:3000/library?purchase=ok"
     checkout_cancel_url: str = "http://localhost:3000/#pricing"
 
+    # Error reporting (optional)
+    # A render failure is caught and written to the project row, so the
+    # exception never leaves the process — on a deployment that means the
+    # first you hear of a broken pipeline is a user telling you. Unset,
+    # nothing is sent anywhere.
+    sentry_dsn: str | None = None
+    sentry_environment: str = "development"
+
     # Throttling. Credits bound what a render costs, not how fast someone
     # can ask — one account could otherwise fill the render queue ahead of
     # everyone else. Counted per authenticated user, or per client address

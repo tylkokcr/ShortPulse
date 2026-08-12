@@ -14,6 +14,7 @@ import {
   Github,
   Sparkles,
 } from "lucide-react";
+import Link from "next/link";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { LogoMark } from "@/components/ui/Logo";
 import { Card } from "@/components/ui/Card";
@@ -344,7 +345,9 @@ export function Landing() {
       <footer className="border-t border-border/60 px-6 py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 sm:flex-row">
           <LogoMark className="h-6 w-6 opacity-60" />
-          <p className="text-xs text-white/30">MIT licensed · No tracking, no dark patterns.</p>
+          <div className="flex items-center gap-4 text-xs text-white/30">
+            <span>MIT licensed · No tracking, no dark patterns.</span>
+          </div>
           <a
             href={REPO_URL}
             target="_blank"
@@ -354,6 +357,15 @@ export function Landing() {
             <Github size={14} />
             github.com/tylkokcr/ShortPulse
           </a>
+        </div>
+
+        <div className="mx-auto mt-6 flex max-w-6xl items-center justify-center gap-5 text-xs text-white/30">
+          <Link href="/terms" className="transition-colors hover:text-white/60">
+            Terms
+          </Link>
+          <Link href="/privacy" className="transition-colors hover:text-white/60">
+            Privacy
+          </Link>
         </div>
       </footer>
     </div>

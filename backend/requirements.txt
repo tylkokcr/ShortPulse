@@ -37,6 +37,11 @@ pyjwt[crypto]>=2.9
 # checkout endpoints report themselves unavailable and everything else runs.
 stripe>=10
 
+# --- Monitoring (optional) ----------------------------------------------
+# Inert without SENTRY_DSN. Worth having on a deployment because the
+# pipeline catches its own failures, so nothing else would report them.
+sentry-sdk[fastapi]>=2
+
 # --- Rendering --------------------------------------------------------
 ffmpeg-python>=0.2.0     # thin wrapper kept for future use; core pipeline shells out directly
 

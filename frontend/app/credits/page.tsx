@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Check, Coins, Loader2, TriangleAlert } from "lucide-react";
 import clsx from "clsx";
@@ -40,6 +41,12 @@ function Credits() {
 
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // EU distance selling gives a consumer 14 days to withdraw from an
+  // online purchase. Digital content delivered immediately is exempt only
+  // if the buyer expressly asked for it to start now and acknowledged
+  // losing that right — otherwise credits can be spent on renders and
+  // refunded afterwards. So this is a gate on the button, not a footnote.
+  const [acknowledged, setAcknowledged] = useState(false);
 
   useEffect(() => {
     getCredits().then(setCredits).catch(() => {});
@@ -64,6 +71,7 @@ function Credits() {
   }, [justPurchased]);
 
   async function buy(pack: CreditPack) {
+    if (!acknowledged) return;
     setPending(pack.id);
     setError(null);
     try {
@@ -112,6 +120,24 @@ function Credits() {
           </p>
         )}
 
+        <label className="mt-8 flex cursor-pointer items-start gap-3 rounded-md border border-border bg-surface p-4 text-xs leading-relaxed text-white/60">
+          <input
+            type="checkbox"
+            checked={acknowledged}
+            onChange={(e) => setAcknowledged(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-accent"
+          />
+          <span>
+            I want my credits available immediately, and I understand that by starting to use
+            them I give up the 14-day right to withdraw from this purchase. Unused credits can
+            still be refunded within 14 days — see the{" "}
+            <Link href="/terms" className="underline underline-offset-2 hover:text-white">
+              terms
+            </Link>
+            .
+          </span>
+        </label>
+
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
           {packs.map((pack) => (
             <Card
@@ -140,7 +166,7 @@ function Credits() {
 
               <Button
                 onClick={() => buy(pack)}
-                disabled={pending !== null}
+                disabled={pending !== null || !acknowledged}
                 variant={pack.popular ? "gradient" : "secondary"}
                 className="mt-auto w-full"
               >
@@ -157,7 +183,8 @@ function Credits() {
           ))}
         </div>
 
-        <p className="mt-8 text-xs leading-relaxed text-white/30">
+
+        <p className="mt-4 text-xs leading-relaxed text-white/30">
           Payment is handled by Stripe — this app never sees your card details. Self-hosting
           costs nothing and needs no account at all.
         </p>

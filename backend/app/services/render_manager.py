@@ -12,6 +12,7 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
+from app.core import monitoring
 from app.core.config import Settings, project_dir
 from app.core.storage import discard_intermediates
 from app.engines import (
@@ -387,6 +388,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
 
     except Exception as exc:  # noqa: BLE001 - surface any pipeline failure to the client
         logger.exception("Render pipeline failed for project %s", project_id)
+        monitoring.report_render_failure(exc, project_id=project_id, stage="render")
         await project_store.update_project(project_id, status=ProjectStatus.FAILED, error=str(exc))
         await _refund_failed_render(project_id, reason=str(exc))
         await _emit(
@@ -525,6 +527,7 @@ async def run_upload_pipeline(project: Project, settings: Settings) -> None:
 
     except Exception as exc:  # noqa: BLE001 - surface any failure to the client
         logger.exception("Upload pipeline failed for project %s", project_id)
+        monitoring.report_render_failure(exc, project_id=project_id, stage="upload")
         await project_store.update_project(project_id, status=ProjectStatus.FAILED, error=str(exc))
         await _refund_failed_render(project_id, reason=str(exc))
         await _emit(

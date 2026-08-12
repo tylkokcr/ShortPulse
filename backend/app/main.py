@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.middleware import RateLimitMiddleware, SupabaseAuthMiddleware
 from app.api.routes import art_styles, credits, music, projects, render, uploads, voices
-from app.core import readiness
+from app.core import monitoring, readiness
 from app.core.config import get_settings
 from app.services import db, project_store
 from app.services.media_tokens import MediaTokenSigner
@@ -27,6 +27,7 @@ logging.basicConfig(level=logging.INFO)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
+    monitoring.configure(settings)
 
     # Postgres is optional: without DATABASE_URL the app falls back to an
     # in-memory store, so the self-hosted path needs no infrastructure.
