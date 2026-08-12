@@ -354,3 +354,71 @@ async def test_the_bottom_clip_never_takes_over_the_soundtrack(tmp_path, target)
     )
 
     assert _mean_volume_db(final) > -40, "the narration was replaced by the bottom clip's audio"
+
+
+def test_the_caption_font_ships_with_the_app():
+    """Captions default to Montserrat, which is not installed on a typical
+    machine — including every container. Without the bundled file libass
+    substitutes silently, so the same project renders in one typeface on a
+    laptop and another in production.
+
+    The legacy family name matters as much as the file: the variable font
+    Google publishes reports itself as "Montserrat Thin", so a style asking
+    for "Montserrat" does not match it, and if it did every caption would
+    be hairline. The bundled file is pinned to weight 700 and renamed.
+    """
+    import struct
+
+    from app.core.config import FONTS_DIR
+
+    fonts = list(FONTS_DIR.glob("*.ttf"))
+    assert fonts, f"no caption font shipped in {FONTS_DIR}"
+
+    data = fonts[0].read_bytes()
+    table_count = struct.unpack(">H", data[4:6])[0]
+    name_table = next(
+        struct.unpack(">I", data[12 + i * 16 + 8 : 12 + i * 16 + 12])[0]
+        for i in range(table_count)
+        if data[12 + i * 16 : 12 + i * 16 + 4] == b"name"
+    )
+    count, strings = struct.unpack(">HH", data[name_table + 2 : name_table + 6])
+    families = set()
+    for i in range(count):
+        record = name_table + 6 + i * 12
+        platform, _, _, name_id, length, offset = struct.unpack(
+            ">HHHHHH", data[record : record + 12]
+        )
+        if name_id == 1 and platform == 3:
+            start = name_table + strings + offset
+            families.add(data[start : start + length].decode("utf-16-be", "ignore"))
+
+    assert "Montserrat" in families, f"font family is {families}, not what SubtitleStyle asks for"
+
+
+async def test_the_burn_in_points_libass_at_the_bundled_font(tmp_path, target):
+    """Pinned because the failure is invisible: drop `fontsdir` and the
+    render still succeeds, just in a different typeface."""
+    from app.core.config import FONTS_DIR
+
+    voice = _audible_voiceover(tmp_path / "voice.wav")
+    still = tmp_path / "still.png"
+    _run(["-f", "lavfi", "-i", "color=c=red:s=320x240:d=1", "-frames:v", "1", str(still)])
+    scene = _scene(0, still, voice)
+    scene.audio.words = [Word(text="hello", start_ms=0, end_ms=800)]
+    clip = await render_engine.render_scene_clip(
+        scene, target, tmp_path, ffmpeg_binary=FFMPEG, ffprobe_binary=FFPROBE
+    )
+    concatenated = await render_engine.concat_scene_clips([clip], tmp_path, ffmpeg_binary=FFMPEG)
+    captions = build_ass_subtitles([scene], SubtitleStyle(), tmp_path / "captions.ass")
+
+    result = subprocess.run(
+        [
+            FFMPEG, "-v", "info", "-i", str(concatenated),
+            "-vf", f"ass='{captions}':fontsdir='{FONTS_DIR}'",
+            "-frames:v", "1", "-y", str(tmp_path / "frame.png"),
+        ],
+        capture_output=True,
+    )
+    log = result.stderr.decode(errors="ignore")
+
+    assert "Montserrat" in log, "libass never loaded the bundled font"

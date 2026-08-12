@@ -12,6 +12,13 @@ STORAGE_ROOT = BACKEND_ROOT / "app" / "storage" / "projects"
 # "Airport Lounge" by Kevin MacLeod (incompetech.com), CC BY 3.0 — see
 # app/assets/music/ATTRIBUTION.md.
 DEFAULT_MUSIC_TRACK = BACKEND_ROOT / "app" / "assets" / "music" / "Airport Lounge.mp3"
+# Shipped with the app rather than relied upon from the OS. `Montserrat` is
+# the caption font every project defaults to, and it is not installed on a
+# typical machine — libass silently substitutes whatever fontconfig offers,
+# so the same project rendered on a laptop and in a container came out in
+# different typefaces. Passing this to the `ass` filter makes the output
+# depend on the repository instead of the host. OFL 1.1; see OFL.txt.
+FONTS_DIR = BACKEND_ROOT / "app" / "assets" / "fonts"
 
 
 class Settings(BaseSettings):

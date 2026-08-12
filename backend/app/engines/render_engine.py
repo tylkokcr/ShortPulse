@@ -25,6 +25,7 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
+from app.core.config import FONTS_DIR
 from app.engines.subtitle_engine import build_ass_subtitles
 from app.schemas.project import MusicConfig, Scene, SubtitleStyle
 
@@ -301,8 +302,16 @@ async def finalize_render(
     """
     # ass filter paths must have colons/backslashes escaped for the ffmpeg
     # filtergraph parser, particularly on Windows-style paths.
-    escaped_ass_path = str(subtitle_ass_path).replace("\\", "/").replace(":", "\\:")
-    subtitles_filter = f"ass='{escaped_ass_path}'"
+    def _escape(path: Path) -> str:
+        return str(path).replace("\\", "/").replace(":", "\\:")
+
+    # `fontsdir` points libass at the font shipped with the app. Without it
+    # the caption typeface is whatever the host happens to have installed,
+    # which on a machine with no Montserrat — including every container —
+    # is a silent substitution rather than an error.
+    subtitles_filter = (
+        f"ass='{_escape(subtitle_ass_path)}':fontsdir='{_escape(FONTS_DIR)}'"
+    )
 
     inputs: list[str] = []
     if secondary_video is not None:

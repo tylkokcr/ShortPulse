@@ -17,13 +17,12 @@ faster-whisper>=1.0
 # TTS>=0.22              # optional: Coqui XTTS-v2 voice cloning, uncomment to enable
 
 # --- Visual generation --------------------------------------------------
-torch>=2.3
-diffusers>=0.29
-transformers>=4.42
-accelerate>=0.31
+# Only Pillow is needed here: it draws the outro card. The diffusion stack
+# for the fast_hybrid and ai_video modes lives in requirements-diffusion.txt
+# because it is ~3GB installed and a stock_media deployment never loads it —
+# every torch/diffusers import in this codebase is inside the function that
+# needs it, so the app starts and renders happily without them.
 pillow>=10.0
-imageio>=2.34            # required by diffusers' export_to_video for ai_video mode
-imageio-ffmpeg>=0.5
 
 # --- Persistence ---------------------------------------------------------
 asyncpg>=0.29           # Postgres driver; Supabase in prod, container locally

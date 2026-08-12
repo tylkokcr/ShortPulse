@@ -1,0 +1,17 @@
+# Local image and video generation — the `fast_hybrid` and `ai_video`
+# visual modes.
+#
+# Split out because it is roughly 3GB installed and pulls CUDA wheels on
+# Linux, while a deployment that only serves `stock_media` never imports
+# any of it. Install alongside requirements.txt:
+#
+#     pip install -r requirements.txt -r requirements-diffusion.txt
+#
+# Without it, requesting fast_hybrid falls back to stock footage rather
+# than failing (see visual_engine.generate_scene_visual).
+torch>=2.3
+diffusers>=0.29
+transformers>=4.42
+accelerate>=0.31
+imageio>=2.34            # diffusers' export_to_video, ai_video mode only
+imageio-ffmpeg>=0.5
