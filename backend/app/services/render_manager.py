@@ -13,6 +13,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from app.core.config import Settings, project_dir
+from app.core.storage import discard_intermediates
 from app.engines import (
     audio_engine,
     render_engine,
@@ -337,6 +338,11 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             summary["stages_s"],
         )
 
+        # The scene assets and per-scene clips were inputs to a render
+        # that has now happened. Editing works from concatenated.mp4, so
+        # nothing reads them again.
+        discard_intermediates(project_id)
+
         # Thumbnail for the library grid. Best-effort: a project without
         # one still plays.
         await render_engine.extract_poster(
@@ -487,6 +493,11 @@ async def run_upload_pipeline(project: Project, settings: Settings) -> None:
                 "video_duration_s": round(probed.duration_s, 2),
             },
         )
+
+        # The scene assets and per-scene clips were inputs to a render
+        # that has now happened. Editing works from concatenated.mp4, so
+        # nothing reads them again.
+        discard_intermediates(project_id)
 
         # Thumbnail for the library grid. Best-effort: a project without
         # one still plays.

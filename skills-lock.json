@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "skills": {
+    "connect-recommend": {
+      "source": "docs.stripe.com",
+      "sourceUrl": "https://docs.stripe.com",
+      "sourceType": "well-known",
+      "computedHash": "ddf136d2fdc3fb24d5b4b932ec60cb714e941ca8b624b5f3fe8888728e5b5563",
+      "wellKnownDigest": "sha256:02aaebe4ca5578ab043ae666d5589a819281cef2f687926266e5ee05e7b3ab84"
+    }
+  }
+}

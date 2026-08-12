@@ -8,8 +8,11 @@ still has it sitting on the server.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
+from app.core import storage
 from app.core.config import get_settings, project_dir
 from app.core.storage import discard_project_files
 
@@ -51,3 +54,101 @@ def test_other_projects_are_untouched(project_with_files, tmp_path):
     discard_project_files(project_id)
 
     assert (neighbour / "output" / "final.mp4").read_bytes() == b"keep me"
+
+
+# --------------------------------------------------------------------------
+# Intermediates
+#
+# 81% of a real install's 8.4GB was scaffolding from renders that had
+# already finished. What matters here is that the sweep takes the right
+# things — deleting concatenated.mp4 would silently break editing, which
+# nothing would notice until someone tried to fix a caption.
+# --------------------------------------------------------------------------
+
+
+def _finished_project(root: Path, project_id: str = "proj") -> Path:
+    base = root / project_id
+    for sub in ("visuals", "audio", "output", "source", "subtitles"):
+        (base / sub).mkdir(parents=True)
+    (base / "output" / "final.mp4").write_bytes(b"x" * 1000)
+    (base / "output" / "poster.jpg").write_bytes(b"x" * 10)
+    (base / "output" / "concatenated.mp4").write_bytes(b"x" * 500)
+    (base / "output" / "clip_00.mp4").write_bytes(b"x" * 300)
+    (base / "output" / "clip_01.mp4").write_bytes(b"x" * 300)
+    (base / "output" / "concat_list.txt").write_text("file 'a'")
+    (base / "visuals" / "scene_00_stock.mp4").write_bytes(b"x" * 4000)
+    (base / "audio" / "scene_00.wav").write_bytes(b"x" * 200)
+    (base / "source" / "source.mp4").write_bytes(b"x" * 100)
+    (base / "subtitles" / "captions.ass").write_text("[Events]")
+    return base
+
+
+def test_the_working_files_are_removed(tmp_path, monkeypatch):
+    base = _finished_project(tmp_path)
+    monkeypatch.setattr(get_settings(), "storage_root", tmp_path)
+
+    freed = storage.discard_intermediates("proj")
+
+    assert not (base / "visuals").exists()
+    assert not (base / "audio").exists()
+    assert not (base / "output" / "clip_00.mp4").exists()
+    assert not (base / "output" / "concat_list.txt").exists()
+    assert freed == 4000 + 200 + 300 + 300 + len("file 'a'")
+
+
+def test_the_file_editing_re_burns_from_is_kept(tmp_path, monkeypatch):
+    """concatenated.mp4 is the pre-subtitle cut every edit is drawn onto.
+    Losing it turns "fix a caption" into "re-render the whole video", and
+    nothing would notice until someone tried."""
+    base = _finished_project(tmp_path)
+    monkeypatch.setattr(get_settings(), "storage_root", tmp_path)
+
+    storage.discard_intermediates("proj")
+
+    assert (base / "output" / "concatenated.mp4").is_file()
+
+
+def test_the_video_and_its_poster_are_kept(tmp_path, monkeypatch):
+    base = _finished_project(tmp_path)
+    monkeypatch.setattr(get_settings(), "storage_root", tmp_path)
+
+    storage.discard_intermediates("proj")
+
+    assert (base / "output" / "final.mp4").is_file()
+    assert (base / "output" / "poster.jpg").is_file()
+
+
+def test_an_uploads_original_is_kept(tmp_path, monkeypatch):
+    """Same role as concatenated.mp4, for a project that was uploaded."""
+    base = _finished_project(tmp_path)
+    monkeypatch.setattr(get_settings(), "storage_root", tmp_path)
+
+    storage.discard_intermediates("proj")
+
+    assert (base / "source" / "source.mp4").is_file()
+
+
+def test_an_unfinished_render_is_left_alone(tmp_path, monkeypatch):
+    """Without a final.mp4 the render either failed or is still going, and
+    its inputs are the only copy of the work so far."""
+    base = _finished_project(tmp_path)
+    (base / "output" / "final.mp4").unlink()
+    monkeypatch.setattr(get_settings(), "storage_root", tmp_path)
+
+    assert storage.discard_intermediates("proj") == 0
+    assert (base / "visuals" / "scene_00_stock.mp4").is_file()
+
+
+def test_running_it_twice_is_harmless(tmp_path, monkeypatch):
+    _finished_project(tmp_path)
+    monkeypatch.setattr(get_settings(), "storage_root", tmp_path)
+
+    storage.discard_intermediates("proj")
+
+    assert storage.discard_intermediates("proj") == 0
+
+
+def test_a_missing_project_is_not_an_error(tmp_path, monkeypatch):
+    monkeypatch.setattr(get_settings(), "storage_root", tmp_path)
+
+    assert storage.discard_intermediates("never-existed") == 0
