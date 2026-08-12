@@ -94,6 +94,20 @@ extended by editing the URL.
 Ownership is always checked on the request that *mints* the token — one
 that can carry a bearer header — not on the request that serves the bytes.
 
+### Server-side requests
+
+`ProjectConfig.llm.base_url` is an address this server then POSTs the
+prompt to. Accepted from the request, it was a server-side fetch to
+wherever the caller pointed it — cloud metadata on a deployed host, another
+container, an internal admin port — with the response surfacing in the
+project's `error` field, so a blind SSRF was readable. Script generation
+retries, so one request delivered three.
+
+The whole `llm` block is now replaced at the HTTP boundary with values from
+settings, the same rule as `MusicConfig.track_path`: which model writes the
+script is a deployment decision, not a per-request one. Only `temperature`
+survives, because it changes the writing rather than the destination.
+
 ### Payments
 
 Credits are granted from the Stripe webhook and nowhere else. The success

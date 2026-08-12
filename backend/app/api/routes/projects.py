@@ -17,6 +17,8 @@ from app.schemas.project import (
     CaptionTrack,
     EditSpec,
     Layout,
+    LLMConfig,
+    LLMProvider,
     Project,
     ProjectConfig,
     ProjectStatus,
@@ -43,11 +45,27 @@ async def create_project(
     queued job fail minutes later. On a self-hosted install there is no
     user and no database, so this is free and the ledger is never touched.
     """
+    settings = get_settings()
+
     # `track_path` is fed to ffmpeg as an input. Anything the client sent
     # is discarded and re-derived from the id, so a request can only ever
     # name a file inside the music directory.
     config.music.track_path = (
         str(music.track_path_for(config.music.track_id)) if config.music.track_id else None
+    )
+
+    # Same rule, sharper edge: `llm.base_url` is an address this server then
+    # makes a POST to. Left as the client sent it, a request could aim it at
+    # cloud metadata or anything else reachable from inside the network, and
+    # read the result back out of the project's error field. Which model
+    # writes the script is a deployment decision anyway, not a per-request
+    # one, so the whole block is replaced rather than validated.
+    config.llm = LLMConfig(
+        provider=LLMProvider(settings.llm_provider),
+        model=settings.llm_model,
+        base_url=settings.ollama_base_url,
+        api_key=settings.openai_api_key,
+        temperature=config.llm.temperature,
     )
 
     pool = db_pool(request)

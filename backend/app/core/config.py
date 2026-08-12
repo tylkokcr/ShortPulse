@@ -25,7 +25,18 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # LLM
+    #
+    # These are the *only* values the script engine ever runs with. Whatever
+    # a request carries in `config.llm` is discarded at the HTTP boundary
+    # and replaced with this — see projects.create_project. A client-chosen
+    # `base_url` is a server-side fetch to an address the client picked.
+    llm_provider: str = "ollama"
+    llm_model: str = "llama3"
     ollama_base_url: str = "http://localhost:11434"
+    # Required when llm_provider is "openai". A hosted deployment usually
+    # wants this: an 8B model needs ~6GB of RAM and, on a modest VPS CPU,
+    # takes longer to write the script than the rest of the render takes to
+    # produce the video.
     openai_api_key: str | None = None
 
     # TTS / ASR
