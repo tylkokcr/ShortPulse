@@ -96,6 +96,16 @@ question, bold claim, or pattern interrupt. Never start with "Have you ever".
 target language — the image-generation model responds best to English \
 prompts.
 {visual_prompt_rule}
+- Whatever draws or finds the footage knows nothing about specific people, \
+characters, brands, games or franchises, and cannot look them up. Naming \
+one in "visual_prompt" produces an unrelated stand-in — a topic about a \
+game character came back as a generic face. So "visual_prompt" must be \
+self-contained and literal: describe what a camera would see, using words \
+that mean something with no outside context, and never use jargon from a \
+game or fandom ("her ultimate", "auto-attacks"). Write "an archer in blue \
+armour drawing a glowing bow" rather than "Ashe using her ultimate". The \
+"voiceover_line" is free to name whatever it likes — this rule is only \
+about the visual.
 - "voiceover_line" must NEVER be empty, even for topics about visual or \
 non-verbal cues (body language, micro-expressions, etc.) — the narrator \
 always explains the point out loud in words; the visual is a separate, \
@@ -240,15 +250,18 @@ async def _generate_script_once(
     system_prompt = _build_system_prompt(video_length, language, visual_mode)
     user_prompt = _build_user_prompt(topic, raw_script)
 
-    if config.provider == LLMProvider.OLLAMA:
-        raw_text = await _call_ollama(config, system_prompt, user_prompt)
-    elif config.provider == LLMProvider.OPENAI:
-        raw_text = await _call_openai(config, system_prompt, user_prompt)
-    else:
-        raise ScriptGenerationError(f"Unsupported LLM provider: {config.provider}")
-
+    raw_text = await _call_llm(config, system_prompt, user_prompt)
     parsed = _extract_json(raw_text)
+    await _rewrite_named_prompts(parsed, topic, config)
     return _to_script_output(topic, parsed)
+
+
+async def _call_llm(config: LLMConfig, system_prompt: str, prompt: str) -> str:
+    if config.provider == LLMProvider.OLLAMA:
+        return await _call_ollama(config, system_prompt, prompt)
+    if config.provider == LLMProvider.OPENAI:
+        return await _call_openai(config, system_prompt, prompt)
+    raise ScriptGenerationError(f"Unsupported LLM provider: {config.provider}")
 
 
 def _first_present(d: dict, keys: list[str]) -> str | None:
@@ -257,6 +270,109 @@ def _first_present(d: dict, keys: list[str]) -> str | None:
         if isinstance(value, str) and value.strip():
             return value.strip()
     return None
+
+
+# Words that start a sentence or a stock phrase and happen to be
+# capitalised — not names, and not worth rewriting a prompt over.
+_NOT_A_NAME = {
+    "a", "an", "the", "close", "closeup", "close-up", "wide", "aerial", "macro",
+    "split", "slow", "time", "first", "second", "third", "new", "old", "young",
+    # Topics are usually written as a question or a statement, so the first
+    # word is capitalised without being a name.
+    "why", "what", "when", "where", "how", "who", "which", "this", "that",
+    "does", "did", "can", "could", "should", "are", "is", "was", "were",
+    "your", "you", "my", "our", "their", "some", "every", "all", "most",
+}
+
+
+def _named_entities(topic: str) -> set[str]:
+    """Capitalised words in the topic that a generator won't recognise.
+
+    Deliberately drawn from the topic rather than from a dictionary: the
+    thing the user asked about is exactly the thing the model will name in
+    its visual prompts, and it needs no list of every character and brand
+    in the world to spot it.
+    """
+    # Any token carrying an uppercase letter, not just one starting with
+    # it — brand names routinely start lowercase (iPhone, eBay, xAI), and
+    # requiring an initial capital let "iPhone" through unnoticed.
+    words = re.findall(r"\b[\w'-]*[A-Z][\w'-]*\b", topic)
+    return {w for w in words if w.lower() not in _NOT_A_NAME and len(w) > 2}
+
+
+def visual_prompts_naming(scenes: list[dict], topic: str) -> list[int]:
+    """Indices of scenes whose visual prompt names something from the topic.
+
+    Whatever draws or searches for the footage has no idea who "Ashe" is,
+    so a prompt containing it comes back as an unrelated stand-in — in the
+    case that prompted this, a generic face for a game character. The
+    prompt rules ask the model to avoid it and mostly work, but a local
+    model applies the rule for a few scenes and then drifts, so this is the
+    check that doesn't rely on it remembering.
+    """
+    entities = _named_entities(topic)
+    if not entities:
+        return []
+    hits = []
+    for i, scene in enumerate(scenes):
+        prompt = (scene.get("visual_prompt") or "").lower()
+        if any(e.lower() in prompt for e in entities):
+            hits.append(i)
+    return hits
+
+
+REWRITE_SYSTEM_PROMPT = """\
+You rewrite image-generation prompts so they describe only what a camera \
+would see.
+
+The prompts you are given name a specific person, character, brand or \
+franchise. Whatever draws the image has never heard of it and will invent \
+an unrelated substitute, so each prompt must be rewritten to describe the \
+same shot literally — appearance, setting, action — with the name and any \
+fandom jargon removed.
+
+Example: "Ashe standing behind enemies with her ultimate" becomes "an \
+archer in blue armour drawing a glowing bow, enemies scattered behind her".
+
+Keep each rewrite under 15 words. Respond with ONLY valid JSON:
+{"prompts": ["rewritten prompt", "rewritten prompt"]}
+"""
+
+
+async def _rewrite_named_prompts(
+    parsed: dict, topic: str, config: LLMConfig
+) -> None:
+    """Replace visual prompts that name topic entities, in place.
+
+    One extra call for the whole batch rather than one per scene, and a
+    failure leaves the originals untouched — a literal-but-generic image is
+    the improvement here, and an unrelated one is what we already had.
+    """
+    scenes = parsed.get("scenes")
+    if not isinstance(scenes, list):
+        return
+    hits = visual_prompts_naming(scenes, topic)
+    if not hits:
+        return
+
+    numbered = "\n".join(f"{n + 1}. {scenes[i].get('visual_prompt')}" for n, i in enumerate(hits))
+    try:
+        raw = await _call_llm(config, REWRITE_SYSTEM_PROMPT, numbered)
+        rewritten = _extract_json(raw).get("prompts")
+        if not isinstance(rewritten, list) or len(rewritten) != len(hits):
+            raise ScriptGenerationError("rewrite returned the wrong number of prompts")
+    except Exception as exc:  # noqa: BLE001 - a failed rewrite is not a failed render
+        logger.warning("Could not rewrite %d named visual prompt(s): %s", len(hits), exc)
+        return
+
+    for index, prompt in zip(hits, rewritten, strict=True):
+        if isinstance(prompt, str) and prompt.strip():
+            logger.info(
+                "Rewrote visual prompt naming a topic entity: %r -> %r",
+                scenes[index].get("visual_prompt"),
+                prompt,
+            )
+            scenes[index]["visual_prompt"] = prompt.strip()
 
 
 def _to_script_output(topic: str, parsed: dict) -> ScriptOutput:
