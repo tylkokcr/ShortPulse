@@ -110,10 +110,14 @@ export function ProjectCard({
           onBlur={() => setConfirming(false)}
           aria-label={confirming ? "Confirm delete" : "Delete project"}
           className={clsx(
-            "shrink-0 rounded-md p-1.5 transition-all duration-200",
+            // Revealed on hover on a pointer device, always visible on a
+            // touch one — there is no hover on a phone, so hiding it there
+            // makes deleting a project impossible rather than tidy. The
+            // padding is the tap target, not decoration.
+            "shrink-0 rounded-md p-2.5 transition-all duration-200",
             confirming
               ? "bg-red-500/20 text-red-400"
-              : "text-white/25 opacity-0 hover:text-red-400 group-hover:opacity-100"
+              : "text-white/40 hover:text-red-400 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
           )}
         >
           <Trash2 size={13} />

@@ -311,7 +311,9 @@ export function EditPanel({
                     type="button"
                     onClick={() => setOverlays((c) => c.filter((_, j) => j !== i))}
                     aria-label="Remove"
-                    className="shrink-0 rounded p-1 text-white/25 transition-colors hover:text-red-400"
+                    // p-2.5 rather than p-1: a 13px icon in 8px of padding
+                    // is a 21px tap target, well under what a thumb hits.
+                    className="shrink-0 rounded p-2.5 text-white/40 transition-colors hover:text-red-400"
                   >
                     <Trash2 size={13} />
                   </button>

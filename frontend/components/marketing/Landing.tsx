@@ -147,7 +147,10 @@ export function Landing() {
             can actually read. Pay per video or self-host it for nothing. No subscription either way.
           </p>
 
-          <dl className="grid grid-cols-4 gap-4 border-t border-border pt-6">
+          {/* Two across on a phone: four columns leaves ~73px each, which
+              wraps "visual engines" onto two lines and makes the row read
+              as noise rather than as four facts. */}
+          <dl className="grid grid-cols-2 gap-4 border-t border-border pt-6 sm:grid-cols-4">
             {STATS.map((stat) => (
               <div key={stat.label} className="flex flex-col gap-1">
                 <dt className="sr-only">{stat.label}</dt>
