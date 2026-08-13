@@ -56,3 +56,21 @@ export function Section({ title, children }: { title: string; children: React.Re
     </section>
   );
 }
+
+/**
+ * A detail that is only true once the operator has been configured.
+ *
+ * Both legal pages have to state things — who the controller is, where
+ * the data sits, whose law applies — that no source file can know. Left
+ * to a placeholder they read as answered, which is the one outcome worse
+ * than reading as blank: a published privacy policy naming a contact
+ * nobody monitors is a promise the deployment cannot keep.
+ */
+export function OperatorFact({ value, missing }: { value?: string; missing: string }) {
+  if (value) return <>{value}</>;
+  return (
+    <span className="rounded bg-amber-500/15 px-1 py-0.5 text-amber-300" title={missing}>
+      [not published by this install]
+    </span>
+  );
+}

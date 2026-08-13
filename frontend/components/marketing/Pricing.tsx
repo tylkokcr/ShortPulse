@@ -31,9 +31,17 @@ const PACK_LABELS: Record<string, { name: string; blurb: string }> = {
 
 /** Cheapest real render (stock_media + short) costs 1 credit; the default
  *  fast_hybrid short costs 3. Quoting both keeps "how many videos" honest
- *  instead of advertising only the flattering number. */
-function videosFor(credits: number) {
-  return { basic: credits, standard: Math.floor(credits / 3) };
+ *  instead of advertising only the flattering number.
+ *
+ *  `standard` is dropped where fast_hybrid can't run — the shipped
+ *  container has no diffusion stack — because quoting videos in a mode the
+ *  deployment refuses to sell is an advertisement for a product that
+ *  doesn't exist here. */
+function videosFor(credits: number, generatedStills: boolean) {
+  return {
+    basic: credits,
+    standard: generatedStills ? Math.floor(credits / 3) : null,
+  };
 }
 
 export function Pricing() {
@@ -42,6 +50,9 @@ export function Pricing() {
   // settings, so they come from the server alongside the packs.
   const [currency, setCurrency] = useState("usd");
   const [taxIncluded, setTaxIncluded] = useState(false);
+  // Assumed until the server says otherwise, so the copy doesn't visibly
+  // rewrite itself on a deployment where it is true.
+  const [generatedStills, setGeneratedStills] = useState(true);
 
   useEffect(() => {
     // Not getCredits(): a visitor has no account, and a deployment with
@@ -53,6 +64,7 @@ export function Pricing() {
         if (pricing.packs?.length) setPacks(pricing.packs);
         if (pricing.currency) setCurrency(pricing.currency);
         setTaxIncluded(Boolean(pricing.tax_included));
+        if (pricing.modes) setGeneratedStills(pricing.modes.includes("fast_hybrid"));
       })
       .catch(() => {
         /* Keep the fallback — see FALLBACK_PACKS. */
@@ -79,12 +91,20 @@ export function Pricing() {
             <p className="text-xs text-white/40">Every new account, no card.</p>
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-3xl font-semibold tracking-tight">$0</span>
+            {/* Formatted, not written: on a EUR deployment a hardcoded
+                "$0" sits directly above three prices in euros. */}
+            <span className="text-3xl font-semibold tracking-tight">
+              {formatPrice(0, currency)}
+            </span>
           </div>
           <ul className="flex flex-col gap-2 text-xs text-white/50">
             <Feature>15 credits on sign-up</Feature>
-            <Feature>5 standard videos, or 15 stock-footage ones</Feature>
-            <Feature>Every language and visual engine</Feature>
+            <Feature>
+              {generatedStills ? "5 standard videos, or 15 stock-footage ones" : "15 videos"}
+            </Feature>
+            <Feature>
+              {generatedStills ? "Every language and visual engine" : "Every language"}
+            </Feature>
             <Feature>No watermark</Feature>
           </ul>
           <a href="#sign-in" className="mt-auto pt-2">
@@ -96,7 +116,7 @@ export function Pricing() {
 
         {packs.map((pack) => {
           const label = PACK_LABELS[pack.id] ?? { name: pack.id, blurb: "" };
-          const { basic, standard } = videosFor(pack.credits);
+          const { basic, standard } = videosFor(pack.credits, generatedStills);
           return (
             <Card
               key={pack.id}
@@ -135,7 +155,7 @@ export function Pricing() {
                 <Feature>
                   <span className="text-white/80">{pack.credits} credits</span>
                 </Feature>
-                <Feature>~{standard} standard videos</Feature>
+                {standard !== null && <Feature>~{standard} standard videos</Feature>}
                 <Feature>~{basic} with stock footage</Feature>
                 <Feature>Never expire</Feature>
               </ul>
@@ -166,8 +186,14 @@ export function Pricing() {
         </a>
       </Card>
 
+      {/* The tariff, and so it lists what can actually be bought here. The
+          feature copy above still describes all three engines, because
+          self-hosting is offered on this same page and they all work
+          there — but a price for a mode this deployment refuses to sell
+          is an offer it cannot honour. */}
       <p className="mt-4 font-mono text-[11px] text-white/30">
-        1 credit = stock footage · 3 = AI stills · 10 = local text-to-video, each ×2 for medium
+        1 credit = stock footage
+        {generatedStills && " · 3 = AI stills · 10 = local text-to-video"}, each ×2 for medium
         and ×3 for long. You&apos;re quoted the exact cost before a render starts.
       </p>
     </section>

@@ -326,7 +326,7 @@ export function Landing() {
             Start with 15 credits. No card, no trial timer.
           </h2>
           <p className="mx-auto mt-3 max-w-md text-white/50">
-            That&apos;s five finished videos to judge it by. Buy more only if it earns it — or clone
+            That&apos;s enough to judge it by. Buy more only if it earns it — or clone
             the repo and run the whole thing on your own hardware for nothing.
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">

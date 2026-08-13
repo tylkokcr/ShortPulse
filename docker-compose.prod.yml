@@ -1,0 +1,52 @@
+# The hosted shape: a domain, HTTPS, accounts, credits.
+#
+#     docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Layered on the base file rather than replacing it, so there is one
+# definition of what the stack is and this only says how it differs.
+#
+# Everything here is driven by a `.env` next to this file — the values in
+# it are addresses and identities, not secrets; the secrets stay in
+# backend/.env, which the API reads directly.
+
+services:
+  proxy:
+    ports:
+      # The real ones. 443 is where the traffic goes; 80 stays open because
+      # Let's Encrypt's HTTP challenge uses it and because Caddy redirects
+      # it to HTTPS.
+      - "80:80"
+      - "443:443"
+    environment:
+      # Turns the Caddyfile from :80 into a site with a certificate.
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS to your domain}
+    volumes:
+      # Issued certificates and the ACME account key. Without this a
+      # restart re-requests every certificate, and Let's Encrypt's rate
+      # limit is low enough to lock you out of your own domain for a week.
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: always
+
+  web:
+    build:
+      args:
+        # Same origin as the page: the proxy routes /ws to the API. Must be
+        # wss, not ws — a secure page cannot open an insecure socket, and
+        # the browser blocks it with no visible error but a dead progress
+        # bar.
+        NEXT_PUBLIC_WS_ORIGIN: wss://${SITE_ADDRESS:?}
+    restart: always
+
+  api:
+    restart: always
+
+  db:
+    restart: always
+    # Not published. The API reaches it over the compose network; exposing
+    # it on the host would put a database with a default password on a
+    # public IP.
+
+volumes:
+  caddy-data:
+  caddy-config:

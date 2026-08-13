@@ -315,6 +315,9 @@ export interface PublicPricing {
   tax_included: boolean;
   packs: CreditPack[];
   pricing: Record<string, number>;
+  /** Modes this install can render. The pricing copy quotes videos-per-pack
+   *  per mode, and a mode that isn't here is one the API refuses to sell. */
+  modes: VisualMode[];
 }
 
 /** One-off purchase — nothing here renews, and credits never expire. */

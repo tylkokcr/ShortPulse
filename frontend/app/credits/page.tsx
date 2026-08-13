@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Check, Coins, Loader2, TriangleAlert } from "lucide-react";
 import clsx from "clsx";
-import { getCredits, startCheckout } from "@/lib/api";
+import { getCredits, getPublicPricing, startCheckout } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
 import type { CreditPack } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
@@ -59,9 +59,15 @@ function Credits() {
   // losing that right — otherwise credits can be spent on renders and
   // refunded afterwards. So this is a gate on the button, not a footnote.
   const [acknowledged, setAcknowledged] = useState(false);
+  // Which modes this deployment can actually render, so the "how many
+  // videos does this buy" line doesn't quote one it can't.
+  const [generatedStills, setGeneratedStills] = useState(true);
 
   useEffect(() => {
     getCredits().then(setCredits).catch(() => {});
+    getPublicPricing()
+      .then((p) => setGeneratedStills(p.modes.includes("fast_hybrid")))
+      .catch(() => {});
   }, [setCredits]);
 
   // Stripe redirects the moment the payment clears, which can be before
@@ -172,9 +178,14 @@ function Credits() {
                 {pack.credits} credits
               </p>
               <p className="text-xs leading-relaxed text-white/40">
-                {/* Quoted from the same table the backend charges from. */}
-                {pack.credits} stock-footage shorts, or {Math.floor(pack.credits / 3)} with
-                AI-generated stills.
+                {/* Quoted from the same table the backend charges from, and
+                    only for the modes this install can run — the shipped
+                    container has no diffusion stack, and offering the
+                    generated-stills number there quotes a price for
+                    something the API refuses to sell. */}
+                {pack.credits} stock-footage shorts
+                {generatedStills && `, or ${Math.floor(pack.credits / 3)} with AI-generated stills`}
+                .
               </p>
 
               <Button

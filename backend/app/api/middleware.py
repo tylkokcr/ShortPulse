@@ -57,7 +57,16 @@ _PUBLIC_PATHS = {"/api/health", "/docs", "/openapi.json", "/redoc"}
 # whether to sign up has no account yet, and answering them 401 made the
 # landing page quote its hardcoded USD fallback instead of what the
 # deployment actually charges. It exposes nothing — it is the price list.
-_UNAUTHENTICATED_PATHS = _PUBLIC_PATHS | {"/api/credits/webhook", "/api/credits/packs"}
+#
+# Visual modes are there for the same reason as the price list, and for
+# one more: the picker's fallback when the call fails is to offer
+# everything, so a 401 here doesn't hide the modes — it puts back exactly
+# the options this install cannot render.
+_UNAUTHENTICATED_PATHS = _PUBLIC_PATHS | {
+    "/api/credits/webhook",
+    "/api/credits/packs",
+    "/api/visual-modes",
+}
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):

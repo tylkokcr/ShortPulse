@@ -1,4 +1,5 @@
-import { LegalPage, Section } from "@/components/legal/LegalPage";
+import { LegalPage, OperatorFact, Section } from "@/components/legal/LegalPage";
+import { operator } from "@/lib/operator";
 
 export const metadata = { title: "Terms — ShortPulse" };
 
@@ -11,6 +12,31 @@ export default function Terms() {
           voiceover and word-synced captions. The software is open source under the MIT
           licence and can be run on your own machine for nothing. These terms cover the hosted
           service, where renders run on our hardware and are paid for with credits.
+        </p>
+      </Section>
+
+      <Section title="Who you are contracting with">
+        <p>
+          The hosted service is provided by{" "}
+          <strong className="text-white">
+            <OperatorFact value={operator.name} missing="NEXT_PUBLIC_OPERATOR_NAME is unset" />
+          </strong>
+          , <OperatorFact value={operator.address} missing="NEXT_PUBLIC_OPERATOR_ADDRESS is unset" />
+          {operator.taxId ? `, ${operator.taxId}` : ""}. Reach us at{" "}
+          {operator.email ? (
+            <a href={`mailto:${operator.email}`} className="underline underline-offset-2 hover:text-white">
+              {operator.email}
+            </a>
+          ) : (
+            <OperatorFact missing="NEXT_PUBLIC_OPERATOR_EMAIL is unset" />
+          )}
+          .
+        </p>
+        <p>
+          These terms are governed by the law of{" "}
+          <OperatorFact value={operator.country} missing="NEXT_PUBLIC_OPERATOR_COUNTRY is unset" />
+          . If you are a consumer, this does not take away the protections of the law where you
+          live, and you keep the right to bring a claim in your own courts.
         </p>
       </Section>
 

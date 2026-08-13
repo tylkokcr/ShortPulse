@@ -5,7 +5,11 @@
 # talking to exactly one host, which is also what the media tokens and the
 # cookie-free auth assume.
 
-:80 {
+# SITE_ADDRESS is the domain in production and unset everywhere else, where
+# it falls back to plain :80 for `docker compose up` on a laptop. Given a
+# domain, Caddy obtains and renews the certificate itself — that is the
+# whole reason it is the proxy here rather than nginx.
+{$SITE_ADDRESS::80} {
 	encode gzip
 
 	# Render progress. Matched before /api/* because it is a protocol

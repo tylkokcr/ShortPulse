@@ -134,10 +134,40 @@ WebSocket would need the backend exposed on a port of its own — fine
 locally, awkward behind a single domain. The proxy routes `/ws` and `/api`
 to the API and everything else to the UI.
 
-For the hosted shape — accounts, credits, payments — fill in
-`backend/.env` (see `backend/.env.example`) and rebuild the web image with
-`NEXT_PUBLIC_SUPABASE_*` set; those are compiled into the client bundle, so
-they have to be present at build time rather than injected at startup.
+## Deploying the hosted shape
+
+Accounts, credits and payments, on a domain:
+
+```bash
+cp .env.production.example .env               # domain + who runs it
+cp backend/.env.production.example backend/.env   # keys, then fill it in
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+Point an `A` record at the machine first — Caddy requests the certificate
+on the first request and needs the name to already resolve.
+
+Then check, rather than assume:
+
+```bash
+curl -s https://<your-domain>/api/health | jq .warnings
+```
+
+Every setting that is wrong in a way nothing else would report is listed
+there, with what it costs: renders given away free, video links that break
+on the next restart, a webhook that cannot be verified so purchases never
+grant credits. An empty array is the goal, and it is worth wiring into a
+deploy script — the entire list is silent by construction.
+
+Two things that are easy to get wrong and give no error:
+
+**`NEXT_PUBLIC_*` are compiled into the client bundle**, so they exist at
+build time or not at all. Changing the domain, the Supabase project or who
+operates the service means rebuilding the web image, not restarting it.
+
+**Use Supabase's session pooler (port 5432), not the transaction pooler
+(6543).** asyncpg uses prepared statements, which the transaction pooler
+does not support.
 
 ## Visual modes
 

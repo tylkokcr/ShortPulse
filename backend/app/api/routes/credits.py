@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from app.api.deps import billing_enabled, current_user_id, db_pool
 from app.core.config import get_settings
+from app.engines import visual_engine
 from app.schemas.project import ProjectConfig, VideoLength, VisualMode
 from app.services import credits, payments
 
@@ -93,6 +94,11 @@ class PublicPricing(BaseModel):
     tax_included: bool
     packs: list[CreditPackOut]
     pricing: dict[str, int]
+    # What this install can actually render. The pricing copy quotes "how
+    # many videos a pack buys", which is a different number per mode — and
+    # quoting a mode the deployment can't run advertises a product it
+    # can't sell.
+    modes: list[VisualMode]
 
 
 @router.get("/packs", response_model=PublicPricing)
@@ -106,6 +112,7 @@ async def get_public_pricing(request: Request) -> PublicPricing:
         tax_included=settings.stripe_automatic_tax,
         packs=_packs(),
         pricing=_pricing_table(),
+        modes=visual_engine.available_modes(settings),
     )
 
 

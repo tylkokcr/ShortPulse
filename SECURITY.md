@@ -2,8 +2,16 @@
 
 ## Reporting a vulnerability
 
-Email the maintainer rather than opening a public issue. Include what you
-did, what happened, and what you expected.
+Use GitHub's private vulnerability reporting — the **Security** tab, then
+**Report a vulnerability**. It reaches the maintainer without the report
+being public while it is still exploitable, and it needs no address that
+might go stale.
+
+Include what you did, what happened, and what you expected.
+
+For something specific to the hosted service rather than to this code,
+the contact address is on its [privacy page](https://github.com/tylkokcr/ShortPulse#deploying-the-hosted-shape),
+which every deployment publishes as its data controller.
 
 ## What this codebase does and doesn't protect
 

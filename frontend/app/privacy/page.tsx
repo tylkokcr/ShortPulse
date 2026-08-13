@@ -1,4 +1,5 @@
-import { LegalPage, Section } from "@/components/legal/LegalPage";
+import { LegalPage, OperatorFact, Section } from "@/components/legal/LegalPage";
+import { operator } from "@/lib/operator";
 
 export const metadata = { title: "Privacy — ShortPulse" };
 
@@ -65,18 +66,47 @@ export default function Privacy() {
         </p>
       </Section>
 
+      <Section title="Who is responsible">
+        <p>
+          This service is run by{" "}
+          <strong className="text-white">
+            <OperatorFact value={operator.name} missing="NEXT_PUBLIC_OPERATOR_NAME is unset" />
+          </strong>
+          , <OperatorFact value={operator.address} missing="NEXT_PUBLIC_OPERATOR_ADDRESS is unset" />
+          {operator.taxId ? ` (${operator.taxId})` : ""}, who is the data controller for
+          everything described here.
+        </p>
+        <p>
+          Contact for anything on this page, including the requests below:{" "}
+          {operator.email ? (
+            <a href={`mailto:${operator.email}`} className="underline underline-offset-2 hover:text-white">
+              {operator.email}
+            </a>
+          ) : (
+            <OperatorFact missing="NEXT_PUBLIC_OPERATOR_EMAIL is unset" />
+          )}
+          .
+        </p>
+      </Section>
+
       <Section title="Your rights">
         <p>
           You can ask for a copy of your data, for it to be corrected, or for the account and
-          everything in it to be deleted. Email the address in the repository and it will be
-          done.
+          everything in it to be deleted. Write to the address above and it will be done. If you
+          think the law has been broken, you can also complain to your national data protection
+          authority.
         </p>
       </Section>
 
       <Section title="Where it is">
         <p>
-          Data is held in the EU. Stripe and OpenAI process some of it outside the EU under
-          their own transfer safeguards.
+          Data is held in{" "}
+          <OperatorFact
+            value={operator.dataRegion}
+            missing="NEXT_PUBLIC_OPERATOR_DATA_REGION is unset"
+          />
+          . Stripe and OpenAI process some of it outside that region under their own transfer
+          safeguards.
         </p>
       </Section>
     </LegalPage>
