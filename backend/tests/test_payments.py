@@ -19,11 +19,13 @@ from app.services.credits import pack_by_id
 
 
 class Settings:
-    def __init__(self, secret="sk_test_x", webhook_secret="whsec_test"):
+    def __init__(self, secret="sk_test_x", webhook_secret="whsec_test", automatic_tax=False):
         self.stripe_secret_key = secret
         self.stripe_webhook_secret = webhook_secret
         self.checkout_success_url = "https://app.test/ok"
         self.checkout_cancel_url = "https://app.test/no"
+        self.stripe_currency = "usd"
+        self.stripe_automatic_tax = automatic_tax
 
 
 def _signed(payload: dict, secret: str = "whsec_test") -> tuple[bytes, str]:
@@ -263,3 +265,63 @@ async def test_a_genuinely_parsed_stripe_event_is_readable():
     user_id, pack, key = payments.purchase_from_event(event)
 
     assert (user_id, pack.credits, key) == ("user-1", 400, "stripe:cs_test_123")
+
+
+# --------------------------------------------------------------------------
+# VAT
+#
+# Selling digital services to EU consumers means tax at the buyer's local
+# rate. What matters here is that turning it on doesn't quietly change what
+# the customer is charged relative to the price they were shown.
+# --------------------------------------------------------------------------
+
+
+def _captured_session(monkeypatch, settings):
+    captured = {}
+
+    class FakeSessions:
+        def create(self, params):
+            captured.update(params)
+            return type("S", (), {"url": "https://checkout.stripe.test/s"})()
+
+    class FakeClient:
+        checkout = type("C", (), {"sessions": FakeSessions()})()
+
+    monkeypatch.setattr(payments, "_client", lambda s: FakeClient())
+    return captured
+
+
+async def test_tax_is_not_sent_unless_it_is_configured(monkeypatch):
+    """`automatic_tax` fails the whole checkout unless Stripe Tax is
+    activated with an origin address, so it must not be on by default."""
+    captured = _captured_session(monkeypatch, Settings())
+
+    await payments.create_checkout_session(Settings(), "starter", "user-1")
+
+    assert "automatic_tax" not in captured
+    assert "tax_behavior" not in captured["line_items"][0]["price_data"]
+
+
+async def test_tax_is_carved_out_of_the_advertised_price(monkeypatch):
+    """Inclusive, not exclusive: the page says $9, so $9 is what gets
+    charged and the VAT comes out of it. Adding tax at the final step is
+    what EU price-indication rules exist to stop."""
+    settings = Settings(automatic_tax=True)
+    captured = _captured_session(monkeypatch, settings)
+
+    await payments.create_checkout_session(settings, "starter", "user-1")
+
+    assert captured["automatic_tax"] == {"enabled": True}
+    price = captured["line_items"][0]["price_data"]
+    assert price["tax_behavior"] == "inclusive"
+    assert price["unit_amount"] == pack_by_id("starter").price_cents
+
+
+async def test_the_currency_is_a_deployment_setting(monkeypatch):
+    settings = Settings()
+    settings.stripe_currency = "eur"
+    captured = _captured_session(monkeypatch, settings)
+
+    await payments.create_checkout_session(settings, "starter", "user-1")
+
+    assert captured["line_items"][0]["price_data"]["currency"] == "eur"

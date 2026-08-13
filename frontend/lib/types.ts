@@ -272,6 +272,11 @@ export interface RenderTimings {
  *  UI entirely rather than showing a balance of zero. */
 export interface CreditSummary {
   enabled: boolean;
+  /** What the packs are priced in. Sent by the server so the UI never
+   *  hardcodes a currency symbol. */
+  currency?: string;
+  /** Whether the shown price already contains VAT. */
+  tax_included?: boolean;
   balance: number;
   entries: CreditEntry[];
   /** Keyed `"<visual_mode>:<video_length>"`, so the UI can quote a price

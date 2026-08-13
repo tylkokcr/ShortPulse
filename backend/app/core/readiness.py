@@ -76,6 +76,17 @@ def check(settings) -> list[Warning_]:
                 )
             )
 
+    if settings.stripe_secret_key and settings.stripe_secret_key.startswith("sk_live_"):
+        if not getattr(settings, "stripe_automatic_tax", False):
+            warnings.append(
+                Warning_(
+                    "STRIPE_AUTOMATIC_TAX",
+                    "selling for real money with no tax collection: VAT on digital sales to "
+                    "EU consumers is owed at the buyer's local rate whether or not it was "
+                    "charged, so it comes out of revenue instead",
+                )
+            )
+
     if settings.llm_provider == "openai" and not settings.openai_api_key:
         warnings.append(
             Warning_("OPENAI_API_KEY", "provider is openai but no key is set; every render will fail")

@@ -60,6 +60,8 @@ async def create_checkout_session(
     if pack is None:
         raise ValueError(f"No such credit pack: {pack_id}")
 
+    automatic_tax = bool(getattr(settings, "stripe_automatic_tax", False))
+
     session = _client(settings).checkout.sessions.create(
         params={
             "mode": "payment",
@@ -71,8 +73,14 @@ async def create_checkout_session(
                 {
                     "quantity": 1,
                     "price_data": {
-                        "currency": "usd",
+                        "currency": settings.stripe_currency,
                         "unit_amount": pack.price_cents,
+                        # Inclusive: the price on the page is the price
+                        # paid, and VAT is carved out of it. Exclusive
+                        # would add tax at the last step, which for a
+                        # consumer sale is the thing EU price-indication
+                        # rules exist to prevent.
+                        **({"tax_behavior": "inclusive"} if automatic_tax else {}),
                         "product_data": {
                             "name": f"{pack.credits} ShortPulse credits",
                             "description": (
@@ -87,6 +95,16 @@ async def create_checkout_session(
             # count, so the amount granted is always resolved from the
             # server's own table even if this metadata is somehow stale.
             "metadata": {"pack_id": pack.id, "user_id": user_id},
+            **(
+                {
+                    "automatic_tax": {"enabled": True},
+                    # Stripe Tax needs to know where the buyer is. "auto"
+                    # asks only where it cannot already tell.
+                    "billing_address_collection": "auto",
+                }
+                if automatic_tax
+                else {}
+            ),
         }
     )
     if not session.url:

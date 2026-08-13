@@ -10,6 +10,7 @@ import { useShortPulseStore } from "@/lib/store";
 import type { CreditPack } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { formatPrice } from "@/lib/money";
 import { Badge } from "@/components/ui/Badge";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { AccountBar } from "@/components/auth/AccountBar";
@@ -103,6 +104,7 @@ function Credits() {
           </h1>
           <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/50">
             One-off packs. Nothing renews, nothing expires, and unused credits stay yours.
+            {credits?.tax_included && " Prices include VAT at your local rate."}
           </p>
         </div>
 
@@ -149,7 +151,7 @@ function Credits() {
             >
               <div className="flex items-start justify-between">
                 <span className="font-mono text-3xl font-semibold">
-                  ${(pack.price_cents / 100).toFixed(0)}
+                  {formatPrice(pack.price_cents, credits?.currency)}
                 </span>
                 {pack.popular && <Badge tone="accent">Most picked</Badge>}
               </div>

@@ -23,6 +23,7 @@ class Settings:
         self.stripe_secret_key = None
         self.stripe_webhook_secret = None
         self.checkout_success_url = "https://app.example/credits"
+        self.stripe_automatic_tax = False
         self.llm_provider = "ollama"
         self.openai_api_key = None
         self.__dict__.update(overrides)
@@ -94,3 +95,22 @@ def test_every_warning_says_what_goes_wrong_not_just_what_is_unset():
     """A warning that only names a setting gets skimmed past."""
     for w in readiness.check(Settings(require_auth=False, media_url_secret=None)):
         assert len(w.problem) > 40, w
+
+
+def test_live_keys_without_tax_collection_are_flagged():
+    """VAT on digital sales to EU consumers is owed whether or not it was
+    charged — uncollected, it comes out of revenue rather than being
+    avoided."""
+    flagged = _settings_for(
+        stripe_secret_key="sk_live_x",
+        stripe_webhook_secret="whsec_x",
+        checkout_success_url="https://app.example/credits",
+        stripe_automatic_tax=False,
+    )
+    assert "STRIPE_AUTOMATIC_TAX" in flagged
+
+
+def test_test_keys_without_tax_collection_are_not_flagged():
+    """Nobody is being charged anything, so there is no tax to collect."""
+    flagged = _settings_for(stripe_secret_key="sk_test_x", stripe_webhook_secret="whsec_x")
+    assert "STRIPE_AUTOMATIC_TAX" not in flagged

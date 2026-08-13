@@ -41,6 +41,13 @@ class CreditPackOut(BaseModel):
 
 class CreditSummary(BaseModel):
     enabled: bool
+    # What the packs are priced in. Sent rather than assumed, so a
+    # deployment can switch to EUR without the UI still drawing "$".
+    currency: str = "usd"
+    # Whether the displayed price already contains VAT. EU consumer sales
+    # are inclusive; the UI says so rather than leaving the buyer to find
+    # out at the last step.
+    tax_included: bool = False
     balance: int = 0
     entries: list[LedgerEntryOut] = []
     # Cost of every render shape, so the UI can quote a price before the
@@ -70,12 +77,15 @@ def _packs() -> list[CreditPackOut]:
 async def get_credits(
     request: Request, user_id: str | None = Depends(current_user_id)
 ) -> CreditSummary:
+    settings = get_settings()
     pool = db_pool(request)
     if not billing_enabled(pool, user_id):
         return CreditSummary(enabled=False, packs=_packs())
 
     return CreditSummary(
         enabled=True,
+        currency=settings.stripe_currency,
+        tax_included=settings.stripe_automatic_tax,
         balance=await credits.balance(pool, user_id),
         entries=[
             LedgerEntryOut(**vars(entry)) for entry in await credits.history(pool, user_id)

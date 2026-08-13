@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { getCredits } from "@/lib/api";
 import type { CreditPack } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
+import { formatPrice } from "@/lib/money";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 
@@ -37,11 +38,17 @@ function videosFor(credits: number) {
 
 export function Pricing() {
   const [packs, setPacks] = useState<CreditPack[]>(FALLBACK_PACKS);
+  // Currency and whether VAT is already in the price are deployment
+  // settings, so they come from the server alongside the packs.
+  const [currency, setCurrency] = useState("usd");
+  const [taxIncluded, setTaxIncluded] = useState(false);
 
   useEffect(() => {
     getCredits()
       .then((summary) => {
         if (summary.packs?.length) setPacks(summary.packs);
+        if (summary.currency) setCurrency(summary.currency);
+        setTaxIncluded(Boolean(summary.tax_included));
       })
       .catch(() => {
         /* Keep the fallback — see FALLBACK_PACKS. */
@@ -110,7 +117,12 @@ export function Pricing() {
 
               <div className="flex items-baseline gap-1.5">
                 <span className="text-3xl font-semibold tracking-tight">
-                  ${(pack.price_cents / 100).toFixed(0)}
+                  {formatPrice(pack.price_cents, currency)}
+                  {taxIncluded && (
+                    <span className="ml-1.5 align-middle text-[10px] font-normal text-white/30">
+                      incl. VAT
+                    </span>
+                  )}
                 </span>
                 <span className="text-xs text-white/40">one-off</span>
               </div>

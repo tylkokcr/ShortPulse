@@ -118,6 +118,23 @@ class Settings(BaseSettings):
     # the webhook route is reachable — the handler grants credits, so an
     # unverified one is a free-credits endpoint for anyone who finds it.
     stripe_webhook_secret: str | None = None
+    # What the packs are priced in. Changing it does not convert anything:
+    # the numbers in credits.CREDIT_PACKS are reinterpreted in the new
+    # currency, so 900 becomes €9.00 rather than the euro equivalent of $9.
+    stripe_currency: str = "usd"
+    # Let Stripe work out and collect VAT.
+    #
+    # Off by default because it fails the checkout outright unless Stripe
+    # Tax is activated and an origin address is set in the dashboard —
+    # better a deliberate switch than a payment page that 500s.
+    #
+    # Selling digital services to EU consumers means VAT at the *buyer's*
+    # local rate, which is not something to work out by hand. Prices are
+    # sent tax-inclusive, because EU consumer law wants the displayed price
+    # to be the final one: a €9 pack stays €9 and the VAT comes out of it,
+    # varying the net by country (19% in Germany, 27% in Hungary).
+    stripe_automatic_tax: bool = False
+
     # Where Stripe returns the customer. Must be a URL of *this* app.
     checkout_success_url: str = "http://localhost:3000/library?purchase=ok"
     checkout_cancel_url: str = "http://localhost:3000/#pricing"
