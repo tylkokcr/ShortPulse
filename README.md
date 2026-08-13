@@ -136,6 +136,43 @@ to the API and everything else to the UI.
 
 ## Deploying the hosted shape
 
+### What it has to run on
+
+A plain CPU VPS. No GPU: the image ships the `stock_media` pipeline only,
+and in this shape the script comes from OpenAI rather than a local model,
+so nothing that wants a graphics card is left in the container.
+
+Measured on the running stack, one `stock_media` short:
+
+| | |
+|---|---|
+| Idle, all four containers | ~150MB RAM |
+| Peak during a render | ~820MB RAM in the API container |
+| CPU during a render | takes every core it is given — briefly ~9 on a 10-core machine |
+| Disk, images | ~2.6GB |
+| Disk, Whisper + Piper models | ~525MB, downloaded on first render |
+| Disk, per finished project | ~28MB |
+
+So: **2 vCPU and 2GB is enough to serve, 4 vCPU and 4GB to render without
+queueing.** RAM is not the constraint — the render is CPU-bound, and cores
+are what turn into shorter renders. `MAX_CONCURRENT_RENDERS` is the knob;
+past what the box has, concurrent renders all get slower instead of more
+of them finishing.
+
+Disk is the one that grows without being watched: renders are kept, at
+roughly 28MB each, so 50GB holds on the order of a thousand before
+anything has to be evicted.
+
+The timings above are from an Apple Silicon machine. An x86 VPS core is
+not the same core — treat the shape as the guidance and measure the first
+render on the real box.
+
+Two things are somewhere else and are not this machine's problem: Postgres
+(Supabase, per `DATABASE_URL`) and scriptwriting (OpenAI). The `db`
+container still starts in this shape and goes unused.
+
+### Bringing it up
+
 Accounts, credits and payments, on a domain:
 
 ```bash

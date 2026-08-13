@@ -1,9 +1,26 @@
+# Deployment identity for docker-compose.prod.yml — the domain, the
+# Supabase project, who operates the service. No secrets belong here (they
+# go in backend/.env), but it describes one particular deployment and is
+# not something a fork should inherit. .env.production.example is the
+# tracked copy.
+#
+# The glob covers the copies that get made by hand — .env.old,
+# .env.singapore-backup — because those hold whatever the live file held
+# at the time, and the exact-name rule below would not have stopped one
+# from being committed.
+/.env
+/.env.*
+!/.env.production.example
+
 # Python
 __pycache__/
 *.pyc
 backend/.venv/
 backend/venv/
 backend/.env
+backend/.env.*
+!backend/.env.example
+!backend/.env.production.example
 backend/app/storage/projects/*
 !backend/app/storage/projects/.gitkeep
 backend/.pytest_cache/
