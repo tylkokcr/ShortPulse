@@ -13,6 +13,7 @@ someone remembering the list.
 from __future__ import annotations
 
 import logging
+import shutil
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
@@ -84,6 +85,25 @@ def check(settings) -> list[Warning_]:
                     "selling for real money with no tax collection: VAT on digital sales to "
                     "EU consumers is owed at the buyer's local rate whether or not it was "
                     "charged, so it comes out of revenue instead",
+                )
+            )
+
+    # Not gated on _hosted: a self-hosted install with no ffmpeg is just as
+    # broken, and this is the single most likely thing to be wrong after
+    # moving a .env from a dev machine into a container, where the paths it
+    # names do not exist. Left unchecked it surfaces as [Errno 2] from a
+    # subprocess three stages into a render, with the binary that could not
+    # be found nowhere in the traceback.
+    for setting, binary in (
+        ("FFMPEG_BINARY", settings.ffmpeg_binary),
+        ("FFPROBE_BINARY", settings.ffprobe_binary),
+    ):
+        if not shutil.which(binary):
+            warnings.append(
+                Warning_(
+                    setting,
+                    f"{binary!r} is not on PATH and is not an executable file: every "
+                    "render will fail partway through, not at startup",
                 )
             )
 

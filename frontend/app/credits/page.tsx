@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Check, Coins, Loader2, TriangleAlert } from "lucide-react";
@@ -30,7 +30,18 @@ import { RequireAuth } from "@/components/auth/RequireAuth";
 export default function CreditsPage() {
   return (
     <RequireAuth>
-      <Credits />
+      {/* `useSearchParams` below opts the page out of static rendering
+          unless it sits under a Suspense boundary, and Next fails the
+          build rather than warning.
+
+          It only surfaced with Supabase unconfigured: with auth on,
+          RequireAuth renders nothing while the session resolves, so
+          prerendering never reached the hook. With auth off — the
+          self-hosted shape, and what the container image builds by
+          default — it renders straight through and the build dies. */}
+      <Suspense fallback={null}>
+        <Credits />
+      </Suspense>
     </RequireAuth>
   );
 }

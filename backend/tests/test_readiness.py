@@ -9,6 +9,8 @@ startup check is good at.
 
 from __future__ import annotations
 
+import sys
+
 from app.core import readiness
 
 
@@ -26,6 +28,9 @@ class Settings:
         self.stripe_automatic_tax = False
         self.llm_provider = "ollama"
         self.openai_api_key = None
+        # Any executable that certainly exists wherever the suite runs.
+        self.ffmpeg_binary = sys.executable
+        self.ffprobe_binary = sys.executable
         self.__dict__.update(overrides)
 
 
@@ -114,3 +119,31 @@ def test_test_keys_without_tax_collection_are_not_flagged():
     """Nobody is being charged anything, so there is no tax to collect."""
     flagged = _settings_for(stripe_secret_key="sk_test_x", stripe_webhook_secret="whsec_x")
     assert "STRIPE_AUTOMATIC_TAX" not in flagged
+
+
+def test_an_ffmpeg_path_that_does_not_exist_is_reported():
+    """The failure this replaces: [Errno 2] from inside a render.
+
+    A .env written on a developer's machine names the ffmpeg Homebrew
+    installed; the same file mounted into a container names nothing at
+    all. Startup succeeds, /api/health says ok, and the first render dies
+    three stages in with an errno and no mention of which path was wrong.
+    """
+    warnings = readiness.check(Settings(ffmpeg_binary="/opt/homebrew/opt/ffmpeg-absent/bin/ffmpeg"))
+    assert [w.setting for w in warnings] == ["FFMPEG_BINARY"]
+    # Naming the path is the whole point — the errno never did.
+    assert "/opt/homebrew/opt/ffmpeg-absent/bin/ffmpeg" in warnings[0].problem
+
+
+def test_ffprobe_is_checked_separately():
+    """They are separate settings and are separately gettable wrong.
+
+    ffprobe is the one that goes missing on its own: a few slimmed-down
+    ffmpeg builds omit it, and it is what every duration probe calls.
+    """
+    assert _settings_for(ffprobe_binary="/nope/ffprobe") == ["FFPROBE_BINARY"]
+
+
+def test_a_bare_command_name_is_resolved_on_path():
+    """The container sets these to bare names, not absolute paths."""
+    assert _settings_for(ffmpeg_binary="sh", ffprobe_binary="sh") == []

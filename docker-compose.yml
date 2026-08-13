@@ -45,6 +45,13 @@ services:
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       DATABASE_URL: ${DATABASE_URL:-postgresql://shortpulse:shortpulse@db:5432/shortpulse}
       CORS_ORIGINS: '["http://localhost:8080"]'
+      # Belong to the image, so they must beat anything env_file carries.
+      # A .env written for a dev machine points these at a host path —
+      # /opt/homebrew/... , /usr/local/... — that does not exist in here,
+      # and the failure is a bare "No such file or directory" from deep
+      # inside the visual stage, long after startup has reported healthy.
+      FFMPEG_BINARY: ${FFMPEG_BINARY:-ffmpeg}
+      FFPROBE_BINARY: ${FFPROBE_BINARY:-ffprobe}
     volumes:
       # Renders and the downloaded Piper/Whisper models. Outside the image
       # so a rebuild doesn't discard either.
