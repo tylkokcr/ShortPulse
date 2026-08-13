@@ -13,6 +13,7 @@ someone remembering the list.
 from __future__ import annotations
 
 import logging
+import re
 import shutil
 from dataclasses import dataclass
 
@@ -118,6 +119,22 @@ def check(settings) -> list[Warning_]:
                 "DATABASE_URL",
                 "accounts are configured but projects are held in memory: every render, "
                 "and every credit balance, is lost on restart",
+            )
+        )
+
+    # Supabase hands you the connection string with the password still
+    # written as [YOUR-PASSWORD], and it is easy to paste as-is: it looks
+    # complete, names the right host, and the brackets read as punctuation.
+    # Unset is already reported above; half-set was not, and its failure is
+    # a ValueError about an IPv6 address from inside the URL parser —
+    # nothing that names the password or points at this file.
+    if settings.database_url and re.search(r"\[[A-Z-]+\]", settings.database_url):
+        warnings.append(
+            Warning_(
+                "DATABASE_URL",
+                "still contains a bracketed placeholder from the connection string it "
+                "was copied from: nothing can connect, and the error names an IP address "
+                "rather than the password that was never filled in",
             )
         )
 

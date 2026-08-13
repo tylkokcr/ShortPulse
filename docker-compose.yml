@@ -44,16 +44,17 @@ services:
   api:
     build: ./backend
     env_file:
-      # Optional. Absent, every setting falls back to the defaults in
-      # app/core/config.py and the install runs in its self-hosted shape.
+      # Order matters: later files win. The defaults describe the compose
+      # stack — its Postgres, its origin — and backend/.env is the
+      # operator's, so it must come second or a hosted deployment cannot
+      # point DATABASE_URL anywhere else. They were `environment:` keys
+      # once, which outranks env_file and silently discarded it.
+      - ./deploy/defaults.env
+      # Optional. Absent, the defaults above and app/core/config.py are the
+      # whole configuration and the install runs in its self-hosted shape.
       - path: ./backend/.env
         required: false
     environment:
-      # Ollama runs on the host, not in this compose file — it wants the
-      # machine's GPU and its own model cache.
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      DATABASE_URL: ${DATABASE_URL:-postgresql://shortpulse:shortpulse@db:5432/shortpulse}
-      CORS_ORIGINS: '["http://localhost:8080"]'
       # Belong to the image, so they must beat anything env_file carries.
       # A .env written for a dev machine points these at a host path —
       # /opt/homebrew/... , /usr/local/... — that does not exist in here,

@@ -40,6 +40,12 @@ services:
 
   api:
     restart: always
+    environment:
+      # Derived rather than configured: the deployment serves one origin,
+      # and it is this one. Set by hand in backend/.env it is a second
+      # place the domain is written down, free to drift from SITE_ADDRESS
+      # and break every browser call the day it does.
+      CORS_ORIGINS: '["https://${SITE_ADDRESS:?}"]'
 
   db:
     restart: always
