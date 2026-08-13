@@ -266,6 +266,17 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             )
             await asyncio.gather(*(build_visual(scene) for scene in script.scenes))
 
+        # The buyer paid for the mode they asked for. If generation fell
+        # back to stock footage anyway — a model that won't load, a GPU
+        # that disappeared mid-render — they received the cheaper product
+        # and should be charged the cheaper price.
+        #
+        # The API refuses modes this install can't run, so reaching here
+        # means something broke rather than something was misconfigured.
+        # Belt and braces, because the failure is invisible in the output:
+        # a stock-footage video looks like a finished video.
+        await _refund_mode_downgrade(project_id, config, script.scenes)
+
         # 4. Render scene clips, then build subtitles from each clip's real,
         # frame-quantized duration (not the pre-render estimate), then
         # concat + finalize with music. -----------------------------------
@@ -555,6 +566,53 @@ async def _refund_failed_render(project_id: str, *, reason: str) -> None:
         logger.exception(
             "Could not refund project %s after a failed render; the startup "
             "reconciler will retry",
+            project_id,
+        )
+
+
+async def _refund_mode_downgrade(project_id: str, config, scenes) -> None:
+    """Charge the cheaper price when the visuals came out cheaper.
+
+    generate_scene_visual falls back to stock footage rather than losing a
+    render, and records what actually produced each asset. When every
+    generated scene fell back, the user bought fast_hybrid or ai_video and
+    received the stock-media product — so they are charged for the stock
+    media product.
+
+    Only a wholesale downgrade counts. A single scene falling back is the
+    fallback doing its job on a video that is otherwise what was ordered,
+    and re-pricing that would need a per-scene tariff the ledger doesn't
+    have.
+
+    Swallows its own errors like the other ledger paths here: a billing
+    problem must not fail a render that produced a working video.
+    """
+    requested = VisualMode(config.visual_mode)
+    if requested == VisualMode.STOCK_MEDIA:
+        return
+
+    generated = [s for s in scenes if not s.is_outro]
+    if not generated or any(s.visual.mode != VisualMode.STOCK_MEDIA for s in generated):
+        return
+
+    delivered = config.model_copy(update={"visual_mode": VisualMode.STOCK_MEDIA})
+    owed = credits.cost_for(config) - credits.cost_for(delivered)
+    if owed <= 0:
+        return
+
+    pool = db.optional_pool()
+    if pool is None:
+        return
+    try:
+        await credits.correct_charge(
+            pool,
+            project_id,
+            owed,
+            note=f"{requested} unavailable; delivered stock media",
+        )
+    except Exception:  # noqa: BLE001
+        logger.exception(
+            "Could not correct the charge for project %s after a mode downgrade",
             project_id,
         )
 

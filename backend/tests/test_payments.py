@@ -14,6 +14,7 @@ import time
 import pytest
 import stripe
 
+from app.services import credits as credits_module
 from app.services import payments
 from app.services.credits import pack_by_id
 
@@ -240,6 +241,107 @@ async def test_a_verified_webhook_with_no_ledger_does_not_pretend_to_succeed(api
         )
 
     assert response.status_code == 503
+
+
+async def test_the_webhook_survives_require_auth(monkeypatch):
+    """The production configuration, which is the only one that broke.
+
+    Stripe authenticates by signature, not by bearer token, so with
+    REQUIRE_AUTH on the auth middleware answered its callback 401 before
+    the handler ran. Every purchase would have been charged and never
+    credited, and nothing would have logged an error — from the API's side
+    a 401 is a perfectly ordinary answer.
+
+    Asserting only that the webhook is not 401 would pass with the gate
+    switched off entirely, so this checks both doors in the same app: the
+    webhook reaches its handler (503 — no ledger configured here) while an
+    ordinary route is still refused.
+    """
+    from fastapi import FastAPI
+
+    from app.api.middleware import SupabaseAuthMiddleware
+    from app.api.routes import credits as credits_route
+    from app.core import config as core_config
+
+    settings = core_config.get_settings()
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_x")
+    monkeypatch.setattr(settings, "stripe_webhook_secret", "whsec_test")
+
+    app = FastAPI()
+    app.include_router(credits_route.router)
+    app.add_middleware(SupabaseAuthMiddleware, verifier=None, require_auth=True)
+    app.state.db_pool = None
+
+    body, signature = _signed(_completed_session())
+    async with _client(app) as client:
+        hook = await client.post(
+            "/api/credits/webhook", content=body, headers={"Stripe-Signature": signature}
+        )
+        ordinary = await client.get("/api/credits")
+
+    assert ordinary.status_code == 401, "require_auth is not actually on; test proves nothing"
+    assert hook.status_code != 401, "Stripe was refused — purchases would never be credited"
+    assert hook.status_code == 503
+
+
+async def test_a_visitor_is_quoted_the_currency_the_deployment_charges(monkeypatch):
+    """What the landing page shows has to be what checkout takes.
+
+    The pricing section is rendered for people who are not signed in. On
+    a deployment with REQUIRE_AUTH its call was refused, the failure was
+    caught, and it drew its hardcoded fallback — US dollars, no VAT —
+    while the checkout it linked to charged euros including VAT.
+    """
+    from fastapi import FastAPI
+
+    from app.api.middleware import SupabaseAuthMiddleware
+    from app.api.routes import credits as credits_route
+    from app.core import config as core_config
+
+    settings = core_config.get_settings()
+    monkeypatch.setattr(settings, "stripe_currency", "eur")
+    monkeypatch.setattr(settings, "stripe_automatic_tax", True)
+
+    app = FastAPI()
+    app.include_router(credits_route.router)
+    app.add_middleware(SupabaseAuthMiddleware, verifier=None, require_auth=True)
+    app.state.db_pool = None
+
+    async with _client(app) as client:
+        public = await client.get("/api/credits/packs")
+        private = await client.get("/api/credits")
+
+    assert private.status_code == 401, "require_auth is not actually on; test proves nothing"
+    assert public.status_code == 200
+    body = public.json()
+    assert body["currency"] == "eur"
+    assert body["tax_included"] is True
+    assert [p["id"] for p in body["packs"]] == [p.id for p in credits_module.CREDIT_PACKS]
+    # The shop window holds no private data.
+    assert "balance" not in body and "entries" not in body
+
+
+async def test_an_unsigned_post_is_still_refused_under_require_auth(monkeypatch):
+    """Exempting the path from authentication must not exempt it from the
+    signature check — that would make it a free-credits endpoint."""
+    from fastapi import FastAPI
+
+    from app.api.middleware import SupabaseAuthMiddleware
+    from app.api.routes import credits as credits_route
+    from app.core import config as core_config
+
+    settings = core_config.get_settings()
+    monkeypatch.setattr(settings, "stripe_webhook_secret", "whsec_test")
+
+    app = FastAPI()
+    app.include_router(credits_route.router)
+    app.add_middleware(SupabaseAuthMiddleware, verifier=None, require_auth=True)
+    app.state.db_pool = None
+
+    async with _client(app) as client:
+        response = await client.post("/api/credits/webhook", json=_completed_session())
+
+    assert response.status_code == 400
 
 
 async def test_anonymous_callers_cannot_start_a_checkout(api):

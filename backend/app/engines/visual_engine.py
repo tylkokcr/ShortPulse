@@ -16,6 +16,7 @@ returns the path, which is stored on `scene.visual.asset_path`.
 
 from __future__ import annotations
 
+import importlib.util
 import logging
 from dataclasses import dataclass
 from pathlib import Path
@@ -91,6 +92,38 @@ def is_model_fully_cached(model_id: str) -> bool:
     return not any(name.endswith(".incomplete") for name in os.listdir(blobs_dir))
 
 
+def unavailable_reason(mode: VisualMode, settings) -> str | None:
+    """Why this install cannot run `mode`, or None if it can.
+
+    Every mode has a silent failure waiting behind it, because
+    generate_scene_visual falls back to stock footage rather than losing
+    the render. That is right for a self-hosted install — a missing GPU
+    shouldn't mean no video — but on a deployment that charges by mode it
+    meant taking three credits for a one-credit result and saying nothing.
+
+    So availability is answered before anything is charged: the UI hides
+    what this install can't do, and the API refuses to sell it.
+    """
+    if mode in (VisualMode.FAST_HYBRID, VisualMode.AI_VIDEO):
+        # find_spec rather than an import: loading torch costs seconds and
+        # hundreds of MB, and this is called on an ordinary request.
+        missing = [n for n in ("torch", "diffusers") if importlib.util.find_spec(n) is None]
+        if missing:
+            return f"needs {' and '.join(missing)}, which this install doesn't have"
+        return None
+
+    if mode == VisualMode.STOCK_MEDIA:
+        if not (settings.pexels_api_key or settings.pixabay_api_key):
+            return "needs a Pexels or Pixabay API key, and neither is configured"
+        return None
+
+    return f"unknown mode {mode}"
+
+
+def available_modes(settings) -> list[VisualMode]:
+    return [m for m in VisualMode if unavailable_reason(m, settings) is None]
+
+
 async def generate_scene_visual(
     scene: Scene,
     mode: VisualMode,
@@ -118,6 +151,7 @@ async def generate_scene_visual(
             path = await _fetch_stock_media(scene, output_dir, settings, render_height)
         else:
             raise ValueError(f"Unsupported visual mode: {mode}")
+        produced_by = mode
     except Exception:
         logger.exception(
             "Visual generation failed for scene %s in mode %s; falling back to stock media",
@@ -125,8 +159,12 @@ async def generate_scene_visual(
             mode,
         )
         path = await _fetch_stock_media(scene, output_dir, settings, render_height)
+        produced_by = VisualMode.STOCK_MEDIA
 
     scene.visual.asset_path = str(path)
+    # What actually made this asset, which is not always what was asked
+    # for. The caller charges by mode, so it has to be able to tell.
+    scene.visual.mode = produced_by
     return scene
 
 

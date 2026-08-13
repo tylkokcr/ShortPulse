@@ -73,6 +73,42 @@ def _packs() -> list[CreditPackOut]:
     return [CreditPackOut(**vars(pack)) for pack in credits.CREDIT_PACKS]
 
 
+class PublicPricing(BaseModel):
+    """Prices for someone who is not signed in.
+
+    Split out from CreditSummary because the marketing page needs the
+    prices and a visitor by definition has no account: with REQUIRE_AUTH
+    on, its call to /api/credits was answered 401 and the page fell back
+    to its hardcoded USD list, advertising "$9" on a deployment that
+    charges EUR including VAT. Quoting a price that isn't the price is
+    both a bad first impression and, for an EU consumer sale, the wrong
+    number to be showing.
+
+    Nothing here is private — it is the price list — so this endpoint is
+    exempt from authentication. Balance, history and checkout are not.
+    """
+
+    sold: bool
+    currency: str
+    tax_included: bool
+    packs: list[CreditPackOut]
+    pricing: dict[str, int]
+
+
+@router.get("/packs", response_model=PublicPricing)
+async def get_public_pricing(request: Request) -> PublicPricing:
+    settings = get_settings()
+    return PublicPricing(
+        # Both halves are needed to actually sell: somewhere to record the
+        # credits, and a payment processor to buy them through.
+        sold=db_pool(request) is not None and bool(settings.stripe_secret_key),
+        currency=settings.stripe_currency,
+        tax_included=settings.stripe_automatic_tax,
+        packs=_packs(),
+        pricing=_pricing_table(),
+    )
+
+
 @router.get("", response_model=CreditSummary)
 async def get_credits(
     request: Request, user_id: str | None = Depends(current_user_id)

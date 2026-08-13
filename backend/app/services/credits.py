@@ -205,6 +205,57 @@ async def refund_project(
     return refunded or 0
 
 
+async def correct_charge(
+    conn: asyncpg.Connection | asyncpg.Pool,
+    project_id: str,
+    amount: int,
+    *,
+    note: str | None = None,
+) -> int:
+    """Lower what a render is charged, after the fact.
+
+    For a render that quietly delivered less than was bought — the paid-for
+    visual mode failed and the pipeline fell back to stock footage. The
+    video is real, so this is a price correction, not a refund.
+
+    Written as a positive entry under reason 'render' rather than a
+    'refund', and that distinction is load-bearing twice over:
+
+      * `refund_project` sums the *render* entries to decide what a failed
+        render owes back. A correction under this reason nets against the
+        original charge, so a later failure returns what is actually still
+        held rather than the full original price.
+      * At most one 'refund' row per project exists by unique index. Taking
+        that slot here would make a genuine failure refund silently return
+        nothing.
+
+    Idempotent per project, so a retried pipeline cannot pay it twice.
+    """
+    if amount <= 0:
+        raise ValueError(f"correction must be positive, got {amount}")
+
+    user_id = await conn.fetchval("select user_id from projects where id = $1", project_id)
+    if user_id is None:
+        return 0
+
+    await conn.execute(
+        """
+        insert into credit_entries
+            (user_id, delta, reason, project_id, idempotency_key, note)
+        values ($1, $2, 'render', $3, $4, $5)
+        on conflict (user_id, idempotency_key) where idempotency_key is not null
+        do nothing
+        """,
+        user_id,
+        amount,
+        project_id,
+        f"correction:{project_id}",
+        note,
+    )
+    logger.info("Corrected the charge for project %s by +%d credits", project_id, amount)
+    return amount
+
+
 async def history(
     conn: asyncpg.Connection | asyncpg.Pool, user_id: str, limit: int = 50
 ) -> list[LedgerEntry]:

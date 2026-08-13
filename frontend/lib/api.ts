@@ -7,10 +7,12 @@ import type {
   Layout,
   Project,
   ProjectConfig,
+  PublicPricing,
   RenderProgress,
   RenderTimings,
   TextOverlay,
   Voice,
+  VisualModeAvailability,
 } from "./types";
 
 const API_BASE = "/api";
@@ -224,12 +226,36 @@ export function getCredits(): Promise<CreditSummary> {
   return request<CreditSummary>("/credits");
 }
 
+/**
+ * The price list, without an account.
+ *
+ * The marketing page can't use getCredits(): a visitor isn't signed in,
+ * and a deployment with REQUIRE_AUTH answers that 401 — which used to
+ * leave the page quoting its hardcoded USD fallback while checkout
+ * charged euros including VAT.
+ */
+export function getPublicPricing(): Promise<PublicPricing> {
+  return request<PublicPricing>("/credits/packs");
+}
+
 export function listMusic(): Promise<MusicTrack[]> {
   return request<MusicTrack[]>("/music");
 }
 
 export function listArtStyles(): Promise<ArtStyle[]> {
   return request<ArtStyle[]>("/art-styles");
+}
+
+/**
+ * Which visual modes this deployment can actually run.
+ *
+ * Asked rather than assumed because the pipeline hides its own failure:
+ * a mode whose dependencies are missing still yields a video, silently
+ * downgraded to stock footage. Offering it anyway means selling one thing
+ * and delivering another.
+ */
+export function listVisualModes(): Promise<VisualModeAvailability[]> {
+  return request<VisualModeAvailability[]>("/visual-modes");
 }
 
 export function listVoices(language: string): Promise<Voice[]> {

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Check, Sparkles, Github } from "lucide-react";
 import clsx from "clsx";
-import { getCredits } from "@/lib/api";
+import { getPublicPricing } from "@/lib/api";
 import type { CreditPack } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { formatPrice } from "@/lib/money";
@@ -44,11 +44,15 @@ export function Pricing() {
   const [taxIncluded, setTaxIncluded] = useState(false);
 
   useEffect(() => {
-    getCredits()
-      .then((summary) => {
-        if (summary.packs?.length) setPacks(summary.packs);
-        if (summary.currency) setCurrency(summary.currency);
-        setTaxIncluded(Boolean(summary.tax_included));
+    // Not getCredits(): a visitor has no account, and a deployment with
+    // REQUIRE_AUTH answers that 401. The catch below would swallow it and
+    // the page would advertise the USD fallback while the checkout took
+    // euros including VAT.
+    getPublicPricing()
+      .then((pricing) => {
+        if (pricing.packs?.length) setPacks(pricing.packs);
+        if (pricing.currency) setCurrency(pricing.currency);
+        setTaxIncluded(Boolean(pricing.tax_included));
       })
       .catch(() => {
         /* Keep the fallback — see FALLBACK_PACKS. */

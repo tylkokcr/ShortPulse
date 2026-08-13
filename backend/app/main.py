@@ -12,7 +12,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.middleware import RateLimitMiddleware, SupabaseAuthMiddleware
-from app.api.routes import art_styles, credits, music, projects, render, uploads, voices
+from app.api.routes import (
+    art_styles,
+    credits,
+    music,
+    projects,
+    render,
+    uploads,
+    visual_modes,
+    voices,
+)
 from app.core import monitoring, readiness
 from app.core.config import get_settings
 from app.services import db, project_store
@@ -102,6 +111,7 @@ app.include_router(credits.router)
 app.include_router(music.router)
 app.include_router(voices.router)
 app.include_router(art_styles.router)
+app.include_router(visual_modes.router)
 app.include_router(uploads.router)
 
 

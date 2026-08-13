@@ -4,6 +4,19 @@
  */
 
 export type VisualMode = "ai_video" | "fast_hybrid" | "stock_media";
+
+/**
+ * Whether the deployment can run a mode, and why not if it can't.
+ *
+ * The reason is written for whoever runs the install — a self-hoster
+ * missing a Python package — and is shown as an explanation rather than
+ * hidden, so a vanished option is never a mystery.
+ */
+export interface VisualModeAvailability {
+  mode: VisualMode;
+  available: boolean;
+  reason: string | null;
+}
 export type TTSProvider = "edge_tts" | "piper" | "coqui_xtts";
 export type LLMProvider = "ollama" | "openai";
 export type AspectRatio = "9:16" | "1:1" | "16:9";
@@ -285,6 +298,23 @@ export interface CreditSummary {
   /** Served even when `enabled` is false, so the marketing page renders
    *  the same prices the ledger would charge. */
   packs: CreditPack[];
+}
+
+/**
+ * The price list as served to someone with no account.
+ *
+ * Deliberately carries no balance and no history: it is the one
+ * credit-related response a deployment with REQUIRE_AUTH serves
+ * anonymously, so it holds only what a shop window holds.
+ */
+export interface PublicPricing {
+  /** Whether this install can actually sell — a self-hosted one can't,
+   *  and shouldn't be advertising prices as if it could. */
+  sold: boolean;
+  currency: string;
+  tax_included: boolean;
+  packs: CreditPack[];
+  pricing: Record<string, number>;
 }
 
 /** One-off purchase — nothing here renews, and credits never expire. */

@@ -88,8 +88,13 @@ def stubbed_pipeline(monkeypatch, tmp_path):
         scene.audio.duration_ms = 4000
         scene.audio.words = [Word(text="line", start_ms=0, end_ms=500)]
 
-    async def fake_visual(scene, mode, out_dir, settings):
+    # **kwargs, not a fixed signature: the pipeline passes art_style, size
+    # and render_size, and every one of them was added after this stub was
+    # written. Each addition broke these tests silently, because they skip
+    # without a test Postgres and nobody had one running.
+    async def fake_visual(scene, mode, out_dir, settings, **kwargs):
         scene.visual.asset_path = str(tmp_path / f"scene_{scene.index}.mp4")
+        scene.visual.mode = mode
         scene.visual.attribution = StockAttribution(
             provider="Pexels",
             provider_url="https://www.pexels.com",
@@ -173,8 +178,9 @@ async def test_the_scene_breakdown_appears_before_the_slow_stages(config, monkey
         scene.audio.audio_path = "x"
         scene.audio.duration_ms = 4000
 
-    async def fake_visual(scene, mode, out_dir, settings):
+    async def fake_visual(scene, mode, out_dir, settings, **kwargs):
         scene.visual.asset_path = "y"
+        scene.visual.mode = mode
 
     async def fake_render(*args, **kwargs):
         output = tmp_path / "final.mp4"

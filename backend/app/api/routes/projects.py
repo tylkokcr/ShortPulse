@@ -13,6 +13,7 @@ from app.api.deps import billing_enabled, current_user_id, db_pool
 from app.api.routes import music
 from app.core.config import get_settings, project_dir
 from app.core.storage import discard_project_files
+from app.engines import visual_engine
 from app.schemas.project import (
     CaptionTrack,
     EditSpec,
@@ -23,6 +24,7 @@ from app.schemas.project import (
     ProjectConfig,
     ProjectStatus,
     TextOverlay,
+    VisualMode,
 )
 from app.services import credits, editing, project_store
 from app.services.media_tokens import InvalidMediaToken
@@ -46,6 +48,25 @@ async def create_project(
     user and no database, so this is free and the ledger is never touched.
     """
     settings = get_settings()
+
+    # Refuse to sell a mode this install cannot run.
+    #
+    # The pipeline falls back to stock footage when generation fails, which
+    # keeps a self-hosted render alive but on a paid deployment meant
+    # charging three credits for a one-credit result, silently. Checking
+    # here means the buyer is told before any money moves rather than
+    # discovering it in the output.
+    reason = visual_engine.unavailable_reason(VisualMode(config.visual_mode), settings)
+    if reason is not None:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "visual_mode_unavailable",
+                "mode": str(config.visual_mode),
+                "reason": reason,
+                "available": [str(m) for m in visual_engine.available_modes(settings)],
+            },
+        )
 
     # `track_path` is fed to ffmpeg as an input. Anything the client sent
     # is discarded and re-derived from the id, so a request can only ever

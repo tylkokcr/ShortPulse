@@ -234,6 +234,57 @@ async def test_refunding_an_uncharged_project_is_a_noop(pool, user):
     assert await credits.balance(pool, user) == 0
 
 
+# --- charge corrections -------------------------------------------------
+#
+# For a render that finished but delivered less than was bought: the paid
+# visual mode couldn't run and the pipeline fell back to stock footage.
+# The video exists, so the price is corrected rather than refunded.
+
+
+async def test_a_downgraded_render_is_charged_the_lower_price(pool, user):
+    await credits.grant(pool, user, 10)
+    project_id = await _project(pool, user, cost=3)
+    await credits.spend(pool, user, 3, project_id=project_id)
+
+    # fast_hybrid (3) delivered as stock_media (1).
+    assert await credits.correct_charge(pool, project_id, 2) == 2
+    assert await credits.balance(pool, user) == 9
+
+
+async def test_a_correction_is_not_paid_twice(pool, user):
+    await credits.grant(pool, user, 10)
+    project_id = await _project(pool, user, cost=3)
+    await credits.spend(pool, user, 3, project_id=project_id)
+
+    for _ in range(4):
+        await credits.correct_charge(pool, project_id, 2)
+
+    assert await credits.balance(pool, user) == 9
+
+
+async def test_a_corrected_render_that_then_fails_refunds_what_is_left(pool, user):
+    """The interaction that makes the reason field matter.
+
+    Writing the correction as a 'refund' would take the one-refund-per-
+    project slot, and the real failure refund afterwards would silently
+    pay out nothing — the user would be left paying for a video they never
+    received. Writing it against the charge instead means the failure path
+    returns exactly what is still held.
+    """
+    await credits.grant(pool, user, 10)
+    project_id = await _project(pool, user, cost=3)
+    await credits.spend(pool, user, 3, project_id=project_id)
+
+    await credits.correct_charge(pool, project_id, 2)  # balance 9, holding 1
+    assert await credits.refund_project(pool, project_id) == 1
+    assert await credits.balance(pool, user) == 10, "the user must end up whole"
+
+
+async def test_correcting_an_unknown_project_pays_nothing(pool, user):
+    assert await credits.correct_charge(pool, str(uuid.uuid4()), 5) == 0
+    assert await credits.balance(pool, user) == 0
+
+
 # --- pricing ------------------------------------------------------------
 
 

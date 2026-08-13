@@ -34,6 +34,31 @@ logger = logging.getLogger(__name__)
 # and uptime checks don't need credentials.
 _PUBLIC_PATHS = {"/api/health", "/docs", "/openapi.json", "/redoc"}
 
+# Callers that legitimately have no user behind them.
+#
+# Stripe is the one that matters. It calls the webhook with a signed
+# `Stripe-Signature` header and no bearer token — it has no user to
+# authenticate as — so with REQUIRE_AUTH on it was answered 401 and the
+# handler that grants the credits never ran. The purchase succeeded, the
+# money was taken, and nothing was delivered. Nothing logged an error
+# either: from the API's side a 401 is a normal answer.
+#
+# Exempting it gives nothing away. The route authenticates the request
+# itself, by verifying the signature against STRIPE_WEBHOOK_SECRET, and
+# rejects an unsigned or wrongly-signed payload with a 400 — which is
+# strictly stronger than a bearer token here, since the token would prove
+# only that *somebody* was logged in.
+#
+# Separate from _PUBLIC_PATHS because these stay rate-limited. Skipping
+# authentication is not a reason to skip throttling, and Stripe's real
+# traffic is orders of magnitude below the limit.
+#
+# The price list is here for a different reason: a visitor deciding
+# whether to sign up has no account yet, and answering them 401 made the
+# landing page quote its hardcoded USD fallback instead of what the
+# deployment actually charges. It exposes nothing — it is the price list.
+_UNAUTHENTICATED_PATHS = _PUBLIC_PATHS | {"/api/credits/webhook", "/api/credits/packs"}
+
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """Throttle by user, falling back to client address for anonymous calls.
@@ -124,7 +149,7 @@ class SupabaseAuthMiddleware(BaseHTTPMiddleware):
                     pool, user.id, user.email, signup_grant=self._signup_grant
                 )
 
-        elif self._require_auth and request.url.path not in _PUBLIC_PATHS:
+        elif self._require_auth and request.url.path not in _UNAUTHENTICATED_PATHS:
             return _unauthorized("Not authenticated")
 
         return await call_next(request)
