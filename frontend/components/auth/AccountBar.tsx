@@ -28,7 +28,11 @@ export function AccountBar() {
 
   return (
     <div className="flex items-center justify-between gap-4 text-xs">
-      <span className="truncate text-white/40">{session.user.email}</span>
+      {/* Hidden on a phone: at 390px the address plus the balance plus
+          the sign-out button overflow the header by 25px and the whole
+          page scrolls sideways. The balance is the useful part; who you
+          are signed in as is not worth a horizontal scrollbar. */}
+      <span className="hidden truncate text-white/40 sm:block">{session.user.email}</span>
       <div className="flex items-center gap-3">
         {/* The balance is also the way to top it up — otherwise there is
             nowhere in the app to buy credits, only the landing page's
