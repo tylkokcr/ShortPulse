@@ -84,7 +84,12 @@ const FEATURES = [
 ];
 
 const COMPARISON = [
-  { label: "What you pay", us: "Per video, or $0 self-hosted", them: "$20–50/mo, posted or not" },
+  // "nothing", not "$0": this is our own price and the deployment charges
+  // euros, so a dollar sign here is the same defect 8a1d635 removed from
+  // the pricing cards. Worded rather than formatted because this table is
+  // static copy with no access to the server's currency — and free costs
+  // the same in every currency.
+  { label: "What you pay", us: "Per video, or nothing self-hosted", them: "$20–50/mo, posted or not" },
   { label: "Idle months", us: "Cost nothing", them: "Billed anyway" },
   { label: "Source code", us: "MIT, fully readable", them: "Closed" },
   { label: "Where it runs", us: "Your machine, or ours", them: "Their servers only" },
