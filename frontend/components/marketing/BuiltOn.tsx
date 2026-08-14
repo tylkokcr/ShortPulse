@@ -31,8 +31,11 @@ export function BuiltOn() {
         Built on open source you can audit
       </p>
 
-      <div className="relative [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
-        <div className="flex w-max gap-3 animate-marquee hover:[animation-play-state:paused] motion-reduce:animate-none motion-reduce:overflow-x-auto">
+      {/* overflow-hidden for the same reason as Examples: the mask fades the
+          edges but does not clip, so the w-max track's width would otherwise
+          become the page's horizontal scroll. */}
+      <div className="relative overflow-hidden motion-reduce:overflow-x-auto [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
+        <div className="flex w-max gap-3 animate-marquee hover:[animation-play-state:paused] motion-reduce:animate-none">
           {[false, true].map((isClone) =>
             STACK.map((item) => (
               <div

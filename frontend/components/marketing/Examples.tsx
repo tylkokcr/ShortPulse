@@ -72,9 +72,15 @@ export function Examples() {
         </p>
       </div>
 
-      {/* Edges faded so clips enter and leave rather than being chopped off. */}
-      <div className="relative [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]">
-        <div className="group flex w-max gap-4 animate-marquee hover:[animation-play-state:paused] motion-reduce:animate-none motion-reduce:overflow-x-auto">
+      {/* Edges faded so clips enter and leave rather than being chopped off.
+          overflow-hidden is load-bearing, not tidiness: the track below is
+          w-max over twenty cards — some 4300px — and a mask only fades
+          pixels, it does not clip layout. Without it that width lands in the
+          document's scroll width and the whole page scrolls sideways on a
+          phone. motion-reduce keeps the strip reachable when the animation
+          that would have brought the rest into view is off. */}
+      <div className="relative overflow-hidden motion-reduce:overflow-x-auto [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]">
+        <div className="group flex w-max gap-4 animate-marquee hover:[animation-play-state:paused] motion-reduce:animate-none">
           {/* Duplicated once so the -50% translate lands on an identical
               frame. aria-hidden on the copy keeps it out of the a11y tree. */}
           {[false, true].map((isClone) =>
