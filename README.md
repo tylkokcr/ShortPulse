@@ -122,11 +122,16 @@ own model cache, so it stays on the host and the API reaches it at
 `host.docker.internal`. Point `OLLAMA_BASE_URL` wherever yours actually
 runs.
 
-**The image ships the `stock_media` pipeline only.** The diffusion stack
-for `fast_hybrid` and `ai_video` is ~3GB installed and needs a GPU to be
-worth running, so it is left out; asking for those modes falls back to
-stock footage rather than failing. Add `requirements-diffusion.txt` and a
-CUDA base image if you want them.
+**The image has no diffusion stack.** It is ~3GB installed and needs a GPU
+to be worth running, so it is left out. That leaves `stock_media`, plus
+`fast_hybrid` if you set `REPLICATE_API_TOKEN` — the same RealVisXL
+checkpoint, generated over an API instead of on the box, at roughly $0.004
+an image. `ai_video` has no such route and is refused outright: hosted
+text-to-video costs more per render than the mode is priced at. Add
+`requirements-diffusion.txt` and a CUDA base image to run either locally.
+
+An unavailable mode is refused before anything is charged, rather than
+quietly falling back — see `visual_engine.unavailable_reason`.
 
 Everything is served from **one origin** on purpose. Next's rewrites don't
 proxy protocol upgrades, so without something in front, the render-progress
@@ -211,11 +216,25 @@ does not support.
 | Mode | Engine | First-run download | Speed per scene | Notes |
 |---|---|---|---|---|
 | `fast_hybrid` (default) | RealVisXL_V4.0 stills + FFmpeg Ken Burns | ~7GB | ~59s (Apple Silicon M-series) | Photorealistic. Swap to `sdxl-turbo` in `.env` for ~5s/scene at lower realism |
+| `fast_hybrid` over Replicate | the same checkpoint, hosted | none | ~10s, four scenes at once | For a machine with no GPU. Needs `REPLICATE_API_TOKEN`, costs ~$0.004 an image |
 | `stock_media` | Pexels free API | none | ~5-10s (download-bound) | Genuinely photoreal — it's real footage. Needs a free API key |
-| `ai_video` | LTX-Video (13B) | ~28GB | minutes | Real motion, but see the memory caveat below |
+| `ai_video` | LTX-Video (13B) | ~28GB | minutes | Local only. Real motion, but see the memory caveat below |
 
-Visual generation automatically falls back to `stock_media` if the selected
-local mode fails — so a missing GPU degrades gracefully rather than erroring.
+A mode this install cannot run is refused before the render starts, so it
+is never charged for. If generation fails partway through anyway, that
+scene falls back to `stock_media` and the render is re-priced by the share
+of scenes that fell back.
+
+### Hosted image generation (Replicate)
+
+Optional, and only interesting if you want `fast_hybrid` without a GPU.
+Create a token at <https://replicate.com/account/api-tokens>, put it in
+`backend/.env` as `REPLICATE_API_TOKEN`, and set
+`VISUAL_PROVIDER=replicate` if the machine also has torch installed and
+you want the API used anyway. Set a spend limit on the token.
+
+Leave it unset and nothing changes: the engine uses local diffusers where
+they exist, and reports `fast_hybrid` as unavailable where they don't.
 
 ### Stock media setup
 

@@ -116,6 +116,14 @@ settings, the same rule as `MusicConfig.track_path`: which model writes the
 script is a deployment decision, not a per-request one. Only `temperature`
 survives, because it changes the writing rather than the destination.
 
+Hosted image generation follows the same rule one step further: the
+Replicate token and model live in settings and `ProjectConfig` gains no
+field for either, so there is nothing to discard at the boundary and
+nothing for a later change to forget. Replicate returns a prediction whose
+`urls.get` this server then polls — an address read out of a response body
+is the same shape of hazard whoever sent it, so it is checked against the
+API's own host prefix before each request.
+
 ### Payments
 
 Credits are granted from the Stripe webhook and nowhere else. The success
