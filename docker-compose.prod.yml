@@ -11,7 +11,12 @@
 
 services:
   proxy:
-    ports:
+    # !override, not a plain list: compose *merges* sequences across files,
+    # so without it the base file's 8080 stays published alongside these and
+    # the site answers unencrypted on a second port. ufw does not save you
+    # there — Docker's iptables rules are traversed before ufw's, so a
+    # published port is reachable whatever the firewall says.
+    ports: !override
       # The real ones. 443 is where the traffic goes; 80 stays open because
       # Let's Encrypt's HTTP challenge uses it and because Caddy redirects
       # it to HTTPS.
