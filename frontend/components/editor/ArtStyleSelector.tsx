@@ -42,7 +42,10 @@ export function ArtStyleSelector() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+      {/* Two columns below 380px. Three of them leaves a 52px tile, and the
+          style names are single words — "Claymation" is 65px and cannot
+          wrap, so it spills out of its own button on a 320px phone. */}
+      <div className="grid grid-cols-2 gap-3 min-[380px]:grid-cols-3 sm:grid-cols-6">
         {styles.map((style) => {
           const selected = draft.artStyle === style.id;
           return (
