@@ -1,3 +1,5 @@
+"use client";
+
 import {
   FileText,
   Mic,
@@ -17,6 +19,7 @@ import {
 import Link from "next/link";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { LogoMark } from "@/components/ui/Logo";
+import { useSignupCredits } from "@/lib/signupCredits";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -34,10 +37,15 @@ import { Faq } from "./Faq";
 
 const REPO_URL = "https://github.com/tylkokcr/ShortPulse";
 
-const STATS = [
+// Numbers a visitor reads as being about *this* service, so nothing here
+// may depend on how the deployment happens to be configured. "3 visual
+// engines" was true of the repository and false of the site the moment
+// ai_video was refused here — and this component is static, with no way
+// to know. Art styles are in the code and the same everywhere.
+const statsFor = (signupCredits: number) => [
   { value: "9", label: "languages" },
-  { value: "3", label: "visual engines" },
-  { value: "15", label: "free credits" },
+  { value: "6", label: "art styles" },
+  { value: String(signupCredits), label: "free credits" },
   { value: "MIT", label: "licensed" },
 ];
 
@@ -45,7 +53,7 @@ const PIPELINE = [
   { icon: FileText, title: "Script", detail: "Ollama (local) or OpenAI breaks your topic into scenes" },
   { icon: Mic, title: "Voiceover", detail: "Piper voices, fully local, 10 languages" },
   { icon: Captions, title: "Captions", detail: "faster-whisper times every word for karaoke-style burn-in" },
-  { icon: ImageIcon, title: "Visuals", detail: "AI stills, local text-to-video, or free stock footage" },
+  { icon: ImageIcon, title: "Visuals", detail: "AI stills or free stock footage; local text-to-video when you self-host" },
   { icon: Film, title: "Assemble", detail: "FFmpeg mixes ducked music and renders the final .mp4" },
 ];
 
@@ -54,7 +62,7 @@ const FEATURES = [
     icon: Lock,
     title: "Runs on your machine",
     detail:
-      "Scripting, voiceover, transcription, visuals and rendering all execute locally. Only the optional stock-footage mode touches the network.",
+      "Self-host it and scripting, voiceover, transcription, visuals and rendering all execute locally — only stock footage touches the network. The hosted service trades that away deliberately: it has no GPU, so the script and the AI stills come from paid APIs.",
   },
   {
     icon: Captions,
@@ -73,8 +81,8 @@ const FEATURES = [
   },
   {
     icon: ImageIcon,
-    title: "Three visual engines",
-    detail: "Photoreal diffusion, real Pexels footage, or local text-to-video — with automatic fallback if a GPU isn't available.",
+    title: "Photoreal stills or real footage",
+    detail: "A RealVisXL still per scene with a Ken Burns move over it, or a matching Pexels clip. Self-hosting with a GPU adds local text-to-video, which this service doesn't run.",
   },
   {
     icon: Sparkles,
@@ -99,12 +107,15 @@ const COMPARISON = [
 
 const LIMITATIONS = [
   "The examples above use stock footage for a reason: the AI-stills mode mangles faces, hands and any on-screen text, so it suits objects and scenery far better than people.",
-  "ai_video (local text-to-video) is real but slow — treat it as experimental without a dedicated GPU.",
+  "ai_video (local text-to-video) only runs where you supply the GPU. It is not available on this hosted service: renting one costs more per video than the mode is priced at, so we would rather not offer it than offer it badly.",
   "Small local LLMs occasionally under-count scenes; the script engine retries and drops malformed ones rather than failing the render.",
   "Stock footage is a closest-match, not a guarantee — Pexels clips can be loosely related to the scene.",
 ];
 
 export function Landing() {
+  const signupCredits = useSignupCredits();
+  const STATS = statsFor(signupCredits);
+
   return (
     <div className="relative min-h-screen">
       {/* Decorative layer, not the content wrapper — mask-image masks an
@@ -321,14 +332,14 @@ export function Landing() {
       </Reveal>
 
       <Reveal>
-        <Faq />
+        <Faq signupCredits={signupCredits} />
       </Reveal>
 
       {/* Final CTA */}
       <Reveal>
         <section className="mx-auto max-w-3xl px-6 py-20 text-center">
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Start with 15 credits. No card, no trial timer.
+            Start with {signupCredits} credits. No card, no trial timer.
           </h2>
           <p className="mx-auto mt-3 max-w-md text-white/50">
             That&apos;s enough to judge it by. Buy more only if it earns it — or clone

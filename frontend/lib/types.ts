@@ -318,6 +318,10 @@ export interface PublicPricing {
   /** Modes this install can render. The pricing copy quotes videos-per-pack
    *  per mode, and a mode that isn't here is one the API refuses to sell. */
   modes: VisualMode[];
+  /** Credits a new account is granted, so the free-tier copy quotes the
+   *  number this deployment actually gives rather than one from whenever
+   *  the page was written. */
+  signup_credits: number;
 }
 
 /** One-off purchase — nothing here renews, and credits never expire. */

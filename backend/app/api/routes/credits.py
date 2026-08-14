@@ -99,6 +99,11 @@ class PublicPricing(BaseModel):
     # quoting a mode the deployment can't run advertises a product it
     # can't sell.
     modes: list[VisualMode]
+    # What a new account is given. Quoted on the pricing page as "how many
+    # free videos", so it belongs here rather than written into the copy:
+    # it is a deployment setting that has already changed once, and the
+    # page said 15 for as long as it took someone to notice.
+    signup_credits: int
 
 
 @router.get("/packs", response_model=PublicPricing)
@@ -113,6 +118,7 @@ async def get_public_pricing(request: Request) -> PublicPricing:
         packs=_packs(),
         pricing=_pricing_table(),
         modes=visual_engine.available_modes(settings),
+        signup_credits=settings.signup_credit_grant,
     )
 
 

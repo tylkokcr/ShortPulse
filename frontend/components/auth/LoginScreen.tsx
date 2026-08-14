@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { useSignupCredits } from "@/lib/signupCredits";
 
 /**
  * Supabase's auth errors are written for developers. Rewrite the ones a
@@ -40,6 +41,7 @@ function explain(message: string): string {
  * about the product" to "using it" is not making that a separate page.
  */
 export function LoginPanel({ className }: { className?: string }) {
+  const signupCredits = useSignupCredits();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -92,7 +94,9 @@ export function LoginPanel({ className }: { className?: string }) {
       ) : (
         <form onSubmit={sendLink} className="flex flex-col gap-3">
           <div>
-            <h2 className="text-base font-semibold text-white">Start with 15 free credits</h2>
+            <h2 className="text-base font-semibold text-white">
+              Start with {signupCredits} free credits
+            </h2>
             <p className="mt-1 text-sm text-white/50">
               No card. One-time link, no password to leak or reset.
             </p>

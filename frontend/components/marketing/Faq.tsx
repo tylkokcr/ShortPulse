@@ -1,11 +1,14 @@
 import { ChevronDown } from "lucide-react";
 
+
 /**
  * Answers are drawn from the README and the code, not from what would be
  * convenient to claim — including the ones that cost us the sale (no
  * auto-posting, no voice cloning, no commercial Japanese voice).
  */
-const GROUPS: { group: string; items: { q: string; a: string }[] }[] = [
+const groupsFor = (
+  signupCredits: number
+): { group: string; items: { q: string; a: string }[] }[] => [
   {
     group: "Videos",
     items: [
@@ -15,7 +18,7 @@ const GROUPS: { group: string; items: { q: string; a: string }[] }[] = [
       },
       {
         q: "How long does a render take?",
-        a: "Measured on an Apple Silicon M-series: a short video with stock footage takes roughly 45 seconds end to end. The AI-stills mode takes about 78 seconds per scene, so ~7 minutes for a short. A dedicated GPU is considerably quicker.",
+        a: "On this service, a short takes roughly a minute either way: stock footage is about 45 seconds end to end, and AI stills come from a hosted GPU that generates four scenes at a time. Self-hosted on an Apple Silicon M-series the stills are slower — about 78 seconds per scene, so ~7 minutes for a short — because your own machine is doing the diffusion.",
       },
       {
         q: "Which languages are supported?",
@@ -40,7 +43,7 @@ const GROUPS: { group: string; items: { q: string; a: string }[] }[] = [
     items: [
       {
         q: "How does pricing work?",
-        a: "Credits, bought once. A render costs 1 credit with stock footage, 3 with AI stills and 10 with local text-to-video, doubled for medium length and tripled for long. You see the exact cost before you start it.",
+        a: "Credits, bought once. A render costs 1 credit with stock footage and 3 with AI stills, doubled for medium length and tripled for long. You see the exact cost before you start it. (Local text-to-video is 10, and only applies if you self-host — it is not offered here.)",
       },
       {
         q: "Do credits expire?",
@@ -52,7 +55,7 @@ const GROUPS: { group: string; items: { q: string; a: string }[] }[] = [
       },
       {
         q: "Is there really a free tier?",
-        a: "15 credits when you sign up, no card. That's five videos with AI stills, or fifteen with stock footage.",
+        a: `${signupCredits} credits when you sign up, no card — ${Math.floor(signupCredits / 3)} videos with AI stills, or ${signupCredits} with stock footage. Enough to see what the output actually looks like before paying for any of it.`,
       },
     ],
   },
@@ -65,17 +68,19 @@ const GROUPS: { group: string; items: { q: string; a: string }[] }[] = [
       },
       {
         q: "Is it genuinely local?",
-        a: "Scripting, voiceover, transcription, image generation and rendering all run on your machine. The one stage that reaches the network is the stock-footage mode, which fetches from Pexels — pick another visual mode and it's offline after the first model download.",
+        a: "When you self-host, yes: scripting, voiceover, transcription, image generation and rendering all run on your machine, and the one stage that reaches the network is stock footage from Pexels. This hosted service is the trade-off — it has no GPU, so scripts come from OpenAI and AI stills from Replicate. Voiceover, captions and rendering still happen on our server, and the code is the same either way.",
       },
       {
         q: "What are the rough edges?",
-        a: "The AI-stills mode mangles faces, hands and on-screen text. Local text-to-video needs a serious GPU to be practical. Small local LLMs sometimes return fewer scenes than asked. All of it is in the README's Known limitations section.",
+        a: "The AI-stills mode mangles faces, hands and on-screen text. Local text-to-video needs a serious GPU, which is why this service doesn't offer it at all. Small local LLMs sometimes return fewer scenes than asked. All of it is in the README's Known limitations section.",
       },
     ],
   },
 ];
 
-export function Faq() {
+export function Faq({ signupCredits }: { signupCredits: number }) {
+  const GROUPS = groupsFor(signupCredits);
+
   return (
     <section id="faq" className="mx-auto max-w-4xl scroll-mt-20 px-6 py-16">
       <div className="mb-8 flex flex-col gap-2">

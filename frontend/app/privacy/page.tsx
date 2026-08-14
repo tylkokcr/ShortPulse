@@ -41,6 +41,14 @@ export default function Privacy() {
             local model and send nothing.
           </li>
           <li>
+            <strong className="text-white">Replicate</strong> — receives one image prompt per
+            scene, and returns the generated image, when you pick the AI-stills mode on the
+            hosted service. Those prompts are written from your topic, so unlike the Pexels
+            keywords above they usually describe what your video is about. Nothing that
+            identifies you is sent with them. Self-hosted installs with a GPU generate the
+            images on your own machine and send nothing.
+          </li>
+          <li>
             <strong className="text-white">Sentry</strong> — crash reports, if enabled.
             Configured not to include request contents.
           </li>
@@ -105,8 +113,8 @@ export default function Privacy() {
             value={operator.dataRegion}
             missing="NEXT_PUBLIC_OPERATOR_DATA_REGION is unset"
           />
-          . Stripe and OpenAI process some of it outside that region under their own transfer
-          safeguards.
+          . Stripe, OpenAI and Replicate process some of it outside that region under their own
+          transfer safeguards.
         </p>
       </Section>
     </LegalPage>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Check, Sparkles, Github } from "lucide-react";
 import clsx from "clsx";
+import { SIGNUP_CREDITS } from "@/lib/signupCredits";
 import { getPublicPricing } from "@/lib/api";
 import type { CreditPack } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
@@ -33,8 +34,8 @@ const PACK_LABELS: Record<string, { name: string; blurb: string }> = {
  *  fast_hybrid short costs 3. Quoting both keeps "how many videos" honest
  *  instead of advertising only the flattering number.
  *
- *  `standard` is dropped where fast_hybrid can't run — the shipped
- *  container has no diffusion stack — because quoting videos in a mode the
+ *  `standard` is dropped where fast_hybrid can't run at all — no diffusion
+ *  stack and no image API — because quoting videos in a mode the
  *  deployment refuses to sell is an advertisement for a product that
  *  doesn't exist here. */
 function videosFor(credits: number, generatedStills: boolean) {
@@ -52,7 +53,17 @@ export function Pricing() {
   const [taxIncluded, setTaxIncluded] = useState(false);
   // Assumed until the server says otherwise, so the copy doesn't visibly
   // rewrite itself on a deployment where it is true.
+  //
+  // Two flags, not one. They used to be the same boolean because the modes
+  // that needed a GPU stood or fell together; fast_hybrid now runs over an
+  // API without one and ai_video still doesn't, so a single flag would
+  // print a price for local text-to-video the moment AI stills went live —
+  // an offer this deployment refuses at the point of sale.
   const [generatedStills, setGeneratedStills] = useState(true);
+  const [localVideo, setLocalVideo] = useState(true);
+  // What a signup is actually worth here. Server-driven for the same
+  // reason as the packs: it is a setting, and it has already changed.
+  const [signupCredits, setSignupCredits] = useState(SIGNUP_CREDITS);
   // Whether this deployment can take money at all — it needs both a ledger
   // to record credits in and Stripe to charge through. Optimistic for the
   // same reason as FALLBACK_PACKS: if the API is unreachable, a shop window
@@ -69,7 +80,11 @@ export function Pricing() {
         if (pricing.packs?.length) setPacks(pricing.packs);
         if (pricing.currency) setCurrency(pricing.currency);
         setTaxIncluded(Boolean(pricing.tax_included));
-        if (pricing.modes) setGeneratedStills(pricing.modes.includes("fast_hybrid"));
+        if (pricing.modes) {
+          setGeneratedStills(pricing.modes.includes("fast_hybrid"));
+          setLocalVideo(pricing.modes.includes("ai_video"));
+        }
+        if (pricing.signup_credits) setSignupCredits(pricing.signup_credits);
         setSold(Boolean(pricing.sold));
       })
       .catch(() => {
@@ -106,12 +121,14 @@ export function Pricing() {
             </span>
           </div>
           <ul className="flex flex-col gap-2 text-xs text-white/50">
-            <Feature>15 credits on sign-up</Feature>
+            <Feature>{signupCredits} credits on sign-up</Feature>
             <Feature>
-              {generatedStills ? "5 standard videos, or 15 stock-footage ones" : "15 videos"}
+              {generatedStills
+                ? `${Math.floor(signupCredits / 3)} standard videos, or ${signupCredits} stock-footage ones`
+                : `${signupCredits} videos`}
             </Feature>
             <Feature>
-              {generatedStills ? "Every language and visual engine" : "Every language"}
+              {generatedStills ? "Every language, and AI stills" : "Every language"}
             </Feature>
             <Feature>No watermark</Feature>
           </ul>
@@ -206,8 +223,9 @@ export function Pricing() {
           is an offer it cannot honour. */}
       <p className="mt-4 font-mono text-[11px] text-white/30">
         1 credit = stock footage
-        {generatedStills && " · 3 = AI stills · 10 = local text-to-video"}, each ×2 for medium
-        and ×3 for long. You&apos;re quoted the exact cost before a render starts.
+        {generatedStills && " · 3 = AI stills"}
+        {localVideo && " · 10 = local text-to-video"}, each ×2 for medium and ×3 for long.
+        You&apos;re quoted the exact cost before a render starts.
       </p>
     </section>
   );
