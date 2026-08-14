@@ -62,11 +62,19 @@ function Credits() {
   // Which modes this deployment can actually render, so the "how many
   // videos does this buy" line doesn't quote one it can't.
   const [generatedStills, setGeneratedStills] = useState(true);
+  // Whether this deployment can charge at all. `CreditSummary.enabled` does
+  // not answer that — it is true as soon as there is a ledger and a signed-in
+  // user, with or without Stripe — so a deployment running on accounts alone
+  // showed three priced packs whose buttons could only ever return 503.
+  const [sold, setSold] = useState(true);
 
   useEffect(() => {
     getCredits().then(setCredits).catch(() => {});
     getPublicPricing()
-      .then((p) => setGeneratedStills(p.modes.includes("fast_hybrid")))
+      .then((p) => {
+        setGeneratedStills(p.modes.includes("fast_hybrid"));
+        setSold(Boolean(p.sold));
+      })
       .catch(() => {});
   }, [setCredits]);
 
@@ -120,8 +128,19 @@ function Credits() {
             {credits?.balance ?? 0} credits
           </h1>
           <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/50">
-            One-off packs. Nothing renews, nothing expires, and unused credits stay yours.
-            {credits?.tax_included && " Prices include VAT at your local rate."}
+            {sold ? (
+              <>
+                One-off packs. Nothing renews, nothing expires, and unused credits stay yours.
+                {credits?.tax_included && " Prices include VAT at your local rate."}
+              </>
+            ) : (
+              // Same sentence the checkout endpoint answers with, said before
+              // the click rather than after it.
+              <>
+                This install isn&apos;t set up to sell credits. What you have doesn&apos;t
+                expire, and renders draw from it as usual.
+              </>
+            )}
           </p>
         </div>
 
@@ -139,78 +158,84 @@ function Credits() {
           </p>
         )}
 
-        <label className="mt-8 flex cursor-pointer items-start gap-3 rounded-md border border-border bg-surface p-4 text-xs leading-relaxed text-white/60">
-          <input
-            type="checkbox"
-            checked={acknowledged}
-            onChange={(e) => setAcknowledged(e.target.checked)}
-            className="mt-0.5 h-4 w-4 shrink-0 accent-accent"
-          />
-          <span>
-            I want my credits available immediately, and I understand that by starting to use
-            them I give up the 14-day right to withdraw from this purchase. Unused credits can
-            still be refunded within 14 days — see the{" "}
-            <Link href="/terms" className="underline underline-offset-2 hover:text-white">
-              terms
-            </Link>
-            .
-          </span>
-        </label>
+        {/* Both the withdrawal-rights gate and the packs it gates are about
+            making a purchase, so neither belongs on a deployment that cannot
+            take one. */}
+        {sold && (
+          <>
+          <label className="mt-8 flex cursor-pointer items-start gap-3 rounded-md border border-border bg-surface p-4 text-xs leading-relaxed text-white/60">
+            <input
+              type="checkbox"
+              checked={acknowledged}
+              onChange={(e) => setAcknowledged(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-accent"
+            />
+            <span>
+              I want my credits available immediately, and I understand that by starting to use
+              them I give up the 14-day right to withdraw from this purchase. Unused credits can
+              still be refunded within 14 days — see the{" "}
+              <Link href="/terms" className="underline underline-offset-2 hover:text-white">
+                terms
+              </Link>
+              .
+            </span>
+          </label>
 
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {packs.map((pack) => (
-            <Card
-              key={pack.id}
-              className={clsx(
-                "flex flex-col gap-4",
-                pack.popular && "border-accent/40 bg-accent/[0.04]"
-              )}
-            >
-              <div className="flex items-start justify-between">
-                <span className="font-mono text-3xl font-semibold">
-                  {formatPrice(pack.price_cents, credits?.currency)}
-                </span>
-                {pack.popular && <Badge tone="accent">Most picked</Badge>}
-              </div>
-
-              <p className="flex items-center gap-1.5 text-sm text-white/70">
-                <Coins size={14} className="text-accent" />
-                {pack.credits} credits
-              </p>
-              <p className="text-xs leading-relaxed text-white/40">
-                {/* Quoted from the same table the backend charges from, and
-                    only for the modes this install can run — the shipped
-                    container has no diffusion stack, and offering the
-                    generated-stills number there quotes a price for
-                    something the API refuses to sell. */}
-                {pack.credits} stock-footage shorts
-                {generatedStills && `, or ${Math.floor(pack.credits / 3)} with AI-generated stills`}
-                .
-              </p>
-
-              <Button
-                onClick={() => buy(pack)}
-                disabled={pending !== null || !acknowledged}
-                variant={pack.popular ? "gradient" : "secondary"}
-                className="mt-auto w-full"
-              >
-                {pending === pack.id ? (
-                  <>
-                    <Loader2 size={15} className="animate-spin" />
-                    Opening checkout
-                  </>
-                ) : (
-                  `Buy ${pack.credits}`
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {packs.map((pack) => (
+              <Card
+                key={pack.id}
+                className={clsx(
+                  "flex flex-col gap-4",
+                  pack.popular && "border-accent/40 bg-accent/[0.04]"
                 )}
-              </Button>
-            </Card>
-          ))}
-        </div>
+              >
+                <div className="flex items-start justify-between">
+                  <span className="font-mono text-3xl font-semibold">
+                    {formatPrice(pack.price_cents, credits?.currency)}
+                  </span>
+                  {pack.popular && <Badge tone="accent">Most picked</Badge>}
+                </div>
 
+                <p className="flex items-center gap-1.5 text-sm text-white/70">
+                  <Coins size={14} className="text-accent" />
+                  {pack.credits} credits
+                </p>
+                <p className="text-xs leading-relaxed text-white/40">
+                  {/* Quoted from the same table the backend charges from, and
+                      only for the modes this install can run — the shipped
+                      container has no diffusion stack, and offering the
+                      generated-stills number there quotes a price for
+                      something the API refuses to sell. */}
+                  {pack.credits} stock-footage shorts
+                  {generatedStills && `, or ${Math.floor(pack.credits / 3)} with AI-generated stills`}
+                  .
+                </p>
+
+                <Button
+                  onClick={() => buy(pack)}
+                  disabled={pending !== null || !acknowledged}
+                  variant={pack.popular ? "gradient" : "secondary"}
+                  className="mt-auto w-full"
+                >
+                  {pending === pack.id ? (
+                    <>
+                      <Loader2 size={15} className="animate-spin" />
+                      Opening checkout
+                    </>
+                  ) : (
+                    `Buy ${pack.credits}`
+                  )}
+                </Button>
+              </Card>
+            ))}
+          </div>
+          </>
+        )}
 
         <p className="mt-4 text-xs leading-relaxed text-white/30">
-          Payment is handled by Stripe — this app never sees your card details. Self-hosting
-          costs nothing and needs no account at all.
+          {sold && "Payment is handled by Stripe — this app never sees your card details. "}
+          Self-hosting costs nothing and needs no account at all.
         </p>
       </main>
     </div>

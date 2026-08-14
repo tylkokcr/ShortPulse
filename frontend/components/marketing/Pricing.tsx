@@ -53,6 +53,11 @@ export function Pricing() {
   // Assumed until the server says otherwise, so the copy doesn't visibly
   // rewrite itself on a deployment where it is true.
   const [generatedStills, setGeneratedStills] = useState(true);
+  // Whether this deployment can take money at all — it needs both a ledger
+  // to record credits in and Stripe to charge through. Optimistic for the
+  // same reason as FALLBACK_PACKS: if the API is unreachable, a shop window
+  // that stays up is better than one that empties itself.
+  const [sold, setSold] = useState(true);
 
   useEffect(() => {
     // Not getCredits(): a visitor has no account, and a deployment with
@@ -65,6 +70,7 @@ export function Pricing() {
         if (pricing.currency) setCurrency(pricing.currency);
         setTaxIncluded(Boolean(pricing.tax_included));
         if (pricing.modes) setGeneratedStills(pricing.modes.includes("fast_hybrid"));
+        setSold(Boolean(pricing.sold));
       })
       .catch(() => {
         /* Keep the fallback — see FALLBACK_PACKS. */
@@ -84,7 +90,9 @@ export function Pricing() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+      {/* Four across only when there are packs to put there; alone, the free
+          tier gets a card's width rather than the whole section. */}
+      <div className={clsx("grid grid-cols-1 gap-4", sold ? "lg:grid-cols-4" : "max-w-sm")}>
         <Card className="flex flex-col gap-4 bg-surface-raised">
           <div className="flex flex-col gap-1">
             <h3 className="text-sm font-semibold">Free</h3>
@@ -114,7 +122,12 @@ export function Pricing() {
           </a>
         </Card>
 
-        {packs.map((pack) => {
+        {/* A deployment that cannot charge shows no prices. The API still
+            serves the pack list — it is the same tariff a self-hoster reads
+            to understand what a credit is worth — but rendering it here as
+            three cards with a call to action offers a purchase that
+            `POST /api/credits/checkout` answers 503. */}
+        {sold && packs.map((pack) => {
           const label = PACK_LABELS[pack.id] ?? { name: pack.id, blurb: "" };
           const { basic, standard } = videosFor(pack.credits, generatedStills);
           return (

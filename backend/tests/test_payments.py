@@ -321,6 +321,49 @@ async def test_a_visitor_is_quoted_the_currency_the_deployment_charges(monkeypat
     assert "balance" not in body and "entries" not in body
 
 
+async def test_the_price_list_says_whether_this_deployment_can_actually_sell(monkeypatch):
+    """Accounts and payments are separate switches, and `sold` reports the
+    combination — nothing else does.
+
+    A deployment can have a ledger and signed-in users and no Stripe key at
+    all, which is the shape of a launch that is not taking money yet.
+    `CreditSummary.enabled` is true there, so the UI cannot read that to
+    decide whether to offer a purchase: it would draw three priced packs
+    whose only possible answer is 503, after the buyer had already agreed
+    to give up their right of withdrawal.
+
+    The packs stay in the response either way. The tariff is also what
+    tells a self-hoster what a credit is worth, and that is true of an
+    install that sells nothing.
+    """
+    from fastapi import FastAPI
+
+    from app.api.routes import credits as credits_route
+    from app.core import config as core_config
+
+    settings = core_config.get_settings()
+
+    app = FastAPI()
+    app.include_router(credits_route.router)
+    # `sold` only asks whether there is somewhere to record credits, so
+    # anything that is not None stands in for a pool.
+    app.state.db_pool = object()
+
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_live_x")
+    async with _client(app) as client:
+        charging = (await client.get("/api/credits/packs")).json()
+
+    monkeypatch.setattr(settings, "stripe_secret_key", "")
+    async with _client(app) as client:
+        not_charging = (await client.get("/api/credits/packs")).json()
+
+    assert charging["sold"] is True
+    assert not_charging["sold"] is False, (
+        "a deployment with no Stripe key advertised itself as able to sell"
+    )
+    assert not_charging["packs"] == charging["packs"]
+
+
 async def test_an_unsigned_post_is_still_refused_under_require_auth(monkeypatch):
     """Exempting the path from authentication must not exempt it from the
     signature check — that would make it a free-credits endpoint."""
