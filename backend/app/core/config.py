@@ -93,10 +93,16 @@ class Settings(BaseSettings):
         "adirik/realvisxl-v4.0:"
         "85a58cc71587cc27539b7c83eb1ce4aea02feedfb9a9fae0598cebc110a3d695"
     )
-    # Wall clock for one image, queue time included. A prediction still
-    # running when this expires is cancelled: it bills for the seconds it
-    # burns whether or not anyone is waiting for the result.
-    replicate_timeout_s: float = 120.0
+    # Wall clock for one image, covering the retries, the queue and the
+    # generation. A prediction still running when this expires is
+    # cancelled: it bills for the seconds it burns whether or not anyone
+    # is waiting for the result.
+    #
+    # Measured rather than guessed: an image bills ~3.5s of predict time,
+    # but the first request after the model has gone cold took 88s of wall
+    # clock to come back, and a rate-limited one adds Retry-After: 10 on
+    # top of that. 120 left no room for both at once.
+    replicate_timeout_s: float = 180.0
 
     # Rendering
     ffmpeg_binary: str = "ffmpeg"

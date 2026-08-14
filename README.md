@@ -143,9 +143,11 @@ to the API and everything else to the UI.
 
 ### What it has to run on
 
-A plain CPU VPS. No GPU: the image ships the `stock_media` pipeline only,
-and in this shape the script comes from OpenAI rather than a local model,
-so nothing that wants a graphics card is left in the container.
+A plain CPU VPS. No GPU: in this shape the script comes from OpenAI and
+the `fast_hybrid` stills from Replicate rather than from local models, so
+nothing that wants a graphics card is left in the container. That is the
+trade the hosted shape makes — the self-hosted one keeps both on your own
+hardware and pays for a GPU instead.
 
 Measured on the running stack, one `stock_media` short:
 
@@ -216,7 +218,7 @@ does not support.
 | Mode | Engine | First-run download | Speed per scene | Notes |
 |---|---|---|---|---|
 | `fast_hybrid` (default) | RealVisXL_V4.0 stills + FFmpeg Ken Burns | ~7GB | ~59s (Apple Silicon M-series) | Photorealistic. Swap to `sdxl-turbo` in `.env` for ~5s/scene at lower realism |
-| `fast_hybrid` over Replicate | the same checkpoint, hosted | none | ~10s, four scenes at once | For a machine with no GPU. Needs `REPLICATE_API_TOKEN`, costs ~$0.004 an image |
+| `fast_hybrid` over Replicate | the same checkpoint, hosted | none | ~8s warm, ~70s cold start | For a machine with no GPU. Two scenes at once — more trips Replicate's rate limiter. Needs `REPLICATE_API_TOKEN`, ~$0.004 an image |
 | `stock_media` | Pexels free API | none | ~5-10s (download-bound) | Genuinely photoreal — it's real footage. Needs a free API key |
 | `ai_video` | LTX-Video (13B) | ~28GB | minutes | Local only. Real motion, but see the memory caveat below |
 

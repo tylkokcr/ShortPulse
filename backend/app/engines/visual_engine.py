@@ -145,7 +145,15 @@ def image_backend(settings) -> ImageBackend | None:
 
 
 # Network work overlaps; a shared accelerator does not.
-_REMOTE_SCENE_CONCURRENCY = 4
+#
+# Two, not four. Four was picked from the stock-media path, where the work
+# is a search and a download; against Replicate it made every request in a
+# six-scene batch hit a 429 and one of them exhaust its retries — a scene
+# silently downgraded to stock footage on a render that was paid for as AI
+# stills. There is little to win anyway: an image bills ~3.5s of predict
+# time and the rest of the wall clock is the model booting, which happens
+# once and is shared by everything behind it.
+_REMOTE_SCENE_CONCURRENCY = 2
 
 
 def scene_concurrency(mode: VisualMode, settings) -> int:
@@ -420,7 +428,12 @@ _REPLICATE_POLL_INTERVAL_S = 1.5
 # an input the cog rejects — will fail again identically, and the caller
 # degrades that scene to stock media rather than looping.
 _REPLICATE_RETRY_STATUSES = frozenset({429, 502, 503, 504})
-_REPLICATE_RETRY_BACKOFF_S = (2.0, 4.0)
+# Four waits, not two. Replicate's burst limiter answers 429 with
+# Retry-After: 10, so a two-attempt budget of 2s and 4s was spent before
+# the window it was told to wait for had even opened. The whole chain is
+# bounded by replicate_timeout_s regardless, so the tail here costs
+# nothing when the limiter is not the problem.
+_REPLICATE_RETRY_BACKOFF_S = (2.0, 5.0, 10.0, 20.0)
 
 
 def _replicate_image_input(scene: Scene, style: ArtStyle, size, settings) -> dict:
@@ -448,8 +461,20 @@ def _replicate_image_input(scene: Scene, style: ArtStyle, size, settings) -> dic
 
 
 async def _replicate_call(
-    client: httpx.AsyncClient, method: str, url: str, headers: dict, json: dict | None = None
+    client: httpx.AsyncClient,
+    method: str,
+    url: str,
+    headers: dict,
+    json: dict | None = None,
+    deadline: float | None = None,
 ) -> httpx.Response:
+    """One request, retried while it is worth retrying and there is time.
+
+    `deadline` is the same monotonic budget the polling loop uses, so a
+    scene cannot spend an unbounded stretch being told to come back later:
+    a rate limiter answering Retry-After: 10 forever would otherwise hold
+    a render open for as long as it kept saying it.
+    """
     last_exc: Exception | None = None
     # A backoff per retry, then None for the final attempt that must not
     # sleep and must not swallow.
@@ -459,6 +484,12 @@ async def _replicate_call(
             if response.status_code in _REPLICATE_RETRY_STATUSES and backoff is not None:
                 retry_after = response.headers.get("Retry-After")
                 delay = float(retry_after) if (retry_after or "").strip().isdigit() else backoff
+                if deadline is not None and time.monotonic() + delay >= deadline:
+                    logger.warning(
+                        "Replicate returned %s with no time left to wait it out",
+                        response.status_code,
+                    )
+                    response.raise_for_status()
                 logger.warning(
                     "Replicate returned %s; retrying in %.1fs", response.status_code, delay
                 )
@@ -522,6 +553,7 @@ async def _replicate_predict(payload: dict, settings) -> dict:
                 f"{_REPLICATE_API}/predictions",
                 {**headers, "Prefer": "wait=60"},
                 json=payload,
+                deadline=deadline,
             )
         ).json()
 
@@ -540,7 +572,9 @@ async def _replicate_predict(payload: dict, settings) -> dict:
             # it costs one line (see SECURITY.md, "Server-side requests").
             if not poll_url or not poll_url.startswith(f"{_REPLICATE_API}/"):
                 raise RuntimeError(f"Replicate returned an unusable poll URL: {poll_url!r}")
-            prediction = (await _replicate_call(client, "GET", poll_url, headers)).json()
+            prediction = (
+                await _replicate_call(client, "GET", poll_url, headers, deadline=deadline)
+            ).json()
 
     if prediction.get("status") != "succeeded":
         raise RuntimeError(

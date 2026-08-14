@@ -18,7 +18,7 @@ const groupsFor = (
       },
       {
         q: "How long does a render take?",
-        a: "On this service, a short takes roughly a minute either way: stock footage is about 45 seconds end to end, and AI stills come from a hosted GPU that generates four scenes at a time. Self-hosted on an Apple Silicon M-series the stills are slower — about 78 seconds per scene, so ~7 minutes for a short — because your own machine is doing the diffusion.",
+        a: "On this service, a short with stock footage takes about 45 seconds end to end. AI stills take one to two minutes: the images come from a hosted GPU at roughly 8 seconds each, but the first one after a quiet spell waits for the model to load. Self-hosted on an Apple Silicon M-series the stills are much slower — about 78 seconds per scene, so ~7 minutes for a short — because your own machine is doing the diffusion.",
       },
       {
         q: "Which languages are supported?",
