@@ -1,11 +1,15 @@
 # ShortPulse API + render worker.
 #
-# Ships the stock_media pipeline only. The diffusion stack for fast_hybrid
-# and ai_video is ~3GB installed and needs a GPU to be worth running, so it
-# is deliberately absent — every torch/diffusers import in this codebase is
-# inside the function that needs it, and a request for fast_hybrid without
-# them falls back to stock footage rather than failing. Add
-# requirements-diffusion.txt and a GPU base image if you want those modes.
+# No diffusion stack. It is ~3GB installed and needs a GPU to be worth
+# running, so every torch/diffusers import in this codebase is inside the
+# function that needs it and this image starts without them.
+#
+# That leaves stock_media, plus fast_hybrid when REPLICATE_API_TOKEN is
+# set — the same checkpoint, generated over an API instead of on this
+# machine. ai_video has no such route and is refused here: the API turns
+# down a mode it cannot run rather than silently downgrading it, which is
+# what it used to do. Add requirements-diffusion.txt and a GPU base image
+# to run either of them locally.
 
 FROM python:3.12-slim AS base
 

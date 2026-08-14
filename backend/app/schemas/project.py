@@ -134,6 +134,12 @@ class SceneVisual(BaseModel):
     # Populated for stock_media scenes only; AI-generated visuals have
     # nobody to credit.
     attribution: StockAttribution | None = None
+    # Seconds of hosted inference this scene was billed for, when it was
+    # generated over an API rather than on this machine. Reported by the
+    # provider, so it is what the invoice will say rather than what we
+    # timed — render_manager sums it into timings.json, where the rest of
+    # the stage's cost already lives.
+    predict_time_s: float | None = None
 
 
 class Scene(BaseModel):

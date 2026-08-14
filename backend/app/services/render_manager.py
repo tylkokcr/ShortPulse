@@ -207,14 +207,12 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 ),
             )
 
-        # How many scenes may be worked on at once.
-        #
-        # Stock media is network-bound — a search and a download per scene —
-        # and running those one at a time was two thirds of a stock render's
-        # wall clock for no reason. The local generation modes share one
-        # GPU/accelerator, where concurrency buys nothing and costs memory,
-        # so they stay sequential.
-        visual_concurrency = 4 if config.visual_mode == VisualMode.STOCK_MEDIA else 1
+        # How many scenes may be worked on at once. The reasoning lives
+        # with the generators, because it depends on which implementation
+        # of a mode is going to run — see visual_engine.scene_concurrency.
+        visual_concurrency = visual_engine.scene_concurrency(
+            VisualMode(config.visual_mode), settings
+        )
         limit = asyncio.Semaphore(visual_concurrency)
         completed = 0
 
@@ -338,6 +336,14 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 "video_duration_s": round(video_s, 2),
                 "image_model": settings.sdxl_model_id,
                 "diffusion_device": settings.diffusion_device,
+                # Which implementation of fast_hybrid ran, and what the
+                # provider says it will bill for. This is the only place
+                # the two costs of a render — our wall clock and someone
+                # else's invoice — can be compared against one price.
+                "image_backend": str(visual_engine.image_backend(settings) or "none"),
+                "remote_predict_s": round(
+                    sum(s.visual.predict_time_s or 0.0 for s in script.scenes), 2
+                ),
             },
         )
         logger.info(
@@ -574,15 +580,22 @@ async def _refund_mode_downgrade(project_id: str, config, scenes) -> None:
     """Charge the cheaper price when the visuals came out cheaper.
 
     generate_scene_visual falls back to stock footage rather than losing a
-    render, and records what actually produced each asset. When every
-    generated scene fell back, the user bought fast_hybrid or ai_video and
-    received the stock-media product — so they are charged for the stock
-    media product.
+    render, and records what actually produced each asset. What was
+    delivered is then priced by how much of it fell back, and the
+    difference is paid back.
 
-    Only a wholesale downgrade counts. A single scene falling back is the
-    fallback doing its job on a video that is otherwise what was ordered,
-    and re-pricing that would need a per-scene tariff the ledger doesn't
-    have.
+    This used to correct only a wholesale downgrade, which was right when
+    the generation happened locally: the pipeline either loaded or it
+    didn't, so the outcome was all or nothing. Serving fast_hybrid from an
+    API made per-scene failure the ordinary case instead — one rate-limited
+    request, one gateway error, one prompt the safety checker rejects — and
+    under the old rule a video with half its scenes downgraded was billed
+    in full and said nothing about it.
+
+    Rounding keeps the old behaviour at the bottom end without a special
+    case: the gap on a short fast_hybrid render is 2 credits, so one scene
+    in twelve still pays back nothing. That is the fallback doing its job
+    on a video that is otherwise what was ordered.
 
     Swallows its own errors like the other ledger paths here: a billing
     problem must not fail a render that produced a working video.
@@ -592,11 +605,15 @@ async def _refund_mode_downgrade(project_id: str, config, scenes) -> None:
         return
 
     generated = [s for s in scenes if not s.is_outro]
-    if not generated or any(s.visual.mode != VisualMode.STOCK_MEDIA for s in generated):
+    if not generated:
+        return
+    downgraded = [s for s in generated if s.visual.mode == VisualMode.STOCK_MEDIA]
+    if not downgraded:
         return
 
     delivered = config.model_copy(update={"visual_mode": VisualMode.STOCK_MEDIA})
-    owed = credits.cost_for(config) - credits.cost_for(delivered)
+    gap = credits.cost_for(config) - credits.cost_for(delivered)
+    owed = round(gap * len(downgraded) / len(generated))
     if owed <= 0:
         return
 
@@ -608,7 +625,10 @@ async def _refund_mode_downgrade(project_id: str, config, scenes) -> None:
             pool,
             project_id,
             owed,
-            note=f"{requested} unavailable; delivered stock media",
+            note=(
+                f"{len(downgraded)}/{len(generated)} scenes fell back from "
+                f"{requested} to stock media"
+            ),
         )
     except Exception:  # noqa: BLE001
         logger.exception(

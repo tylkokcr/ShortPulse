@@ -126,3 +126,29 @@ def test_a_topic_with_no_names_flags_nothing():
 
 def test_a_missing_visual_prompt_does_not_crash_the_check():
     assert visual_prompts_naming([{}, {"visual_prompt": None}], "Why Ashe wins") == []
+
+
+def test_a_model_that_ignores_the_scene_count_is_capped():
+    """The count in the prompt is an instruction, and models overrun it.
+
+    That used to cost local CPU and nothing else. Now that fast_hybrid can
+    generate one image per scene against a per-image bill, while the charge
+    is fixed by the length preset the buyer picked, an unbounded scene list
+    is the only unbounded term in the price of a render — and thirty scenes
+    is a three-minute "short" besides.
+    """
+    from app.schemas.project import VideoLength
+
+    parsed = {"hook": "h", "scenes": [_scene() for _ in range(30)]}
+
+    script = _to_script_output("t", parsed, VideoLength.SHORT)
+
+    assert len(script.scenes) == 6
+    assert [s.index for s in script.scenes] == list(range(6)), "indexes must stay contiguous"
+
+
+def test_a_script_within_the_count_is_untouched():
+    from app.schemas.project import VideoLength
+
+    parsed = {"hook": "h", "scenes": [_scene() for _ in range(5)]}
+    assert len(_to_script_output("t", parsed, VideoLength.SHORT).scenes) == 5

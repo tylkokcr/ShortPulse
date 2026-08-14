@@ -113,6 +113,21 @@ def check(settings) -> list[Warning_]:
             Warning_("OPENAI_API_KEY", "provider is openai but no key is set; every render will fail")
         )
 
+    # Worse than a failure, which is why it is here: fast_hybrid degrades
+    # to stock footage per scene rather than erroring, so a missing token
+    # produces finished videos that are quietly not what was bought, at a
+    # price the ledger then corrects on every single render.
+    if getattr(settings, "visual_provider", "local") == "replicate" and not getattr(
+        settings, "replicate_api_token", None
+    ):
+        warnings.append(
+            Warning_(
+                "REPLICATE_API_TOKEN",
+                "visual provider is replicate but no token is set; every fast_hybrid render "
+                "falls back to stock footage and is re-priced after the fact",
+            )
+        )
+
     if _hosted(settings) and not settings.database_url:
         warnings.append(
             Warning_(

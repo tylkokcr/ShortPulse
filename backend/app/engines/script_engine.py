@@ -253,7 +253,7 @@ async def _generate_script_once(
     raw_text = await _call_llm(config, system_prompt, user_prompt)
     parsed = _extract_json(raw_text)
     await _rewrite_named_prompts(parsed, topic, config)
-    return _to_script_output(topic, parsed)
+    return _to_script_output(topic, parsed, video_length)
 
 
 async def _call_llm(config: LLMConfig, system_prompt: str, prompt: str) -> str:
@@ -375,7 +375,9 @@ async def _rewrite_named_prompts(
             scenes[index]["visual_prompt"] = prompt.strip()
 
 
-def _to_script_output(topic: str, parsed: dict) -> ScriptOutput:
+def _to_script_output(
+    topic: str, parsed: dict, video_length: VideoLength = VideoLength.SHORT
+) -> ScriptOutput:
     # The model is asked for a top-level object, but occasionally returns a
     # bare array of scenes (or something else entirely). Raise the engine's
     # own error type so generate_script's retry loop can catch it.
@@ -425,6 +427,22 @@ def _to_script_output(topic: str, parsed: dict) -> ScriptOutput:
 
     if not scenes:
         raise ScriptGenerationError("Model returned zero usable scenes")
+
+    # SCENE_COUNT_BY_LENGTH is an instruction in the prompt, and a model
+    # that ignores it used to cost nothing but local CPU. It is now the
+    # only unbounded term in the price of a render: one image is generated
+    # per scene, billed per image, against a charge fixed by the length
+    # preset the buyer picked. Thirty scenes on a three-credit short is a
+    # three-minute "short" as well, so the cap is right on its own terms.
+    max_scenes = SCENE_COUNT_BY_LENGTH[video_length][1]
+    if len(scenes) > max_scenes:
+        logger.warning(
+            "Model returned %d scenes for a %s video; keeping the first %d",
+            len(scenes),
+            video_length,
+            max_scenes,
+        )
+        scenes = scenes[:max_scenes]
 
     try:
         return ScriptOutput(

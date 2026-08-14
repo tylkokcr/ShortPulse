@@ -2,13 +2,22 @@
 
   Mode A (ai_video):    Local text-to-video diffusion (LTX-Video / CogVideoX).
                          Slowest, most "alive" looking, needs a real GPU.
-  Mode B (fast_hybrid):  Flux.1-Schnell / SDXL-Turbo still image per scene,
-                         animated with an FFmpeg Ken Burns pan/zoom in the
-                         render engine. Recommended default: fast on modest
-                         hardware, looks intentional rather than static.
+  Mode B (fast_hybrid):  One SDXL still per scene, animated with an FFmpeg
+                         Ken Burns pan/zoom in the render engine. Two
+                         implementations of the same mode — diffusers on
+                         this machine, or the same checkpoint on
+                         Replicate's hosted inference (see image_backend).
+                         Recommended default either way.
   Mode C (stock_media):  Pulls a matching stock clip from Pexels/Pixabay's
                          free APIs. Zero GPU required, good fallback when
                          no local diffusion hardware is available.
+
+Mode B is deliberately one mode and not two. A VisualMode is a price, a
+promise and a tile in the picker; which machine ran the checkpoint is
+neither, and splitting it would fork the tariff, the availability list, the
+refund comparison and three pieces of marketing copy to express something
+nobody is choosing between. What actually produced an asset is recorded in
+the project's timings.json instead.
 
 Each generator writes its asset into the project's `visuals/` directory and
 returns the path, which is stored on `scene.visual.asset_path`.
@@ -16,9 +25,12 @@ returns the path, which is stored on `scene.visual.asset_path`.
 
 from __future__ import annotations
 
+import asyncio
 import importlib.util
 import logging
+import time
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 
 import httpx
@@ -68,6 +80,91 @@ def sdxl_size_for(width: int, height: int) -> tuple[int, int]:
     return SDXL_SIZE_BY_ORIENTATION["vertical"]
 
 
+# Hosted inference is a different machine with different comfortable
+# resolutions, so Mode B's two implementations do not share a bucket table.
+# The shape is what matters — the render engine crops to the project's
+# aspect ratio and Ken Burns oversizes before panning — so these keep the
+# orientation and give up some pixels. 768x1344 is the stable portrait size
+# for SDXL checkpoints served this way.
+REPLICATE_SIZE_BY_ORIENTATION: dict[str, tuple[int, int]] = {
+    "vertical": (768, 1344),
+    "square": (1024, 1024),
+    "landscape": (1344, 768),
+}
+
+
+def replicate_size_for(width: int, height: int) -> tuple[int, int]:
+    """Hosted generation size matching the render target's orientation."""
+    if width > height:
+        return REPLICATE_SIZE_BY_ORIENTATION["landscape"]
+    if width == height:
+        return REPLICATE_SIZE_BY_ORIENTATION["square"]
+    return REPLICATE_SIZE_BY_ORIENTATION["vertical"]
+
+
+class ImageBackend(StrEnum):
+    """Which implementation runs fast_hybrid.
+
+    Not in schemas/project.py next to LLMProvider: that one is there
+    because LLMConfig is a wire schema a client sends. This never crosses
+    the wire — it is derived from settings and the packages present — so it
+    lives beside the dispatch that reads it.
+    """
+
+    LOCAL = "local"
+    REPLICATE = "replicate"
+
+
+def _has_local_diffusion() -> bool:
+    # find_spec rather than an import: loading torch costs seconds and
+    # hundreds of MB, and this runs on ordinary requests.
+    return all(importlib.util.find_spec(n) is not None for n in ("torch", "diffusers"))
+
+
+def image_backend(settings) -> ImageBackend | None:
+    """Which implementation would run fast_hybrid here, or None if neither can.
+
+    settings.visual_provider is honoured when that backend is usable and
+    otherwise ignored, so neither shape of install has to configure
+    anything: the container has a token and no torch, a GPU box has torch
+    and no token, and only a machine with both is actually expressing a
+    preference.
+
+    One function, so the availability gate, the dispatch and the
+    concurrency limit can never disagree about what this install can do.
+    """
+    usable = {
+        ImageBackend.LOCAL: _has_local_diffusion(),
+        ImageBackend.REPLICATE: bool(getattr(settings, "replicate_api_token", None)),
+    }
+    preferred = getattr(settings, "visual_provider", ImageBackend.LOCAL)
+    for backend in (preferred, ImageBackend.LOCAL, ImageBackend.REPLICATE):
+        if backend in usable and usable[backend]:
+            return ImageBackend(backend)
+    return None
+
+
+# Network work overlaps; a shared accelerator does not.
+_REMOTE_SCENE_CONCURRENCY = 4
+
+
+def scene_concurrency(mode: VisualMode, settings) -> int:
+    """How many scenes may be generated at once.
+
+    This follows from what the work *is*, not from which mode was asked
+    for — which is why it stopped being a mode check in render_manager the
+    moment one mode grew two implementations with opposite answers. Stock
+    media and hosted generation are network-bound and were two thirds of a
+    render's wall clock when run one at a time; local diffusion shares one
+    GPU, where concurrency buys nothing and costs memory.
+    """
+    if mode == VisualMode.STOCK_MEDIA:
+        return _REMOTE_SCENE_CONCURRENCY
+    if mode == VisualMode.FAST_HYBRID and image_backend(settings) is ImageBackend.REPLICATE:
+        return _REMOTE_SCENE_CONCURRENCY
+    return 1
+
+
 def is_model_fully_cached(model_id: str) -> bool:
     """Best-effort check for whether a HF model is already fully downloaded
     on disk (not just its small metadata files) — used to warn the caller
@@ -104,13 +201,28 @@ def unavailable_reason(mode: VisualMode, settings) -> str | None:
     So availability is answered before anything is charged: the UI hides
     what this install can't do, and the API refuses to sell it.
     """
-    if mode in (VisualMode.FAST_HYBRID, VisualMode.AI_VIDEO):
-        # find_spec rather than an import: loading torch costs seconds and
-        # hundreds of MB, and this is called on an ordinary request.
-        missing = [n for n in ("torch", "diffusers") if importlib.util.find_spec(n) is None]
-        if missing:
-            return f"needs {' and '.join(missing)}, which this install doesn't have"
-        return None
+    # The two generated modes stopped sharing a branch when they stopped
+    # sharing a requirement: fast_hybrid has a hosted implementation,
+    # ai_video does not.
+    if mode == VisualMode.FAST_HYBRID:
+        if image_backend(settings) is not None:
+            return None
+        return (
+            "needs torch and diffusers to generate on this machine, or "
+            "REPLICATE_API_TOKEN to generate over Replicate's API — this install has neither"
+        )
+
+    if mode == VisualMode.AI_VIDEO:
+        if _has_local_diffusion():
+            return None
+        # Hosted text-to-video costs more per render than this mode is
+        # priced at, so there is no API route behind this one and the
+        # reason has to make sense to a paying customer reading it as a
+        # tooltip, not just to an operator reading a dependency list.
+        return (
+            "runs text-to-video on the machine serving the render, so it needs torch, "
+            "diffusers and a GPU — it is available when you self-host, not on this service"
+        )
 
     if mode == VisualMode.STOCK_MEDIA:
         if not (settings.pexels_api_key or settings.pixabay_api_key):
@@ -146,7 +258,10 @@ async def generate_scene_visual(
         if mode == VisualMode.AI_VIDEO:
             path = await _generate_ai_video(scene, output_dir, settings, style)
         elif mode == VisualMode.FAST_HYBRID:
-            path = await _generate_fast_hybrid_image(scene, output_dir, settings, style, size)
+            if image_backend(settings) is ImageBackend.REPLICATE:
+                path = await _generate_replicate_image(scene, output_dir, settings, style, size)
+            else:
+                path = await _generate_fast_hybrid_image(scene, output_dir, settings, style, size)
         elif mode == VisualMode.STOCK_MEDIA:
             path = await _fetch_stock_media(scene, output_dir, settings, render_height)
         else:
@@ -292,6 +407,194 @@ async def _generate_fast_hybrid_image(
         return output_path
 
     return await asyncio.to_thread(_run)
+
+
+# --------------------------------------------------------------------------
+# Mode B, hosted: the same checkpoint on Replicate
+# --------------------------------------------------------------------------
+
+_REPLICATE_API = "https://api.replicate.com/v1"
+_REPLICATE_POLL_INTERVAL_S = 1.5
+# Worth another attempt: the account is over its concurrency allowance, or
+# a gateway blinked. Anything else — a bad token, a deleted model version,
+# an input the cog rejects — will fail again identically, and the caller
+# degrades that scene to stock media rather than looping.
+_REPLICATE_RETRY_STATUSES = frozenset({429, 502, 503, 504})
+_REPLICATE_RETRY_BACKOFF_S = (2.0, 4.0)
+
+
+def _replicate_image_input(scene: Scene, style: ArtStyle, size, settings) -> dict:
+    """The cog's inputs, mapped from the same settings the local path reads.
+
+    Deliberately the same precedence as _generate_fast_hybrid_image, so
+    SDXL_NUM_INFERENCE_STEPS and SDXL_GUIDANCE_SCALE keep one meaning
+    across both implementations of the mode.
+    """
+    width, height = replicate_size_for(*(size or SDXL_SIZE_BY_ORIENTATION["vertical"]))
+    return {
+        "prompt": style.build_prompt(scene.visual.prompt),
+        "negative_prompt": scene.visual.negative_prompt or style.negative_prompt,
+        "width": width,
+        "height": height,
+        "num_inference_steps": settings.sdxl_num_inference_steps,
+        # The hosted cog validates guidance_scale >= 1 and 422s below it,
+        # while locally 0.0 is the documented way to run a turbo model with
+        # classifier-free guidance off. Clamping keeps a .env written for
+        # the local path from failing every scene here — and the negative
+        # prompts the art styles carry only do anything above 1 anyway.
+        "guidance_scale": max(1.0, float(settings.sdxl_guidance_scale)),
+        "num_outputs": 1,
+    }
+
+
+async def _replicate_call(
+    client: httpx.AsyncClient, method: str, url: str, headers: dict, json: dict | None = None
+) -> httpx.Response:
+    last_exc: Exception | None = None
+    # A backoff per retry, then None for the final attempt that must not
+    # sleep and must not swallow.
+    for backoff in (*_REPLICATE_RETRY_BACKOFF_S, None):
+        try:
+            response = await client.request(method, url, headers=headers, json=json)
+            if response.status_code in _REPLICATE_RETRY_STATUSES and backoff is not None:
+                retry_after = response.headers.get("Retry-After")
+                delay = float(retry_after) if (retry_after or "").strip().isdigit() else backoff
+                logger.warning(
+                    "Replicate returned %s; retrying in %.1fs", response.status_code, delay
+                )
+                await asyncio.sleep(delay)
+                continue
+            if response.status_code == 402:
+                # Distinct from every other failure: nothing is wrong with
+                # the request, the account cannot pay for it. Without this
+                # line it reads as a generic outage while every render on
+                # the deployment quietly downgrades to stock media.
+                logger.error(
+                    "Replicate refused the prediction for payment reasons (402) — "
+                    "the account has no billing set up or has hit its spend limit"
+                )
+            response.raise_for_status()
+            return response
+        except httpx.TransportError as exc:  # connect/read errors, not HTTP status
+            last_exc = exc
+            if backoff is None:
+                raise
+            logger.warning("Replicate request failed (%r); retrying in %.1fs", exc, backoff)
+            await asyncio.sleep(backoff)
+    raise last_exc or RuntimeError("Replicate request exhausted its retries")
+
+
+async def _replicate_cancel(client: httpx.AsyncClient, prediction: dict, headers: dict) -> None:
+    """Stop paying for a prediction nobody is waiting for any more.
+
+    Best effort by design: this runs while another error is already on its
+    way up, and failing to cancel must not replace it.
+    """
+    url = (prediction.get("urls") or {}).get("cancel")
+    if not url or not url.startswith(f"{_REPLICATE_API}/"):
+        return
+    try:
+        await client.post(url, headers=headers)
+    except Exception:  # noqa: BLE001
+        logger.warning("Could not cancel Replicate prediction %s", prediction.get("id"))
+
+
+async def _replicate_predict(payload: dict, settings) -> dict:
+    """Create a prediction and return it once it reaches a terminal state.
+
+    `Prefer: wait` gets the finished prediction back on the original
+    request in the common case — an SDXL still is ~5-10s of predict time —
+    and polling is the cold-start path, not the normal one.
+    """
+    headers = {
+        "Authorization": f"Bearer {settings.replicate_api_token}",
+        "Content-Type": "application/json",
+    }
+    deadline = time.monotonic() + float(settings.replicate_timeout_s)
+
+    # The socket is legitimately held open by Prefer: wait, so the read
+    # timeout has to exceed it while the connect timeout stays short.
+    async with httpx.AsyncClient(timeout=httpx.Timeout(90.0, connect=10.0)) as client:
+        prediction = (
+            await _replicate_call(
+                client,
+                "POST",
+                f"{_REPLICATE_API}/predictions",
+                {**headers, "Prefer": "wait=60"},
+                json=payload,
+            )
+        ).json()
+
+        while prediction.get("status") in ("starting", "processing"):
+            if time.monotonic() >= deadline:
+                await _replicate_cancel(client, prediction, headers)
+                raise RuntimeError(
+                    f"Replicate prediction {prediction.get('id')} still running after "
+                    f"{settings.replicate_timeout_s:.0f}s; cancelled"
+                )
+            await asyncio.sleep(_REPLICATE_POLL_INTERVAL_S)
+            poll_url = (prediction.get("urls") or {}).get("get")
+            # An address read out of a response body that this server then
+            # fetches — the same shape as the llm.base_url hole, even
+            # though this response came from a host we chose. Constraining
+            # it costs one line (see SECURITY.md, "Server-side requests").
+            if not poll_url or not poll_url.startswith(f"{_REPLICATE_API}/"):
+                raise RuntimeError(f"Replicate returned an unusable poll URL: {poll_url!r}")
+            prediction = (await _replicate_call(client, "GET", poll_url, headers)).json()
+
+    if prediction.get("status") != "succeeded":
+        raise RuntimeError(
+            f"Replicate prediction {prediction.get('id')} "
+            f"{prediction.get('status')}: {prediction.get('error')}"
+        )
+    return prediction
+
+
+def _replicate_output_url(prediction: dict) -> str:
+    """The one image URL, from a schema that is a list but not always.
+
+    A safety-checker rejection comes back as a null element rather than an
+    error, so an empty or null-filled output is a real outcome to name
+    rather than an IndexError to trip over.
+    """
+    output = prediction.get("output")
+    if isinstance(output, str):
+        return output
+    if isinstance(output, list):
+        urls = [u for u in output if isinstance(u, str) and u]
+        if urls:
+            return urls[0]
+    raise RuntimeError(
+        f"Replicate prediction {prediction.get('id')} produced no image "
+        f"(output was {output!r}); a rejected prompt looks like this"
+    )
+
+
+async def _generate_replicate_image(
+    scene: Scene,
+    output_dir: Path,
+    settings,
+    style: ArtStyle | None = None,
+    size: tuple[int, int] | None = None,
+) -> Path:
+    """fast_hybrid over the API. Same signature and same output filename as
+    the local generator, which is what keeps the render engine's
+    extension-based dispatch and the caller's fallback both unchanged."""
+    output_path = output_dir / f"scene_{scene.index:02d}.png"
+    style = style or art_styles.DEFAULT_ART_STYLE
+
+    prediction = await _replicate_predict(
+        {
+            "version": settings.replicate_image_model,
+            "input": _replicate_image_input(scene, style, size, settings),
+        },
+        settings,
+    )
+    await _download(_replicate_output_url(prediction), output_path)
+    # Read back by render_manager for timings.json: part of this stage's
+    # cost is now an invoice rather than our own wall clock.
+    scene.visual.predict_time_s = (prediction.get("metrics") or {}).get("predict_time")
+    return output_path
 
 
 # --------------------------------------------------------------------------

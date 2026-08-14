@@ -66,6 +66,38 @@ class Settings(BaseSettings):
     ltx_video_model_id: str = "Lightricks/LTX-Video"
     diffusion_device: str = "cpu"
 
+    # Which implementation runs fast_hybrid:
+    #   "local"     — diffusers on this machine, needs torch + diffusers.
+    #   "replicate" — the same checkpoint on Replicate's hosted inference.
+    #
+    # A preference rather than a requirement: visual_engine.image_backend
+    # falls through to whichever backend this install can actually run, so
+    # the container (a token, no torch) and a GPU box (torch, no token)
+    # both need nothing set here. Only a machine with both has a choice to
+    # express, and this is where it says so.
+    #
+    # Like the LLM block above, the token is read from here and never from
+    # a request. There is deliberately no field for it on ProjectConfig:
+    # the `llm` block had to be *discarded* at the HTTP boundary once a
+    # client-chosen base_url turned out to be a server-side fetch, and a
+    # field that does not exist cannot be forgotten about later.
+    visual_provider: str = "local"
+    replicate_api_token: str | None = None
+    # Pinned to a version hash, not a bare owner/name. Model owners revise
+    # what `owner/name` points at, and a revised input schema is a 422 on
+    # every scene of every render — which the fallback would turn into a
+    # silent stock-media downgrade rather than an error anyone sees. This
+    # id is RealVisXL_V4.0, the same checkpoint sdxl_model_id names, so the
+    # art styles and the published samples describe both backends.
+    replicate_image_model: str = (
+        "adirik/realvisxl-v4.0:"
+        "85a58cc71587cc27539b7c83eb1ce4aea02feedfb9a9fae0598cebc110a3d695"
+    )
+    # Wall clock for one image, queue time included. A prediction still
+    # running when this expires is cancelled: it bills for the seconds it
+    # burns whether or not anyone is waiting for the result.
+    replicate_timeout_s: float = 120.0
+
     # Rendering
     ffmpeg_binary: str = "ffmpeg"
     ffprobe_binary: str = "ffprobe"
@@ -95,12 +127,17 @@ class Settings(BaseSettings):
     # deployment: without it an anonymous caller looks like a self-hoster
     # and renders for free.
     require_auth: bool = False
-    # Credits handed to a user the first time they authenticate. This is
-    # real compute given away, so it is a deliberate number rather than a
-    # round one: 15 buys five short fast_hybrid renders — enough to judge
-    # the output quality before paying, and not enough to be worth farming
-    # new addresses for.
-    signup_credit_grant: int = 15
+    # Credits handed to a user the first time they authenticate.
+    #
+    # This was 15 when the giveaway was our own idle compute and the only
+    # cost of a farmed address was electricity. Serving fast_hybrid from
+    # Replicate turned it into cash: a signup is now up to ~30 generated
+    # images, and a thousand throwaway accounts is a real invoice against
+    # zero revenue. 5 still buys a full short render to judge the output
+    # by, which is what the grant is for, while cutting the cost of an
+    # abused signup by two thirds. Set a spend limit on the Replicate key
+    # as well — this bounds one account, not the total.
+    signup_credit_grant: int = 5
     # Signs the short-lived tokens in video URLs. A <video> tag can't send
     # an Authorization header, so playback of an owned project needs the
     # credential in the URL — same shape as an S3 presigned link. Leave

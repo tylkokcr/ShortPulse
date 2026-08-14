@@ -28,6 +28,8 @@ class Settings:
         self.stripe_automatic_tax = False
         self.llm_provider = "ollama"
         self.openai_api_key = None
+        self.visual_provider = "local"
+        self.replicate_api_token = None
         # Any executable that certainly exists wherever the suite runs.
         self.ffmpeg_binary = sys.executable
         self.ffprobe_binary = sys.executable
@@ -89,6 +91,18 @@ def test_live_keys_returning_to_localhost_are_flagged():
 
 def test_openai_without_a_key_is_flagged():
     assert "OPENAI_API_KEY" in _settings_for(llm_provider="openai")
+
+
+def test_replicate_without_a_token_is_flagged():
+    """Worse than the OpenAI case above, which fails loudly. This one
+    succeeds: fast_hybrid falls back to stock footage per scene, so the
+    deployment keeps producing finished videos that are not what was
+    bought and re-prices every one of them after the fact."""
+    assert "REPLICATE_API_TOKEN" in _settings_for(visual_provider="replicate")
+
+
+def test_a_token_clears_it():
+    assert _settings_for(visual_provider="replicate", replicate_api_token="r8_x") == []
 
 
 def test_accounts_without_a_database_is_flagged():
