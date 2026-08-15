@@ -21,6 +21,7 @@ from app.api.middleware import SupabaseAuthMiddleware
 from app.api.routes import credits as credits_route
 from app.api.routes import projects as projects_route
 from app.services import credits, db, project_store
+from app.services.media_tokens import MediaTokenSigner
 from app.services.supabase_auth import SupabaseTokenVerifier
 from tests.conftest import PROJECT_URL, Signer
 
@@ -71,6 +72,7 @@ def _build_app(pool, jwks, *, require_auth=False, signup_grant=0, with_verifier=
     queue = FakeQueue()
     app.state.db_pool = pool
     app.state.render_queue = queue
+    app.state.media_signer = MediaTokenSigner("test-secret", ttl_s=900)
 
     @app.get("/api/health")
     async def health():
@@ -304,3 +306,90 @@ async def test_two_users_sharing_an_email_both_work(pool, jwks, signer):
 
     assert a.status_code == 200
     assert b.status_code == 200
+
+
+# --- the video the customer paid for -------------------------------------
+#
+# test_billing.py covers who is allowed to mint a media URL and whose
+# video it opens, but it builds an app without this middleware — so it
+# proved the *route* right while the request never reached it. On the live
+# deployment, with REQUIRE_AUTH on, a finished render was 401 in the
+# browser that had just been charged nine credits for it. These go through
+# the middleware, which is the only place that bug was visible.
+
+
+async def test_a_signed_media_token_reaches_the_video(pool, jwks, signer):
+    """A <video> element cannot send a bearer token, so the URL is the
+    credential. Refusing it here makes every finished render unreachable."""
+    user_id = str(uuid.uuid4())
+    app, _ = _build_app(pool, jwks, require_auth=True, signup_grant=20)
+
+    async with _client(app) as client:
+        created = await client.post(
+            "/api/projects", json=PAYLOAD, headers=_auth(signer.token(sub=user_id))
+        )
+        project_id = created.json()["config"]["id"]
+        media = await client.get(
+            f"/api/projects/{project_id}/media-url", headers=_auth(signer.token(sub=user_id))
+        )
+        token, _expires = app.state.media_signer.sign(project_id)
+        response = await client.get(f"/api/projects/{project_id}/download?token={token}")
+
+    # 409 because this project has no rendered file yet — which is the
+    # point: the middleware let it through to the route, and the route
+    # answered on the merits. A 401 here is the regression.
+    assert response.status_code != 401
+    assert media.status_code in (200, 409)
+
+
+async def test_a_media_request_without_a_token_is_still_refused(pool, jwks):
+    """The exemption is for requests that carry their own credential. One
+    that carries nothing must not inherit it, or every finished video is
+    public to anyone who can guess a project id."""
+    app, _ = _build_app(pool, jwks, require_auth=True)
+
+    async with _client(app) as client:
+        response = await client.get(f"/api/projects/{uuid.uuid4()}/download")
+
+    assert response.status_code == 401
+
+
+async def test_a_forged_media_token_is_refused_by_the_route(pool, jwks):
+    """Skipping authentication is not the same as granting access: the
+    signature is still checked, one project at a time."""
+    app, _ = _build_app(pool, jwks, require_auth=True)
+
+    async with _client(app) as client:
+        response = await client.get(f"/api/projects/{uuid.uuid4()}/download?token=not-a-token")
+
+    # 403 from the route, not 401 from the middleware — the request got
+    # through and was judged on its signature.
+    assert response.status_code == 403
+
+
+async def test_the_poster_is_reachable_the_same_way(pool, jwks):
+    """The library grid renders posters in <img> tags, which have the same
+    problem as <video> and were caught by the same 401."""
+    project_id = str(uuid.uuid4())
+    app, _ = _build_app(pool, jwks, require_auth=True)
+    token, _expires = app.state.media_signer.sign(project_id)
+
+    async with _client(app) as client:
+        response = await client.get(f"/api/projects/{project_id}/poster?token={token}")
+
+    assert response.status_code != 401
+
+
+async def test_other_project_routes_stay_behind_authentication(pool, jwks):
+    """The pattern is narrow on purpose. A token in the query string must
+    not open the project list, the edit endpoint, or anything else."""
+    app, _ = _build_app(pool, jwks, require_auth=True)
+
+    async with _client(app) as client:
+        listing = await client.get("/api/projects?token=anything")
+        one = await client.get(f"/api/projects/{uuid.uuid4()}?token=anything")
+        minting = await client.get(f"/api/projects/{uuid.uuid4()}/media-url?token=anything")
+
+    assert listing.status_code == 401
+    assert one.status_code == 401
+    assert minting.status_code == 401

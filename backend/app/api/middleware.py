@@ -19,6 +19,7 @@ Three behaviours, and the distinction between them matters:
 from __future__ import annotations
 
 import logging
+import re
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -67,6 +68,39 @@ _UNAUTHENTICATED_PATHS = _PUBLIC_PATHS | {
     "/api/credits/packs",
     "/api/visual-modes",
 }
+
+# The media bytes, which carry their own credential in the URL.
+#
+# The same shape of bug as the webhook above, and found the same way — by
+# a purchase that worked and a product that didn't arrive. A <video>
+# element cannot send an Authorization header, and neither can a download
+# navigation, so /media-url mints a short-lived token signed with
+# MEDIA_URL_SECRET and puts it in the query string. With REQUIRE_AUTH on,
+# this middleware answered those requests 401 before the route could check
+# the signature: the render finished, the credits were spent, and the
+# video was unreachable from the one browser that had just paid for it.
+#
+# A pattern rather than a literal because the project id is in the path,
+# and it can never be covered by the exact-match set above.
+_MEDIA_PATHS = re.compile(r"^/api/projects/[^/]+/(download|poster)$")
+
+
+def _authenticates_itself(request: Request) -> bool:
+    """Whether this request carries a credential this middleware can't read.
+
+    The media routes qualify only when a token is actually presented.
+    Without one they fall back to the bearer path and an ownership check,
+    which must stay behind authentication — exempting them unconditionally
+    would publish every finished video to anyone who could guess an id.
+
+    Presenting a *wrong* token gains nothing: the route verifies it
+    against MEDIA_URL_SECRET and answers 403. Same reasoning as the
+    webhook — a signature scoped to one project is a stronger claim than a
+    bearer token, which would prove only that somebody was logged in.
+    """
+    if request.url.path in _UNAUTHENTICATED_PATHS:
+        return True
+    return bool(_MEDIA_PATHS.match(request.url.path) and request.query_params.get("token"))
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -158,7 +192,7 @@ class SupabaseAuthMiddleware(BaseHTTPMiddleware):
                     pool, user.id, user.email, signup_grant=self._signup_grant
                 )
 
-        elif self._require_auth and request.url.path not in _UNAUTHENTICATED_PATHS:
+        elif self._require_auth and not _authenticates_itself(request):
             return _unauthorized("Not authenticated")
 
         return await call_next(request)
