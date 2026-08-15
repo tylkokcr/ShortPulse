@@ -43,6 +43,15 @@ _BASE_NEGATIVE = (
     # script_engine is the real fix; these are the backstop for when the
     # model puts an extremity in shot anyway.
     "deformed feet, extra toes, malformed limbs, "
+    # And the same failure multiplied: six photographers in one frame, a
+    # dozen feet, all of them wrong and all of them in the foreground.
+    #
+    # Worded as the crowd itself rather than as people in general on
+    # purpose. The renders this came from put out-of-focus figures behind
+    # a portrait and they read as depth, not as errors — banning
+    # background presence outright would cost that and fix nothing, since
+    # what fails is a crowd being the subject.
+    "crowd, group of people, many people, "
     "text overlay, watermark, signature"
 )
 

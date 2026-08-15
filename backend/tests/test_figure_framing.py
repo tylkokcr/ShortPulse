@@ -48,6 +48,24 @@ def test_generated_prompts_are_steered_away_from_extremities():
         assert banned in prompt, f"framing rule no longer rules out {banned!r}"
 
 
+def test_the_frame_holds_at_most_one_person():
+    """The first version of this rule only ruled out people *touching*,
+    and the next paid render put six photographers in a frame — nobody
+    touching, twelve feet to get wrong, and they failed in the foreground.
+    A count is what closes that; 'don't interact' does not."""
+    prompt = _generated_prompt()
+    assert "At most one person in frame" in prompt
+
+
+def test_crowds_are_named_rather_than_implied():
+    """Every word the failing scene could have been written as. The model
+    obliges whichever one the scriptwriter reaches for, so ruling out
+    'crowd' alone would leave 'group' and 'audience' open."""
+    prompt = _generated_prompt()
+    for banned in ("crowd", "group", "team", "audience"):
+        assert banned in prompt, f"framing rule no longer rules out {banned!r}"
+
+
 def test_stock_prompts_are_not_given_framing_rules():
     """A stock search cannot be framed — the rule would be instructions to
     a library that only matches keywords, and the stock rule is terse on
@@ -75,8 +93,30 @@ def test_every_style_rules_out_deformed_feet(style):
     assert "extra toes" in style.negative_prompt
 
 
+@pytest.mark.parametrize("style", ART_STYLES, ids=lambda s: s.id)
+def test_every_style_rules_out_a_crowd(style):
+    assert "crowd" in style.negative_prompt
+    assert "group of people" in style.negative_prompt
+
+
+@pytest.mark.parametrize("style", ART_STYLES, ids=lambda s: s.id)
+def test_no_style_bans_people_outright(style):
+    """The negatives name the crowd, not people.
+
+    Out-of-focus figures behind a portrait came back reading as depth
+    rather than as errors, and every good frame in the reference render
+    had them. A bare "people" or "person" here would cost that and fix
+    nothing, because what fails is a crowd being the subject — which the
+    framing rule in script_engine is the precise instrument for.
+    """
+    terms = {t.strip() for t in style.negative_prompt.split(",")}
+    assert "people" not in terms
+    assert "person" not in terms
+    assert "background people" not in terms
+
+
 def test_the_default_negative_prompt_matches_the_styles():
     """visual_engine's default applies when a scene supplies no negative of
     its own, so a gap here is a gap on the same renders."""
-    assert "deformed feet" in DEFAULT_NEGATIVE_PROMPT
-    assert "extra toes" in DEFAULT_NEGATIVE_PROMPT
+    for term in ("deformed feet", "extra toes", "crowd", "group of people"):
+        assert term in DEFAULT_NEGATIVE_PROMPT, f"default negative lost {term!r}"

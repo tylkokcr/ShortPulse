@@ -69,14 +69,15 @@ readable writing appearing in the shot — describe the physical scene only \
 (e.g. "a jar of honey on a wooden table" rather than "a jar with a label \
 reading...").
 - When a person is in the shot, name the framing and keep it to a \
-close-up, a portrait, or a medium shot from the waist up. Do not ask for \
-full-body shots, for hands or feet as the subject, for someone lying \
-down, or for two or more people touching or interacting. The model draws \
-faces convincingly and extremities badly, so a framing that fills the \
-frame with a face is reliable while one that puts a hand, a foot or a \
-whole body in it is where the picture falls apart. When the line is about \
-an action rather than a person, prefer the setting or the object over a \
-figure performing it."""
+close-up, a portrait, or a medium shot from the waist up. At most one \
+person in frame — two only where the line makes no sense without both — \
+and never a crowd, a group, a team, an audience, or a background filled \
+with figures. Do not ask for full-body shots, for hands or feet as the \
+subject, or for someone lying down. The model draws one face convincingly \
+and a dozen badly: every extra figure is another pair of hands and feet \
+to get wrong, and in a crowd they fail in the foreground where they are \
+most visible. When the line is about an action rather than a person, \
+prefer the setting or the object over a figure performing it."""
 
 # Terse: this text becomes a stock-library search, which matches on
 # keywords. The long form was being generated a token at a time and then
