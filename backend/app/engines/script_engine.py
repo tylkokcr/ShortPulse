@@ -202,20 +202,95 @@ async def _call_ollama(config: LLMConfig, system_prompt: str, prompt: str) -> st
         return data["response"]
 
 
-async def _call_openai(config: LLMConfig, system_prompt: str, prompt: str) -> str:
-    from openai import AsyncOpenAI  # local import: optional dependency
+class ScriptProviderError(RuntimeError):
+    """The provider cannot serve this request, and asking again won't help.
 
-    client = AsyncOpenAI(api_key=config.api_key)
-    response = await client.chat.completions.create(
-        model=config.model or "gpt-4o-mini",
-        temperature=config.temperature,
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt},
-        ],
+    Deliberately not a ScriptGenerationError. That one means the model
+    returned something unusable, which is worth another sample — and
+    generate_script takes three of them. An account with no quota is not a
+    bad sample, and three more of those is exactly the waste this exists
+    to stop.
+    """
+
+
+# Waits before each retry. Only a genuine rate limit gets here: the SDK's
+# own retries are off, see _call_openai.
+_OPENAI_RETRY_BACKOFF_S = (1.0, 3.0, 8.0)
+
+
+def _is_out_of_quota(exc: object) -> bool:
+    """Whether a 429 means "no money" rather than "too fast".
+
+    Duck-typed on purpose: openai is an optional dependency here, so this
+    must be readable — and testable — on an install that has never had it.
+    The code is on the exception in current SDKs and in the response body
+    in older ones, so both are checked rather than trusting either.
+    """
+    if getattr(exc, "code", None) == "insufficient_quota":
+        return True
+    body = getattr(exc, "body", None)
+    if isinstance(body, dict):
+        error = body.get("error")
+        if isinstance(error, dict) and error.get("code") == "insufficient_quota":
+            return True
+        return body.get("code") == "insufficient_quota"
+    return False
+
+
+async def _call_openai(config: LLMConfig, system_prompt: str, prompt: str) -> str:
+    import asyncio
+
+    from openai import (  # local import: optional dependency
+        APIConnectionError,
+        AsyncOpenAI,
+        InternalServerError,
+        RateLimitError,
     )
-    return response.choices[0].message.content or "{}"
+
+    # max_retries=0, against the SDK's default of two.
+    #
+    # A 429 from OpenAI means one of two opposite things. A rate limit is
+    # worth waiting out. `insufficient_quota` — an account with no billing
+    # or no credit — is not: it will not have money on the third attempt
+    # either, and retrying only made the real error take three round trips
+    # to surface, on an account that had already spent credits on the
+    # render. The SDK cannot tell them apart, so it is left to do neither
+    # and the distinction is made here.
+    client = AsyncOpenAI(api_key=config.api_key, max_retries=0)
+
+    # A backoff per retry, then None for the final attempt, which must not
+    # sleep and must not swallow. Same shape as the Replicate retry in
+    # visual_engine, for the same reason.
+    for backoff in (*_OPENAI_RETRY_BACKOFF_S, None):
+        try:
+            response = await client.chat.completions.create(
+                model=config.model or "gpt-4o-mini",
+                temperature=config.temperature,
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt},
+                ],
+            )
+            return response.choices[0].message.content or "{}"
+        except RateLimitError as exc:
+            if _is_out_of_quota(exc):
+                raise ScriptProviderError(
+                    "The OpenAI account this deployment uses is out of quota. "
+                    "Add billing or credit at platform.openai.com — no amount of "
+                    "retrying will change it."
+                ) from exc
+            if backoff is None:
+                raise
+            logger.warning("OpenAI rate limited the request; retrying in %.1fs", backoff)
+            await asyncio.sleep(backoff)
+        except (APIConnectionError, InternalServerError) as exc:
+            if backoff is None:
+                raise
+            logger.warning("OpenAI call failed (%s); retrying in %.1fs", exc, backoff)
+            await asyncio.sleep(backoff)
+
+    raise ScriptProviderError("OpenAI did not answer")  # unreachable, for the type checker
 
 
 async def generate_script(

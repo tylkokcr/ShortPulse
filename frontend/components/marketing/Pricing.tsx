@@ -230,6 +230,26 @@ export function Pricing() {
         {localVideo && " · 10 = local text-to-video"}, each ×2 for medium and ×3 for long.
         You&apos;re quoted the exact cost before a render starts.
       </p>
+
+      {/* For the visitor who arrived from somewhere these prices are not
+          the local money. The hesitation happens here, looking at the
+          cards, not at the checkout — so the answer belongs here too.
+
+          It says what is true today. Stripe Adaptive Pricing would make it
+          "you'll see your local currency at checkout", but that needs the
+          price currency to be one of the account's settlement currencies
+          and this one settles elsewhere, so the page would be promising a
+          checkout the deployment does not currently produce. Swap the
+          second sentence the day it is switched on, not before.
+
+          Only alongside real prices: with no Stripe there is nothing here
+          to be in a currency at all. */}
+      {sold && (
+        <p className="mt-1 font-mono text-[11px] text-white/30">
+          Prices in {currency.toUpperCase()}. Cards from any country work — your bank
+          converts at its own rate.
+        </p>
+      )}
     </section>
   );
 }
