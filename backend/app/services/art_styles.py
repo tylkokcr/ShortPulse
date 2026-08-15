@@ -1,10 +1,15 @@
 """Art styles for the locally generated visual modes.
 
 Every style is deliberately non-photoreal apart from the default. That is a
-quality decision, not a taste one: diffusion at this size mangles faces,
-hands and on-screen text, and a stylized frame absorbs those failures
-(a cel-shaded hand with four fingers reads as drawing shorthand) where a
-photoreal one advertises them.
+quality decision, not a taste one: diffusion draws extremities and on-screen
+text badly, and a stylized frame absorbs those failures (a cel-shaded hand
+with four fingers reads as drawing shorthand) where a photoreal one
+advertises them.
+
+Faces used to be on that list and are not any more — the hosted backend
+generates on RealVisXL, where they hold up. The reasoning above survives
+because it never rested on faces: hands, feet and awkward crops are what
+a style hides.
 
 Two things were established by rendering them rather than by reasoning:
 

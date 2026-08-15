@@ -72,7 +72,7 @@ const groupsFor = (
       },
       {
         q: "What are the rough edges?",
-        a: "The AI-stills mode mangles faces, hands and on-screen text. Local text-to-video needs a serious GPU, which is why this service doesn't offer it at all. Small local LLMs sometimes return fewer scenes than asked. All of it is in the README's Known limitations section.",
+        a: "AI stills draw faces well and extremities badly — hands, feet and full-body shots are where a frame falls apart — and legible text is beyond the model entirely. Local text-to-video needs a serious GPU, which is why this service doesn't offer it at all. Small local LLMs sometimes return fewer scenes than asked. All of it is in the README's Known limitations section.",
       },
     ],
   },

@@ -92,9 +92,10 @@ export default function Terms() {
       <Section title="What this does not promise">
         <p>
           Output quality varies with the topic and the visual mode, and the limitations are
-          listed openly on the home page rather than buried here: diffusion mangles faces and
-          on-screen text, stock footage is a closest match rather than a guarantee, and local
-          language models sometimes under-deliver scenes. The service is provided as is.
+          listed openly on the home page rather than buried here: diffusion draws extremities
+          and on-screen text badly, stock footage is a closest match rather than a guarantee,
+          and local language models sometimes under-deliver scenes. The service is provided as
+          is.
         </p>
         <p>
           Renders are queued and run on shared hardware. There is no uptime guarantee and no

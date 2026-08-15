@@ -14,13 +14,19 @@ import { Badge } from "@/components/ui/Badge";
  * Durations and scene counts are read off the rendered projects rather
  * than chosen to look good.
  *
- * These use the `stock_media` visual mode. The AI-stills mode was tried
- * here first and its output was not honest to show: diffusion at this size
- * mangles faces and hands (a render of this same sleep script produced a
- * doubled nose) and turns any on-screen text into scribble. Real footage
- * has none of those failure modes. `LIMITATIONS` on the landing page says
- * so out loud rather than letting these clips imply every mode looks like
- * this.
+ * These use the `stock_media` visual mode. AI stills were tried here first
+ * and were not honest to show — local diffusion at this size produced a
+ * doubled nose on this very sleep script — but that was a different
+ * backend. fast_hybrid now generates on RealVisXL over an API, and a
+ * side-by-side on one topic came back the other way round: faces held up,
+ * every scene kept the same subject, and the failure was an extremity in
+ * an awkward crop rather than a face.
+ *
+ * So the reason these are all stock footage has expired, and the showcase
+ * has simply not been re-shot yet. It is now understating the mode this
+ * service charges three credits for. Replace at least one of these with a
+ * fast_hybrid render — on a neutral topic — rather than leaving a visitor
+ * to judge the paid mode by the free one.
  */
 interface Example {
   slug: string;

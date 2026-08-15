@@ -267,11 +267,15 @@ Better to know up front than to discover them mid-render:
   up the machine. It's currently pinned to 384x672 (upscaled during render) to
   fit in memory at all, and still takes minutes per scene. Treat it as
   experimental unless you have a large dedicated GPU.
-- **`fast_hybrid` struggles with counting.** Hands, tentacles, and similar
-  "how many of these are there" subjects come out malformed fairly often. This
-  is a known weakness of diffusion models at this size; raising step count and
-  guidance was tested and did not help (2.5x slower, no measurable
-  improvement).
+- **`fast_hybrid` struggles with extremities.** Hands, feet, tentacles and
+  similar "how many of these are there" subjects come out malformed fairly
+  often. This is a known weakness of diffusion models at this size; raising
+  step count and guidance was tested and did not help (2.5x slower, no
+  measurable improvement). What did help was asking for them less: the script
+  engine now tells the model to frame people in close-ups and medium shots and
+  to keep hands, feet, full-body shots and lying poses out of the prompt.
+  Faces are not on this list — on RealVisXL they hold up well, and the older
+  claim that this mode mangles them described local diffusion.
 - **Small local LLMs under-deliver on scene count.** `llama3` sometimes returns
   9 scenes when the Long preset asks for 12-15. `script_engine` retries up to
   3 times and drops malformed scenes rather than failing the whole render.
