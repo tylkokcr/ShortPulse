@@ -120,17 +120,20 @@ export function Pricing() {
               {formatPrice(0, currency)}
             </span>
           </div>
+          {/* What the grant buys, not what the deployment can render.
+              Those were the same thing until the signup credits were
+              limited to stock footage — see credits.FREE_TIER_MODES — and
+              this card kept quoting "5 standard videos" for a mode the API
+              now refuses to sell an unpaid account. `generatedStills` still
+              decides whether AI stills are mentioned at all, because a
+              deployment without them must not advertise an upgrade it
+              cannot deliver either. */}
           <ul className="flex flex-col gap-2 text-xs text-white/50">
             <Feature>{signupCredits} credits on sign-up</Feature>
-            <Feature>
-              {generatedStills
-                ? `${Math.floor(signupCredits / 3)} standard videos, or ${signupCredits} stock-footage ones`
-                : `${signupCredits} videos`}
-            </Feature>
-            <Feature>
-              {generatedStills ? "Every language, and AI stills" : "Every language"}
-            </Feature>
+            <Feature>{signupCredits} stock-footage videos</Feature>
+            <Feature>Every language</Feature>
             <Feature>No watermark</Feature>
+            {generatedStills && <Feature>AI stills with any credit pack</Feature>}
           </ul>
           <a href="#sign-in" className="mt-auto pt-2">
             <Button variant="secondary" className="w-full">

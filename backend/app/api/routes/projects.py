@@ -56,7 +56,8 @@ async def create_project(
     # charging three credits for a one-credit result, silently. Checking
     # here means the buyer is told before any money moves rather than
     # discovering it in the output.
-    reason = visual_engine.unavailable_reason(VisualMode(config.visual_mode), settings)
+    mode = VisualMode(config.visual_mode)
+    reason = visual_engine.unavailable_reason(mode, settings)
     if reason is not None:
         raise HTTPException(
             status_code=422,
@@ -90,6 +91,40 @@ async def create_project(
     )
 
     pool = db_pool(request)
+
+    # Refuse to spend the signup grant on a mode that bills a third party.
+    #
+    # The grant is there to prove the pipeline works, and stock_media
+    # proves it for a fraction of a cent. Letting it buy fast_hybrid meant
+    # every throwaway signup was a Replicate invoice against no revenue —
+    # the giveaway stopped being our own idle compute the day generation
+    # moved to an API.
+    #
+    # Before create_project, so a refusal leaves no row behind. Same
+    # reasoning as the insufficient-credits path below, which has to
+    # delete one because it cannot know early enough.
+    if (
+        billing_enabled(pool, user_id)
+        and mode not in credits.FREE_TIER_MODES
+        and not await credits.has_purchased(pool, user_id)
+    ):
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "error": "purchase_required",
+                "mode": str(config.visual_mode),
+                "reason": credits.PURCHASE_REQUIRED_REASON,
+                # What this account can render right now, which is the
+                # intersection of what the install offers and what the
+                # grant covers — not one or the other.
+                "available": [
+                    str(m)
+                    for m in visual_engine.available_modes(settings)
+                    if m in credits.FREE_TIER_MODES
+                ],
+            },
+        )
+
     project = await project_store.create_project(config, user_id)
 
     if billing_enabled(pool, user_id):

@@ -97,6 +97,30 @@ def _payload(**kwargs) -> dict:
     return {"topic": "why the sky is blue", **kwargs}
 
 
+async def _fund(pool, user_id: str, amount: int) -> None:
+    """Credits that came from a purchase, which is what these tests mean.
+
+    Not a plain grant. The signup grant only buys stock_media — see
+    credits.FREE_TIER_MODES — and almost everything below submits the
+    default fast_hybrid render, so funding these accounts the way a real
+    customer funds theirs keeps the subject of each test the billing
+    wiring rather than the free-tier gate. test_free_tier_modes.py owns
+    that gate.
+    """
+    await credits.grant(pool, user_id, amount, reason="purchase")
+
+
+@pytest.fixture(autouse=True)
+def _stock_media_is_available(monkeypatch):
+    """The history test renders stock_media, which needs a provider key
+    the routes read from this machine's .env. Stated rather than assumed,
+    for the same reason test_visual_mode_availability.py states the
+    absence of a Replicate token."""
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "pexels_api_key", "test-key")
+
+
 @pytest.fixture(autouse=True)
 def _postgres_backend(pool):
     """Point the module-level project_store facade at the test database,
@@ -110,7 +134,7 @@ def _postgres_backend(pool):
 
 
 async def test_submitting_a_render_charges_the_user(pool, user):
-    await credits.grant(pool, user, 20)
+    await _fund(pool, user, 20)
     app, queue = _build_app(pool, user)
 
     async with _client(app) as client:
@@ -126,7 +150,7 @@ async def test_submitting_a_render_charges_the_user(pool, user):
 async def test_cost_scales_with_what_the_render_actually_costs(pool, user):
     """A long AI-video render must not cost the same as a short stock one —
     the compute difference between them is more than an order of magnitude."""
-    await credits.grant(pool, user, 100)
+    await _fund(pool, user, 100)
     app, _ = _build_app(pool, user)
 
     async with _client(app) as client:
@@ -147,7 +171,7 @@ async def test_cost_scales_with_what_the_render_actually_costs(pool, user):
 
 
 async def test_render_is_refused_when_credits_run_out(pool, user):
-    await credits.grant(pool, user, 2)  # a fast_hybrid short costs 3
+    await _fund(pool, user, 2)  # a fast_hybrid short costs 3
     app, queue = _build_app(pool, user)
 
     async with _client(app) as client:
@@ -167,7 +191,7 @@ async def test_render_is_refused_when_credits_run_out(pool, user):
 async def test_a_refused_render_leaves_no_project(pool, user):
     """The user shouldn't find a phantom draft in their list for a render
     that was never accepted."""
-    await credits.grant(pool, user, 1)
+    await _fund(pool, user, 1)
     app, _ = _build_app(pool, user)
 
     async with _client(app) as client:
@@ -205,15 +229,20 @@ async def test_credits_endpoint_reports_disabled_without_a_user(pool):
 
 
 async def test_credits_endpoint_reports_balance_and_history(pool, user):
+    # A signup-grant account, rendering the mode that grant covers. It
+    # cannot render fast_hybrid — that is the free-tier gate, and
+    # test_free_tier_modes.py asserts it — so spending here has to be a
+    # stock_media render or this would be testing the refusal instead of
+    # the history.
     await credits.grant(pool, user, 10, note="signup bonus")
     app, _ = _build_app(pool, user)
 
     async with _client(app) as client:
-        await client.post("/api/projects", json=_payload())
+        await client.post("/api/projects", json=_payload(visual_mode=VisualMode.STOCK_MEDIA.value))
         body = (await client.get("/api/credits")).json()
 
     assert body["enabled"] is True
-    assert body["balance"] == 7
+    assert body["balance"] == 9  # stock_media short costs 1
     reasons = [e["reason"] for e in body["entries"]]
     assert reasons == ["render", "grant"]  # newest first
     assert body["pricing"]["fast_hybrid:short"] == 3
@@ -223,7 +252,7 @@ async def test_credits_endpoint_reports_balance_and_history(pool, user):
 
 
 async def test_a_failed_render_is_refunded(pool, user):
-    await credits.grant(pool, user, 20)
+    await _fund(pool, user, 20)
     app, _ = _build_app(pool, user)
 
     async with _client(app) as client:
@@ -238,7 +267,7 @@ async def test_a_failed_render_is_refunded(pool, user):
 async def test_a_failed_render_is_refunded_only_once(pool, user):
     """The failure handler and the startup reconciler can both fire for the
     same project; between them they must pay out once."""
-    await credits.grant(pool, user, 20)
+    await _fund(pool, user, 20)
     app, _ = _build_app(pool, user)
 
     async with _client(app) as client:
@@ -251,7 +280,7 @@ async def test_a_failed_render_is_refunded_only_once(pool, user):
 
 
 async def test_a_successful_render_is_not_refunded(pool, user):
-    await credits.grant(pool, user, 20)
+    await _fund(pool, user, 20)
     app, _ = _build_app(pool, user)
 
     async with _client(app) as client:
@@ -270,7 +299,7 @@ async def test_renders_interrupted_by_a_restart_are_refunded_and_failed(pool, us
     """The scenario: a paid render is in flight, the process dies. Nothing
     will ever move it forward, so leaving it alone means the user paid for
     a video that stays 'rendering' forever."""
-    await credits.grant(pool, user, 20)
+    await _fund(pool, user, 20)
     app, _ = _build_app(pool, user)
 
     async with _client(app) as client:
@@ -290,7 +319,7 @@ async def test_renders_interrupted_by_a_restart_are_refunded_and_failed(pool, us
 
 
 async def test_reconciler_leaves_finished_renders_alone(pool, user):
-    await credits.grant(pool, user, 20)
+    await _fund(pool, user, 20)
     app, _ = _build_app(pool, user)
 
     async with _client(app) as client:
@@ -310,7 +339,7 @@ async def test_reconciler_leaves_finished_renders_alone(pool, user):
 
 
 async def test_projects_are_scoped_to_their_owner(pool, user):
-    await credits.grant(pool, user, 20)
+    await _fund(pool, user, 20)
     owner_app, _ = _build_app(pool, user)
     async with _client(owner_app) as client:
         project_id = (await client.post("/api/projects", json=_payload())).json()["config"]["id"]
@@ -334,7 +363,7 @@ async def test_projects_are_scoped_to_their_owner(pool, user):
 async def test_an_owned_project_is_not_reachable_without_authentication(pool, user):
     """An unauthenticated caller looks like a self-hosted operator. It must
     still not be able to read a project that belongs to someone."""
-    await credits.grant(pool, user, 20)
+    await _fund(pool, user, 20)
     owner_app, _ = _build_app(pool, user)
     async with _client(owner_app) as client:
         project_id = (await client.post("/api/projects", json=_payload())).json()["config"]["id"]
@@ -356,7 +385,7 @@ async def test_reconciler_does_not_steal_a_render_that_just_finished(pool, user,
     time it looks, the reconciler correctly does nothing, and the test
     proves nothing at all.
     """
-    await credits.grant(pool, user, 20)
+    await _fund(pool, user, 20)
     app, _ = _build_app(pool, user)
     async with _client(app) as client:
         project_id = (await client.post("/api/projects", json=_payload())).json()["config"]["id"]
@@ -382,7 +411,7 @@ async def _returns(value):
 
 async def test_a_genuinely_abandoned_render_is_still_recovered(pool, user):
     """The guard must not stop the reconciler doing its job."""
-    await credits.grant(pool, user, 20)
+    await _fund(pool, user, 20)
     app, _ = _build_app(pool, user)
     async with _client(app) as client:
         project_id = (await client.post("/api/projects", json=_payload())).json()["config"]["id"]
@@ -416,7 +445,7 @@ async def _completed_project(pool, user, video: Path):
 
 
 async def test_the_owner_gets_a_playable_url(pool, user, tmp_path):
-    await credits.grant(pool, user, 20)
+    await _fund(pool, user, 20)
     app, pid = await _completed_project(pool, user, tmp_path / "a.mp4")
 
     async with _client(app) as client:
@@ -431,7 +460,7 @@ async def test_the_owner_gets_a_playable_url(pool, user, tmp_path):
 async def test_a_stranger_cannot_mint_a_url_for_someone_elses_video(pool, user, tmp_path):
     """Ownership is enforced where it can be — on the request that mints
     the link, which is the one that can carry an Authorization header."""
-    await credits.grant(pool, user, 20)
+    await _fund(pool, user, 20)
     _, pid = await _completed_project(pool, user, tmp_path / "a.mp4")
 
     intruder = str(await pool.fetchval(
@@ -444,12 +473,12 @@ async def test_a_stranger_cannot_mint_a_url_for_someone_elses_video(pool, user, 
 async def test_a_token_for_one_video_does_not_open_another(pool, user, tmp_path):
     """The failure that would matter most: one shared link unlocking the
     whole service."""
-    await credits.grant(pool, user, 40)
+    await _fund(pool, user, 40)
     app, mine = await _completed_project(pool, user, tmp_path / "mine.mp4")
 
     other_user = str(await pool.fetchval(
         "insert into app_users (email) values ($1) returning id", f"{uuid.uuid4()}@example.test"))
-    await credits.grant(pool, other_user, 20)
+    await _fund(pool, other_user, 20)
     _, theirs = await _completed_project(pool, other_user, tmp_path / "theirs.mp4")
 
     async with _client(app) as client:
@@ -461,7 +490,7 @@ async def test_a_token_for_one_video_does_not_open_another(pool, user, tmp_path)
 
 
 async def test_a_tampered_token_is_refused(pool, user, tmp_path):
-    await credits.grant(pool, user, 20)
+    await _fund(pool, user, 20)
     app, pid = await _completed_project(pool, user, tmp_path / "a.mp4")
 
     async with _client(app) as client:
@@ -477,7 +506,7 @@ async def test_a_tampered_token_is_refused(pool, user, tmp_path):
 async def test_download_without_any_credential_is_still_refused(pool, user, tmp_path):
     """The gap this whole mechanism exists to close: before it, an
     unauthenticated GET on the download URL served an owned video."""
-    await credits.grant(pool, user, 20)
+    await _fund(pool, user, 20)
     _, pid = await _completed_project(pool, user, tmp_path / "a.mp4")
 
     anon, _ = _build_app(pool, None)
@@ -486,7 +515,7 @@ async def test_download_without_any_credential_is_still_refused(pool, user, tmp_
 
 
 async def test_a_media_url_is_refused_before_the_render_finishes(pool, user):
-    await credits.grant(pool, user, 20)
+    await _fund(pool, user, 20)
     app, _ = _build_app(pool, user)
     async with _client(app) as client:
         pid = (await client.post("/api/projects", json=_payload())).json()["config"]["id"]
@@ -501,7 +530,7 @@ async def test_a_media_url_is_refused_before_the_render_finishes(pool, user):
 
 
 async def test_a_stranger_cannot_get_a_stream_token(pool, user):
-    await credits.grant(pool, user, 20)
+    await _fund(pool, user, 20)
     app, _ = _build_app(pool, user)
     async with _client(app) as client:
         pid = (await client.post("/api/projects", json=_payload())).json()["config"]["id"]

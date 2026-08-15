@@ -10,16 +10,24 @@ not the one that was paid for.
 The unavailable modes are listed rather than omitted, with the reason, so
 a self-hoster can see that `fast_hybrid` needs a dependency they haven't
 installed instead of wondering where the option went.
+
+Two questions share this endpoint because the picker only has one place to
+put the answer: what this *install* can render, and what this *account*
+has paid to render. They are kept separate everywhere else — see
+credits.FREE_TIER_MODES — and joined only here, at the point where a
+tooltip has to say a single sentence to one person.
 """
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 
+from app.api.deps import billing_enabled, current_user_id, db_pool
 from app.core.config import get_settings
 from app.engines import visual_engine
 from app.schemas.project import VisualMode
+from app.services import credits
 
 router = APIRouter(prefix="/api/visual-modes", tags=["visual-modes"])
 
@@ -33,13 +41,25 @@ class VisualModeOut(BaseModel):
 
 
 @router.get("", response_model=list[VisualModeOut])
-async def list_visual_modes() -> list[VisualModeOut]:
+async def list_visual_modes(
+    request: Request,
+    user_id: str | None = Depends(current_user_id),
+) -> list[VisualModeOut]:
     settings = get_settings()
-    return [
-        VisualModeOut(
-            mode=mode,
-            available=(reason := visual_engine.unavailable_reason(mode, settings)) is None,
-            reason=reason,
-        )
-        for mode in VisualMode
-    ]
+
+    # Asked once, not once per mode: the answer is about the account, not
+    # about any particular mode. On a self-hosted install there is no
+    # ledger and no user, so nothing is gated and this never runs.
+    pool = db_pool(request)
+    gated = billing_enabled(pool, user_id) and not await credits.has_purchased(pool, user_id)
+
+    out: list[VisualModeOut] = []
+    for mode in VisualMode:
+        reason = visual_engine.unavailable_reason(mode, settings)
+        # Only ever a fallback. A mode this deployment cannot run at all
+        # must keep saying so — telling someone to buy credits for
+        # ai_video would be selling them something no purchase unlocks.
+        if reason is None and gated and mode not in credits.FREE_TIER_MODES:
+            reason = credits.PURCHASE_REQUIRED_REASON
+        out.append(VisualModeOut(mode=mode, available=reason is None, reason=reason))
+    return out

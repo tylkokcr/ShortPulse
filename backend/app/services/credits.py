@@ -75,6 +75,46 @@ def cost_for(config: ProjectConfig) -> int:
     return _MODE_COST[mode] * _LENGTH_MULTIPLIER[length]
 
 
+# ---------------------------------------------------------------------
+# What the signup grant buys
+#
+# The grant exists so someone can judge the output before paying, which
+# stock_media does: its marginal cost to us is a Pexels search and an
+# OpenAI call worth a fraction of a cent. fast_hybrid bills Replicate per
+# scene — a signup's worth of it is real money leaving the account with
+# nothing coming back — and ai_video wants a GPU we don't rent. So both
+# sit behind a purchase rather than behind the grant.
+#
+# A pricing rule, deliberately here and not in visual_engine: that module
+# answers what this machine *can* render, this answers what an account has
+# *paid* to render. Keeping them apart is what lets an unavailable mode
+# still report the operator-facing reason instead of an upsell.
+# ---------------------------------------------------------------------
+FREE_TIER_MODES: frozenset[VisualMode] = frozenset({VisualMode.STOCK_MEDIA})
+
+# Read by a customer in a disabled tile's tooltip, so it says what to do
+# rather than what went wrong.
+PURCHASE_REQUIRED_REASON = (
+    "unlocked by any credit pack — the free signup credits cover stock-footage "
+    "renders, which is what they are for: judging the output before paying"
+)
+
+
+async def has_purchased(conn: asyncpg.Connection | asyncpg.Pool, user_id: str) -> bool:
+    """Whether this account has ever bought credits.
+
+    Ever, not currently. Someone who bought a pack and spent all of it
+    keeps the modes it unlocked — they paid once and the ledger is
+    append-only, so the row proving it cannot be spent away. Anything
+    tied to the *balance* instead would re-lock a paying customer the
+    moment they ran out, which is the worst possible moment to do it.
+    """
+    return await conn.fetchval(
+        "select exists (select 1 from credit_entries where user_id = $1 and reason = 'purchase')",
+        user_id,
+    )
+
+
 @dataclass(frozen=True)
 class CreditPack:
     """A one-off purchase of credits.

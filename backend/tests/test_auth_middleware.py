@@ -87,7 +87,26 @@ def _auth(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
 
 
-PAYLOAD = {"topic": "why the sky is blue"}
+# stock_media explicitly, not the default mode. These accounts are funded
+# by the signup grant, which only buys stock footage (credits.FREE_TIER_MODES),
+# and this file is about which identity gets billed — not about which modes
+# that identity has paid for. test_free_tier_modes.py owns the latter.
+PAYLOAD = {"topic": "why the sky is blue", "visual_mode": "stock_media"}
+
+
+@pytest.fixture(autouse=True)
+def _stock_media_is_available(monkeypatch):
+    """Say that the mode PAYLOAD asks for can actually run here.
+
+    The routes read get_settings(), which loads whatever .env this machine
+    has. Left implicit, every test below would really be asserting that
+    the developer happens to own a Pexels key — and would start returning
+    422 on a machine without one, for a reason having nothing to do with
+    authentication.
+    """
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "pexels_api_key", "test-key")
 
 
 # --- a verified token becomes the billed identity ------------------------
@@ -105,8 +124,8 @@ async def test_a_valid_token_identifies_and_bills_the_right_user(pool, jwks, sig
         )
 
     assert created.status_code == 201
-    assert created.json()["credits_cost"] == 3
-    assert await credits.balance(pool, user_id) == 17
+    assert created.json()["credits_cost"] == 1  # stock_media short
+    assert await credits.balance(pool, user_id) == 19
     assert len(queue.submitted) == 1
     assert await project_store.owner_of(created.json()["config"]["id"]) == user_id
 
@@ -262,7 +281,7 @@ async def test_a_returning_user_keeps_their_balance(pool, jwks, signer):
         await client.post("/api/projects", json=PAYLOAD, headers=_auth(token))
         body = (await client.get("/api/credits", headers=_auth(token))).json()
 
-    assert body["balance"] == 7
+    assert body["balance"] == 9  # 10 granted, one stock_media short spent
 
 
 async def test_two_users_sharing_an_email_both_work(pool, jwks, signer):
