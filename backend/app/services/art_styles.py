@@ -32,6 +32,12 @@ from dataclasses import dataclass
 _BASE_NEGATIVE = (
     "deformed, distorted, disfigured, extra limbs, extra hands, extra fingers, "
     "bad anatomy, mutated, malformed, low quality, blurry, "
+    # Feet were missing while fingers were covered, and a bath scene came
+    # back as a melted foot over a tub edge — the one frame in a paid
+    # render that made the whole video unusable. The framing rule in
+    # script_engine is the real fix; these are the backstop for when the
+    # model puts an extremity in shot anyway.
+    "deformed feet, extra toes, malformed limbs, "
     "text overlay, watermark, signature"
 )
 

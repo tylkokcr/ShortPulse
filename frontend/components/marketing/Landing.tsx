@@ -106,7 +106,15 @@ const COMPARISON = [
 ];
 
 const LIMITATIONS = [
-  "The examples above use stock footage for a reason: the AI-stills mode mangles faces, hands and any on-screen text, so it suits objects and scenery far better than people.",
+  // Rewritten against a side-by-side of both modes on the same topic
+  // rather than from memory. The old wording — "mangles faces, hands and
+  // any on-screen text, so it suits objects and scenery far better than
+  // people" — described local diffusion, and stopped being true when
+  // fast_hybrid moved to RealVisXL over an API: faces came back the
+  // strongest thing in the frame. Talking the paid mode down on the
+  // strength of an observation about a backend this service no longer
+  // runs is worse than saying nothing.
+  "AI stills draw faces convincingly and extremities badly — hands, feet and full-body shots are where a frame falls apart, so the script engine keeps people in close and medium shots. Legible text is beyond the model entirely: it cannot write a label, a sign or a book cover.",
   "ai_video (local text-to-video) only runs where you supply the GPU. It is not available on this hosted service: renting one costs more per video than the mode is priced at, so we would rather not offer it than offer it badly.",
   "Small local LLMs occasionally under-count scenes; the script engine retries and drops malformed ones rather than failing the render.",
   "Stock footage is a closest-match, not a guarantee — Pexels clips can be loosely related to the scene.",

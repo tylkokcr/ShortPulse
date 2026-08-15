@@ -51,6 +51,9 @@ _ltx_pipeline_cache: dict[str, object] = {}
 DEFAULT_NEGATIVE_PROMPT = (
     "deformed, distorted, disfigured, extra limbs, extra hands, extra fingers, "
     "extra tentacles, bad anatomy, mutated, malformed, low quality, blurry, "
+    # Kept in step with art_styles._BASE_NEGATIVE, which covers the same
+    # failure for a styled render — see the note there about the foot.
+    "deformed feet, extra toes, "
     "text overlay, watermark, signature, cgi, 3d render, illustration, "
     "overly smooth, plastic, oversaturated"
 )
