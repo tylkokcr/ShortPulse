@@ -35,11 +35,16 @@ const REASONS: { id: string; label: string }[] = [
 export function SceneFeedback({
   index,
   verdict,
+  canReRoll,
   onSubmit,
 }: {
   index: number;
   /** This viewer's existing verdict on this scene, if they left one. */
   verdict?: Verdict;
+  /** Whether a re-roll control is actually rendered under this one.
+   *  False for anything rendered before the working files were kept, and
+   *  the hint below must not promise a button that isn't there. */
+  canReRoll: boolean;
   onSubmit: (index: number, reason: string, note: string) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
@@ -126,10 +131,15 @@ export function SceneFeedback({
           Cancel
         </button>
         {/* Said here rather than after sending, because it is the reason
-            to bother: the fix is the control immediately below this one. */}
-        <span className="ml-auto text-[11px] text-white/25">
-          Then re-roll it below
-        </span>
+            to bother: the fix is the control immediately below this one.
+            Only when there is one — an older render has no working files
+            left to re-draw from, and pointing at a button that isn't
+            there is worse than staying quiet. */}
+        {canReRoll && (
+          <span className="ml-auto text-[11px] text-white/25">
+            Then re-roll it below
+          </span>
+        )}
       </div>
     </div>
   );

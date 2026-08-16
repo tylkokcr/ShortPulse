@@ -137,6 +137,7 @@ export function TranscriptPanel({
                     <SceneFeedback
                       index={i}
                       verdict={feedback.verdicts.get(i)}
+                      canReRoll={Boolean(regenerate?.canRegenerate)}
                       onSubmit={feedback.onFlag}
                     />
                   )}
