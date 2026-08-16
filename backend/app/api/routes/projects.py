@@ -293,6 +293,7 @@ class EditRequest(BaseModel):
 @router.post("/{project_id}/edit", response_model=Project)
 async def edit_project(
     project_id: str,
+    request: Request,
     body: EditRequest,
     user_id: str | None = Depends(current_user_id),
 ) -> Project:
@@ -341,7 +342,14 @@ async def edit_project(
     except editing.NothingToReburn as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
-    return await project_store.update_project(
+    # Through the same two helpers as every other project response.
+    #
+    # Returned bare, this dropped `can_regenerate` to its default of false
+    # and `feedback` to empty — so applying an edit made the re-roll
+    # controls vanish and un-flagged every scene the user had flagged,
+    # until they reloaded. Neither is stored on the row; both have to be
+    # recomputed on the way out.
+    saved = await project_store.update_project(
         project_id,
         edit=edit,
         # Keep `captions` as the current transcript, so re-opening the
@@ -350,6 +358,7 @@ async def edit_project(
         captions=edit.captions,
         output_path=str(final_path),
     )
+    return await _with_feedback(_with_regeneration_state(saved), db_pool(request), user_id)
 
 
 class RegenerateSceneRequest(BaseModel):
@@ -483,7 +492,10 @@ async def regenerate_scene(
             edit=project.edit,
             output_path=str(final_path),
         )
-        return _with_regeneration_state(saved)
+        # Feedback too: a scene flagged, then re-rolled, must not come
+        # back unflagged — that is the complaint disappearing at the
+        # exact moment it was acted on.
+        return await _with_feedback(_with_regeneration_state(saved), pool, user_id)
     except KeyError as exc:
         # Deleted while the re-roll was running. The files are already
         # gone or will be; the charge is not, so give it back.

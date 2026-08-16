@@ -269,3 +269,67 @@ async def test_self_hosting_records_nothing_and_does_not_fail(pool):
     assert await pool.fetchval(
         "select count(*) from feedback where project_id = $1", project.config.id
     ) == 0
+
+
+# --- the verdict has to survive being acted on --------------------------
+#
+# `can_regenerate` and `feedback` are computed per request and stored
+# nowhere, so every response that returns a Project has to recompute them.
+# Two did not, and both failures land at the worst moment: applying an
+# edit made the re-roll controls disappear, and re-rolling a flagged scene
+# un-flagged it — the complaint vanishing at the exact point it was acted
+# on, in a feature whose whole argument is that the two sit together.
+
+
+async def test_an_edit_response_still_knows_about_the_flags(pool, user, monkeypatch):
+    project = await _project(user)
+    app = _app(pool, user)
+    await _send(app, project.config.id, scene_index=0, rating="down", reason="visual")
+
+    async def fake_apply(project_, edit, settings):
+        return "/tmp/final.mp4"
+
+    monkeypatch.setattr(projects_route.editing, "apply_edit", fake_apply)
+    monkeypatch.setattr(
+        projects_route.regeneration, "availability", lambda p: (True, None)
+    )
+
+    async with _client(app) as client:
+        body = (
+            await client.post(f"/api/projects/{project.config.id}/edit", json={"overlays": []})
+        ).json()
+
+    assert [f["scene_index"] for f in body["feedback"]] == [0]
+    assert body["can_regenerate"] is True
+
+
+async def test_a_re_roll_response_still_knows_about_the_flags(pool, user, monkeypatch):
+    """Flag a scene, re-roll it, and the flag must still be there — this
+    is the sequence the feature is built around."""
+    from app.services import credits
+
+    # A re-roll is charged, and fast_hybrid needs a purchase on record —
+    # without both the response is a 402 and the assertion below fails for
+    # a reason that has nothing to do with feedback.
+    await credits.grant(pool, user, 20, reason="purchase")
+    project = await _project(user)
+    app = _app(pool, user)
+    await _send(app, project.config.id, scene_index=1, rating="down", reason="visual")
+
+    async def fake_regenerate(project_, scene_index, settings, **kwargs):
+        return "/tmp/final.mp4"
+
+    monkeypatch.setattr(
+        projects_route.regeneration, "availability", lambda p: (True, None)
+    )
+    monkeypatch.setattr(projects_route.regeneration, "regenerate_scene", fake_regenerate)
+
+    async with _client(app) as client:
+        body = (
+            await client.post(
+                f"/api/projects/{project.config.id}/scenes/1/regenerate", json={}
+            )
+        ).json()
+
+    assert [f["scene_index"] for f in body["feedback"]] == [1]
+    assert body["can_regenerate"] is True
