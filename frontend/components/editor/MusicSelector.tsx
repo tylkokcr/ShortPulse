@@ -102,7 +102,7 @@ export function MusicSelector() {
           <span className="font-mono text-[10px] uppercase tracking-widest text-white/25">
             {CATEGORY_LABELS[category] ?? category ?? "Other"}
           </span>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {inGroup.map((track) => {
           const selected = draft.musicEnabled && draft.musicTrackId === track.id;
           return (

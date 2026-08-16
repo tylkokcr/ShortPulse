@@ -370,6 +370,21 @@ export function getRenderTimings(projectId: string): Promise<RenderTimings> {
   return request<RenderTimings>(`/projects/${projectId}/timings`);
 }
 
+/**
+ * One frame of one scene, for the shot list.
+ *
+ * A plain URL because it feeds an <img>, and signed for the same reason
+ * the video is: the element cannot send a header. Extracted from the
+ * scene's own clip on first request and cached, so a breakdown costs one
+ * seek per scene once and nothing afterwards.
+ *
+ * 404s for anything rendered before the working files were kept — the
+ * caller shows the prompt alone, as it did before this existed.
+ */
+export function sceneThumbUrl(projectId: string, sceneIndex: number, token: string): string {
+  return `${API_BASE}/projects/${projectId}/scenes/${sceneIndex}/thumb?token=${encodeURIComponent(token)}`;
+}
+
 /** A credential for the progress WebSocket, which can't carry a header
  *  either. Available while the render is still running, unlike a media URL. */
 export function getStreamToken(projectId: string): Promise<{ token: string; expires_at: number }> {

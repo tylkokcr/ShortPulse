@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Timeline } from "./Timeline";
 import { RenderReport } from "./RenderReport";
+import { VideoVerdict } from "./VideoVerdict";
 
 interface RenderPreviewProps {
   projectId: string;
@@ -17,9 +18,15 @@ interface RenderPreviewProps {
    * a scene can seek playback. Falls back to an internal ref when omitted. */
   videoRef?: RefObject<HTMLVideoElement | null>;
   onTimeUpdate?: (seconds: number) => void;
+  /** Asked once the video exists and can be watched. Omitted on a
+   *  self-hosted install, where there is nobody to tell. */
+  verdict?: {
+    current?: import("@/lib/types").SceneFeedback;
+    onSubmit: (rating: "up" | "down") => Promise<void>;
+  };
 }
 
-export function RenderPreview({ projectId, videoRef, onTimeUpdate }: RenderPreviewProps) {
+export function RenderPreview({ projectId, videoRef, onTimeUpdate, verdict }: RenderPreviewProps) {
   const { activeProject, setActiveProject, renderProgress, setRenderProgress, videoVersion } =
     useShortPulseStore();
   const internalVideoRef = useRef<HTMLVideoElement>(null);
@@ -168,6 +175,12 @@ export function RenderPreview({ projectId, videoRef, onTimeUpdate }: RenderPrevi
             Download .mp4
           </Button>
           <RenderReport projectId={projectId} />
+          {/* Under the report, not above the download: the video is what
+              they came for, and the question is worth asking only once
+              they have it. */}
+          {verdict && (
+            <VideoVerdict verdict={verdict.current} onSubmit={verdict.onSubmit} />
+          )}
         </>
       )}
     </Card>

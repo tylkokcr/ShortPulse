@@ -15,7 +15,7 @@ from app.api.deps import billing_enabled, current_user_id, db_pool
 from app.api.routes import music
 from app.core.config import get_settings, project_dir
 from app.core.storage import discard_project_files
-from app.engines import visual_engine
+from app.engines import render_engine, visual_engine
 from app.schemas.project import (
     CaptionTrack,
     EditSpec,
@@ -663,6 +663,67 @@ async def project_poster(
         # thumbnail step failed. The client falls back to a placeholder.
         raise HTTPException(status_code=404, detail="No poster for this project")
     return FileResponse(poster, media_type="image/jpeg")
+
+
+@router.get("/{project_id}/scenes/{scene_index}/thumb")
+async def scene_thumbnail(
+    project_id: str,
+    request: Request,
+    scene_index: int = PathParam(ge=0),
+    token: str | None = Query(default=None),
+    user_id: str | None = Depends(current_user_id),
+) -> FileResponse:
+    """One frame of one scene, so the shot list can be looked at.
+
+    The breakdown lists a prompt per scene — "a portrait with an intense
+    gaze" — which does not tell anyone which picture that produced. They
+    have to scrub the player to find out, and the two controls under each
+    row are useless until they have. A frame turns the list into a
+    storyboard you can scan.
+
+    Extracted on demand from the scene's own clip rather than kept from
+    the render: `visuals/` is discarded on purpose and was 91% of what
+    cleanup reclaims. The clip survives the retention window, and the
+    picture is inside it.
+
+    Cached, because a twelve-scene breakdown would otherwise run twelve
+    ffmpeg seeks on every page load. The cache outlives the clip it came
+    from — once the window closes and the clips are swept, a project that
+    was looked at keeps its storyboard and one that never was has none.
+    That asymmetry is fine: it costs 30KB to be generous to the first.
+    """
+    if token is not None:
+        try:
+            request.app.state.media_signer.verify(project_id, token)
+        except InvalidMediaToken as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+    else:
+        await _visible_project(project_id, user_id)
+
+    output = project_dir(project_id) / "output"
+    cached = output / f"thumb_{scene_index:02d}.jpg"
+    if not cached.is_file():
+        clip = output / f"clip_{scene_index:02d}.mp4"
+        if not clip.is_file():
+            # An older render, or one past its retention window. The
+            # client shows the prompt on its own, as it always did.
+            raise HTTPException(status_code=404, detail="No frame for this scene")
+        settings = get_settings()
+        made = await render_engine.extract_poster(
+            clip,
+            cached,
+            width=160,
+            ffmpeg_binary=settings.ffmpeg_binary,
+            ffprobe_binary=settings.ffprobe_binary,
+        )
+        if made is None:
+            raise HTTPException(status_code=404, detail="No frame for this scene")
+
+    return FileResponse(
+        cached,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "private, max-age=86400"},
+    )
 
 
 @router.get("/{project_id}/download")

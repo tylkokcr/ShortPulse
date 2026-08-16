@@ -101,7 +101,7 @@ _UNAUTHENTICATED_PATHS = _PUBLIC_PATHS | {
 #
 # A pattern rather than a literal because the project id is in the path,
 # and it can never be covered by the exact-match set above.
-_MEDIA_PATHS = re.compile(r"^/api/projects/[^/]+/(download|poster)$")
+_MEDIA_PATHS = re.compile(r"^/api/projects/[^/]+/(download|poster|scenes/\d+/thumb)$")
 
 
 def _authenticates_itself(request: Request) -> bool:

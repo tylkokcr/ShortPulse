@@ -440,3 +440,25 @@ async def test_the_voice_catalog_itself_still_needs_one(pool, jwks):
         response = await client.get("/api/voices")
 
     assert response.status_code == 401
+
+
+async def test_a_scene_frame_reaches_the_breakdown(pool, jwks):
+    """The shot list draws these in <img> tags, which have the same
+    problem as <video> and would have been the fifth thing found in this
+    position."""
+    app, _ = _build_app(pool, jwks, require_auth=True)
+    token, _expires = app.state.media_signer.sign("p")
+
+    async with _client(app) as client:
+        response = await client.get(f"/api/projects/p/scenes/0/thumb?token={token}")
+
+    assert response.status_code != 401
+
+
+async def test_a_scene_frame_without_a_token_is_still_refused(pool, jwks):
+    app, _ = _build_app(pool, jwks, require_auth=True)
+
+    async with _client(app) as client:
+        response = await client.get("/api/projects/p/scenes/0/thumb")
+
+    assert response.status_code == 401

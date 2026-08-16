@@ -5,6 +5,7 @@ import type { ScriptOutput } from "@/lib/types";
 import { SceneRegenerate } from "./SceneRegenerate";
 import { SceneFeedback } from "./SceneFeedback";
 import type { SceneFeedback as Verdict } from "@/lib/types";
+import { sceneThumbUrl } from "@/lib/api";
 
 interface SceneRange {
   startS: number;
@@ -55,12 +56,19 @@ export function TranscriptPanel({
   onSeek,
   regenerate,
   feedback,
+  projectId,
+  thumbToken,
 }: {
   script: ScriptOutput;
   currentTime: number;
   onSeek: (seconds: number) => void;
   regenerate?: RegenerateProps;
   feedback?: FeedbackProps;
+  /** Signed credential for the scene frames. Absent until the render
+   *  finishes, and absent forever on a project whose clips were swept —
+   *  the rows fall back to the prompt on its own. */
+  projectId?: string;
+  thumbToken?: string | null;
 }) {
   const ranges = computeSceneRanges(script);
 
@@ -82,7 +90,7 @@ export function TranscriptPanel({
           const range = ranges[i];
           const isActive = currentTime >= range.startS && currentTime < range.endS;
           return (
-            <li key={scene.id} className="relative">
+            <li key={scene.id} className="group/scene relative">
               {/* Marks the scene playing right now, on the rail itself. */}
               <span
                 aria-hidden
@@ -99,13 +107,38 @@ export function TranscriptPanel({
                   isActive ? "bg-accent/[0.06]" : "hover:bg-surface-hover"
                 )}
               >
-                <span
-                  className={clsx(
-                    "mt-0.5 w-10 shrink-0 font-mono text-[10px] tabular-nums transition-colors",
-                    isActive ? "text-accent" : "text-white/30 group-hover:text-white/50"
+                {/* The frame this scene actually produced.
+                    A prompt — "a portrait with an intense gaze" — does not
+                    tell anyone which picture came out of it, so the list
+                    was unreadable without scrubbing the player, and the
+                    two controls under each row were unusable until you
+                    had. onError hides it rather than showing a broken
+                    image: an older render has no clip left to take a
+                    frame from, and the row reads exactly as it used to. */}
+                <span className="flex shrink-0 flex-col items-center gap-1">
+                  {projectId && thumbToken && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={sceneThumbUrl(projectId, i, thumbToken)}
+                      alt=""
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                      className={clsx(
+                        "h-[68px] w-[38px] rounded-sm border object-cover transition-colors",
+                        isActive ? "border-accent/60" : "border-border"
+                      )}
+                    />
                   )}
-                >
-                  {formatTimecode(range.startS)}
+                  <span
+                    className={clsx(
+                      "font-mono text-[10px] tabular-nums transition-colors",
+                      isActive ? "text-accent" : "text-white/30 group-hover:text-white/50"
+                    )}
+                  >
+                    {formatTimecode(range.startS)}
+                  </span>
                 </span>
                 <span className="min-w-0 flex-1">
                   <span
@@ -129,7 +162,20 @@ export function TranscriptPanel({
                   inside a button is invalid and the nested one stops
                   receiving clicks in some browsers. */}
               {!scene.is_outro && (feedback || regenerate?.canRegenerate) && (
-                <div className="flex flex-col gap-2 pb-3 pl-14 pr-2">
+                // Revealed on hover or keyboard focus rather than drawn on
+                // every row. Twelve scenes meant twelve identical pairs of
+                // buttons competing with the thing they act on; a flagged
+                // scene keeps its marker visible so nothing already said
+                // disappears. focus-within keeps it reachable without a
+                // mouse.
+                <div
+                  className={clsx(
+                    "flex flex-col gap-2 pb-3 pl-14 pr-2 transition-opacity",
+                    feedback?.verdicts.has(i)
+                      ? "opacity-100"
+                      : "opacity-0 focus-within:opacity-100 group-hover/scene:opacity-100"
+                  )}
+                >
                   {/* The complaint sits directly above the fix, so "this
                       is wrong" is answered by "then draw it again"
                       rather than by a thank-you. */}

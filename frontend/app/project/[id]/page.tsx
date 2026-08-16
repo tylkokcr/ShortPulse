@@ -12,7 +12,7 @@ import { RenderPreview } from "@/components/render/RenderPreview";
 import { TranscriptPanel } from "@/components/render/TranscriptPanel";
 import { StockCredits } from "@/components/render/StockCredits";
 import { EditPanel } from "@/components/render/EditPanel";
-import { getCredits, getProject, regenerateScene, submitFeedback } from "@/lib/api";
+import { getCredits, getProject, getStreamToken, regenerateScene, submitFeedback } from "@/lib/api";
 import { InsufficientCreditsError } from "@/lib/api";
 import type { Project } from "@/lib/types";
 
@@ -50,11 +50,22 @@ export default function ProjectPage(props: { params: Promise<{ id: string }> }) 
   const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
   const [regenerateError, setRegenerateError] = useState<string | null>(null);
 
+  // One signed credential for every scene frame on the page. The <img>
+  // elements cannot send a header, and minting one per row would be a
+  // dozen round trips for a token that is already scoped to the project.
+  const [thumbToken, setThumbToken] = useState<string | null>(null);
+  useEffect(() => {
+    if (project?.status !== "complete") return;
+    getStreamToken(id).then((t) => setThumbToken(t.token)).catch(() => setThumbToken(null));
+  }, [id, project?.status]);
+
   // Keyed for lookup by row. Scene-level verdicts only — the one with a
   // null index is the video as a whole and belongs elsewhere.
   const verdicts = new Map<number, NonNullable<Project["feedback"]>[number]>();
+  let videoVerdict: NonNullable<Project["feedback"]>[number] | undefined;
   for (const f of project?.feedback ?? []) {
-    if (f.scene_index !== null) verdicts.set(f.scene_index, f);
+    if (f.scene_index === null) videoVerdict = f;
+    else verdicts.set(f.scene_index, f);
   }
 
   async function handleFlag(index: number, reason: string, note: string) {
@@ -71,6 +82,15 @@ export default function ProjectPage(props: { params: Promise<{ id: string }> }) 
       // Deliberately quiet. A failed complaint is not worth a second
       // error on top of whatever the user was already unhappy about, and
       // the re-roll below it still works.
+    }
+  }
+
+  async function handleVerdict(rating: "up" | "down") {
+    try {
+      setProject(await submitFeedback(id, { rating }));
+    } catch {
+      // Same reasoning as a scene flag: a failed opinion is not worth an
+      // error on top of whatever prompted it.
     }
   }
 
@@ -170,6 +190,8 @@ export default function ProjectPage(props: { params: Promise<{ id: string }> }) 
                         onRegenerate: handleRegenerate,
                       }}
                       feedback={{ verdicts, onFlag: handleFlag }}
+                      projectId={id}
+                      thumbToken={thumbToken}
                     />
                   </>
                 )}
@@ -182,7 +204,12 @@ export default function ProjectPage(props: { params: Promise<{ id: string }> }) 
             )}
           </div>
 
-          <RenderPreview projectId={id} videoRef={videoRef} onTimeUpdate={setCurrentTime} />
+          <RenderPreview
+            projectId={id}
+            videoRef={videoRef}
+            onTimeUpdate={setCurrentTime}
+            verdict={{ current: videoVerdict, onSubmit: handleVerdict }}
+          />
         </div>
       </main>
     </div>
