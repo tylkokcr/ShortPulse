@@ -140,6 +140,12 @@ class SceneVisual(BaseModel):
     # timed — render_manager sums it into timings.json, where the rest of
     # the stage's cost already lives.
     predict_time_s: float | None = None
+    # How many times this scene's visual has been re-rolled since the
+    # render. Three jobs, which is why it is a count and not a flag: it
+    # keys the charge so a retried request is free and a second re-roll is
+    # not, it selects a different stock clip from the same search, and the
+    # UI can say a scene has been re-drawn.
+    revision: int = 0
 
 
 class Scene(BaseModel):
@@ -357,6 +363,17 @@ class Project(BaseModel):
     # later, which could have changed in between. 0 on self-hosted
     # installs, where there is no billing at all.
     credits_cost: int = 0
+    # Whether one of this project's scenes could be re-drawn, and the
+    # sentence to show when it can't.
+    #
+    # Computed per request from what is on disk, never persisted — which
+    # is also why neither name appears in PostgresProjectStore._COLUMNS.
+    # The answer changes without the project changing: every video
+    # rendered before re-rolling existed is a permanent no, and every
+    # other one becomes a no when its retention window closes. A UI that
+    # assumed yes would offer a button that always failed.
+    can_regenerate: bool = False
+    regenerate_blocked_reason: str | None = None
 
 
 # --------------------------------------------------------------------------

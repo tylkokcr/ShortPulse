@@ -97,6 +97,9 @@ export interface SceneVisual {
   asset_path?: string | null;
   /** Stock scenes only; AI-generated visuals have nobody to credit. */
   attribution?: StockAttribution | null;
+  /** How many times this scene's visual has been re-rolled since the
+   *  render. 0 for everything that came out of the pipeline untouched. */
+  revision?: number;
 }
 
 export interface Scene {
@@ -105,6 +108,9 @@ export interface Scene {
   duration_s: number;
   visual: SceneVisual;
   audio: SceneAudio;
+  /** The optional closing card. Drawn locally from the operator's own
+   *  text rather than generated, so there is nothing to re-roll. */
+  is_outro?: boolean;
 }
 
 export interface ScriptOutput {
@@ -254,6 +260,13 @@ export interface Project {
   error?: string | null;
   /** The uploaded video this project started from, if it wasn't generated. */
   source_path?: string | null;
+  /** Whether one of this project's scenes can be re-drawn, and the
+   *  sentence to show when it can't. Computed server-side from what is
+   *  still on disk — every video rendered before re-rolling existed is a
+   *  permanent no, and every other one becomes a no when its working
+   *  files are swept. Never assume true. */
+  can_regenerate?: boolean;
+  regenerate_blocked_reason?: string | null;
   captions?: CaptionTrack | null;
   /** The user's edits on top of what was generated. Absent until they make
    *  one, at which point it — not `captions` — is what the video shows. */
@@ -335,7 +348,7 @@ export interface CreditPack {
 export interface CreditEntry {
   id: number;
   delta: number;
-  reason: "purchase" | "grant" | "render" | "refund" | "adjustment";
+  reason: "purchase" | "grant" | "render" | "refund" | "adjustment" | "regenerate";
   project_id?: string | null;
   note?: string | null;
   created_at: string;

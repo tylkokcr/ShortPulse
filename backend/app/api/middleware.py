@@ -127,7 +127,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         user_id = getattr(request.state, "user_id", None)
         who = user_id or (request.client.host if request.client else "unknown")
 
-        submitting_render = request.method == "POST" and request.url.path == "/api/projects"
+        # Re-rolling a scene belongs in the render budget, not the browsing
+        # one. It bills a third party per call and re-encodes a whole video,
+        # so leaving it on the per-minute allowance would protect the cheap
+        # operation and expose the expensive one.
+        path = request.url.path
+        submitting_render = request.method == "POST" and (
+            path == "/api/projects" or path.endswith("/regenerate")
+        )
         limiter = self._renders if submitting_render else self._general
 
         retry_after = limiter.check(who)

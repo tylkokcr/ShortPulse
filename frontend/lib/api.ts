@@ -180,6 +180,28 @@ export function listProjects(): Promise<Project[]> {
  * disk rather than re-running the pipeline — so this resolves with the
  * updated project rather than handing back a job to watch.
  */
+/**
+ * Draw one scene again.
+ *
+ * Costs a credit, unlike an edit, and takes tens of seconds — one hosted
+ * image generation plus a re-encode of the whole video. Both prompts are
+ * optional: omitting them re-rolls the scene as it stands, which is the
+ * common case when a picture simply came out wrong.
+ *
+ * A 402 arrives as InsufficientCreditsError through the shared request
+ * helper, so callers get the balance and the price without parsing.
+ */
+export function regenerateScene(
+  projectId: string,
+  sceneIndex: number,
+  body: { prompt?: string | null; negative_prompt?: string | null } = {}
+): Promise<Project> {
+  return request<Project>(`/projects/${projectId}/scenes/${sceneIndex}/regenerate`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
 export function editProject(
   projectId: string,
   body: { captions?: CaptionTrack | null; overlays: TextOverlay[]; layout?: Layout }

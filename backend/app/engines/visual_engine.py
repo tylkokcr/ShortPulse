@@ -159,6 +159,16 @@ def image_backend(settings) -> ImageBackend | None:
 # once and is shared by everything behind it.
 _REMOTE_SCENE_CONCURRENCY = 2
 
+# How deep a stock search looks, which is also how many distinct clips a
+# scene can be re-rolled through before it starts repeating.
+#
+# Not larger: relevance falls off fast — the tenth match for "honey jar
+# wooden table" is usually about something else — and a re-roll that
+# offers a worse clip than the one being replaced is not an improvement.
+# Not smaller: three was the old Pixabay page size and left almost no room
+# to move.
+_STOCK_VARIANTS = 8
+
 
 def scene_concurrency(mode: VisualMode, settings) -> int:
     """How many scenes may be generated at once.
@@ -256,6 +266,7 @@ async def generate_scene_visual(
     art_style: ArtStyle | None = None,
     size: tuple[int, int] | None = None,
     render_size: tuple[int, int] | None = None,
+    variant: int = 0,
 ) -> Scene:
     """Populate scene.visual.asset_path using the requested mode, with a
     stock-media fallback if a local generation mode fails (e.g. no GPU).
@@ -263,6 +274,13 @@ async def generate_scene_visual(
     `art_style` and `size` only reach the locally generated modes: stock
     footage is whatever was filmed, at whatever the clip's own dimensions
     are, and the render step crops it to fit.
+
+    `variant` asks for a different answer to the same question, and only
+    stock media needs it: a diffusion model resamples on every call — no
+    seed is sent — while a stock search is a deterministic function of its
+    query and would hand back the identical clip. It is the re-roll count,
+    so a scene asked for twice gets the second match rather than the first
+    one again.
     """
     style = art_style or art_styles.DEFAULT_ART_STYLE
     render_height = (render_size or (1080, 1920))[1]
@@ -275,7 +293,7 @@ async def generate_scene_visual(
             else:
                 path = await _generate_fast_hybrid_image(scene, output_dir, settings, style, size)
         elif mode == VisualMode.STOCK_MEDIA:
-            path = await _fetch_stock_media(scene, output_dir, settings, render_height)
+            path = await _fetch_stock_media(scene, output_dir, settings, render_height, variant)
         else:
             raise ValueError(f"Unsupported visual mode: {mode}")
         produced_by = mode
@@ -285,7 +303,7 @@ async def generate_scene_visual(
             scene.index,
             mode,
         )
-        path = await _fetch_stock_media(scene, output_dir, settings, render_height)
+        path = await _fetch_stock_media(scene, output_dir, settings, render_height, variant)
         produced_by = VisualMode.STOCK_MEDIA
 
     scene.visual.asset_path = str(path)
@@ -698,8 +716,17 @@ def stock_search_terms(prompt: str) -> str:
 
 
 async def _fetch_stock_media(
-    scene: Scene, output_dir: Path, settings, target_height: int = 1920
+    scene: Scene, output_dir: Path, settings, target_height: int = 1920, variant: int = 0
 ) -> Path:
+    """The closest match for this scene's prompt, or the variant-th one.
+
+    `variant` exists because the search is deterministic. Asking twice
+    with the same prompt returns the same clip, which on a re-roll means
+    the customer paid for a byte-identical result — so a re-roll asks for
+    the next page instead. A provider that has fewer results than that
+    falls through to the next provider, and the last one wraps back round
+    rather than failing: a second-best clip beats no clip.
+    """
     output_path = output_dir / f"scene_{scene.index:02d}_stock.mp4"
     query = stock_search_terms(scene.visual.prompt)
 
@@ -714,7 +741,7 @@ async def _fetch_stock_media(
         # from Pexels raised straight out and lost every scene rendered so
         # far.
         try:
-            clip = await search(query, api_key, target_height)
+            clip = await search(query, api_key, target_height, variant)
         except (httpx.HTTPError, KeyError, ValueError) as exc:
             logger.warning(
                 "Stock provider %s failed for scene %s (%r); trying the next one",
@@ -760,19 +787,24 @@ def _pick_rendition(files: list[dict], target_height: int) -> dict:
     return max(candidates, key=lambda f: f.get("height") or 0)
 
 
-async def _search_pexels(query: str, api_key: str, target_height: int = 1920) -> StockClip | None:
+async def _search_pexels(
+    query: str, api_key: str, target_height: int = 1920, variant: int = 0
+) -> StockClip | None:
+    # Asked for the whole first page rather than one result, so a variant
+    # is an index into a list already paid for — one request either way,
+    # and the wrap-around below needs to know how many there are.
     async with httpx.AsyncClient(timeout=20.0) as client:
         response = await client.get(
             "https://api.pexels.com/videos/search",
             headers={"Authorization": api_key},
-            params={"query": query, "orientation": "portrait", "per_page": 1},
+            params={"query": query, "orientation": "portrait", "per_page": _STOCK_VARIANTS},
         )
         response.raise_for_status()
         data = response.json()
         videos = data.get("videos", [])
         if not videos:
             return None
-        video = videos[0]
+        video = videos[variant % len(videos)]
         chosen = _pick_rendition(video["video_files"], target_height)
         user = video.get("user") or {}
         return StockClip(
@@ -788,7 +820,7 @@ async def _search_pexels(query: str, api_key: str, target_height: int = 1920) ->
 
 
 async def _search_pixabay(
-    query: str, api_key: str, target_height: int = 1920
+    query: str, api_key: str, target_height: int = 1920, variant: int = 0
 ) -> StockClip | None:
     """Pixabay serves a fixed set of named sizes rather than a ladder, and
     `medium` already sits near 1080 — so `target_height` is accepted for a
@@ -796,14 +828,16 @@ async def _search_pixabay(
     async with httpx.AsyncClient(timeout=20.0) as client:
         response = await client.get(
             "https://pixabay.com/api/videos/",
-            params={"key": api_key, "q": query, "per_page": 3},
+            # Pixabay enforces a minimum of 3 per_page, which is also what
+            # this asked for before variants existed.
+            params={"key": api_key, "q": query, "per_page": max(3, _STOCK_VARIANTS)},
         )
         response.raise_for_status()
         data = response.json()
         hits = data.get("hits", [])
         if not hits:
             return None
-        hit = hits[0]
+        hit = hits[variant % len(hits)]
         return StockClip(
             url=hit["videos"]["medium"]["url"],
             attribution=StockAttribution(

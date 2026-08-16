@@ -20,7 +20,8 @@ interface RenderPreviewProps {
 }
 
 export function RenderPreview({ projectId, videoRef, onTimeUpdate }: RenderPreviewProps) {
-  const { activeProject, setActiveProject, renderProgress, setRenderProgress } = useShortPulseStore();
+  const { activeProject, setActiveProject, renderProgress, setRenderProgress, videoVersion } =
+    useShortPulseStore();
   const internalVideoRef = useRef<HTMLVideoElement>(null);
   const resolvedVideoRef = videoRef ?? internalVideoRef;
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -68,10 +69,16 @@ export function RenderPreview({ projectId, videoRef, onTimeUpdate }: RenderPrevi
 
   // The video URL is signed and short-lived, so it can't be derived from
   // the project id — it has to be requested once the render is done.
+  //
+  // `videoVersion` is in the dependencies because status is not enough:
+  // an edit and a scene re-roll both overwrite final.mp4 in place and
+  // leave the project complete, so without it the player keeps showing
+  // the video from before the change and the user concludes it did
+  // nothing.
   useEffect(() => {
     if (activeProject?.status !== "complete") return;
     getMediaUrl(projectId).then((m) => setVideoUrl(m.url)).catch(console.error);
-  }, [projectId, activeProject?.status]);
+  }, [projectId, activeProject?.status, videoVersion]);
 
   const isDone = status === "complete";
   const isFailed = status === "failed" || renderProgress?.stage === "failed";

@@ -65,6 +65,18 @@ _LENGTH_MULTIPLIER = {
 AUTOCAPTION_COST = 1
 
 
+# Re-rolling one scene's visual on a finished video.
+#
+# Not derived from the render's price, because the work isn't a fraction
+# of a render. It is one hosted image generation — a fraction of a cent —
+# plus a full re-encode of the whole video, since finalize_render burns
+# captions and mixes music over the entire timeline whatever changed. The
+# re-encode dominates and it costs the same on a stock scene as on a
+# generated one, which is why this is a flat price rather than a per-mode
+# one.
+REGENERATE_SCENE_COST = 1
+
+
 def cost_for(config: ProjectConfig) -> int:
     """Credits a render of this shape costs. Deterministic: the caller is
     quoted this before the render starts and charged exactly this."""
@@ -205,21 +217,29 @@ async def spend(
     project_id: str | None = None,
     idempotency_key: str | None = None,
     note: str | None = None,
+    reason: str = "render",
 ) -> int:
     """Debit credits atomically. Returns the balance afterwards.
 
     Raises InsufficientCredits rather than letting the balance go negative.
     Concurrent debits for the same user serialize inside the SQL function;
     different users are unaffected.
+
+    `reason` decides what a later refund gives back, not just how the row
+    reads: refund_project pays back every `render` row for a project, so a
+    charge filed under that name is part of the render's price. Anything
+    bought separately after the render — a scene re-roll — must say so or
+    a refund hands it back too. See migrations/0005.
     """
     try:
         return await conn.fetchval(
-            "select spend_credits($1, $2, $3, $4, $5)",
+            "select spend_credits($1, $2, $3, $4, $5, $6)",
             user_id,
             amount,
             project_id,
             idempotency_key,
             note,
+            reason,
         )
     except asyncpg.PostgresError as exc:
         if getattr(exc, "sqlstate", None) == _INSUFFICIENT:

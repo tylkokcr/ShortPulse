@@ -47,22 +47,41 @@ def discard_project_files(project_id: str) -> int:
 # projects, of which 6.8GB — 81% — was intermediate. `visuals/` alone was
 # 6.2GB of downloaded stock clips that had already been encoded into the
 # scene clips that were themselves already concatenated.
-_INTERMEDIATE_DIRS = ("visuals", "audio")
-_INTERMEDIATE_OUTPUT_GLOBS = ("clip_*.mp4", "concat_list.txt")
+#
+# Two of them came back, for a while. Re-rolling one scene of a finished
+# video needs that scene's voiceover and every other scene's clip — the
+# visuals do not come back, because the picture is already inside the clip
+# and a re-roll draws a new one. That split is why this is two tiers
+# rather than a flag on the whole thing: `visuals/` was 91% of the win, so
+# keeping the other 9% for a month costs little and buys the feature.
+_ALWAYS_DISCARDED_DIRS = ("visuals",)
+_ALWAYS_DISCARDED_OUTPUT_GLOBS = ("concat_list.txt",)
+
+# Kept until the retention window closes, then swept by
+# scripts/prune_storage.py. Without both of these a project can never be
+# re-rolled — see services/regeneration.availability.
+_REASSEMBLY_DIRS = ("audio",)
+_REASSEMBLY_OUTPUT_GLOBS = ("clip_*.mp4",)
 
 
-def discard_intermediates(project_id: str) -> int:
+def discard_intermediates(project_id: str, *, keep_reassembly_inputs: bool = True) -> int:
     """Remove a finished project's working files. Returns bytes reclaimed.
 
-    Only ever called once `final.mp4` exists. The scene assets and per-scene
-    clips are inputs to a render that has already happened, and nothing
-    reads them afterwards — `scene.visual.asset_path` and
-    `audio.audio_path` survive in the stored script but are consulted only
-    while rendering.
+    Only ever called once `final.mp4` exists. The scene assets are inputs
+    to a render that has already happened — `scene.visual.asset_path`
+    survives in the stored script but is consulted only while rendering.
 
-    That does mean a project cannot be re-rendered from scratch after this
-    runs. Nothing offers to, and editing deliberately works from
-    `concatenated.mp4` instead, which is why that file is kept.
+    By default this keeps what a scene re-roll needs: the per-scene
+    voiceover and every scene's finished clip. Re-rolling scene 4 draws a
+    new picture for it, re-encodes that one clip against its unchanged
+    audio, and concatenates it with the others — so the audio and the
+    clips are the inputs, and the visuals genuinely are not.
+
+    Call it with `keep_reassembly_inputs=False` once the retention window
+    has passed. That is the sweeper's job (scripts/prune_storage.py) and
+    it takes the project past the point of re-rolling for good; editing
+    still works either way, because that re-burns from
+    `concatenated.mp4`.
 
     Best-effort: a render that succeeded must not be reported as failed
     because cleanup hit a permissions error.
@@ -71,12 +90,18 @@ def discard_intermediates(project_id: str) -> int:
     if not (root / "output" / "final.mp4").is_file():
         return 0
 
+    dirs = list(_ALWAYS_DISCARDED_DIRS)
+    globs = list(_ALWAYS_DISCARDED_OUTPUT_GLOBS)
+    if not keep_reassembly_inputs:
+        dirs += list(_REASSEMBLY_DIRS)
+        globs += list(_REASSEMBLY_OUTPUT_GLOBS)
+
     targets: list[Path] = []
-    for name in _INTERMEDIATE_DIRS:
+    for name in dirs:
         directory = root / name
         if directory.is_dir():
             targets.append(directory)
-    for pattern in _INTERMEDIATE_OUTPUT_GLOBS:
+    for pattern in globs:
         targets.extend((root / "output").glob(pattern))
 
     freed = 0

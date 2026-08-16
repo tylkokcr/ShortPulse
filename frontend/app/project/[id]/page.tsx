@@ -12,7 +12,8 @@ import { RenderPreview } from "@/components/render/RenderPreview";
 import { TranscriptPanel } from "@/components/render/TranscriptPanel";
 import { StockCredits } from "@/components/render/StockCredits";
 import { EditPanel } from "@/components/render/EditPanel";
-import { getProject } from "@/lib/api";
+import { getCredits, getProject, regenerateScene } from "@/lib/api";
+import { InsufficientCreditsError } from "@/lib/api";
 import type { Project } from "@/lib/types";
 
 export default function ProjectPage(props: { params: Promise<{ id: string }> }) {
@@ -20,6 +21,8 @@ export default function ProjectPage(props: { params: Promise<{ id: string }> }) 
   // unwraps with use() rather than await.
   const { id } = use(props.params);
   const activeProject = useShortPulseStore((s) => s.activeProject);
+  const bumpVideoVersion = useShortPulseStore((s) => s.bumpVideoVersion);
+  const setCredits = useShortPulseStore((s) => s.setCredits);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -42,6 +45,35 @@ export default function ProjectPage(props: { params: Promise<{ id: string }> }) 
   // would otherwise show "the scriptwriter is working on this" for a video
   // that finished days ago.
   const script = project?.script;
+
+  // Which scene is being re-drawn, and what went wrong last time.
+  const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
+  const [regenerateError, setRegenerateError] = useState<string | null>(null);
+
+  async function handleRegenerate(index: number, prompt: string, negativePrompt: string) {
+    setRegeneratingIndex(index);
+    setRegenerateError(null);
+    try {
+      const updated = await regenerateScene(id, index, {
+        prompt: prompt || null,
+        negative_prompt: negativePrompt,
+      });
+      setProject(updated);
+      // final.mp4 was overwritten in place and the project is still
+      // "complete", so nothing else would tell the player to re-fetch it.
+      bumpVideoVersion();
+      // And the balance in the header is now a credit out of date.
+      getCredits().then(setCredits).catch(() => {});
+    } catch (err) {
+      setRegenerateError(
+        err instanceof InsufficientCreditsError
+          ? `Not enough credits — you have ${err.balance} and this costs ${err.required}.`
+          : "That didn't work. Nothing was charged; try again."
+      );
+    } finally {
+      setRegeneratingIndex(null);
+    }
+  }
 
   function handleSeek(seconds: number) {
     const video = videoRef.current;
@@ -97,7 +129,24 @@ export default function ProjectPage(props: { params: Promise<{ id: string }> }) 
                       : "The AI scriptwriter is working on this — scenes will appear here once generated."}
                   </p>
                 ) : (
-                  <TranscriptPanel script={script} currentTime={currentTime} onSeek={handleSeek} />
+                  <>
+                    {regenerateError && (
+                      <p className="mb-3 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                        {regenerateError}
+                      </p>
+                    )}
+                    <TranscriptPanel
+                      script={script}
+                      currentTime={currentTime}
+                      onSeek={handleSeek}
+                      regenerate={{
+                        canRegenerate: Boolean(project?.can_regenerate),
+                        blockedReason: project?.regenerate_blocked_reason,
+                        busyIndex: regeneratingIndex,
+                        onRegenerate: handleRegenerate,
+                      }}
+                    />
+                  </>
                 )}
                 {script && <StockCredits script={script} />}
               </Card>

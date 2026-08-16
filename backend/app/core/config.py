@@ -207,6 +207,16 @@ class Settings(BaseSettings):
     ]
     storage_root: Path = STORAGE_ROOT
     max_concurrent_renders: int = 2
+    # How long a finished project keeps the files a scene re-roll needs —
+    # its per-scene voiceover and clips, roughly 3-7MB on top of the ~28MB
+    # a finished project already occupies. After this, prune_storage.py
+    # sweeps them and the project can no longer be re-rolled.
+    #
+    # Thirty days because re-rolling is a "this render came out wrong"
+    # action taken while the video is still unpublished. Nobody re-rolls a
+    # scene from a video they posted two months ago, and the alternative —
+    # keeping them forever — turns a bounded cost into an unbounded one.
+    regeneration_retention_days: int = 30
 
     # Background music — used when MusicConfig.enabled is true but the
     # request didn't supply its own track_path.

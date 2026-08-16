@@ -44,6 +44,16 @@ interface ShortPulseState {
 
   activeProject: Project | null;
   setActiveProject: (project: Project | null) => void;
+  /** Bumped whenever the finished video is rewritten in place.
+   *
+   *  final.mp4 keeps its name and the signed URL is a function of the
+   *  project id, so nothing about a re-roll or an edit tells the player
+   *  that the bytes behind it changed — the media-URL effect only re-runs
+   *  on a status change, and status stays "complete". Without this the
+   *  user watches the old video and concludes nothing happened, which is
+   *  already the behaviour after applying an edit today. */
+  videoVersion: number;
+  bumpVideoVersion: () => void;
 
   renderProgress: RenderProgress | null;
   setRenderProgress: (progress: RenderProgress | null) => void;
@@ -103,6 +113,9 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
 
   activeProject: null,
   setActiveProject: (project) => set({ activeProject: project }),
+
+  videoVersion: 0,
+  bumpVideoVersion: () => set((state) => ({ videoVersion: state.videoVersion + 1 })),
 
   credits: null,
   setCredits: (credits) => set({ credits }),

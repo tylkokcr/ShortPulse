@@ -107,3 +107,98 @@ async def test_0002_lets_a_recycled_email_through(scratch_db):
     assert await scratch_db.fetchval(
         "select count(*) from app_users where email = $1", email
     ) == 2
+
+
+# --- 0005: a re-roll is not part of the render's price -------------------
+
+
+async def _make_project(conn: asyncpg.Connection, user_id: str) -> str:
+    project_id = str(uuid.uuid4())
+    await conn.execute(
+        "insert into projects (id, user_id, status, config) values ($1, $2, 'complete', $3)",
+        project_id,
+        user_id,
+        "{}",
+    )
+    return project_id
+
+
+async def _user(conn: asyncpg.Connection) -> str:
+    user_id = str(uuid.uuid4())
+    await conn.execute(
+        "insert into app_users (id, email) values ($1, $2)",
+        user_id,
+        f"{user_id}@example.test",
+    )
+    return user_id
+
+
+async def test_0001_alone_cannot_charge_for_anything_but_a_render(scratch_db):
+    """Shows the problem 0005 exists to fix, from the other end: 0001's
+    spend_credits takes five arguments and writes 'render' with no way to
+    say otherwise."""
+    await _apply(scratch_db, "0001_projects_and_credits.sql")
+
+    with pytest.raises(asyncpg.PostgresError):
+        await scratch_db.fetchval(
+            "select spend_credits($1, $2, $3, $4, $5, $6)",
+            str(uuid.uuid4()), 1, None, None, None, "regenerate",
+        )
+
+
+async def test_0005_keeps_a_re_roll_out_of_the_project_refund(scratch_db):
+    """The invariant this whole feature is most likely to break.
+
+    refund_project pays back every `render` row for a project. A scene
+    re-roll is a separate purchase made after the render, so filing it
+    under `render` would mean an unrelated refund also hands back every
+    re-roll the customer bought and kept.
+    """
+    await db.apply_migrations(scratch_db)
+
+    user_id = await _user(scratch_db)
+    project_id = await _make_project(scratch_db, user_id)
+    await scratch_db.execute(
+        "insert into credit_entries (user_id, delta, reason) values ($1, 100, 'purchase')",
+        user_id,
+    )
+
+    await scratch_db.fetchval(
+        "select spend_credits($1, $2, $3, $4, $5, $6)",
+        user_id, 9, project_id, f"render:{project_id}", None, "render",
+    )
+    await scratch_db.fetchval(
+        "select spend_credits($1, $2, $3, $4, $5, $6)",
+        user_id, 1, project_id, f"regen:{project_id}:3:1", None, "regenerate",
+    )
+    assert await scratch_db.fetchval("select credit_balance($1)", user_id) == 90
+
+    refunded = await scratch_db.fetchval("select refund_project($1)", project_id)
+
+    # The nine for the render, not the ten that left the account.
+    assert refunded == 9
+    assert await scratch_db.fetchval("select credit_balance($1)", user_id) == 99
+
+
+async def test_0005_leaves_ordinary_render_charges_alone(scratch_db):
+    """The defaulted parameter must not change what existing callers do —
+    every current call site still passes five arguments."""
+    await db.apply_migrations(scratch_db)
+
+    user_id = await _user(scratch_db)
+    project_id = await _make_project(scratch_db, user_id)
+    await scratch_db.execute(
+        "insert into credit_entries (user_id, delta, reason) values ($1, 50, 'purchase')",
+        user_id,
+    )
+
+    await scratch_db.fetchval(
+        "select spend_credits($1, $2, $3, $4, $5)",
+        user_id, 3, project_id, f"render:{project_id}", None,
+    )
+
+    assert await scratch_db.fetchval(
+        "select reason from credit_entries where idempotency_key = $1",
+        f"render:{project_id}",
+    ) == "render"
+    assert await scratch_db.fetchval("select refund_project($1)", project_id) == 3

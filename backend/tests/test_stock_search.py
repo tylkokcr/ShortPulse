@@ -52,7 +52,7 @@ async def test_a_blocked_provider_falls_through_to_the_next(tmp_path, monkeypatc
         audio=SceneAudio(voiceover_line="line"),
     )
 
-    async def blocked(query, api_key, target_height=1920):
+    async def blocked(query, api_key, target_height=1920, variant=0):
         raise httpx.HTTPStatusError(
             "403", request=httpx.Request("GET", "https://api.pexels.com"),
             response=httpx.Response(403),
@@ -60,7 +60,7 @@ async def test_a_blocked_provider_falls_through_to_the_next(tmp_path, monkeypatc
 
     calls = []
 
-    async def works(query, api_key, target_height=1920):
+    async def works(query, api_key, target_height=1920, variant=0):
         calls.append(query)
         from app.engines import visual_engine
 
@@ -90,7 +90,7 @@ async def test_every_provider_failing_is_still_an_error(tmp_path, monkeypatch):
         audio=SceneAudio(voiceover_line="line"),
     )
 
-    async def blocked(query, api_key, target_height=1920):
+    async def blocked(query, api_key, target_height=1920, variant=0):
         raise httpx.ConnectError("down")
 
     monkeypatch.setattr("app.engines.visual_engine._search_pexels", blocked)
@@ -148,3 +148,120 @@ def test_portrait_renditions_win_over_bigger_landscape_ones():
     chosen = _pick_rendition(mixed, 1920)
 
     assert (chosen["width"], chosen["height"]) == (1080, 1920)
+
+
+# --------------------------------------------------------------------------
+# Variants — what makes re-rolling a stock scene worth a credit
+#
+# The search is a deterministic function of its query, so without this a
+# re-roll re-downloads the identical clip and the customer pays for a
+# byte-identical result. That failure is invisible from the outside: the
+# request succeeds, the video is unchanged.
+# --------------------------------------------------------------------------
+
+
+def _pexels_page(count: int) -> dict:
+    return {
+        "videos": [
+            {
+                "url": f"https://www.pexels.com/video/{i}/",
+                "user": {"name": f"author {i}", "url": f"https://x/{i}"},
+                "video_files": [{"width": 1080, "height": 1920, "link": f"https://x/{i}.mp4"}],
+            }
+            for i in range(count)
+        ]
+    }
+
+
+def _pixabay_page(count: int) -> dict:
+    return {
+        "hits": [
+            {
+                "pageURL": f"https://pixabay.com/videos/{i}/",
+                "user": f"author {i}",
+                "user_id": i,
+                "videos": {"medium": {"url": f"https://x/{i}.mp4"}},
+            }
+            for i in range(count)
+        ]
+    }
+
+
+async def _pexels(monkeypatch, page: dict, variant: int):
+    from app.engines import visual_engine
+
+    captured: dict = {}
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        captured["params"] = dict(request.url.params)
+        return httpx.Response(200, json=page)
+
+    transport = httpx.MockTransport(handler)
+    real = httpx.AsyncClient
+
+    def client(*args, **kwargs):
+        kwargs["transport"] = transport
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(visual_engine.httpx, "AsyncClient", client)
+    clip = await visual_engine._search_pexels("honey jar", "key", 1920, variant)
+    return clip, captured
+
+
+async def test_two_variants_return_two_different_clips(monkeypatch):
+    """The property the whole feature rests on."""
+    first, _ = await _pexels(monkeypatch, _pexels_page(5), 0)
+    second, _ = await _pexels(monkeypatch, _pexels_page(5), 1)
+
+    assert first.attribution.source_url != second.attribution.source_url
+
+
+async def test_the_search_asks_for_a_page_deep_enough_to_have_variants(monkeypatch):
+    """One request either way — the variant indexes into results already
+    paid for, rather than costing an extra round trip."""
+    from app.engines import visual_engine
+
+    _, captured = await _pexels(monkeypatch, _pexels_page(5), 0)
+
+    assert int(captured["params"]["per_page"]) == visual_engine._STOCK_VARIANTS
+
+
+async def test_a_variant_past_the_end_wraps_instead_of_failing(monkeypatch):
+    """A niche query with two matches, asked for the fifth. A second-best
+    clip beats no clip, and beats an exception in the middle of a paid
+    re-roll."""
+    clip, _ = await _pexels(monkeypatch, _pexels_page(2), 4)
+
+    assert clip is not None
+    assert clip.attribution.source_url == "https://www.pexels.com/video/0/"
+
+
+async def test_an_empty_result_is_still_none(monkeypatch):
+    """So _fetch_stock_media falls through to the next provider rather
+    than dividing by zero on the wrap."""
+    clip, _ = await _pexels(monkeypatch, {"videos": []}, 3)
+
+    assert clip is None
+
+
+async def test_pixabay_varies_too(monkeypatch):
+    """Both providers, or a re-roll behaves differently depending on which
+    one happens to answer."""
+    from app.engines import visual_engine
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=_pixabay_page(4))
+
+    transport = httpx.MockTransport(handler)
+    real = httpx.AsyncClient
+
+    def client(*args, **kwargs):
+        kwargs["transport"] = transport
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(visual_engine.httpx, "AsyncClient", client)
+
+    first = await visual_engine._search_pixabay("honey jar", "key", 1920, 0)
+    second = await visual_engine._search_pixabay("honey jar", "key", 1920, 1)
+
+    assert first.attribution.source_url != second.attribution.source_url

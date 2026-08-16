@@ -2,6 +2,7 @@
 
 import clsx from "clsx";
 import type { ScriptOutput } from "@/lib/types";
+import { SceneRegenerate } from "./SceneRegenerate";
 
 interface SceneRange {
   startS: number;
@@ -24,14 +25,32 @@ function computeSceneRanges(script: ScriptOutput): SceneRange[] {
   });
 }
 
+/**
+ * Re-rolling is optional and injected, so this stays a presentational
+ * component: the page owns the project and the request, and this owns the
+ * shot list. Absent — a self-hosted install, a project whose working
+ * files were swept — the panel renders exactly as it did before.
+ */
+interface RegenerateProps {
+  canRegenerate: boolean;
+  blockedReason?: string | null;
+  /** Which scene is being re-drawn, if any. Everything else is disabled
+   *  while one runs: they contend for the same server-side lock and would
+   *  come back 409. */
+  busyIndex: number | null;
+  onRegenerate: (index: number, prompt: string, negativePrompt: string) => Promise<void>;
+}
+
 export function TranscriptPanel({
   script,
   currentTime,
   onSeek,
+  regenerate,
 }: {
   script: ScriptOutput;
   currentTime: number;
   onSeek: (seconds: number) => void;
+  regenerate?: RegenerateProps;
 }) {
   const ranges = computeSceneRanges(script);
 
@@ -95,10 +114,37 @@ export function TranscriptPanel({
                   {scene.duration_s.toFixed(1)}s
                 </span>
               </button>
+
+              {/* A sibling of the seek button, not a child: a button
+                  inside a button is invalid and the nested one stops
+                  receiving clicks in some browsers. */}
+              {regenerate?.canRegenerate && !scene.is_outro && (
+                <div className="pb-3 pl-14 pr-2">
+                  <SceneRegenerate
+                    scene={scene}
+                    index={i}
+                    busy={regenerate.busyIndex === i}
+                    disabled={
+                      regenerate.busyIndex !== null && regenerate.busyIndex !== i
+                    }
+                    onRegenerate={regenerate.onRegenerate}
+                  />
+                </div>
+              )}
             </li>
           );
         })}
       </ol>
+
+      {/* Said once, under the list, rather than as a disabled control on
+          every scene. Every video rendered before re-rolling existed lands
+          here, and so does every one past its retention window — an
+          explanation is more use than a button that always fails. */}
+      {regenerate && !regenerate.canRegenerate && regenerate.blockedReason && (
+        <p className="border-t border-border pt-3 text-[11px] leading-relaxed text-white/30">
+          {regenerate.blockedReason}
+        </p>
+      )}
 
       {script.call_to_action && (
         <div className="flex gap-3 pt-4">

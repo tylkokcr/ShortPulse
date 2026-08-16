@@ -84,16 +84,65 @@ def _finished_project(root: Path, project_id: str = "proj") -> Path:
 
 
 def test_the_working_files_are_removed(tmp_path, monkeypatch):
+    """The default sweep takes the visuals and leaves what a re-roll needs.
+
+    `visuals/` was 6.2GB of the 6.8GB measured on a real install, so this
+    still reclaims the overwhelming majority of it — and the picture is
+    already inside the scene clip anyway, which is why a re-roll draws a
+    new one rather than reusing this.
+    """
     base = _finished_project(tmp_path)
     monkeypatch.setattr(get_settings(), "storage_root", tmp_path)
 
     freed = storage.discard_intermediates("proj")
 
     assert not (base / "visuals").exists()
+    assert not (base / "output" / "concat_list.txt").exists()
+    assert freed == 4000 + len("file 'a'")
+
+
+def test_a_re_rolls_inputs_survive_the_default_sweep(tmp_path, monkeypatch):
+    """Without both of these a finished project can never have one of its
+    scenes re-drawn: render_scene_clip refuses without the voiceover, and
+    concat needs every other scene's clip."""
+    base = _finished_project(tmp_path)
+    monkeypatch.setattr(get_settings(), "storage_root", tmp_path)
+
+    storage.discard_intermediates("proj")
+
+    assert (base / "audio" / "scene_00.wav").is_file()
+    assert (base / "output" / "clip_00.mp4").is_file()
+    assert (base / "output" / "clip_01.mp4").is_file()
+
+
+def test_the_expiring_sweep_takes_them(tmp_path, monkeypatch):
+    """What prune_storage.py runs once the retention window closes."""
+    base = _finished_project(tmp_path)
+    monkeypatch.setattr(get_settings(), "storage_root", tmp_path)
+
+    freed = storage.discard_intermediates("proj", keep_reassembly_inputs=False)
+
     assert not (base / "audio").exists()
     assert not (base / "output" / "clip_00.mp4").exists()
-    assert not (base / "output" / "concat_list.txt").exists()
     assert freed == 4000 + 200 + 300 + 300 + len("file 'a'")
+
+
+def test_both_sweeps_are_idempotent(tmp_path, monkeypatch):
+    """The sweeper has no state of its own and may see the same project on
+    consecutive runs."""
+    base = _finished_project(tmp_path)
+    monkeypatch.setattr(get_settings(), "storage_root", tmp_path)
+
+    storage.discard_intermediates("proj")
+    storage.discard_intermediates("proj")
+    assert storage.discard_intermediates("proj") == 0
+
+    storage.discard_intermediates("proj", keep_reassembly_inputs=False)
+    assert storage.discard_intermediates("proj", keep_reassembly_inputs=False) == 0
+
+    # And neither pass ever touches the product.
+    assert (base / "output" / "final.mp4").is_file()
+    assert (base / "output" / "concatenated.mp4").is_file()
 
 
 def test_the_file_editing_re_burns_from_is_kept(tmp_path, monkeypatch):

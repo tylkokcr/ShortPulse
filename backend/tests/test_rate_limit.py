@@ -101,6 +101,14 @@ def _app(*, renders_per_hour=3, requests_per_minute=5, user_id=None):
     async def read():
         return []
 
+    @app.post("/api/projects/{project_id}/scenes/{index}/regenerate")
+    async def regenerate(project_id: str, index: int):
+        return {"ok": True}
+
+    @app.post("/api/projects/{project_id}/edit")
+    async def edit(project_id: str):
+        return {"ok": True}
+
     @app.get("/api/health")
     async def health():
         return {"status": "ok"}
@@ -173,3 +181,42 @@ async def test_general_requests_are_capped(path):
         codes = [(await client.get(path)).status_code for _ in range(5)]
 
     assert codes == [200, 200, 200, 429, 429]
+
+
+async def test_re_rolling_a_scene_draws_on_the_render_budget():
+    """It bills a third party per call and re-encodes a whole video. On
+    the per-minute browsing allowance the cheap operation would be
+    protected and the expensive one exposed."""
+    app = _app(renders_per_hour=2, requests_per_minute=50)
+    async with _client(app) as client:
+        codes = [
+            (await client.post("/api/projects/p/scenes/0/regenerate", json={})).status_code
+            for _ in range(4)
+        ]
+
+    assert codes == [200, 200, 429, 429]
+
+
+async def test_a_render_and_a_re_roll_share_one_budget():
+    """Same money either way, so one allowance rather than two that add
+    up to more than intended."""
+    app = _app(renders_per_hour=2, requests_per_minute=50)
+    async with _client(app) as client:
+        first = await client.post("/api/projects", json={})
+        second = await client.post("/api/projects/p/scenes/0/regenerate", json={})
+        third = await client.post("/api/projects", json={})
+
+    assert [first.status_code, second.status_code, third.status_code] == [200, 200, 429]
+
+
+async def test_editing_stays_on_the_browsing_budget():
+    """An edit is one ffmpeg pass over footage already on disk and costs
+    nothing — throttling it like a render would make fixing a typo feel
+    rationed."""
+    app = _app(renders_per_hour=1, requests_per_minute=50)
+    async with _client(app) as client:
+        codes = [
+            (await client.post("/api/projects/p/edit", json={})).status_code for _ in range(4)
+        ]
+
+    assert codes == [200, 200, 200, 200]

@@ -234,7 +234,19 @@ async def render_scene_clip(
     ffmpeg_binary: str = "ffmpeg",
     ffprobe_binary: str = "ffprobe",
     scene_gap_s: float = DEFAULT_SCENE_GAP_S,
+    duration_override_s: float | None = None,
 ) -> Path:
+    """Encode one scene into a clip the concat step can stream-copy.
+
+    `duration_override_s` re-encodes a scene to a length that was already
+    decided, which is what makes replacing one scene of a finished video
+    safe. The frame count is round(duration * fps), so pinning the
+    duration makes the new clip frame-identical to the one it replaces —
+    the concatenated timeline does not move and no subtitle word has to be
+    re-timed. Without it the same audio would be re-probed and almost
+    certainly give the same answer, but "almost" is not a property you can
+    build a caption track on.
+    """
     if not scene.visual.asset_path or not scene.audio.audio_path:
         raise RenderError(f"Scene {scene.index} is missing visual or audio assets")
 
@@ -243,7 +255,11 @@ async def render_scene_clip(
 
     # Probed once here rather than inside each renderer: the two paths must
     # agree on the clip length, and this keeps it to a single ffprobe call.
-    duration = await _scene_duration_s(scene, ffprobe_binary, scene_gap_s)
+    duration = (
+        duration_override_s
+        if duration_override_s is not None
+        else await _scene_duration_s(scene, ffprobe_binary, scene_gap_s)
+    )
 
     if ext in _IMAGE_EXTENSIONS:
         await _render_image_scene_clip(scene, target, output_path, ffmpeg_binary, duration)

@@ -175,6 +175,46 @@ def build_ass_from_words(
     return output_path
 
 
+def shift_words_from(words: list[Word], at_ms: int, delta_ms: int) -> list[Word]:
+    """Move every word at or after `at_ms` by `delta_ms`.
+
+    For when one scene of a finished video is re-encoded and comes back a
+    hair longer or shorter than it was. The obvious alternative — rebuild
+    the track with absolute_words() — is wrong here and quietly so: once a
+    project has been through /edit, `edit.captions` is the authority and
+    holds text the user typed. Rebuilding from the scenes throws that away
+    and replaces it with the transcript, which no test of timings would
+    catch.
+
+    A no-op delta returns the same words rather than copies, so the common
+    case — a re-roll that changes nothing about the timeline — costs
+    nothing and cannot introduce drift.
+    """
+    if delta_ms == 0:
+        return words
+    return [
+        Word(
+            text=w.text,
+            start_ms=w.start_ms + delta_ms if w.start_ms >= at_ms else w.start_ms,
+            end_ms=w.end_ms + delta_ms if w.start_ms >= at_ms else w.end_ms,
+            confidence=w.confidence,
+        )
+        for w in words
+    ]
+
+
+def scene_start_ms(scenes: list[Scene], index: int) -> int:
+    """Where a scene begins on the concatenated timeline.
+
+    The same accumulation absolute_words does, stopped early — kept beside
+    it so the two cannot drift apart about what a scene's offset means.
+    """
+    offset_ms = 0
+    for scene in scenes[:index]:
+        offset_ms += scene.audio.duration_ms or int(scene.duration_s * 1000)
+    return offset_ms
+
+
 def absolute_words(scenes: list[Scene]) -> list[Word]:
     """Flatten per-scene word timings onto the concatenated timeline.
 

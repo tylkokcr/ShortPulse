@@ -6,6 +6,7 @@ import json
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import Path as PathParam
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
@@ -26,7 +27,7 @@ from app.schemas.project import (
     TextOverlay,
     VisualMode,
 )
-from app.services import credits, editing, project_store
+from app.services import credits, editing, project_lock, project_store, regeneration
 from app.services.media_tokens import InvalidMediaToken
 
 logger = logging.getLogger(__name__)
@@ -187,11 +188,25 @@ async def _visible_project(project_id: str, user_id: str | None) -> Project:
     return project
 
 
+def _with_regeneration_state(project: Project) -> Project:
+    """Answer "can a scene be re-drawn" alongside the project itself.
+
+    Computed, never stored — it depends on what is on disk right now, and
+    the answer changes on its own when the retention window closes. Set
+    here rather than in the store because it costs a directory listing and
+    the library grid, which loads dozens of projects, has no use for it.
+    """
+    can, reason = regeneration.availability(project)
+    project.can_regenerate = can
+    project.regenerate_blocked_reason = reason
+    return project
+
+
 @router.get("/{project_id}", response_model=Project)
 async def get_project(
     project_id: str, user_id: str | None = Depends(current_user_id)
 ) -> Project:
-    return await _visible_project(project_id, user_id)
+    return _with_regeneration_state(await _visible_project(project_id, user_id))
 
 
 @router.delete("/{project_id}", status_code=204)
@@ -308,8 +323,18 @@ async def edit_project(
         music=project.config.music,
     )
 
+    # Held for the ffmpeg pass, not for the read above: apply_edit opens
+    # concatenated.mp4 and overwrites final.mp4, and anything else doing
+    # the same to this project at the same time decides the outcome by
+    # whoever finishes last.
     try:
-        final_path = await editing.apply_edit(project, edit, get_settings())
+        with project_lock.hold(project_id):
+            final_path = await editing.apply_edit(project, edit, get_settings())
+    except project_lock.ProjectBusy as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={"error": "busy", "reason": "This video is already being changed."},
+        ) from exc
     except editing.NothingToReburn as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
@@ -322,6 +347,190 @@ async def edit_project(
         captions=edit.captions,
         output_path=str(final_path),
     )
+
+
+class RegenerateSceneRequest(BaseModel):
+    """What a client may change when re-rolling one scene's visual.
+
+    Both optional and both meaning "leave it alone" when absent, so the
+    plain case — the picture came out wrong, draw another — is an empty
+    body. A negative prompt of "" is not absent: it clears a scene's own
+    negative and falls back to the art style's.
+    """
+
+    prompt: str | None = Field(default=None, max_length=1000)
+    negative_prompt: str | None = Field(default=None, max_length=1000)
+
+
+@router.post("/{project_id}/scenes/{scene_index}/regenerate", response_model=Project)
+async def regenerate_scene(
+    project_id: str,
+    request: Request,
+    body: RegenerateSceneRequest,
+    scene_index: int = PathParam(ge=0),
+    user_id: str | None = Depends(current_user_id),
+) -> Project:
+    """Draw one scene again and rebuild the video around it.
+
+    Charged, unlike /edit, because unlike /edit something expensive
+    happens: a hosted image generation, and a full re-encode of the video
+    to burn its captions back on. Synchronous for the same reason /edit
+    is — it takes tens of seconds, and the render queue has no way to tell
+    a waiting request that its turn came.
+    """
+    settings = get_settings()
+    project = await _visible_project(project_id, user_id)
+
+    ok, reason = regeneration.availability(project)
+    if not ok:
+        raise HTTPException(
+            status_code=409, detail={"error": "not_regenerable", "reason": reason}
+        )
+    scenes = project.script.scenes if project.script else []
+    if scene_index >= len(scenes):
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "no_such_scene", "scenes": len(scenes)},
+        )
+
+    pool = db_pool(request)
+    charging = billing_enabled(pool, user_id)
+    if charging:
+        # Same gate as creating the project: a mode the free grant does
+        # not cover cannot be bought with it afterwards either.
+        mode = VisualMode(project.config.visual_mode)
+        if mode not in credits.FREE_TIER_MODES and not await credits.has_purchased(pool, user_id):
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "error": "purchase_required",
+                    "mode": str(mode),
+                    "reason": credits.PURCHASE_REQUIRED_REASON,
+                },
+            )
+
+    # Held across the charge as well as the work: two re-rolls racing on
+    # one scene would both read revision N, both key their charge on it,
+    # and the second would be silently free.
+    try:
+        with project_lock.hold(project_id):
+            revision = scenes[scene_index].visual.revision + 1
+            if charging:
+                try:
+                    await credits.spend(
+                        pool,
+                        user_id,
+                        credits.REGENERATE_SCENE_COST,
+                        project_id=project_id,
+                        # Not correction:{id} or render:{id} — both are
+                        # once-per-project and would make the second
+                        # re-roll a no-op that charged nothing.
+                        idempotency_key=f"regen:{project_id}:{scene_index}:{revision}",
+                        note=f"scene {scene_index + 1} re-roll",
+                        # Keeps it out of refund_project's sum. See
+                        # migrations/0005.
+                        reason="regenerate",
+                    )
+                except credits.InsufficientCredits as exc:
+                    raise HTTPException(
+                        status_code=402,
+                        detail={
+                            "error": "insufficient_credits",
+                            "balance": exc.balance,
+                            "required": exc.required,
+                        },
+                    ) from exc
+
+            try:
+                final_path = await regeneration.regenerate_scene(
+                    project,
+                    scene_index,
+                    settings,
+                    revision=revision,
+                    prompt=body.prompt,
+                    negative_prompt=body.negative_prompt,
+                )
+            except Exception as exc:
+                if charging:
+                    await _refund_regeneration(pool, user_id, project_id, scene_index, revision)
+                    # The counter has to move even though nothing was
+                    # produced. Leaving it where it was would make the
+                    # retry reuse this attempt's idempotency key, and a
+                    # replayed key charges nothing — so a failure we
+                    # caused would buy the customer a free re-roll.
+                    await _persist_revision(project_id, project, scene_index, revision)
+                if isinstance(exc, regeneration.NotRegenerable):
+                    raise HTTPException(
+                        status_code=409,
+                        detail={"error": "not_regenerable", "reason": str(exc)},
+                    ) from exc
+                logger.exception("Re-roll of scene %s failed for %s", scene_index, project_id)
+                raise HTTPException(status_code=502, detail=str(exc)[:200]) from exc
+    except project_lock.ProjectBusy as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={"error": "busy", "reason": "This video is already being changed."},
+        ) from exc
+
+    try:
+        saved = await project_store.update_project(
+            project_id,
+            script=project.script,
+            captions=project.captions,
+            edit=project.edit,
+            output_path=str(final_path),
+        )
+        return _with_regeneration_state(saved)
+    except KeyError as exc:
+        # Deleted while the re-roll was running. The files are already
+        # gone or will be; the charge is not, so give it back.
+        if charging:
+            await _refund_regeneration(pool, user_id, project_id, scene_index, revision)
+        raise HTTPException(status_code=404, detail="Project not found") from exc
+
+
+async def _persist_revision(
+    project_id: str, project: Project, scene_index: int, revision: int
+) -> None:
+    """Record an attempt that produced nothing, so the next one is new.
+
+    Best-effort, and the only thing written on the failure path: the
+    project still describes the video that is still on disk.
+    """
+    try:
+        if project.script and scene_index < len(project.script.scenes):
+            project.script.scenes[scene_index].visual.revision = revision
+            await project_store.update_project(project_id, script=project.script)
+    except Exception:  # noqa: BLE001
+        logger.exception("Could not record the failed re-roll of scene %s", scene_index)
+
+
+async def _refund_regeneration(
+    pool, user_id: str, project_id: str, scene_index: int, revision: int
+) -> None:
+    """Give back a re-roll that didn't produce anything.
+
+    A compensating entry, never an UPDATE — the ledger's own rule. And
+    deliberately not refund_project, which pays back the whole render and
+    can only ever fire once per project.
+
+    Swallows its own failures for the same reason _refund_failed_render
+    does: a ledger problem must not replace the error the caller actually
+    needs to see.
+    """
+    try:
+        await credits.grant(
+            pool,
+            user_id,
+            credits.REGENERATE_SCENE_COST,
+            reason="adjustment",
+            idempotency_key=f"regen-refund:{project_id}:{scene_index}:{revision}",
+            note=f"scene {scene_index + 1} re-roll failed",
+        )
+    except Exception:  # noqa: BLE001
+        logger.exception(
+            "Could not refund the failed re-roll of scene %s on %s", scene_index, project_id
+        )
 
 
 @router.get("/{project_id}/timings")

@@ -304,7 +304,7 @@ async def test_a_failed_prediction_degrades_to_stock_media(monkeypatch, scene, t
     asset is recorded so the ledger can re-price it."""
     _serve(monkeypatch, FakeReplicate(create_status=402))
 
-    async def fake_stock(scene_, output_dir, settings_, target_height=1920):
+    async def fake_stock(scene_, output_dir, settings_, target_height=1920, variant=0):
         path = output_dir / f"scene_{scene_.index:02d}_stock.mp4"
         path.write_bytes(b"fake mp4")
         return path
