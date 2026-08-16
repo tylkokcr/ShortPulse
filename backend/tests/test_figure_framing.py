@@ -181,3 +181,164 @@ def test_the_project_negative_reaches_every_scene():
     config = ProjectConfig(topic="t", negative_prompt="hands, crowd")
 
     assert config.negative_prompt == "hands, crowd"
+
+
+# --- the check that doesn't rely on the model remembering ---------------
+#
+# The rule above is followed most of the time. Three paid renders say what
+# "most" means: six photographers with twelve unusable feet, a table of
+# interlocking hands, and a close-up of feet on a dance floor — each one
+# after the rule was already written. A fourth, firmer wording is not a
+# plan, so this is the same answer visual_prompts_naming reached for the
+# same reason.
+
+
+def _scenes(*prompts: str) -> list[dict]:
+    return [{"visual_prompt": p} for p in prompts]
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        # The three that actually shipped.
+        "a close-up of feet performing a simple dance step on a wooden floor",
+        "a close-up of hands gesturing in conversation across a table, warm lighting",
+        "a group of photographers at a fashion shoot, studio lights",
+        # And the rest of the rule.
+        "a full-body shot of a dancer mid-leap",
+        "a woman lying down on a bed, soft morning light",
+        "a crowd at a concert, hands in the air",
+        "an audience watching a speaker",
+    ],
+)
+def test_a_shot_the_model_cannot_draw_is_caught(prompt):
+    from app.engines.script_engine import visual_prompts_framing
+
+    assert visual_prompts_framing(_scenes(prompt)) == [0], prompt
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        "a lively dance studio with mirrors, a person smiling, medium shot",
+        "a medium shot of a dancer adding personal style while dancing",
+        "a woman confidently walking in a lively urban street, close-up on her face",
+        "a portrait of a person with an intense gaze, bright light",
+        # Hands are in the frame and are not the subject. This is the
+        # false positive a blunter matcher would produce, and it would
+        # send perfectly good prompts through a rewrite that makes them
+        # worse.
+        "a close-up of someone writing in a notebook, soft light",
+        "a woman walking, hands in her pockets, city street at dusk",
+        "a jar of honey on a wooden table, warm side light",
+    ],
+)
+def test_a_shot_that_works_is_left_alone(prompt):
+    from app.engines.script_engine import visual_prompts_framing
+
+    assert visual_prompts_framing(_scenes(prompt)) == [], prompt
+
+
+def test_an_object_covered_in_numbers_is_caught():
+    """A different failure from the text rule above, which forbids
+    *describing* legible text. "a metronome ticking on a table" describes
+    none — and came back with a dial reading 70, 20, 480, 1955, because
+    the object carries the writing whether or not the prompt mentions it."""
+    from app.engines.script_engine import visual_prompts_framing
+
+    assert visual_prompts_framing(
+        _scenes("a metronome ticking steadily on a table, soft focus background")
+    ) == [0]
+
+
+def test_every_bad_scene_is_reported_not_just_the_first():
+    """The rewrite pass is batched, so a partial list would leave the rest
+    in place and look like it worked."""
+    from app.engines.script_engine import visual_prompts_framing
+
+    scenes = _scenes(
+        "a portrait of a woman by a window",
+        "a close-up of hands on a keyboard",
+        "a medium shot of a man reading",
+        "a crowd of commuters on a platform",
+    )
+
+    assert visual_prompts_framing(scenes) == [1, 3]
+
+
+# --- and what it does with what it finds ---------------------------------
+
+
+async def test_a_caught_prompt_is_replaced(monkeypatch):
+    from app.engines import script_engine as se
+
+    async def fake_llm(config, system, user):
+        assert "cannot draw" in system
+        return '{"prompts": ["a dancer\'s face lit from the side, mid-movement"]}'
+
+    monkeypatch.setattr(se, "_call_llm", fake_llm)
+    parsed = {"scenes": _scenes(
+        "a portrait of a woman by a window",
+        "a close-up of feet on a wooden floor",
+    )}
+
+    await se._rewrite_badly_framed_prompts(parsed, object())
+
+    assert parsed["scenes"][0]["visual_prompt"] == "a portrait of a woman by a window"
+    assert "feet" not in parsed["scenes"][1]["visual_prompt"]
+
+
+async def test_a_failed_rewrite_leaves_the_original(monkeypatch):
+    """A badly framed prompt is what we already had, so a rewrite that
+    errors must not also lose the scene."""
+    from app.engines import script_engine as se
+
+    async def explode(config, system, user):
+        raise RuntimeError("model down")
+
+    monkeypatch.setattr(se, "_call_llm", explode)
+    parsed = {"scenes": _scenes("a close-up of feet on a wooden floor")}
+
+    await se._rewrite_badly_framed_prompts(parsed, object())
+
+    assert parsed["scenes"][0]["visual_prompt"] == "a close-up of feet on a wooden floor"
+
+
+async def test_a_short_rewrite_is_refused_rather_than_misaligned(monkeypatch):
+    """Two prompts sent, one returned. Zipping them would put the rewrite
+    of the second onto the first."""
+    from app.engines import script_engine as se
+
+    async def one_back(config, system, user):
+        return '{"prompts": ["only one"]}'
+
+    monkeypatch.setattr(se, "_call_llm", one_back)
+    parsed = {"scenes": _scenes(
+        "a close-up of hands on a table",
+        "a crowd at a concert",
+    )}
+
+    await se._rewrite_badly_framed_prompts(parsed, object())
+
+    assert parsed["scenes"][0]["visual_prompt"] == "a close-up of hands on a table"
+    assert parsed["scenes"][1]["visual_prompt"] == "a crowd at a concert"
+
+
+async def test_nothing_is_called_when_every_prompt_is_fine(monkeypatch):
+    """The pass costs an LLM round trip, so it must not fire on a script
+    that had no problem."""
+    from app.engines import script_engine as se
+
+    called = False
+
+    async def should_not_run(config, system, user):
+        nonlocal called
+        called = True
+        return "{}"
+
+    monkeypatch.setattr(se, "_call_llm", should_not_run)
+    parsed = {"scenes": _scenes("a portrait of a woman by a window")}
+
+    await se._rewrite_badly_framed_prompts(parsed, object())
+
+    assert called is False

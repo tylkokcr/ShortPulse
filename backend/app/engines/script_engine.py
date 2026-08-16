@@ -338,6 +338,11 @@ async def _generate_script_once(
     raw_text = await _call_llm(config, system_prompt, user_prompt)
     parsed = _extract_json(raw_text)
     await _rewrite_named_prompts(parsed, topic, config)
+    # Only for the generated modes: a stock search is keywords, and
+    # "close-up of feet" is a perfectly good thing to look for in a
+    # library of real footage — somebody filmed it properly.
+    if visual_mode != "stock_media":
+        await _rewrite_badly_framed_prompts(parsed, config)
     return _to_script_output(topic, parsed, video_length)
 
 
@@ -406,6 +411,92 @@ def visual_prompts_naming(scenes: list[dict], topic: str) -> list[int]:
     return hits
 
 
+# Compositions the image model reliably fails at, detected in the prompt
+# rather than trusted to the rule that already forbids them.
+#
+# The rule is in SYSTEM_PROMPT_TEMPLATE and it is followed most of the
+# time. Three paid renders say what "most" means: a crowd of six
+# photographers with twelve unusable feet, a table of interlocking hands,
+# and a close-up of feet on a dance floor — each after the rule was
+# written, each a scene the customer had to look at. Writing it more
+# firmly a fourth time is not a plan.
+#
+# So this is the same shape as visual_prompts_naming: a check that does
+# not rely on the model remembering. Deliberately narrow — these match a
+# subject, not a mention. "a woman walking, hands in her pockets" is a
+# portrait with hands in it and comes out fine; "a close-up of hands" is
+# the failure.
+_SUBJECT_LEAD = (
+    r"(?:close[-\s]?up|closeup|shot|view|image|photo|macro)\s+of\s+"
+    r"(?:a|an|the|some|someone'?s?|a\s+person'?s?|two)?\s*"
+)
+_EXTREMITIES = r"(?:hands?|feet|foot|fingers?|toes?|palms?)"
+
+# Objects whose whole point is the writing on them. The existing text rule
+# forbids describing legible text, which does not help when the *object*
+# carries it: "a metronome ticking on a table" names no text and came back
+# with a dial reading 70, 20, 480, 1955.
+_TEXT_BEARING = (
+    r"(?:metronome|clock|wall\s+clock|watch|gauge|dial|speedometer|thermometer|"
+    r"calendar|newspaper|magazine|book\s+cover|poster|billboard|license\s+plate|"
+    r"scoreboard|price\s+tag)"
+)
+
+_BAD_FRAMING = [
+    re.compile(_SUBJECT_LEAD + _EXTREMITIES, re.I),
+    re.compile(r"^\s*(?:a\s+|an\s+|the\s+)?(?:pair\s+of\s+)?" + _EXTREMITIES + r"\b", re.I),
+    re.compile(r"\b(?:crowd|crowds|audience|group\s+of|groups\s+of|team\s+of|"
+               r"several\s+people|many\s+people|bunch\s+of\s+people)\b", re.I),
+    re.compile(r"\bfull[-\s]body\b", re.I),
+    re.compile(r"\b(?:lying\s+down|lying\s+on|laying\s+down|lies\s+on)\b", re.I),
+    re.compile(_SUBJECT_LEAD + _TEXT_BEARING, re.I),
+    re.compile(r"^\s*(?:a\s+|an\s+|the\s+)?" + _TEXT_BEARING + r"\b", re.I),
+]
+
+
+def visual_prompts_framing(scenes: list[dict]) -> list[int]:
+    """Indices whose visual prompt asks for a shot that reliably fails.
+
+    Pure and keyword-based on purpose. A second LLM deciding whether a
+    prompt is well framed would have the same failure mode as the first
+    one — it would agree most of the time — and the whole reason this
+    exists is that "most of the time" already happened three times.
+    """
+    hits = []
+    for i, scene in enumerate(scenes):
+        prompt = scene.get("visual_prompt") or ""
+        if any(pattern.search(prompt) for pattern in _BAD_FRAMING):
+            hits.append(i)
+    return hits
+
+
+FRAMING_REWRITE_SYSTEM_PROMPT = """\
+You rewrite image-generation prompts that ask for shots a diffusion model
+cannot draw.
+
+Each prompt you are given asks for one of: hands or feet as the subject, a
+crowd or group of people, a full-body shot, someone lying down, or an
+object covered in numbers or writing such as a clock or a metronome. Every
+one of those comes back deformed or unreadable.
+
+Rewrite each to describe the same moment with a shot that works: one
+person at most, framed as a close-up, a portrait or a medium shot from the
+waist up — or, where the line is about an action or a thing, the setting
+or the object itself with no figure and no dial.
+
+Examples:
+"a close-up of feet performing a dance step on a wooden floor" becomes
+"a dancer's face lit from the side, mid-movement, wooden studio floor behind".
+"a group of photographers at a shoot" becomes
+"a single photographer raising a camera, studio lights soft behind him".
+"a metronome ticking on a table" becomes
+"a wooden table in warm side light, a brass pendulum blurred mid-swing".
+
+Keep each rewrite under 20 words. Respond with ONLY valid JSON:
+{"prompts": ["rewritten prompt", "rewritten prompt"]}
+"""
+
+
 REWRITE_SYSTEM_PROMPT = """\
 You rewrite image-generation prompts so they describe only what a camera \
 would see.
@@ -422,6 +513,42 @@ archer in blue armour drawing a glowing bow, enemies scattered behind her".
 Keep each rewrite under 15 words. Respond with ONLY valid JSON:
 {"prompts": ["rewritten prompt", "rewritten prompt"]}
 """
+
+
+async def _rewrite_badly_framed_prompts(parsed: dict, config: LLMConfig) -> None:
+    """Replace visual prompts asking for shots the model cannot draw.
+
+    Same shape as _rewrite_named_prompts and for the same reason: the rule
+    is in the system prompt, it is followed most of the time, and "most"
+    has now cost three paid renders a scene each. One extra call for the
+    whole batch, and a failure leaves the originals — a badly framed
+    prompt is what we already had.
+    """
+    scenes = parsed.get("scenes")
+    if not isinstance(scenes, list):
+        return
+    hits = visual_prompts_framing(scenes)
+    if not hits:
+        return
+
+    numbered = "\n".join(f"{n + 1}. {scenes[i].get('visual_prompt')}" for n, i in enumerate(hits))
+    try:
+        raw = await _call_llm(config, FRAMING_REWRITE_SYSTEM_PROMPT, numbered)
+        rewritten = _extract_json(raw).get("prompts")
+        if not isinstance(rewritten, list) or len(rewritten) != len(hits):
+            raise ScriptGenerationError("framing rewrite returned the wrong number of prompts")
+    except Exception as exc:  # noqa: BLE001 - a failed rewrite is not a failed render
+        logger.warning("Could not reframe %d visual prompt(s): %s", len(hits), exc)
+        return
+
+    for index, prompt in zip(hits, rewritten, strict=True):
+        if isinstance(prompt, str) and prompt.strip():
+            logger.info(
+                "Reframed a visual prompt the model draws badly: %r -> %r",
+                scenes[index].get("visual_prompt"),
+                prompt,
+            )
+            scenes[index]["visual_prompt"] = prompt.strip()
 
 
 async def _rewrite_named_prompts(
