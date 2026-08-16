@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi import Path as PathParam
@@ -24,10 +25,11 @@ from app.schemas.project import (
     Project,
     ProjectConfig,
     ProjectStatus,
+    SceneFeedback,
     TextOverlay,
     VisualMode,
 )
-from app.services import credits, editing, project_lock, project_store, regeneration
+from app.services import credits, editing, feedback, project_lock, project_store, regeneration
 from app.services.media_tokens import InvalidMediaToken
 
 logger = logging.getLogger(__name__)
@@ -204,9 +206,10 @@ def _with_regeneration_state(project: Project) -> Project:
 
 @router.get("/{project_id}", response_model=Project)
 async def get_project(
-    project_id: str, user_id: str | None = Depends(current_user_id)
+    project_id: str, request: Request, user_id: str | None = Depends(current_user_id)
 ) -> Project:
-    return _with_regeneration_state(await _visible_project(project_id, user_id))
+    project = _with_regeneration_state(await _visible_project(project_id, user_id))
+    return await _with_feedback(project, db_pool(request), user_id)
 
 
 @router.delete("/{project_id}", status_code=204)
@@ -531,6 +534,79 @@ async def _refund_regeneration(
         logger.exception(
             "Could not refund the failed re-roll of scene %s on %s", scene_index, project_id
         )
+
+
+class FeedbackRequest(BaseModel):
+    """A verdict on a scene, or on the video as a whole.
+
+    `scene_index` absent means the whole video. `reason` is one of a fixed
+    list so the common cases stay countable — anything else goes in
+    `note`, which is read rather than tallied.
+    """
+
+    scene_index: int | None = Field(default=None, ge=0)
+    rating: Literal["up", "down"]
+    reason: str | None = None
+    note: str | None = Field(default=None, max_length=1000)
+
+
+@router.post("/{project_id}/feedback", response_model=Project)
+async def submit_feedback(
+    project_id: str,
+    request: Request,
+    body: FeedbackRequest,
+    user_id: str | None = Depends(current_user_id),
+) -> Project:
+    """Record what came out wrong.
+
+    Free, quick, and the only signal of its kind here: the privacy page
+    promises no analytics and no third-party scripts, so asking and
+    keeping the answer in our own database is the honest way to learn
+    whether the output is any good.
+
+    Returns the project so the caller re-renders from one response, the
+    same shape as an edit or a re-roll.
+    """
+    project = await _visible_project(project_id, user_id)
+    pool = db_pool(request)
+    if pool is None or user_id is None:
+        # Self-hosted: nobody to attribute it to and nowhere to put it.
+        # Not an error — there is simply no product team to tell.
+        return _with_regeneration_state(project)
+
+    if body.reason is not None and body.reason not in feedback.REASONS:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "unknown_reason", "allowed": list(feedback.REASONS)},
+        )
+    scenes = project.script.scenes if project.script else []
+    if body.scene_index is not None and body.scene_index >= len(scenes):
+        raise HTTPException(
+            status_code=422, detail={"error": "no_such_scene", "scenes": len(scenes)}
+        )
+
+    await feedback.record(
+        pool,
+        project_id=project_id,
+        user_id=user_id,
+        entry=feedback.Feedback(**body.model_dump()),
+        # Denormalised on purpose — see migration 0006. The point of the
+        # table is "which mode and style produce bad scenes", and a join
+        # cannot answer that once the user deletes the render they
+        # disliked.
+        visual_mode=str(project.config.visual_mode),
+        art_style=project.config.art_style,
+    )
+    return await _with_feedback(_with_regeneration_state(project), pool, user_id)
+
+
+async def _with_feedback(project: Project, pool, user_id: str | None) -> Project:
+    """Attach this viewer's own verdicts, so the UI doesn't ask twice."""
+    if pool is None or user_id is None:
+        return project
+    entries = await feedback.for_project(pool, project.config.id, user_id)
+    project.feedback = [SceneFeedback(**e.model_dump()) for e in entries]
+    return project
 
 
 @router.get("/{project_id}/timings")

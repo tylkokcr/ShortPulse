@@ -349,6 +349,20 @@ class ProjectConfig(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
 
+class SceneFeedback(BaseModel):
+    """One verdict, on a scene or on the whole video.
+
+    `scene_index` is None for the video as a whole. Mirrors
+    services.feedback.Feedback, kept here because it crosses the wire on
+    the Project response.
+    """
+
+    scene_index: int | None = None
+    rating: str
+    reason: str | None = None
+    note: str | None = None
+
+
 class Project(BaseModel):
     config: ProjectConfig
     status: ProjectStatus = ProjectStatus.DRAFT
@@ -383,6 +397,11 @@ class Project(BaseModel):
     # assumed yes would offer a button that always failed.
     can_regenerate: bool = False
     regenerate_blocked_reason: str | None = None
+    # This viewer's own verdicts on the render, so the UI can show a scene
+    # already flagged rather than asking twice. Computed per request like
+    # the two above, and scoped to the caller — feedback is a private note
+    # to us, not a review other people read.
+    feedback: list[SceneFeedback] = Field(default_factory=list)
 
 
 # --------------------------------------------------------------------------

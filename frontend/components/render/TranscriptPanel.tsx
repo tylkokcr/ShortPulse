@@ -3,6 +3,8 @@
 import clsx from "clsx";
 import type { ScriptOutput } from "@/lib/types";
 import { SceneRegenerate } from "./SceneRegenerate";
+import { SceneFeedback } from "./SceneFeedback";
+import type { SceneFeedback as Verdict } from "@/lib/types";
 
 interface SceneRange {
   startS: number;
@@ -31,6 +33,12 @@ function computeSceneRanges(script: ScriptOutput): SceneRange[] {
  * shot list. Absent — a self-hosted install, a project whose working
  * files were swept — the panel renders exactly as it did before.
  */
+interface FeedbackProps {
+  /** This viewer's existing verdicts, keyed by scene index. */
+  verdicts: Map<number, Verdict>;
+  onFlag: (index: number, reason: string, note: string) => Promise<void>;
+}
+
 interface RegenerateProps {
   canRegenerate: boolean;
   blockedReason?: string | null;
@@ -46,11 +54,13 @@ export function TranscriptPanel({
   currentTime,
   onSeek,
   regenerate,
+  feedback,
 }: {
   script: ScriptOutput;
   currentTime: number;
   onSeek: (seconds: number) => void;
   regenerate?: RegenerateProps;
+  feedback?: FeedbackProps;
 }) {
   const ranges = computeSceneRanges(script);
 
@@ -118,17 +128,29 @@ export function TranscriptPanel({
               {/* A sibling of the seek button, not a child: a button
                   inside a button is invalid and the nested one stops
                   receiving clicks in some browsers. */}
-              {regenerate?.canRegenerate && !scene.is_outro && (
-                <div className="pb-3 pl-14 pr-2">
-                  <SceneRegenerate
-                    scene={scene}
-                    index={i}
-                    busy={regenerate.busyIndex === i}
-                    disabled={
-                      regenerate.busyIndex !== null && regenerate.busyIndex !== i
-                    }
-                    onRegenerate={regenerate.onRegenerate}
-                  />
+              {!scene.is_outro && (feedback || regenerate?.canRegenerate) && (
+                <div className="flex flex-col gap-2 pb-3 pl-14 pr-2">
+                  {/* The complaint sits directly above the fix, so "this
+                      is wrong" is answered by "then draw it again"
+                      rather than by a thank-you. */}
+                  {feedback && (
+                    <SceneFeedback
+                      index={i}
+                      verdict={feedback.verdicts.get(i)}
+                      onSubmit={feedback.onFlag}
+                    />
+                  )}
+                  {regenerate?.canRegenerate && (
+                    <SceneRegenerate
+                      scene={scene}
+                      index={i}
+                      busy={regenerate.busyIndex === i}
+                      disabled={
+                        regenerate.busyIndex !== null && regenerate.busyIndex !== i
+                      }
+                      onRegenerate={regenerate.onRegenerate}
+                    />
+                  )}
                 </div>
               )}
             </li>

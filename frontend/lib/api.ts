@@ -196,6 +196,29 @@ export function regenerateScene(
 }
 
 /**
+ * Say what came out wrong.
+ *
+ * Free, and the only signal of its kind — the privacy page rules out
+ * third-party analytics, so this is how the product finds out whether its
+ * output is any good. Returns the updated project, carrying the viewer's
+ * own verdicts back so the UI can show a scene already flagged.
+ */
+export function submitFeedback(
+  projectId: string,
+  body: {
+    scene_index?: number | null;
+    rating: "up" | "down";
+    reason?: string | null;
+    note?: string | null;
+  }
+): Promise<Project> {
+  return request<Project>(`/projects/${projectId}/feedback`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+/**
  * Apply an edit and re-burn the video.
  *
  * Free and quick — it replays the burn-in pass over footage already on

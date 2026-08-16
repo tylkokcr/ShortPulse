@@ -12,7 +12,7 @@ import { RenderPreview } from "@/components/render/RenderPreview";
 import { TranscriptPanel } from "@/components/render/TranscriptPanel";
 import { StockCredits } from "@/components/render/StockCredits";
 import { EditPanel } from "@/components/render/EditPanel";
-import { getCredits, getProject, regenerateScene } from "@/lib/api";
+import { getCredits, getProject, regenerateScene, submitFeedback } from "@/lib/api";
 import { InsufficientCreditsError } from "@/lib/api";
 import type { Project } from "@/lib/types";
 
@@ -49,6 +49,30 @@ export default function ProjectPage(props: { params: Promise<{ id: string }> }) 
   // Which scene is being re-drawn, and what went wrong last time.
   const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
   const [regenerateError, setRegenerateError] = useState<string | null>(null);
+
+  // Keyed for lookup by row. Scene-level verdicts only — the one with a
+  // null index is the video as a whole and belongs elsewhere.
+  const verdicts = new Map<number, NonNullable<Project["feedback"]>[number]>();
+  for (const f of project?.feedback ?? []) {
+    if (f.scene_index !== null) verdicts.set(f.scene_index, f);
+  }
+
+  async function handleFlag(index: number, reason: string, note: string) {
+    try {
+      setProject(
+        await submitFeedback(id, {
+          scene_index: index,
+          rating: "down",
+          reason,
+          note: note || null,
+        })
+      );
+    } catch {
+      // Deliberately quiet. A failed complaint is not worth a second
+      // error on top of whatever the user was already unhappy about, and
+      // the re-roll below it still works.
+    }
+  }
 
   async function handleRegenerate(index: number, prompt: string, negativePrompt: string) {
     setRegeneratingIndex(index);
@@ -145,6 +169,7 @@ export default function ProjectPage(props: { params: Promise<{ id: string }> }) 
                         busyIndex: regeneratingIndex,
                         onRegenerate: handleRegenerate,
                       }}
+                      feedback={{ verdicts, onFlag: handleFlag }}
                     />
                   </>
                 )}

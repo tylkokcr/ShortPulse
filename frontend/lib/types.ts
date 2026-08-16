@@ -255,6 +255,15 @@ export interface EditSpec {
   secondary_path?: string | null;
 }
 
+/** One verdict on a render. `scene_index` null means the video as a
+ *  whole. Private to the person who left it. */
+export interface SceneFeedback {
+  scene_index: number | null;
+  rating: "up" | "down";
+  reason?: string | null;
+  note?: string | null;
+}
+
 export interface Project {
   config: ProjectConfig;
   status: ProjectStatus;
@@ -270,6 +279,8 @@ export interface Project {
    *  files are swept. Never assume true. */
   can_regenerate?: boolean;
   regenerate_blocked_reason?: string | null;
+  /** This viewer's own verdicts, so a flagged scene isn't asked about twice. */
+  feedback?: SceneFeedback[];
   captions?: CaptionTrack | null;
   /** The user's edits on top of what was generated. Absent until they make
    *  one, at which point it — not `captions` — is what the video shows. */
