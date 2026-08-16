@@ -174,13 +174,6 @@ export function listProjects(): Promise<Project[]> {
 }
 
 /**
- * Apply an edit and re-burn the video.
- *
- * Free and quick — it replays the burn-in pass over footage already on
- * disk rather than re-running the pipeline — so this resolves with the
- * updated project rather than handing back a job to watch.
- */
-/**
  * Draw one scene again.
  *
  * Costs a credit, unlike an edit, and takes tens of seconds — one hosted
@@ -202,6 +195,13 @@ export function regenerateScene(
   });
 }
 
+/**
+ * Apply an edit and re-burn the video.
+ *
+ * Free and quick — it replays the burn-in pass over footage already on
+ * disk rather than re-running the pipeline — so this resolves with the
+ * updated project rather than handing back a job to watch.
+ */
 export function editProject(
   projectId: string,
   body: { captions?: CaptionTrack | null; overlays: TextOverlay[]; layout?: Layout }
@@ -284,10 +284,22 @@ export function listVoices(language: string): Promise<Voice[]> {
   return request<Voice[]>(`/voices?language=${encodeURIComponent(language)}`);
 }
 
-/** Plain URL rather than a fetch: it feeds an <audio> element, which can't
- *  carry an Authorization header — and the preview endpoint needs none. */
+/**
+ * Plain URLs rather than fetches: these feed <audio> elements, which
+ * cannot carry an Authorization header.
+ *
+ * That used to come with "— and the preview endpoint needs none", which
+ * was true on an install with no accounts and stopped being true the day
+ * REQUIRE_AUTH was switched on. The endpoints are exempted in
+ * api/middleware.py now, deliberately and for stated reasons, rather than
+ * by assumption: a catalog sample belongs to nobody.
+ */
 export function voicePreviewUrl(voiceId: string): string {
   return `${API_BASE}/voices/preview?voice_id=${encodeURIComponent(voiceId)}`;
+}
+
+export function musicPreviewUrl(trackId: string): string {
+  return `${API_BASE}/music/preview?track_id=${encodeURIComponent(trackId)}`;
 }
 
 export interface MediaUrl {

@@ -63,10 +63,29 @@ _PUBLIC_PATHS = {"/api/health", "/docs", "/openapi.json", "/redoc"}
 # one more: the picker's fallback when the call fails is to offer
 # everything, so a 401 here doesn't hide the modes — it puts back exactly
 # the options this install cannot render.
+#
+# The catalog samples are the third and fourth callers found in this
+# position, and the comment that shipped with the voice preview said the
+# quiet part out loud: "it feeds an <audio> element, which can't carry an
+# Authorization header — and the preview endpoint needs none". True when
+# it was written, on an install with no accounts; false from the day
+# REQUIRE_AUTH went on, and nothing announced the change. Auditioning a
+# voice has been impossible on this service ever since, which is exactly
+# as visible as a button that does nothing.
+#
+# Safe on the same grounds as the price list. The voice preview
+# synthesizes one fixed line for one catalog voice — an arbitrary id is
+# refused, because it reaches huggingface_hub as a repo path — caches the
+# result and serialises generation behind a lock, so the work an anonymous
+# caller can cause is bounded by the size of the catalog, once. The music
+# preview serves a file resolved by track_path_for, which rejects anything
+# escaping the music directory.
 _UNAUTHENTICATED_PATHS = _PUBLIC_PATHS | {
     "/api/credits/webhook",
     "/api/credits/packs",
     "/api/visual-modes",
+    "/api/voices/preview",
+    "/api/music/preview",
 }
 
 # The media bytes, which carry their own credential in the URL.

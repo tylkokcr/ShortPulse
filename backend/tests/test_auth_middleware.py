@@ -19,7 +19,9 @@ from fastapi import FastAPI
 
 from app.api.middleware import SupabaseAuthMiddleware
 from app.api.routes import credits as credits_route
+from app.api.routes import music as music_route
 from app.api.routes import projects as projects_route
+from app.api.routes import voices as voices_route
 from app.services import credits, db, project_store
 from app.services.media_tokens import MediaTokenSigner
 from app.services.supabase_auth import SupabaseTokenVerifier
@@ -61,6 +63,8 @@ def _build_app(pool, jwks, *, require_auth=False, signup_grant=0, with_verifier=
     app = FastAPI()
     app.include_router(projects_route.router)
     app.include_router(credits_route.router)
+    app.include_router(voices_route.router)
+    app.include_router(music_route.router)
     app.add_middleware(
         SupabaseAuthMiddleware,
         verifier=SupabaseTokenVerifier(PROJECT_URL, http_client=jwks.client())
@@ -393,3 +397,46 @@ async def test_other_project_routes_stay_behind_authentication(pool, jwks):
     assert listing.status_code == 401
     assert one.status_code == 401
     assert minting.status_code == 401
+
+
+# --- catalog samples, which no bearer token can reach --------------------
+#
+# The third and fourth callers found in the same position as the Stripe
+# webhook and the video download: a media element fetching a URL, unable
+# to attach a header. The voice preview shipped with a comment saying the
+# endpoint "needs none" — true on an install with no accounts, false from
+# the day REQUIRE_AUTH went on, and nothing announced the change. The
+# symptom is a play button that does nothing.
+
+
+async def test_a_voice_can_be_auditioned_without_a_token(pool, jwks):
+    """<audio> cannot send Authorization, so an authenticated preview URL
+    is an unplayable one."""
+    app, _ = _build_app(pool, jwks, require_auth=True)
+
+    async with _client(app) as client:
+        response = await client.get("/api/voices/preview?voice_id=nonexistent")
+
+    # 404 from the route — an unknown voice — rather than 401 from here.
+    # What matters is that the request arrived.
+    assert response.status_code != 401
+
+
+async def test_a_music_track_can_be_auditioned_without_a_token(pool, jwks):
+    app, _ = _build_app(pool, jwks, require_auth=True)
+
+    async with _client(app) as client:
+        response = await client.get("/api/music/preview?track_id=nonexistent")
+
+    assert response.status_code != 401
+
+
+async def test_the_voice_catalog_itself_still_needs_one(pool, jwks):
+    """Only the sample is exempt. The list is fetched with headers like
+    everything else, so exempting it would widen the hole for nothing."""
+    app, _ = _build_app(pool, jwks, require_auth=True)
+
+    async with _client(app) as client:
+        response = await client.get("/api/voices")
+
+    assert response.status_code == 401

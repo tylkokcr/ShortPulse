@@ -12,12 +12,13 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from app.core.config import BACKEND_ROOT
+from app.core.config import get_settings
 from app.engines import audio_engine
 from app.schemas.project import TTSProvider, VoiceConfig
 from app.services import voices as voice_catalog
@@ -26,7 +27,16 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/voices", tags=["voices"])
 
-_PREVIEW_DIR = BACKEND_ROOT / "app" / "storage" / "voice_previews"
+def _preview_dir() -> Path:
+    """Where synthesized samples are cached.
+
+    Beside the projects rather than inside the image: on a container
+    deployment `storage_root` is the mounted volume, so previews survive a
+    redeploy instead of every voice in the catalog being re-synthesized the
+    first time someone opens the picker after one. Resolves to the same
+    path as before on a local checkout.
+    """
+    return get_settings().storage_root.parent / "voice_previews"
 
 # One synthesis at a time. Each loads a model into memory, and a page that
 # renders a dozen voices could otherwise fire a dozen concurrent loads.
@@ -72,8 +82,9 @@ async def preview(voice_id: str = Query(..., description="Voice id from GET /api
         # would let a caller probe for files in that repo.
         raise HTTPException(status_code=404, detail=f"Unknown voice: {voice_id!r}")
 
-    _PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
-    cached = _PREVIEW_DIR / f"{re.sub(r'[^A-Za-z0-9_-]', '_', voice.id)}.wav"
+    preview_dir = _preview_dir()
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    cached = preview_dir / f"{re.sub(r'[^A-Za-z0-9_-]', '_', voice.id)}.wav"
 
     if not cached.exists():
         line = voice_catalog.PREVIEW_LINE.get(voice.language, voice_catalog.PREVIEW_LINE["en"])
