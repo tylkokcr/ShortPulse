@@ -46,6 +46,31 @@ required, redistribution as a standalone audio file is not.
 Bundling them inside a video generator is the intended use. Re-hosting the
 directory as a music library would not be.
 
+## Why these are in git, when the example videos are not
+
+`frontend/public/examples/*.mp4` is gitignored and its README explains
+why — 26MB of binaries that churn on every re-encode. The same reasoning
+applied here would remove 85MB, and it would be wrong.
+
+The difference is who the files are for. The examples are marketing: they
+exist to be watched on one website, and a clone that lacks them still runs
+the product. The music is the product. A self-hoster who clones this repo
+and runs `docker compose up` gets a working video generator, and a working
+video generator has music in it — an empty picker is a broken install, not
+a missing nicety. That is most of what the MIT licence is offering.
+
+The cost is real and paid once: clones are 85MB heavier, and a push that
+adds tracks can time out against GitHub over HTTPS. If it does, the error
+is `send-pack: unexpected disconnect while reading sideband packet`, which
+looks like a network fault and is a buffer default:
+
+```bash
+git config http.postBuffer 524288000
+```
+
+Decided deliberately, so: do not "clean this up" without replacing what it
+gives a self-hoster.
+
 ## If you swap these out
 
 The catalog is the directory — `app/api/routes/music.py` reads whatever is
