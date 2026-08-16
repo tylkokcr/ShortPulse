@@ -162,20 +162,21 @@ export function TranscriptPanel({
                   inside a button is invalid and the nested one stops
                   receiving clicks in some browsers. */}
               {!scene.is_outro && (feedback || regenerate?.canRegenerate) && (
-                // Revealed on hover or keyboard focus rather than drawn on
-                // every row. Twelve scenes meant twelve identical pairs of
-                // buttons competing with the thing they act on; a flagged
-                // scene keeps its marker visible so nothing already said
-                // disappears. focus-within keeps it reachable without a
-                // mouse.
-                <div
-                  className={clsx(
-                    "flex flex-col gap-2 pb-3 pl-14 pr-2 transition-opacity",
-                    feedback?.verdicts.has(i)
-                      ? "opacity-100"
-                      : "opacity-0 focus-within:opacity-100 group-hover/scene:opacity-100"
-                  )}
-                >
+                // One quiet row, not a stack.
+                //
+                // These were hidden on hover for a while, which was the
+                // wrong instrument twice over: `opacity-0` still occupies
+                // its space, so every unhovered scene grew a band of dead
+                // air, and a stacked column stretched two secondary
+                // actions to the full width of the panel until they read
+                // as the row rather than as tools on it. Hiding also puts
+                // them out of reach of a keyboard.
+                //
+                // Small and side by side solves what hiding was aiming at
+                // — twelve pairs of buttons stop competing with the
+                // twelve things they act on — without costing layout or
+                // access. Wrapping lets either one open to full width.
+                <div className="flex flex-wrap items-start gap-2 pb-3 pl-14 pr-2">
                   {/* The complaint sits directly above the fix, so "this
                       is wrong" is answered by "then draw it again"
                       rather than by a thank-you. */}

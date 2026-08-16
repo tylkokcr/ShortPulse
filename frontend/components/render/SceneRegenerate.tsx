@@ -59,7 +59,7 @@ export function SceneRegenerate({
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-border bg-background p-3">
+    <div className="flex w-full flex-col gap-2 rounded-lg border border-border bg-background p-3">
       <label className="flex flex-col gap-1">
         <span className="font-mono text-[10px] uppercase tracking-widest text-white/30">
           what to draw
