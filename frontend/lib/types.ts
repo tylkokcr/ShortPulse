@@ -162,6 +162,9 @@ export interface MusicConfig {
 export interface MusicTrack {
   id: string;
   name: string;
+  /** The subdirectory it came from — a mood. Null for a top-level file,
+   *  which is where the bundled default sits. */
+  category?: string | null;
 }
 
 /** One art style. `sample` is a filename under /art-styles, produced by

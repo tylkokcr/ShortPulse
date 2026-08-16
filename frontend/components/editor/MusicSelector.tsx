@@ -21,6 +21,17 @@ import type { MusicTrack } from "@/lib/types";
  * all. A list of filenames is not a choice, which is also why adding more
  * of them was only worth doing alongside a way to hear them.
  */
+/** Folder names are ids; these are what a person should read. Anything
+ *  not listed falls back to the folder name, so adding a mood needs no
+ *  code change — only a nicer label if you want one. */
+const CATEGORY_LABELS: Record<string, string> = {
+  lofi: "Lo-fi & chill",
+  upbeat: "Upbeat & motivational",
+  atmospheric: "Atmospheric & dark",
+  suspense: "Suspense",
+  "": "Bundled",
+};
+
 export function MusicSelector() {
   const { draft, setDraft } = useShortPulseStore();
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
@@ -54,8 +65,22 @@ export function MusicSelector() {
 
   const noneSelected = !draft.musicEnabled;
 
+  // Grouped by the mood folder the file came from. Forty tracks in one
+  // flat grid is a wall, not a choice — and the grouping costs nothing to
+  // maintain because it *is* the directory layout.
+  const groups = new Map<string, MusicTrack[]>();
+  for (const track of tracks) {
+    const key = track.category ?? "";
+    groups.set(key, [...(groups.get(key) ?? []), track]);
+  }
+  // Uncategorised last: that is where the bundled default sits, and it is
+  // the least interesting thing in the list once there are alternatives.
+  const ordered = [...groups.entries()].sort(([a], [b]) =>
+    a === "" ? 1 : b === "" ? -1 : a.localeCompare(b)
+  );
+
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <button
           type="button"
@@ -70,8 +95,15 @@ export function MusicSelector() {
           <VolumeX size={14} className={noneSelected ? "text-accent" : "text-white/40"} />
           <span className="text-xs font-medium">No music</span>
         </button>
+      </div>
 
-        {tracks.map((track) => {
+      {ordered.map(([category, inGroup]) => (
+        <div key={category || "other"} className="flex flex-col gap-2">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-white/25">
+            {CATEGORY_LABELS[category] ?? category ?? "Other"}
+          </span>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {inGroup.map((track) => {
           const selected = draft.musicEnabled && draft.musicTrackId === track.id;
           return (
             <div
@@ -106,13 +138,15 @@ export function MusicSelector() {
             </div>
           );
         })}
-      </div>
+          </div>
+        </div>
+      ))}
 
       <p className="text-[11px] leading-relaxed text-white/30">
         {failed
           ? "Couldn't reach the music library — the render will fall back to the bundled track."
-          : "Music ducks automatically under the voiceover. Drop more files into " +
-            "backend/app/assets/music to add to this list."}
+          : "Music ducks automatically under the voiceover and loops to fit. Drop more " +
+            "files into backend/app/assets/music — a subfolder becomes a mood."}
       </p>
     </div>
   );
