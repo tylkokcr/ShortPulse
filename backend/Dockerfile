@@ -47,6 +47,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 COPY migrations ./migrations
+# Operational tooling, not application code — but it needs the same
+# settings, the same pool and the same storage layout, so it belongs in
+# the image rather than on the host. prune_storage.py is the only thing
+# that reclaims disk on a schedule: without it, orphaned directories and
+# the working files a scene re-roll needs both grow forever.
+COPY scripts ./scripts
 
 # Renders run as this user and write only under /data. Nothing in the
 # pipeline needs root, and ffmpeg is fed URLs and files from outside.

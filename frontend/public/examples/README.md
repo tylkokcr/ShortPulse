@@ -11,6 +11,31 @@ repo tracks the `.jpg` posters (~590KB) instead, so a fresh clone still
 renders the marquee with correct thumbnails; only hover-to-play is missing
 until the videos exist locally.
 
+## Getting them onto the deployment — the step that is easy to miss
+
+The consequence of the above is that **a deploy cannot ship these**. The
+server builds the web image from its git checkout, the checkout obeys the
+same ignore rule, so `docker compose up --build web` produces an image
+with eleven posters and no videos. Every clip 404s and the marquee is a
+row of stills that never play, which is exactly what the live site did
+from launch until someone checked.
+
+They have to be copied to the server before the build, and again after any
+`git clean`:
+
+```bash
+scp frontend/public/examples/*.mp4 \
+    shortpulse:/opt/shortpulse/frontend/public/examples/
+ssh shortpulse 'cd /opt/shortpulse && \
+    docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build web'
+```
+
+Verify rather than assume — a 404 here looks like nothing at all:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' https://<your-domain>/examples/honey.mp4
+```
+
 ## Regenerating them
 
 Each clip is a normal render. With the backend running:

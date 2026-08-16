@@ -14,19 +14,22 @@ import { Badge } from "@/components/ui/Badge";
  * Durations and scene counts are read off the rendered projects rather
  * than chosen to look good.
  *
- * These use the `stock_media` visual mode. AI stills were tried here first
- * and were not honest to show — local diffusion at this size produced a
- * doubled nose on this very sleep script — but that was a different
- * backend. fast_hybrid now generates on RealVisXL over an API, and a
- * side-by-side on one topic came back the other way round: faces held up,
- * every scene kept the same subject, and the failure was an extremity in
- * an awkward crop rather than a face.
+ * Ten are `stock_media` and one is `fast_hybrid`, marked on the card.
+ * Both are here on purpose: for most of this page's life every example was
+ * stock footage, which meant a visitor judged the three-credit mode by the
+ * one-credit one and the paid mode looked like whatever they imagined.
  *
- * So the reason these are all stock footage has expired, and the showcase
- * has simply not been re-shot yet. It is now understating the mode this
- * service charges three credits for. Replace at least one of these with a
- * fast_hybrid render — on a neutral topic — rather than leaving a visitor
- * to judge the paid mode by the free one.
+ * AI stills were tried here first, years of model progress ago, and were
+ * not honest to show — local diffusion at this size put a doubled nose on
+ * this very sleep script. That stopped being true when fast_hybrid moved
+ * to RealVisXL over an API: on a side-by-side of the same topic the
+ * generated frames held their faces and kept one subject across every
+ * scene, while the stock cut matched a caregiving clip to a line about
+ * attraction. The eleventh entry is that render.
+ *
+ * The .mp4 files are gitignored — see the README in public/examples for
+ * why, and for the step that gets them onto the server, which a git pull
+ * cannot do for you.
  */
 interface Example {
   slug: string;
@@ -34,6 +37,10 @@ interface Example {
   language: string;
   seconds: number;
   scenes: number;
+  /** Marked only on the AI-stills entries. Absent means stock footage,
+   *  which is what most of these are and what the credit line below
+   *  covers — a generated clip has no videographer to name. */
+  aiStills?: boolean;
 }
 
 const EXAMPLES: Example[] = [
@@ -47,6 +54,16 @@ const EXAMPLES: Example[] = [
   { slug: "volcano", title: "Why volcanoes erupt", language: "English", seconds: 24, scenes: 5 },
   { slug: "goosebumps", title: "Why we get goosebumps", language: "English", seconds: 18, scenes: 5 },
   { slug: "sleep", title: "A simple trick for better sleep", language: "English", seconds: 19, scenes: 5 },
+  // The one AI-stills entry, and the reason the comment above no longer
+  // applies. Numbers read off the render: 8 scenes, 23.6s, photoreal.
+  {
+    slug: "quiet-observers",
+    title: "Why quiet people read the room",
+    language: "English",
+    seconds: 24,
+    scenes: 8,
+    aiStills: true,
+  },
 ];
 
 /**
@@ -70,11 +87,12 @@ export function Examples() {
       <div className="mx-auto mb-8 flex max-w-6xl flex-col gap-2 px-6">
         <span className="font-mono text-xs uppercase tracking-widest text-accent">Real output</span>
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Ten videos this pipeline actually made
+          Eleven videos this pipeline actually made
         </h2>
         <p className="max-w-xl text-sm text-white/50">
-          Unedited output — AI-written script, Piper voiceover, word-synced captions and real stock
-          footage, in three languages. Hover any one to play it.
+          Unedited output — AI-written script, Piper voiceover, word-synced captions, in three
+          languages. Ten use real stock footage; the one marked AI stills was drawn by the paid
+          mode. Hover any one to play it.
         </p>
       </div>
 
@@ -112,7 +130,8 @@ export function Examples() {
           >
             Pexels
           </a>
-          , filmed by {FOOTAGE_CREDITS.join(", ")}.
+          , filmed by {FOOTAGE_CREDITS.join(", ")}. The AI-stills clip has no footage to
+          credit — every frame of it was generated.
         </p>
         <p>
           Background music is “Airport Lounge” by Kevin MacLeod (incompetech.com), licensed CC BY
@@ -192,6 +211,18 @@ function ExampleCard({
         >
           {example.language}
         </Badge>
+
+        {/* Said on the card rather than only in the paragraph below: a
+            visitor deciding whether three credits is worth it needs to
+            know which of these it buys, while they are looking at it. */}
+        {example.aiStills && (
+          <Badge
+            tone="neutral"
+            className="absolute right-2 top-2 border-accent/40 bg-black/60 px-2 py-0.5 text-[10px] text-accent backdrop-blur"
+          >
+            AI stills
+          </Badge>
+        )}
       </div>
 
       <figcaption className="mt-2.5 flex flex-col gap-0.5">
