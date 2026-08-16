@@ -120,3 +120,64 @@ def test_the_default_negative_prompt_matches_the_styles():
     its own, so a gap here is a gap on the same renders."""
     for term in ("deformed feet", "extra toes", "crowd", "group of people"):
         assert term in DEFAULT_NEGATIVE_PROMPT, f"default negative lost {term!r}"
+
+
+# --- what the user adds, on top of what the style already excludes ------
+#
+# The field reads as an override and was implemented as one. Someone who
+# saw a mangled hand and typed "hands" got an image generated without
+# "deformed", "bad anatomy", "extra fingers" or "crowd" — worse odds than
+# leaving the box empty, and nothing about the result would say so.
+
+
+def _scene_with(negative: str | None):
+    from app.schemas.project import Scene, SceneAudio, SceneVisual
+
+    return Scene(
+        index=0,
+        duration_s=4.0,
+        visual=SceneVisual(prompt="a face", negative_prompt=negative),
+        audio=SceneAudio(voiceover_line="line"),
+    )
+
+
+def test_a_scene_negative_adds_to_the_style_rather_than_replacing_it():
+    from app.engines.visual_engine import negative_for
+
+    style = ART_STYLES[0]
+    combined = negative_for(_scene_with("hands, feet"), style)
+
+    assert "hands" in combined and "feet" in combined
+    for kept in ("deformed", "bad anatomy", "crowd", "extra fingers"):
+        assert kept in combined, f"the style's {kept!r} was dropped"
+
+
+def test_a_scene_that_adds_nothing_gets_the_style_untouched():
+    from app.engines.visual_engine import negative_for
+
+    style = ART_STYLES[0]
+
+    assert negative_for(_scene_with(None), style) == style.negative_prompt
+    assert negative_for(_scene_with("  "), style) == style.negative_prompt
+
+
+def test_a_repeated_term_is_not_sent_twice():
+    """The field is length-capped, so a duplicate costs room that a real
+    term could have used."""
+    from app.engines.visual_engine import negative_for
+
+    style = ART_STYLES[0]
+    combined = negative_for(_scene_with("Crowd, hands"), style)
+
+    assert combined.lower().count("crowd") == 1
+    assert "hands" in combined
+
+
+def test_the_project_negative_reaches_every_scene():
+    """Set once before the render, applied to all of them — including the
+    scenes a re-roll will later start from."""
+    from app.schemas.project import ProjectConfig
+
+    config = ProjectConfig(topic="t", negative_prompt="hands, crowd")
+
+    assert config.negative_prompt == "hands, crowd"

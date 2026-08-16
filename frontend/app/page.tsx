@@ -27,6 +27,7 @@ import { OutroToggle } from "@/components/editor/OutroToggle";
 import { VisualSelector } from "@/components/visual/VisualSelector";
 import { CaptionStyleSelector } from "@/components/editor/CaptionStyleSelector";
 import { ArtStyleSelector } from "@/components/editor/ArtStyleSelector";
+import { NegativePrompt } from "@/components/editor/NegativePrompt";
 import { AspectRatioSelector } from "@/components/editor/AspectRatioSelector";
 import { MusicSelector } from "@/components/editor/MusicSelector";
 import { VoiceSelector } from "@/components/editor/VoiceSelector";
@@ -161,6 +162,9 @@ function CreateVideo() {
                 </Field>
                 <Field label="Art style">
                   <ArtStyleSelector />
+                </Field>
+                <Field label="Keep out of frame">
+                  <NegativePrompt />
                 </Field>
                 <Field label="Caption style">
                   <CaptionStyleSelector />

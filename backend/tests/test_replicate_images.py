@@ -159,13 +159,26 @@ async def test_the_art_style_leads_the_prompt_and_brings_its_negative(
     assert fake.created["version"] == "owner/model:abc123"
 
 
-async def test_a_scene_negative_prompt_wins_over_the_style_one(monkeypatch, scene, tmp_path):
+async def test_a_scene_negative_prompt_adds_to_the_style_one(monkeypatch, scene, tmp_path):
+    """It used to win outright, which was the wrong way round.
+
+    The field is offered to someone who has just seen a bad frame — a
+    mangled hand, a crowd — and the natural entry is the one word for what
+    went wrong. Under an override that word replaced the twenty terms the
+    style carries about anatomy, crowds and on-screen text, so trying to
+    fix the picture made it likelier to break. Nothing in the result would
+    have said so.
+    """
     fake = _serve(monkeypatch, FakeReplicate())
+    style = art_styles.DEFAULT_ART_STYLE
     scene.visual.negative_prompt = "no birds"
 
     await visual_engine._generate_replicate_image(scene, tmp_path, Settings())
 
-    assert fake.created["input"]["negative_prompt"] == "no birds"
+    sent = fake.created["input"]["negative_prompt"]
+    assert "no birds" in sent
+    assert "bad anatomy" in sent and "crowd" in sent
+    assert sent.startswith(style.negative_prompt)
 
 
 async def test_steps_and_guidance_come_from_the_same_settings_as_the_local_path(

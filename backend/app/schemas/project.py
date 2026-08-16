@@ -323,6 +323,15 @@ class ProjectConfig(BaseModel):
     # Id from app.services.art_styles. Only affects the locally generated
     # modes — stock footage is whatever the videographer shot.
     art_style: str = "photoreal"
+    # Things to keep out of every generated frame, on top of what the art
+    # style already excludes — never instead of it, see
+    # visual_engine.negative_for.
+    #
+    # Set before the render rather than after, which is the only time it
+    # can prevent anything: a scene re-roll can add to this per scene, but
+    # by then the picture that prompted it has already been paid for.
+    # Ignored by stock_media for the same reason art_style is.
+    negative_prompt: str | None = Field(default=None, max_length=400)
     video_length: VideoLength = VideoLength.SHORT
     language: str = Field(
         default="en",

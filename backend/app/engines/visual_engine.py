@@ -75,6 +75,33 @@ SDXL_SIZE_BY_ORIENTATION: dict[str, tuple[int, int]] = {
 }
 
 
+def negative_for(scene: Scene, style: ArtStyle) -> str:
+    """The art style's negative prompt, plus whatever this scene added.
+
+    Added, not instead of. This used to be
+    `scene.visual.negative_prompt or style.negative_prompt`, which read as
+    a sensible override and behaved as a trapdoor: someone who saw a
+    mangled hand and typed "hands" into the box got an image generated
+    without "deformed", "bad anatomy", "extra fingers", "crowd" or any of
+    the other twenty terms the style carries — strictly worse odds than
+    doing nothing, and no way to tell from the outside.
+
+    The style leads, so its terms survive a scene that says nothing, and
+    duplicates are dropped because the same word twice buys nothing and
+    the field is length-capped.
+    """
+    style_terms = [t.strip() for t in style.negative_prompt.split(",") if t.strip()]
+    scene_terms = [t.strip() for t in (scene.visual.negative_prompt or "").split(",") if t.strip()]
+    seen: set[str] = set()
+    out: list[str] = []
+    for term in (*style_terms, *scene_terms):
+        key = term.casefold()
+        if key not in seen:
+            seen.add(key)
+            out.append(term)
+    return ", ".join(out)
+
+
 def sdxl_size_for(width: int, height: int) -> tuple[int, int]:
     """Generation size matching the render target's orientation."""
     if width > height:
@@ -358,7 +385,7 @@ async def _generate_ai_video(
         pipeline = _get_ltx_pipeline(settings.ltx_video_model_id, settings.diffusion_device)
         result = pipeline(
             prompt=style.build_prompt(scene.visual.prompt),
-            negative_prompt=scene.visual.negative_prompt or style.negative_prompt,
+            negative_prompt=negative_for(scene, style),
             # LTXPipeline requires both dimensions divisible by 32. Kept
             # deliberately small (1/4 the pixel area of the previous
             # 768x1376) — this 13B model has no reliable low-memory path on
@@ -427,7 +454,7 @@ async def _generate_fast_hybrid_image(
             # equally malformed at guidance 1.8 / 8 steps, for 2.5x the
             # time). It does take effect when these settings are pointed
             # at a full SDXL fine-tune (see Settings.sdxl_* in core/config).
-            negative_prompt=scene.visual.negative_prompt or style.negative_prompt,
+            negative_prompt=negative_for(scene, style),
             width=width,
             height=height,
             num_inference_steps=settings.sdxl_num_inference_steps,
@@ -468,7 +495,7 @@ def _replicate_image_input(scene: Scene, style: ArtStyle, size, settings) -> dic
     width, height = replicate_size_for(*(size or SDXL_SIZE_BY_ORIENTATION["vertical"]))
     return {
         "prompt": style.build_prompt(scene.visual.prompt),
-        "negative_prompt": scene.visual.negative_prompt or style.negative_prompt,
+        "negative_prompt": negative_for(scene, style),
         "width": width,
         "height": height,
         "num_inference_steps": settings.sdxl_num_inference_steps,

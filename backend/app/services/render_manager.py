@@ -152,6 +152,16 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 # for prose here would be generated and then discarded.
                 visual_mode=str(config.visual_mode),
             )
+        # What the whole render should keep out of frame, stamped onto
+        # every scene the LLM just wrote. Per scene rather than read from
+        # the config at generation time, so a scene re-rolled later starts
+        # from what the project asked for and can add to it — and so the
+        # stored script says what each picture was actually generated
+        # against, which is the only record after the fact.
+        if config.negative_prompt:
+            for scene in script.scenes:
+                scene.visual.negative_prompt = config.negative_prompt
+
         if config.outro.enabled:
             outro_text = config.outro.text or script.call_to_action or "Thanks for watching!"
             script.scenes.append(

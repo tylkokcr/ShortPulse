@@ -26,6 +26,10 @@ interface ProjectDraft {
   aspectRatio: AspectRatio;
   /** Id from GET /api/art-styles; ignored for stock footage. */
   artStyle: string;
+  /** Things to keep out of every generated frame, added to what the art
+   *  style already excludes. Ignored for stock footage, same as artStyle.
+   *  Empty means "just the style's own". */
+  negativePrompt: string;
   /** Piper voice id; empty means "the backend's default for this
    *  language" (see audio_engine.PIPER_VOICE_BY_LANGUAGE). */
   voiceId: string;
@@ -74,6 +78,7 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
     captionPreset: DEFAULT_CAPTION_PRESET.id,
     aspectRatio: "9:16",
     artStyle: "photoreal",
+    negativePrompt: "",
     voiceId: "",
     musicEnabled: true,
     musicTrackId: null,
@@ -89,6 +94,7 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
       raw_script: draft.rawScript.trim() ? draft.rawScript : null,
       visual_mode: draft.visualMode,
       art_style: draft.artStyle,
+      negative_prompt: draft.negativePrompt.trim() || null,
       video_length: draft.videoLength,
       language: draft.language,
       aspect_ratio: draft.aspectRatio,
