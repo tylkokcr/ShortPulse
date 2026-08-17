@@ -104,12 +104,79 @@ def cost_for(config: ProjectConfig) -> int:
 # ---------------------------------------------------------------------
 FREE_TIER_MODES: frozenset[VisualMode] = frozenset({VisualMode.STOCK_MEDIA})
 
+# One finished video in a paid mode, on the house.
+#
+# The grant covering only stock footage was right about cost and wrong
+# about first impressions: a side-by-side of the same topic had the stock
+# cut matching a caregiving clip to a line about attraction while the
+# generated one held its subject across every scene. Someone trying this
+# for the first time was being shown the weaker half and judging the
+# product by it.
+#
+# One is enough to see the difference and cheap enough not to think about:
+# roughly two cents of hosted generation, against an impression that
+# decides whether they come back. The signup grant caps the rest by
+# itself — 10 credits does not stretch far at three a render.
+FREE_TRIAL_GENERATED_VIDEOS = 1
+
 # Read by a customer in a disabled tile's tooltip, so it says what to do
 # rather than what went wrong.
 PURCHASE_REQUIRED_REASON = (
-    "unlocked by any credit pack — the free signup credits cover stock-footage "
-    "renders, which is what they are for: judging the output before paying"
+    "unlocked by any credit pack — your free AI-stills video has been made, "
+    "and the signup credits cover stock-footage renders after that"
 )
+
+# The same wall, reached from the other side. Re-rolling is not part of
+# the trial: the trial is one video, and needing a credit pack to fix a
+# scene arrives exactly when someone has decided they want the scene
+# fixed — which is a better moment to ask than any other.
+REROLL_PURCHASE_REQUIRED_REASON = (
+    "re-drawing a scene needs a credit pack — the free video is one render, "
+    "not an editing session"
+)
+
+
+async def generated_videos_delivered(
+    conn: asyncpg.Connection | asyncpg.Pool, user_id: str
+) -> int:
+    """Finished videos this account has in a mode the grant doesn't cover.
+
+    Counts what was *delivered*, not what was attempted. A render that
+    failed cost the user nothing — it was refunded — so consuming their
+    one free trial on it would charge them for our outage in the only
+    currency they had. Retrying until it works is the correct behaviour,
+    and each attempt still spends grant credits, which is what bounds it.
+
+    Reaches inside `config`, which migration 0001 introduced on the
+    understanding that nothing would. Nothing indexes it either — the
+    filter that matters is user_id, which projects_user_created_idx
+    covers, and the JSON test only runs over one account's own rows.
+    """
+    return await conn.fetchval(
+        """
+        select count(*) from projects
+        where user_id = $1 and status = 'complete'
+          and coalesce(config->>'visual_mode', '') <> all($2::text[])
+        """,
+        user_id,
+        [str(m) for m in FREE_TIER_MODES],
+    )
+
+
+async def may_render_paid_mode(
+    conn: asyncpg.Connection | asyncpg.Pool, user_id: str
+) -> bool:
+    """Whether this account can start a render in a paid visual mode.
+
+    Two ways through: having bought credits, or not having spent the free
+    trial yet. Kept in one function so the availability endpoint, the
+    render gate and anything added later cannot disagree about who is
+    allowed what — the same reason visual_engine.unavailable_reason is one
+    function.
+    """
+    if await has_purchased(conn, user_id):
+        return True
+    return await generated_videos_delivered(conn, user_id) < FREE_TRIAL_GENERATED_VIDEOS
 
 
 async def has_purchased(conn: asyncpg.Connection | asyncpg.Pool, user_id: str) -> bool:

@@ -51,7 +51,9 @@ async def list_visual_modes(
     # about any particular mode. On a self-hosted install there is no
     # ledger and no user, so nothing is gated and this never runs.
     pool = db_pool(request)
-    gated = billing_enabled(pool, user_id) and not await credits.has_purchased(pool, user_id)
+    gated = billing_enabled(pool, user_id) and not await credits.may_render_paid_mode(
+        pool, user_id
+    )
 
     out: list[VisualModeOut] = []
     for mode in VisualMode:

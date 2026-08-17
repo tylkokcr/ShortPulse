@@ -55,7 +55,7 @@ const groupsFor = (
       },
       {
         q: "Is there really a free tier?",
-        a: `${signupCredits} credits when you sign up, no card — ${Math.floor(signupCredits / 3)} videos with AI stills, or ${signupCredits} with stock footage. Enough to see what the output actually looks like before paying for any of it.`,
+        a: `${signupCredits} credits when you sign up, no card. One of your videos can use AI stills — that one is on us, so you see the paid mode before deciding anything — and the rest of the grant renders stock-footage videos at 1 credit each. Re-rolling a scene and further AI-stills renders need a credit pack.`,
       },
     ],
   },

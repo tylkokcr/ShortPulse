@@ -127,13 +127,23 @@ export function Pricing() {
               now refuses to sell an unpaid account. `generatedStills` still
               decides whether AI stills are mentioned at all, because a
               deployment without them must not advertise an upgrade it
-              cannot deliver either. */}
+              cannot deliver either.
+
+              The AI-stills line is the offer, so it goes above the stock
+              one: a visitor deciding whether to sign up is deciding
+              whether the paid mode is any good, and this card is where
+              they are told they can find out without paying. It is free
+              of *purchase*, not free of charge — the grant pays for it
+              like any other render, which is why the credit line stays
+              first and the count below it is what remains after. */}
           <ul className="flex flex-col gap-2 text-xs text-white/50">
             <Feature>{signupCredits} credits on sign-up</Feature>
-            <Feature>{signupCredits} stock-footage videos</Feature>
+            {generatedStills && <Feature>Your first AI-stills video free</Feature>}
+            <Feature>
+              {generatedStills ? "Then stock" : "Stock"}-footage videos from 1 credit
+            </Feature>
             <Feature>Every language</Feature>
             <Feature>No watermark</Feature>
-            {generatedStills && <Feature>AI stills with any credit pack</Feature>}
           </ul>
           <a href="#sign-in" className="mt-auto pt-2">
             <Button variant="secondary" className="w-full">

@@ -211,9 +211,15 @@ async def test_self_hosting_is_free(pool, stub_work):
 
 
 async def test_the_free_grant_cannot_buy_a_generated_re_roll(pool, user, stub_work):
-    """Grant-funded accounts are held to the same gate as at render time.
-    Nearly unreachable — a fast_hybrid project implies a purchase — but
-    grants and adjustments can fund an account that never bought one."""
+    """Grant-funded accounts are held to a gate at least as strict as the
+    one at render time.
+
+    This was nearly unreachable when a fast_hybrid project implied a
+    purchase. The free trial made it the ordinary path: everyone who takes
+    the one free generated video lands here the moment they try to fix a
+    scene in it, which is why credits.REROLL_PURCHASE_REQUIRED_REASON says
+    what it says rather than repeating the render-time wording.
+    """
     await credits.grant(pool, user, 20)  # a grant, not a purchase
     project = await _finished_project(user)
 

@@ -11,6 +11,11 @@ The rule itself is one line (FREE_TIER_MODES), so what is worth testing is
 everything around it: that it does not fire on a self-hosted install, that
 a purchase lifts it permanently rather than while the balance lasts, and
 that a refusal costs the caller nothing.
+
+The trial added later (FREE_TRIAL_GENERATED_VIDEOS) is a second way past
+the same wall, so the tests for it are kept together at the bottom rather
+than folded in — the two conditions are independent and a change to
+either must not be able to pass by accident on the other.
 """
 
 from __future__ import annotations
@@ -30,24 +35,39 @@ USER = "11111111-1111-1111-1111-111111111111"
 
 
 class FakePool:
-    """Answers the two queries this flow makes: has this account bought
-    anything, and debit it.
+    """Answers the three queries this flow makes: has this account bought
+    anything, how many generated videos has it been given, and debit it.
 
     A stub rather than a real ledger because these tests are about the
     branch, not about SQL — test_credits.py runs the real spend_credits()
     against a real Postgres. `purchase_checks` is kept so a test can
     assert the gate asked once rather than once per mode.
+
+    `delivered` defaults to the whole free trial because most tests in
+    this file are about the wall an account hits *after* the trial, and
+    saying so once here beats repeating it at every construction. The
+    trial itself gets its own section at the bottom.
     """
 
-    def __init__(self, purchased: bool, balance: int = 20) -> None:
+    def __init__(
+        self,
+        purchased: bool,
+        balance: int = 20,
+        delivered: int = credits.FREE_TRIAL_GENERATED_VIDEOS,
+    ) -> None:
         self.purchased = purchased
         self.balance = balance
+        self.delivered = delivered
         self.purchase_checks: list[str] = []
+        self.queries: list[str] = []
 
     async def fetchval(self, sql: str, *args):
+        self.queries.append(sql)
         if "credit_entries" in sql:
             self.purchase_checks.append(sql)
             return self.purchased
+        if "from projects" in sql:
+            return self.delivered
         if "spend_credits" in sql:
             return self.balance
         raise AssertionError(f"unexpected query: {sql}")
@@ -226,3 +246,105 @@ async def test_stock_media_still_works_on_the_free_grant(hosted_images):
 
     assert response.status_code == 201
     assert len(app.state.render_queue.submitted) == 1
+
+
+# --- one free video in the paid mode ------------------------------------
+#
+# The grant covering only stock footage was right about cost and wrong
+# about first impressions: someone trying this for the first time was
+# shown the weaker of the two modes and judged the product by it. One
+# finished generated video costs about two cents and is the whole of that
+# impression.
+
+
+_NEW_ACCOUNT = dict(purchased=False, delivered=0)
+
+
+async def test_a_brand_new_account_may_render_the_paid_mode():
+    """The point of the change: the first video is the good one."""
+    assert await credits.may_render_paid_mode(FakePool(**_NEW_ACCOUNT), USER) is True
+
+
+async def test_the_trial_is_spent_once_a_video_is_delivered():
+    assert await credits.may_render_paid_mode(FakePool(purchased=False, delivered=1), USER) is False
+
+
+async def test_a_failed_render_does_not_consume_the_trial():
+    """A failed render was refunded, so spending the trial on it would
+    charge for our outage in the only currency the account had. Counting
+    delivered videos rather than attempts is what makes retrying work,
+    and grant credits are what stop it being unbounded."""
+    assert await credits.may_render_paid_mode(FakePool(purchased=False, delivered=0), USER) is True
+
+
+async def test_buying_credits_reopens_it_permanently():
+    """Asked in the order that matters: a customer who has bought a pack
+    is never counted, so no number of delivered videos can re-lock them."""
+    pool = FakePool(purchased=True, delivered=99)
+
+    assert await credits.may_render_paid_mode(pool, USER) is True
+
+
+async def test_the_picker_offers_the_trial(hosted_images):
+    """A new account should see fast_hybrid selectable, not explained
+    away — the tile is where the offer is made, and a tooltip saying
+    "buy a pack" is the opposite of an offer."""
+    app = _app(visual_modes_route.router, pool=FakePool(**_NEW_ACCOUNT), user_id=USER)
+    modes = {m["mode"]: m for m in (await _get(app, "/api/visual-modes")).json()}
+
+    assert modes["fast_hybrid"]["available"] is True
+    assert modes["fast_hybrid"]["reason"] is None
+
+
+async def test_the_trial_never_covers_ai_video(hosted_images, monkeypatch):
+    """One free generated video, not one of each.
+
+    ai_video is refused for a reason no trial can lift — this service has
+    no GPU — so the exemption must not reach it.
+    """
+    monkeypatch.setattr(
+        visual_engine.importlib.util,
+        "find_spec",
+        lambda name: None if name in ("torch", "diffusers") else object(),
+    )
+
+    app = _app(visual_modes_route.router, pool=FakePool(**_NEW_ACCOUNT), user_id=USER)
+    modes = {m["mode"]: m for m in (await _get(app, "/api/visual-modes")).json()}
+
+    assert modes["ai_video"]["available"] is False
+
+
+async def test_the_trial_render_is_accepted(hosted_images):
+    app = _app(projects_route.router, pool=FakePool(**_NEW_ACCOUNT), user_id=USER)
+
+    response = await _post_project(app, "fast_hybrid")
+
+    assert response.status_code == 201
+    assert len(app.state.render_queue.submitted) == 1
+
+
+async def test_the_second_one_is_refused(hosted_images):
+    """The gate the rest of this file tests is still there — the trial
+    moved it by one render, it did not remove it."""
+    app = _app(projects_route.router, pool=FakePool(purchased=False, delivered=1), user_id=USER)
+
+    response = await _post_project(app, "fast_hybrid")
+
+    assert response.status_code == 402
+    assert response.json()["detail"]["error"] == "purchase_required"
+
+
+async def test_the_trial_still_costs_credits(hosted_images):
+    """Free of *purchase*, not free of charge.
+
+    The signup grant pays for it like any other render, which is what
+    stops one account taking the trial ten times by never finishing a
+    video: attempts are bounded by the balance even though the trial is
+    counted in deliveries.
+    """
+    pool = FakePool(**_NEW_ACCOUNT)
+    app = _app(projects_route.router, pool=pool, user_id=USER)
+
+    await _post_project(app, "fast_hybrid")
+
+    assert any("spend_credits" in q for q in pool.queries)

@@ -109,7 +109,7 @@ async def create_project(
     if (
         billing_enabled(pool, user_id)
         and mode not in credits.FREE_TIER_MODES
-        and not await credits.has_purchased(pool, user_id)
+        and not await credits.may_render_paid_mode(pool, user_id)
     ):
         raise HTTPException(
             status_code=402,
@@ -411,13 +411,17 @@ async def regenerate_scene(
         # Same gate as creating the project: a mode the free grant does
         # not cover cannot be bought with it afterwards either.
         mode = VisualMode(project.config.visual_mode)
+        # has_purchased, not may_render_paid_mode: the free trial buys one
+        # finished video, and a re-roll is a second generation on top of
+        # it. Asking for a pack here lands when someone has just decided
+        # they want a scene fixed, which is the best moment there is.
         if mode not in credits.FREE_TIER_MODES and not await credits.has_purchased(pool, user_id):
             raise HTTPException(
                 status_code=402,
                 detail={
                     "error": "purchase_required",
                     "mode": str(mode),
-                    "reason": credits.PURCHASE_REQUIRED_REASON,
+                    "reason": credits.REROLL_PURCHASE_REQUIRED_REASON,
                 },
             )
 
