@@ -79,6 +79,42 @@ async def main() -> int:
                 where c.reason = 'purchase' {window.format('c')}"""
         )
 
+        # Does the free generated video pay for itself?
+        #
+        # Split by what each account was actually shown rather than by the
+        # date the trial shipped: an account that got a generated video
+        # without ever paying for one took the trial, whoever they are and
+        # whenever they arrived. That keeps working if the trial is turned
+        # off, turned back on, or its size changed — see
+        # credits.FREE_TRIAL_GENERATED_VIDEOS.
+        cohorts = await pool.fetch(
+            f"""
+            with seen as (
+                select u.id,
+                       count(*) filter (
+                           where p.status = 'complete'
+                             and coalesce(p.config->>'visual_mode', '') <> 'stock_media'
+                       ) as generated,
+                       count(*) filter (where p.status = 'complete') as finished
+                from app_users u
+                left join projects p on p.user_id = u.id
+                where true {window.format('u')}
+                group by u.id
+            )
+            select case
+                       when generated > 0 then 'saw a generated video'
+                       when finished  > 0 then 'stock footage only'
+                       else 'never finished one'
+                   end as cohort,
+                   count(*) as people,
+                   count(*) filter (
+                       where exists (select 1 from credit_entries c
+                                     where c.user_id = seen.id and c.reason = 'purchase')
+                   ) as bought
+            from seen group by 1 order by 2 desc
+            """
+        )
+
         renders = await pool.fetch(
             f"""select p.config->>'visual_mode' as mode, p.status, count(*) as n
                 from projects p where true {window.format('p')}
@@ -114,6 +150,19 @@ async def main() -> int:
         print("\n  People are finishing videos and not buying.")
         print("  Either the free grant is enough, or the price is wrong,")
         print("  or they were not happy with what they got — the verdicts below say which.")
+
+    if cohorts:
+        print("\nDid the free generated video sell anything?\n")
+        for row in cohorts:
+            print(
+                f"  {row['cohort']:<24} {row['people']:>3} people,"
+                f" {row['bought']:>3} bought  {_pct(row['bought'], row['people'])}"
+            )
+        thin = sum(r["people"] for r in cohorts) < 15
+        if thin:
+            print("\n  Too few accounts to read anything into these rates yet.")
+            print("  Come back at 15 or so; before that the difference between")
+            print("  one buyer and none is noise, not a result.")
 
     if renders:
         print("\nRenders by mode\n")
