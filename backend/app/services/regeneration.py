@@ -83,7 +83,8 @@ def availability(project: Project) -> tuple[bool, str | None]:
         # The retention window closed, or the video predates re-rolling.
         return False, (
             "The working files for this video have been cleaned up, so its "
-            "scenes can no longer be re-drawn. Rendering it again would."
+            "scenes can no longer be re-drawn. Rendering it from scratch "
+            "will produce a new set that can be."
         )
     return True, None
 
