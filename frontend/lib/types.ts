@@ -279,6 +279,12 @@ export interface Project {
    *  files are swept. Never assume true. */
   can_regenerate?: boolean;
   regenerate_blocked_reason?: string | null;
+  /** How many renders start before this one. `null` means the question
+   *  doesn't apply — already running, finished, or never queued — while
+   *  0 means next in line, which is a different thing worth saying. */
+  queue_ahead?: number | null;
+  /** Rough seconds until this one starts. An estimate, shown as "about". */
+  queue_wait_s?: number | null;
   /** This viewer's own verdicts, so a flagged scene isn't asked about twice. */
   feedback?: SceneFeedback[];
   captions?: CaptionTrack | null;

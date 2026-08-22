@@ -397,6 +397,18 @@ class Project(BaseModel):
     # assumed yes would offer a button that always failed.
     can_regenerate: bool = False
     regenerate_blocked_reason: str | None = None
+    # Where this render sits in the queue, when it is in one. Computed
+    # like the two above and just as unstorable — it changes as other
+    # people's renders finish, not as this project changes.
+    #
+    # None means the question does not apply (running, finished, or never
+    # queued); 0 means next in line, which is a real answer and not the
+    # same as None. Without this a queued render is indistinguishable from
+    # a stuck one: the row sits at `draft`, no progress event is emitted
+    # because no worker has picked it up, and the page shows the same
+    # waiting state whether the wait is ten seconds or ninety minutes.
+    queue_ahead: int | None = None
+    queue_wait_s: int | None = None
     # This viewer's own verdicts on the render, so the UI can show a scene
     # already flagged rather than asking twice. Computed per request like
     # the two above, and scoped to the caller — feedback is a private note

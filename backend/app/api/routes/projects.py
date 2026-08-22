@@ -204,11 +204,28 @@ def _with_regeneration_state(project: Project) -> Project:
     return project
 
 
+def _with_queue_state(project: Project, request: Request) -> Project:
+    """Say where an unstarted render is in line.
+
+    Only the queue knows this — it is not in the database and cannot be,
+    since it changes when *other* projects finish. Read straight off the
+    live queue for the same reason the regeneration answer is read off the
+    disk.
+    """
+    queue = getattr(request.app.state, "render_queue", None)
+    if queue is None:  # self-hosted CLI use, or a test app without one
+        return project
+    project.queue_ahead = queue.waiting_ahead_of(project.config.id)
+    project.queue_wait_s = queue.estimated_wait_s(project)
+    return project
+
+
 @router.get("/{project_id}", response_model=Project)
 async def get_project(
     project_id: str, request: Request, user_id: str | None = Depends(current_user_id)
 ) -> Project:
     project = _with_regeneration_state(await _visible_project(project_id, user_id))
+    project = _with_queue_state(project, request)
     return await _with_feedback(project, db_pool(request), user_id)
 
 

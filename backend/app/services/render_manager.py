@@ -33,6 +33,7 @@ from app.schemas.project import (
     Scene,
     SceneAudio,
     SceneVisual,
+    VideoLength,
     VisualMode,
 )
 from app.services import art_styles, credits, db, project_store, uploads
@@ -688,15 +689,79 @@ async def reconcile_interrupted_renders() -> int:
     return recovered
 
 
+# Roughly how long a render takes on the machine that serves them, per
+# unit of length. Measured across twelve real renders on the 4-vCPU
+# production host: stock_media came in at 22-92s, fast_hybrid at 242-362s
+# with a median of 319s for a medium. Only ~43s of that waits on
+# Replicate; the rest is local TTS, Whisper and ffmpeg, which is why the
+# concurrency limit is a CPU limit and not an I/O one.
+#
+# Used only to turn a queue position into a sentence. It is an estimate
+# shown as "about", never a promise, and being 20% out is fine — the
+# alternative it replaces is an unlabelled spinner.
+_TYPICAL_RENDER_S = {
+    VisualMode.STOCK_MEDIA: 45,
+    VisualMode.FAST_HYBRID: 165,
+    VisualMode.AI_VIDEO: 600,
+}
+
+# Longer presets mean more scenes, and the measured totals scale with
+# scene count rather than with anything else. Same shape as the price
+# multiplier in credits._LENGTH_MULTIPLIER, and for the same reason.
+_LENGTH_UNITS = {
+    VideoLength.SHORT: 1,
+    VideoLength.MEDIUM: 2,
+    VideoLength.LONG: 3,
+}
+
+
 class RenderTaskQueue:
     """Bounded async worker pool so heavy renders don't all fight for the
     same GPU/CPU at once. Projects submitted beyond `max_concurrent`
-    simply wait in the asyncio.Queue until a worker frees up."""
+    simply wait in the asyncio.Queue until a worker frees up.
+
+    It also remembers the order it is holding them in. A queued render is
+    indistinguishable from a stuck one from the outside — the project sits
+    at `draft`, no progress event is emitted because no worker has picked
+    it up, and the page shows the same waiting state whether the answer is
+    "ten seconds" or "ninety minutes". At two concurrent renders and ~5.5
+    minutes each, the tenth person in line waits half an hour, so this is
+    the difference between a queue and an outage as far as they can tell.
+    """
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
         self._queue: asyncio.Queue[Project] = asyncio.Queue()
         self._workers: list[asyncio.Task] = []
+        # Ids in the order they will be started. asyncio.Queue exposes no
+        # way to ask where something is, and reaching into its internal
+        # deque would break the moment it changed.
+        self._waiting: list[str] = []
+        self._running: set[str] = set()
+
+    def waiting_ahead_of(self, project_id: str) -> int | None:
+        """How many renders will start before this one, or None.
+
+        None means the question does not apply: the project is already
+        running, has finished, or was never queued here. Zero means it is
+        next, which is worth saying out loud and is not the same as None.
+        """
+        try:
+            return self._waiting.index(project_id)
+        except ValueError:
+            return None
+
+    def estimated_wait_s(self, project: Project) -> int | None:
+        """A rough seconds-until-started for a queued project."""
+        ahead = self.waiting_ahead_of(project.config.id)
+        if ahead is None:
+            return None
+        per_render = _TYPICAL_RENDER_S.get(project.config.visual_mode, 180)
+        length = _LENGTH_UNITS.get(project.config.video_length, 1)
+        workers = max(1, self._settings.max_concurrent_renders)
+        # The renders currently running have to finish first, so on
+        # average half of one of them is still ahead of the queue.
+        return int((ahead // workers) * per_render * length + per_render * length / 2)
 
     def start(self) -> None:
         for _ in range(self._settings.max_concurrent_renders):
@@ -708,11 +773,24 @@ class RenderTaskQueue:
         self._workers.clear()
 
     async def submit(self, project: Project) -> None:
+        # Recorded before the put, so a position is available from the
+        # moment the request that queued it returns. The other order leaves
+        # a window where the project exists, the page is already polling,
+        # and the queue says it has never heard of it.
+        self._waiting.append(project.config.id)
         await self._queue.put(project)
 
     async def _worker_loop(self) -> None:
         while True:
             project = await self._queue.get()
+            project_id = project.config.id
+            # No longer waiting: it is being rendered, and a position of
+            # "0 ahead" would be a different and wrong statement.
+            try:
+                self._waiting.remove(project_id)
+            except ValueError:  # pragma: no cover - defensive
+                pass
+            self._running.add(project_id)
             try:
                 # Uploads and generated projects share this queue on
                 # purpose: both are ffmpeg- and Whisper-bound, so they
@@ -723,4 +801,5 @@ class RenderTaskQueue:
                 else:
                     await run_pipeline(project, self._settings)
             finally:
+                self._running.discard(project_id)
                 self._queue.task_done()

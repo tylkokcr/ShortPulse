@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import { getMediaUrl, getProject, subscribeToRenderProgress } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
-import type { RenderStage } from "@/lib/types";
+import type { Project, RenderStage } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Timeline } from "./Timeline";
@@ -24,6 +24,42 @@ interface RenderPreviewProps {
     current?: import("@/lib/types").SceneFeedback;
     onSubmit: (rating: "up" | "down") => Promise<void>;
   };
+}
+
+/**
+ * What to say to someone whose render hasn't started yet.
+ *
+ * Two renders run at a time and a generated one takes about five and a
+ * half minutes, so a queue forms quickly and the person in it cannot see
+ * any of that: the project sits at `draft`, no progress arrives because
+ * no worker has picked it up, and every wait looks identical. A number
+ * turns "this seems broken" into "this is busy", which is the difference
+ * between closing the tab and leaving it open.
+ *
+ * The estimate is deliberately vague — "about 20 minutes" — because it is
+ * an average over measured renders and will be out by a fifth either way.
+ * A precise-looking number that slipped would be worse than a rough one
+ * that holds.
+ */
+function formatWait(seconds: number): string {
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 1) return "under a minute";
+  if (minutes === 1) return "about a minute";
+  return `about ${minutes} minutes`;
+}
+
+function queueMessage(project?: Project | null): string {
+  const ahead = project?.queue_ahead;
+  // Undefined means an older API or a self-hosted install with no queue
+  // to ask; null means the project isn't waiting. Neither should invent
+  // a position, so both fall back to what this said before.
+  if (ahead === undefined || ahead === null) {
+    return "Queued — waiting for a free worker...";
+  }
+  const wait = project?.queue_wait_s;
+  const when = wait ? `, ${formatWait(wait)}` : "";
+  if (ahead === 0) return `Next in line${when}.`;
+  return `${ahead} render${ahead === 1 ? "" : "s"} ahead of you${when}.`;
 }
 
 export function RenderPreview({ projectId, videoRef, onTimeUpdate, verdict }: RenderPreviewProps) {
@@ -157,7 +193,7 @@ export function RenderPreview({ projectId, videoRef, onTimeUpdate, verdict }: Re
                 // "draft" means accepted but not yet picked up by a
                 // worker, which is a queue, not a stall — worth saying so
                 // when renders run two at a time.
-                (status === "draft" ? "Queued — waiting for a free worker..." : "Starting..."))}
+                (status === "draft" ? queueMessage(activeProject) : "Starting..."))}
           </p>
         )}
       </div>
