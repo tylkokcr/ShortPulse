@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Mail, ArrowRight } from "lucide-react";
 import clsx from "clsx";
 import { supabase } from "@/lib/supabase";
@@ -31,6 +31,53 @@ function explain(message: string): string {
 }
 
 /**
+ * What Supabase says when a clicked link doesn't work.
+ *
+ * These arrive in the URL fragment on the page the link opened, never as a
+ * thrown error, so nothing in the app sees them unless it goes looking.
+ * Until it did, clicking an expired link signed you out onto the landing
+ * page with no explanation — indistinguishable from the link doing
+ * nothing at all, which is what a stranger would conclude.
+ */
+function explainLinkError(code: string, description: string): string {
+  if (code === "otp_expired") {
+    return (
+      "That sign-in link has expired or was already used — they work once, and " +
+      "some mail providers open links to scan them. Send yourself a fresh one."
+    );
+  }
+  if (code === "access_denied") {
+    return "That sign-in link is no longer valid. Send yourself a fresh one.";
+  }
+  return description || "That sign-in link didn't work. Send yourself a fresh one.";
+}
+
+/**
+ * Read an auth failure out of the URL the link landed on.
+ *
+ * The fragment is where Supabase puts a *successful* session too, and
+ * supabase-js consumes that itself — so this only ever looks for `error`
+ * and leaves everything else alone. The query string is checked as well
+ * because the PKCE flow reports there instead.
+ */
+function readLinkError(): string | null {
+  if (typeof window === "undefined") return null;
+  for (const raw of [window.location.hash.replace(/^#/, ""), window.location.search.replace(/^\?/, "")]) {
+    const params = new URLSearchParams(raw);
+    const error = params.get("error") || params.get("error_code");
+    if (!error) continue;
+    // Clear it, so a refresh doesn't re-accuse a link the user has since
+    // replaced, and so the address bar stops showing raw error codes.
+    window.history.replaceState(null, "", window.location.pathname);
+    return explainLinkError(
+      params.get("error_code") || error,
+      params.get("error_description")?.replace(/\+/g, " ") ?? ""
+    );
+  }
+  return null;
+}
+
+/**
  * Magic-link sign-in card. No password field on purpose: passwords would
  * mean a reset flow, a strength policy, and somewhere for users to reuse a
  * password they've already leaked elsewhere. A link to their inbox proves
@@ -45,6 +92,13 @@ export function LoginPanel({ className }: { className?: string }) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
+
+  // A failed link lands here rather than on a route of its own, so the
+  // panel that sends links is also the panel that reports them failing.
+  useEffect(() => {
+    const failure = readLinkError();
+    if (failure) setError(failure);
+  }, []);
 
   async function sendLink(event: React.FormEvent) {
     event.preventDefault();
