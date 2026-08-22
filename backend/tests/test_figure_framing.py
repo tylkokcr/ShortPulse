@@ -342,3 +342,73 @@ async def test_nothing_is_called_when_every_prompt_is_fine(monkeypatch):
     await se._rewrite_badly_framed_prompts(parsed, object())
 
     assert called is False
+
+
+# --- objects made of text ------------------------------------------------
+#
+# From a paid render of "world war 2": nine scenes, two of them maps, both
+# unusable. Europe came back labelled ZAIIRA, PICHISITALLA and KOBGAN —
+# not mistakes in the geography, which would be forgivable at a glance,
+# but shapes that look like writing until you try to read them.
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        # Verbatim, from projects.script of that render.
+        "A vintage world map showing Europe, with countries highlighted, "
+        "dim lighting, zoomed in for detail.",
+        "A map of Europe being redrawn, with highlighted borders and labels "
+        "emerging, bright and engaging colors.",
+    ],
+)
+def test_the_two_maps_that_shipped_are_caught(prompt):
+    """The regression, in the words the model actually produced.
+
+    Neither was caught before: `map` was missing from the vocabulary, and
+    the first would have slipped through anyway because the pattern was
+    anchored to the article and "vintage world" sits between it and the
+    noun.
+    """
+    from app.engines.script_engine import visual_prompts_framing
+
+    assert visual_prompts_framing(_scenes(prompt)) == [0], prompt
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        "a wall map behind a desk, lamp lit",  # not the subject, still text
+        "an atlas open on a library table",
+        "a bar chart on an office wall",
+        "a blueprint spread across a workbench",
+        "a street sign at an empty junction",
+    ],
+)
+def test_text_bearing_objects_are_caught_anywhere_in_the_frame(prompt):
+    """Unlike the framing rules, this one is not about how a thing is shot.
+
+    A map in the background is unreadable in exactly the way a map in the
+    foreground is, so the position of the noun in the sentence carries no
+    information and the pattern does not look at it.
+    """
+    from app.engines.script_engine import visual_prompts_framing
+
+    assert visual_prompts_framing(_scenes(prompt)) == [0], prompt
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        # The cost of matching anywhere is false positives, so the words
+        # were kept concrete. None of these names an object made of text.
+        "a close-up of someone writing in a notebook, soft light",
+        "a mapped route drawn in sand, close-up",
+        "a woman signing a form, hands out of frame",
+        "a globe of warm light from a paper lantern",
+    ],
+)
+def test_ordinary_prompts_are_still_left_alone(prompt):
+    from app.engines.script_engine import visual_prompts_framing
+
+    assert visual_prompts_framing(_scenes(prompt)) == [], prompt

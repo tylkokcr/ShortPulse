@@ -436,10 +436,23 @@ _EXTREMITIES = r"(?:hands?|feet|foot|fingers?|toes?|palms?)"
 # forbids describing legible text, which does not help when the *object*
 # carries it: "a metronome ticking on a table" names no text and came back
 # with a dial reading 70, 20, 480, 1955.
+# Objects that carry writing whether or not the prompt asks for any.
+#
+# Maps were added after a paid "world war 2" render came back with two of
+# its nine scenes showing Europe labelled ZAIIRA, PICHISITALLA and KOBGAN.
+# They are the worst case of the whole category — a map is nothing but
+# text on colour — and the model will always attempt the labels.
+#
+# "globe" is deliberately absent despite being a map wrapped round a ball:
+# it is also a lamp, and "a globe of warm light from a paper lantern" is a
+# prompt that works and must not be rewritten. Matching anywhere in the
+# sentence (below) means an ambiguous word costs more than a missed one.
 _TEXT_BEARING = (
     r"(?:metronome|clock|wall\s+clock|watch|gauge|dial|speedometer|thermometer|"
     r"calendar|newspaper|magazine|book\s+cover|poster|billboard|license\s+plate|"
-    r"scoreboard|price\s+tag)"
+    r"scoreboard|price\s+tag|map|atlas|chart|graph|diagram|blueprint|"
+    r"schematic|document|certificate|menu|signpost|banner|"
+    r"(?:street|road|neon|shop)\s+sign)"
 )
 
 _BAD_FRAMING = [
@@ -449,8 +462,14 @@ _BAD_FRAMING = [
                r"several\s+people|many\s+people|bunch\s+of\s+people)\b", re.I),
     re.compile(r"\bfull[-\s]body\b", re.I),
     re.compile(r"\b(?:lying\s+down|lying\s+on|laying\s+down|lies\s+on)\b", re.I),
-    re.compile(_SUBJECT_LEAD + _TEXT_BEARING, re.I),
-    re.compile(r"^\s*(?:a\s+|an\s+|the\s+)?" + _TEXT_BEARING + r"\b", re.I),
+    # Anywhere in the prompt, not only as the lead subject. The two that
+    # shipped were "A vintage world map showing Europe" and "A map of
+    # Europe being redrawn" — the first slipped past a lead-anchored
+    # pattern because two adjectives sat between the article and the noun,
+    # and a map in the background is unreadable in exactly the same way as
+    # one in the foreground. Unlike the framing rules above, this failure
+    # is about the object being in frame at all, not about how it is shot.
+    re.compile(r"\b" + _TEXT_BEARING + r"s?\b", re.I),
 ]
 
 
@@ -476,8 +495,8 @@ cannot draw.
 
 Each prompt you are given asks for one of: hands or feet as the subject, a
 crowd or group of people, a full-body shot, someone lying down, or an
-object covered in numbers or writing such as a clock or a metronome. Every
-one of those comes back deformed or unreadable.
+object covered in numbers or writing such as a clock, a metronome or a
+map. Every one of those comes back deformed or unreadable.
 
 Rewrite each to describe the same moment with a shot that works: one
 person at most, framed as a close-up, a portrait or a medium shot from the
@@ -491,6 +510,8 @@ Examples:
 "a single photographer raising a camera, studio lights soft behind him".
 "a metronome ticking on a table" becomes
 "a wooden table in warm side light, a brass pendulum blurred mid-swing".
+"a vintage map of Europe with borders and labels" becomes
+"a candlelit desk, dividers and a curled parchment edge, no lettering".
 
 Keep each rewrite under 20 words. Respond with ONLY valid JSON:
 {"prompts": ["rewritten prompt", "rewritten prompt"]}
