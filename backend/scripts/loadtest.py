@@ -39,6 +39,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.core.config import get_settings, project_dir  # noqa: E402
 from app.schemas.project import (  # noqa: E402
+    LLMConfig,
+    LLMProvider,
     ProjectConfig,
     ProjectStatus,
     VideoLength,
@@ -137,6 +139,17 @@ async def main() -> int:
                 raw_script=RAW_SCRIPT,
                 visual_mode=VisualMode(args.mode),
                 video_length=VideoLength(args.length),
+                # Built from settings exactly as create_project does it
+                # (api/routes/projects.py). LLMConfig's own defaults point
+                # at a local Ollama, which does not exist on a hosted box —
+                # the first run of this script failed all six renders on a
+                # connection error before reaching anything worth timing.
+                llm=LLMConfig(
+                    provider=LLMProvider(settings.llm_provider),
+                    model=settings.llm_model,
+                    base_url=settings.ollama_base_url,
+                    api_key=settings.openai_api_key,
+                ),
             )
         )
         created.append(project.config.id)
