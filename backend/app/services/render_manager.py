@@ -700,8 +700,13 @@ async def reconcile_interrupted_renders() -> int:
 # shown as "about", never a promise, and being 20% out is fine — the
 # alternative it replaces is an unlabelled spinner.
 _TYPICAL_RENDER_S = {
-    VisualMode.STOCK_MEDIA: 45,
-    VisualMode.FAST_HYBRID: 165,
+    # Per length unit, so a medium is twice these and a long three times.
+    # Fitted to the measured totals rather than guessed: fast_hybrid
+    # mediums came in at 242-251s (125 x 2 = 250) and longs at 319-362s
+    # (125 x 3 = 375, deliberately the pessimistic end). stock_media ran
+    # 38s for five scenes and 92s for twelve.
+    VisualMode.STOCK_MEDIA: 32,
+    VisualMode.FAST_HYBRID: 125,
     VisualMode.AI_VIDEO: 600,
 }
 
