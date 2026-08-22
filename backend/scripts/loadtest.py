@@ -73,31 +73,59 @@ async def _in_flight() -> list[str]:
     return [str(r["id"]) for r in rows]
 
 
-async def _wait_for(ids: list[str], timeout_s: float) -> dict[str, tuple[str, float, int]]:
+class Timed:
+    """One render's life: queued, started, finished."""
+
+    def __init__(self) -> None:
+        self.started_at: float | None = None
+        self.finished_at: float | None = None
+        self.status = "pending"
+        self.scenes = 0
+
+    @property
+    def queued_s(self) -> float:
+        return (self.started_at or 0.0)
+
+    @property
+    def render_s(self) -> float | None:
+        if self.started_at is None or self.finished_at is None:
+            return None
+        return self.finished_at - self.started_at
+
+
+async def _wait_for(ids: list[str], timeout_s: float) -> dict[str, Timed]:
     """Poll until every project reaches a terminal state.
 
-    Returns id -> (status, seconds since submit, scene count).
+    Queue wait and render time are recorded separately, which matters more
+    than it sounds: measured from submit, the last pair in a batch of six
+    looked three times slower than the first pair when it was simply
+    behind them in the queue. Reading that as "renders get slower under
+    load" would have argued for hardware the numbers do not support.
     """
-    started = time.monotonic()
-    done: dict[str, tuple[str, float, int]] = {}
-    while len(done) < len(ids):
-        if time.monotonic() - started > timeout_s:
+    t0 = time.monotonic()
+    timed = {i: Timed() for i in ids}
+    while any(t.status == "pending" for t in timed.values()):
+        if time.monotonic() - t0 > timeout_s:
             break
-        for project_id in ids:
-            if project_id in done:
+        for project_id, t in timed.items():
+            if t.status != "pending":
                 continue
             project = await project_store.get_project(project_id)
             if project is None:
                 continue
+            now = time.monotonic() - t0
+            if t.started_at is None and project.status != ProjectStatus.DRAFT:
+                t.started_at = now
             if project.status in (ProjectStatus.COMPLETE, ProjectStatus.FAILED):
-                scenes = len(project.script.scenes) if project.script else 0
-                done[project_id] = (
-                    str(project.status),
-                    time.monotonic() - started,
-                    scenes,
-                )
+                # A render that finished between two polls never looked
+                # like it started; treat the poll before as its start.
+                if t.started_at is None:
+                    t.started_at = max(0.0, now - 2)
+                t.finished_at = now
+                t.status = str(project.status)
+                t.scenes = len(project.script.scenes) if project.script else 0
         await asyncio.sleep(2)
-    return done
+    return timed
 
 
 async def main() -> int:
@@ -159,26 +187,28 @@ async def main() -> int:
     wall = time.monotonic() - t0
     await queue.stop()
 
-    ok = {k: v for k, v in results.items() if v[0] == "complete"}
-    failed = [k for k, v in results.items() if v[0] == "failed"]
-    unfinished = [i for i in created if i not in results]
+    ok = {k: v for k, v in results.items() if v.status == "complete"}
+    failed = [k for k, v in results.items() if v.status == "failed"]
+    unfinished = [k for k, v in results.items() if v.status == "pending"]
 
-    print("per render\n")
-    for project_id, (status, seconds, scenes) in sorted(results.items(), key=lambda kv: kv[1][1]):
-        per_scene = f"{seconds / scenes:5.1f}s/scene" if scenes else "  — "
-        print(f"  {project_id[:8]}  {status:<9} {seconds:6.1f}s  {scenes:>2} scenes  {per_scene}")
+    print(f"per render{'':14}queued   render  scenes   per scene\n")
+    for project_id, t in sorted(results.items(), key=lambda kv: kv[1].queued_s):
+        render_s = t.render_s
+        per_scene = f"{render_s / t.scenes:5.1f}s" if render_s and t.scenes else "    —"
+        print(f"  {project_id[:8]}  {t.status:<9}"
+              f"{t.queued_s:7.0f}s {render_s or 0:7.0f}s {t.scenes:>6}   {per_scene}")
 
     print()
     if ok:
-        totals = [v[1] for v in ok.values()]
-        per_scene = [v[1] / v[2] for v in ok.values() if v[2]]
+        renders = [v.render_s for v in ok.values() if v.render_s]
+        per_scene = [v.render_s / v.scenes for v in ok.values() if v.render_s and v.scenes]
         print(f"  finished          {len(ok)}/{args.count}")
         print(f"  wall clock        {wall:.0f}s for the whole batch")
-        print(f"  throughput        {len(ok) / wall * 3600:.1f} renders/hour")
-        print(f"  median render     {statistics.median(totals):.0f}s")
+        print(f"  throughput        {len(ok) / wall * 3600:.1f} renders/hour"
+              "   <- the number that decides capacity")
+        print(f"  median render     {statistics.median(renders):.0f}s (excluding queue wait)")
         if per_scene:
-            print(f"  median per scene  {statistics.median(per_scene):.1f}s"
-                  "   <- compare this across runs")
+            print(f"  median per scene  {statistics.median(per_scene):.1f}s")
     if failed:
         print(f"  FAILED            {len(failed)} — check the API logs")
     if unfinished:
