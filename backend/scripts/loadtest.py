@@ -38,6 +38,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.core.config import get_settings, project_dir  # noqa: E402
+from app.engines import visual_engine  # noqa: E402
 from app.schemas.project import (  # noqa: E402
     LLMConfig,
     LLMProvider,
@@ -138,9 +139,22 @@ async def main() -> int:
     parser.add_argument("--timeout", type=float, default=3600)
     parser.add_argument("--keep", action="store_true",
                         help="leave the projects behind for inspection")
+    # Swept from here rather than from .env so a configuration can be
+    # tried and discarded without a deploy. Total pressure on Replicate is
+    # renders x scenes, and that product is what draws 429s — trading one
+    # against the other keeps it constant while changing how much CPU work
+    # overlaps.
+    parser.add_argument("--renders", type=int, default=None,
+                        help="override max_concurrent_renders for this run")
+    parser.add_argument("--scene-concurrency", type=int, default=None,
+                        help="override how many scenes generate at once")
     args = parser.parse_args()
 
     settings = get_settings()
+    if args.renders is not None:
+        settings.max_concurrent_renders = args.renders
+    if args.scene_concurrency is not None:
+        visual_engine._REMOTE_SCENE_CONCURRENCY = args.scene_concurrency
     if settings.database_url:
         pool = await db.connect(settings.database_url)
         project_store.configure(pool)
@@ -154,9 +168,12 @@ async def main() -> int:
     queue = RenderTaskQueue(settings)
     queue.start()
 
+    scene_conc = visual_engine._REMOTE_SCENE_CONCURRENCY
     print(f"\n{args.count} x {args.mode} / {args.length}")
-    print(f"concurrency: {settings.max_concurrent_renders} renders, "
-          f"load average before: {os.getloadavg()[0]:.2f}\n")
+    print(f"  {settings.max_concurrent_renders} concurrent renders"
+          f" x {scene_conc} scenes = {settings.max_concurrent_renders * scene_conc}"
+          " concurrent Replicate calls")
+    print(f"  load average before: {os.getloadavg()[0]:.2f}\n")
 
     created: list[str] = []
     t0 = time.monotonic()
