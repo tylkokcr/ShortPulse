@@ -387,7 +387,17 @@ async def finalize_render(
         "-map", "[vout]",
         *audio_map,
         "-c:v", "libx264",
-        "-preset", "medium",
+        # veryfast, matching the scene clips above rather than out-ranking
+        # them. This pass burns captions over material that has already
+        # been through a veryfast encode, so `medium` here was polishing
+        # detail that was spent two steps earlier — it bought 0.28% SSIM
+        # for 2.4x the encode time, measured at this same CRF.
+        #
+        # It is the single largest CPU stage in a render (ffmpeg_assembly
+        # is 35.5% of wall clock across the twelve renders in the timings
+        # files), and it scales with video length rather than scene count,
+        # so a long video paid the most for the least.
+        "-preset", "veryfast",
         "-crf", "18",
         "-pix_fmt", "yuv420p",
         "-r", str(target.fps),
