@@ -19,12 +19,17 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // The steps between these are the whole depth model, and they were
+        // too small to see: #0a0a0a under #121212 is eight values out of
+        // 255, which the eye reads as one surface rather than a card on a
+        // page. Widened so a panel actually sits *on* the background —
+        // still neutral, still no colour, just legible layering.
         background: "#0a0a0a",
-        surface: "#121212",
-        "surface-hover": "#1a1a1a",
-        "surface-raised": "#161616",
-        border: "#242424",
-        "border-strong": "#383838",
+        surface: "#171717",
+        "surface-hover": "#212121",
+        "surface-raised": "#1e1e1e",
+        border: "#2e2e2e",
+        "border-strong": "#484848",
         // Signal orange. One accent, used for the thing you should look at
         // and nothing else — the record-light association is doing real
         // work for a video tool, which violet never did.

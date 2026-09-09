@@ -1,0 +1,75 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Film } from "lucide-react";
+
+/**
+ * The right-hand column of the caption flow.
+ *
+ * Without it that screen is one narrow card floating in the middle of a
+ * black page, which reads as unfinished rather than as minimal — and it is
+ * the only screen in the product with nothing on the right, so it also
+ * reads as a different app from the studio next door.
+ *
+ * Once a file is chosen it plays it, locally, immediately. That is worth
+ * more than a prettier placeholder: the single most common upload mistake
+ * is picking the wrong take, and until now nothing confirmed which video
+ * was about to be spent a credit on.
+ *
+ * The object URL is revoked when the file changes or the panel unmounts.
+ * Without that every re-pick leaks the previous blob for the life of the
+ * document, which for a 200MB video is not a rounding error.
+ */
+export function UploadPreview({ file }: { file: File | null }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file) {
+      setUrl(null);
+      return;
+    }
+    const next = URL.createObjectURL(file);
+    setUrl(next);
+    return () => URL.revokeObjectURL(next);
+  }, [file]);
+
+  return (
+    <div className="lg:sticky lg:top-24">
+      <div className="relative mx-auto aspect-[9/16] w-full max-w-[260px] overflow-hidden rounded-xl border border-border bg-surface">
+        {url ? (
+          <video
+            key={url}
+            src={url}
+            className="h-full w-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+          />
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+            <Film size={22} className="text-white/25" />
+            <p className="text-xs leading-relaxed text-white/35">
+              Your video appears here as soon as you pick it.
+            </p>
+          </div>
+        )}
+
+        {/* Where the captions will sit, drawn as bars rather than words:
+            lorem text at this size is unreadable anyway, and a shape is
+            honest about being a placeholder in a way fake sentences are
+            not. Hidden once a real video is playing — the point is made. */}
+        {!url && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-1.5 p-5">
+            <span className="h-2 w-3/4 rounded-full bg-white/10" />
+            <span className="h-2 w-1/2 rounded-full bg-accent/30" />
+          </div>
+        )}
+      </div>
+
+      <p className="mt-3 text-center font-mono text-[10px] uppercase tracking-[0.18em] text-white/25">
+        9:16 · captions burned in
+      </p>
+    </div>
+  );
+}

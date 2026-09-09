@@ -122,7 +122,10 @@ function CreateVideo() {
         <ModeTabs mode={mode} onChange={setMode} />
 
         {mode === "upload" && (
-          <div className="animate-fade-up mt-6 max-w-2xl">
+          // No max-width any more: the panel now brings its own second
+          // column, so constraining it here would leave the preview
+          // squeezed against the form.
+          <div className="animate-fade-up mt-8">
             <UploadPanel />
           </div>
         )}
@@ -388,8 +391,11 @@ function Section({
         />
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold">{title}</span>
+          {/* The closed row is the one people actually read — four of the
+              five sections are closed at any moment — so the value it
+              carries can't be fainter than the label above it. */}
           {!open && (
-            <span className="mt-0.5 block truncate text-xs text-white/40">{summary}</span>
+            <span className="mt-0.5 block truncate text-xs text-white/55">{summary}</span>
           )}
         </span>
         <ChevronDown

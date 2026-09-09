@@ -19,8 +19,14 @@ export function CaptionStyleSelector() {
             className={clsx(
               "flex flex-col gap-2 rounded-lg border p-3 text-left transition-all duration-200",
               selected
-                ? "border-accent bg-accent/10 shadow-[0_0_0_1px] shadow-accent/40"
-                : "border-border bg-background hover:border-border-strong hover:bg-surface-hover"
+                ? // Ring, tint and a small lift together — a border alone
+                  // was doing all the work and losing at a glance against
+                  // eleven other bordered things on the same screen.
+                  "-translate-y-0.5 border-accent bg-accent/10 shadow-[0_0_0_1px] shadow-accent/40"
+                : // bg-surface, not bg-background: an option drawn darker
+                  // than the panel it sits in reads as a hole rather than
+                  // as a card, which is most of why this grid looked flat.
+                  "border-border bg-surface hover:-translate-y-0.5 hover:border-border-strong hover:bg-surface-hover"
             )}
           >
             <CaptionPreview preset={preset} />
@@ -63,7 +69,11 @@ export function CaptionPreview({
   return (
     <div
       className={clsx(
-        "flex aspect-[4/3] w-full justify-center overflow-hidden rounded-md bg-gradient-to-br from-neutral-700 via-neutral-800 to-neutral-900 p-2",
+        // Lighter than it was. These previews stand in for a video frame,
+        // and a near-black one gives white captions with a black outline
+        // nothing to sit against — the styles all looked identical because
+        // the only thing separating them was invisible.
+        "flex aspect-[4/3] w-full justify-center overflow-hidden rounded-md bg-gradient-to-br from-neutral-500 via-neutral-700 to-neutral-800 p-2",
         justify,
         className
       )}

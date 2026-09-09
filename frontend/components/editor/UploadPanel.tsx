@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LanguageSelector } from "./LanguageSelector";
 import { CaptionStyleSelector } from "./CaptionStyleSelector";
+import { UploadPreview } from "./UploadPreview";
 
 /**
  * The second way in: caption a video the user already has.
@@ -77,7 +78,12 @@ export function UploadPanel() {
   const uploading = progress !== null;
 
   return (
-    <div className="flex flex-col gap-4">
+    // Two columns, matching the generate flow next door. The caption
+    // screen used to be a single narrow card in the middle of the page,
+    // which made it look like a different product from the studio it
+    // shares a tab strip with.
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px] lg:items-start">
+      <div className="flex flex-col gap-4">
       <Card className="flex flex-col gap-5">
         <div
           onDragOver={(e) => {
@@ -183,6 +189,9 @@ export function UploadPanel() {
           )}
         </Button>
       </div>
+      </div>
+
+      <UploadPreview file={file} />
     </div>
   );
 }
