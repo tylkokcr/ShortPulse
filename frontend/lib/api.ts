@@ -10,6 +10,9 @@ import type {
   PublicPricing,
   RenderProgress,
   RenderTimings,
+  SocialConnection,
+  SocialPlatform,
+  SocialPost,
   TextOverlay,
   Voice,
   VisualModeAvailability,
@@ -428,3 +431,48 @@ export function subscribeToRenderProgress(
     socket?.close();
   };
 }
+
+// --------------------------------------------------------------------------
+// Publishing
+// --------------------------------------------------------------------------
+
+export const getSocialPlatforms = () =>
+  request<{ id: SocialPlatform; connected: boolean }[]>("/social/platforms");
+
+export const getSocialConnections = () =>
+  request<SocialConnection[]>("/social/connections");
+
+/**
+ * Start connecting an account.
+ *
+ * Returns a URL rather than navigating, because the caller decides when to
+ * leave the page — and because the consent screen cannot be fetched, only
+ * visited.
+ */
+export const startSocialConnect = (platform: SocialPlatform) =>
+  request<{ url: string }>(`/social/connect/${platform}`, { method: "POST" });
+
+export const setAutoPublish = (connectionId: string, auto_publish: boolean) =>
+  request<void>(`/social/connections/${connectionId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ auto_publish }),
+  });
+
+export const disconnectSocial = (connectionId: string) =>
+  request<void>(`/social/connections/${connectionId}`, { method: "DELETE" });
+
+export const getProjectPosts = (projectId: string) =>
+  request<SocialPost[]>(`/social/posts/${projectId}`);
+
+export const publishProject = (body: {
+  project_id: string;
+  connection_id: string;
+  title: string;
+  description: string;
+  hashtags: string[];
+}) =>
+  request<SocialPost>("/social/posts", { method: "POST", body: JSON.stringify(body) });
+
+/** Release a post the first-post rule held back. */
+export const approvePost = (postId: string) =>
+  request<SocialPost>(`/social/posts/${postId}/approve`, { method: "POST" });

@@ -182,6 +182,56 @@ class Settings(BaseSettings):
     checkout_success_url: str = "http://localhost:3000/library?purchase=ok"
     checkout_cancel_url: str = "http://localhost:3000/#pricing"
 
+    # Social publishing (hosted deployment only)
+    #
+    # Where this deployment is reachable from the public internet, with no
+    # trailing slash. Two things need it and neither can be derived from a
+    # request:
+    #
+    #   * the OAuth redirect_uri sent to each platform, which has to match
+    #     what is registered in their developer console exactly
+    #   * the video URL Instagram and TikTok are handed, because both fetch
+    #     the file themselves rather than accepting an upload
+    #
+    # That second one is why this cannot default to something harmless.
+    # A localhost URL given to Instagram is a fetch from Instagram's
+    # network to Instagram's own loopback, which fails as a media error
+    # with nothing pointing back here.
+    public_base_url: str = "http://localhost:3000"
+
+    # Encrypts the platform tokens before they are written (see
+    # services/social_tokens.py). Without it there is no publishing at
+    # all: the endpoints report themselves unavailable rather than
+    # storing somebody's YouTube credentials in plain text.
+    #
+    #     openssl rand -base64 48
+    #
+    # Changing it orphans every stored connection — users reconnect, which
+    # is one OAuth round trip and the only honest recovery.
+    social_token_secret: str | None = None
+
+    # YouTube upload, via the Data API v3.
+    #
+    # A separate OAuth client from the one that signs users in, even
+    # though both live in the same Google Cloud project. The sign-in
+    # client is configured inside Supabase and redirects there; this one
+    # redirects to our own API, because the tokens it returns must never
+    # reach the browser.
+    #
+    # Note what an unaudited project can do: uploads succeed and are
+    # forced to `private` regardless of what is asked for. That is not a
+    # failure to handle, it is a state to report — see social_posts.privacy.
+    youtube_client_id: str | None = None
+    youtube_client_secret: str | None = None
+
+    # How long the signed URL handed to a platform stays valid. Longer
+    # than the playback TTL above because nothing is watching this one:
+    # the platform fetches on its own schedule, behind its own queue, and
+    # a link that expired while it waited is a failure with no cause
+    # visible from either side.
+    social_media_url_ttl_s: int = 3600
+    max_concurrent_publishes: int = 2
+
     # Error reporting (optional)
     # A render failure is caught and written to the project row, so the
     # exception never leaves the process — on a deployment that means the

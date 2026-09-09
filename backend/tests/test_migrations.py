@@ -202,3 +202,51 @@ async def test_0005_leaves_ordinary_render_charges_alone(scratch_db):
         f"render:{project_id}",
     ) == "render"
     assert await scratch_db.fetchval("select refund_project($1)", project_id) == 3
+
+
+async def test_social_tables_are_locked_down_on_the_very_first_boot(scratch_db):
+    """The tables holding platform tokens must not be exposed for a boot.
+
+    0007 locks down every table it finds by looping over them, which is
+    what covers tables a later migration adds — but only on the *next*
+    startup, because migrations run in filename order in a single pass and
+    0007 has already run by the time 0008 creates anything.
+
+    For most tables that gap is a boot cycle of PostgREST exposure. For
+    these two it is a boot cycle in which anyone holding the publishable
+    key — which ships in the browser bundle by design — could read every
+    user's platform tokens. So 0008 repeats the lockdown for itself, and
+    this asserts it, on one pass, from nothing.
+
+    It would regress silently: renumbering the migrations, or dropping
+    0008's trailing lockdown block as redundant, both leave a schema that
+    looks correct on the second boot and every boot after it.
+    """
+    # Supabase's roles exist there and nowhere else. Creating them here is
+    # what makes the revoke half of the migration testable at all.
+    for role in ("anon", "authenticated"):
+        await scratch_db.execute(
+            f"do $$ begin create role {role}; "
+            f"exception when duplicate_object then null; end $$;"
+        )
+
+    await db.apply_migrations(scratch_db)
+
+    rows = await scratch_db.fetch(
+        """
+        select c.relname,
+               c.relrowsecurity,
+               has_table_privilege('anon', c.oid, 'SELECT') as anon_select,
+               has_table_privilege('authenticated', c.oid, 'SELECT') as auth_select
+          from pg_class c
+          join pg_namespace n on n.oid = c.relnamespace
+         where n.nspname = 'public' and c.relkind = 'r'
+           and c.relname in ('social_connections', 'social_posts')
+        """
+    )
+
+    assert {r["relname"] for r in rows} == {"social_connections", "social_posts"}
+    for row in rows:
+        assert row["relrowsecurity"], f"{row['relname']} has RLS off after a first boot"
+        assert not row["anon_select"], f"{row['relname']} is readable by anon after a first boot"
+        assert not row["auth_select"], f"{row['relname']} is readable by authenticated"

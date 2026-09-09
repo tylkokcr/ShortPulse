@@ -128,6 +128,35 @@ def check(settings) -> list[Warning_]:
             )
         )
 
+    # Publishing is configured per platform, so "any platform at all" is
+    # the condition for the settings the whole feature shares.
+    social_configured = bool(getattr(settings, "youtube_client_id", None))
+
+    if social_configured and not getattr(settings, "social_token_secret", None):
+        warnings.append(
+            Warning_(
+                "SOCIAL_TOKEN_SECRET",
+                "a publishing platform is configured but there is no key to encrypt its "
+                "tokens with, so connecting an account is refused: the alternative would "
+                "be writing somebody's YouTube credentials to the database in plain text",
+            )
+        )
+
+    # Silent by construction, and expensively so. The OAuth handshake
+    # fails in a way the user sees ("redirect_uri mismatch") but Instagram
+    # and TikTok fetch the video themselves, so a localhost URL there is a
+    # request from their network to their own loopback — reported back as
+    # an unhelpful media error, long after the render was paid for.
+    if social_configured and "localhost" in getattr(settings, "public_base_url", ""):
+        warnings.append(
+            Warning_(
+                "PUBLIC_BASE_URL",
+                "publishing is configured but this still points at localhost: the redirect "
+                "URI will not match, and platforms that fetch the video themselves would "
+                "be asked to download it from their own machines",
+            )
+        )
+
     if _hosted(settings) and not settings.database_url:
         warnings.append(
             Warning_(

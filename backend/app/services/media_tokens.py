@@ -56,9 +56,18 @@ class MediaTokenSigner:
         message = f"{project_id}:{expires_at}".encode()
         return _b64(hmac.new(self._secret, message, hashlib.sha256).digest())
 
-    def sign(self, project_id: str) -> tuple[str, int]:
-        """Returns (token, unix expiry)."""
-        expires_at = int(time.time()) + self._ttl_s
+    def sign(self, project_id: str, *, ttl_s: int | None = None) -> tuple[str, int]:
+        """Returns (token, unix expiry).
+
+        `ttl_s` overrides the default for the one case that needs a longer
+        life than playback: a URL handed to Instagram or TikTok, which
+        fetch the video themselves on their own schedule. Nobody is
+        waiting on that link, so the fifteen minutes that are generous for
+        a <video> tag can expire while their queue is still working
+        through it — and the failure surfaces on their side, as a media
+        error with nothing pointing back here.
+        """
+        expires_at = int(time.time()) + (ttl_s or self._ttl_s)
         return f"{expires_at}.{self._signature(project_id, expires_at)}", expires_at
 
     def verify(self, project_id: str, token: str) -> None:

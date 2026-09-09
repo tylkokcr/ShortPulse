@@ -36,7 +36,7 @@ from app.schemas.project import (
     VideoLength,
     VisualMode,
 )
-from app.services import art_styles, credits, db, project_store, uploads
+from app.services import art_styles, credits, db, project_store, publish_manager, uploads
 from app.services.connection_manager import connection_manager
 
 logger = logging.getLogger(__name__)
@@ -388,7 +388,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
         # after script generation has none of it, so without this the
         # finished project reads back missing everything the render
         # actually produced.
-        await project_store.update_project(
+        finished = await project_store.update_project(
             project_id,
             status=ProjectStatus.COMPLETE,
             output_path=str(final_path),
@@ -413,6 +413,19 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             message="Render complete.",
             output_path=str(final_path),
         )
+
+        # Anything the user asked to be posted without being asked. Comes
+        # after the DONE event on purpose: the render is finished and paid
+        # for either way, and the page should say so before anything
+        # starts talking to YouTube.
+        #
+        # Guarded because this is inside the pipeline's own try block — an
+        # exception escaping here would be caught below as a render
+        # failure and refund a video that rendered perfectly.
+        try:
+            await publish_manager.queue_automatic_posts(finished)
+        except Exception:  # noqa: BLE001 - publishing must not fail a render
+            logger.exception("Could not queue automatic posts for %s", project_id)
 
     except Exception as exc:  # noqa: BLE001 - surface any pipeline failure to the client
         logger.exception("Render pipeline failed for project %s", project_id)

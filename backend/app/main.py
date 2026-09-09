@@ -18,6 +18,7 @@ from app.api.routes import (
     music,
     projects,
     render,
+    social,
     uploads,
     visual_modes,
     voices,
@@ -25,8 +26,11 @@ from app.api.routes import (
 from app.core import monitoring, readiness
 from app.core.config import get_settings
 from app.services import db, project_store
+from app.services import social as social_platforms
 from app.services.media_tokens import MediaTokenSigner
+from app.services.publish_manager import PublishQueue, configure_queue, configure_signer
 from app.services.render_manager import RenderTaskQueue, reconcile_interrupted_renders
+from app.services.social_tokens import TokenCipher
 from app.services.supabase_auth import SupabaseTokenVerifier
 
 logger = logging.getLogger(__name__)
@@ -64,10 +68,31 @@ async def lifespan(app: FastAPI):
     app.state.media_signer = MediaTokenSigner(
         settings.media_url_secret, ttl_s=settings.media_url_ttl_s
     )
+    # Publishing shares the signer: Instagram and TikTok fetch the video
+    # themselves, so a publish job needs the same signed URL the browser
+    # plays from — just with a longer life on it.
+    configure_signer(app.state.media_signer)
+
+    # No secret means no publishing at all rather than tokens in plain
+    # text; no configured platform means the same, with nothing to log
+    # about it on a self-hosted install.
+    app.state.token_cipher = (
+        TokenCipher(settings.social_token_secret) if settings.social_token_secret else None
+    )
+    app.state.publishers = social_platforms.build_publishers(settings)
+    publish_queue = PublishQueue(settings, app.state.publishers, app.state.token_cipher)
+    publish_queue.start()
+    # After the queue's workers exist, so a job reloaded from the database
+    # has somewhere to go.
+    await publish_queue.resume_after_restart()
+    app.state.publish_queue = publish_queue
+    configure_queue(publish_queue)
+
     try:
         yield
     finally:
         await render_queue.stop()
+        await publish_queue.stop()
         await db.disconnect()
 
 
@@ -113,6 +138,7 @@ app.include_router(voices.router)
 app.include_router(art_styles.router)
 app.include_router(visual_modes.router)
 app.include_router(uploads.router)
+app.include_router(social.router)
 
 
 @app.get("/api/health")

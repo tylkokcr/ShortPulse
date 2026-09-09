@@ -12,6 +12,7 @@ import { RenderPreview } from "@/components/render/RenderPreview";
 import { TranscriptPanel } from "@/components/render/TranscriptPanel";
 import { StockCredits } from "@/components/render/StockCredits";
 import { EditPanel } from "@/components/render/EditPanel";
+import { PublishPanel } from "@/components/render/PublishPanel";
 import { getCredits, getProject, getStreamToken, regenerateScene, submitFeedback } from "@/lib/api";
 import { InsufficientCreditsError } from "@/lib/api";
 import type { Project } from "@/lib/types";
@@ -204,12 +205,17 @@ export default function ProjectPage(props: { params: Promise<{ id: string }> }) 
             )}
           </div>
 
-          <RenderPreview
-            projectId={id}
-            videoRef={videoRef}
-            onTimeUpdate={setCurrentTime}
-            verdict={{ current: videoVerdict, onSubmit: handleVerdict }}
-          />
+          <div className="flex flex-col gap-4">
+            <RenderPreview
+              projectId={id}
+              videoRef={videoRef}
+              onTimeUpdate={setCurrentTime}
+              verdict={{ current: videoVerdict, onSubmit: handleVerdict }}
+            />
+            {/* Only once there is a file to publish. Before that the panel
+                would be offering to post a video that does not exist. */}
+            {project?.status === "complete" && <PublishPanel project={project} />}
+          </div>
         </div>
       </main>
     </div>

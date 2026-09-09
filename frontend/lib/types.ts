@@ -113,12 +113,26 @@ export interface Scene {
   is_outro?: boolean;
 }
 
+/** Title, description and hashtags for the post itself, as opposed to
+ *  anything in the video. Written by the same LLM call as the script so
+ *  that an unattended render always has something to publish with; absent
+ *  on uploads, which skip the LLM, and on anything rendered before
+ *  publishing existed. */
+export interface PostCopy {
+  title: string;
+  description: string;
+  /** Stored bare, without the leading '#' — each platform applies its
+   *  own. */
+  hashtags: string[];
+}
+
 export interface ScriptOutput {
   topic: string;
   hook: string;
   scenes: Scene[];
   total_duration_s: number;
   call_to_action?: string | null;
+  post?: PostCopy | null;
 }
 
 export interface VoiceConfig {
@@ -432,3 +446,41 @@ export const DEFAULT_OUTRO_CONFIG: OutroConfig = {
   background_color: "#0a0a0a",
   accent_color: "#ff5c1a",
 };
+
+// --------------------------------------------------------------------------
+// Publishing
+// --------------------------------------------------------------------------
+
+/** Platforms this deployment is configured for. Absent ones are not shown
+ *  at all rather than shown disabled — see /api/social/platforms. */
+export type SocialPlatform = "youtube" | "instagram" | "tiktok";
+
+export interface SocialConnection {
+  id: string;
+  platform: SocialPlatform;
+  display_name: string | null;
+  auto_publish: boolean;
+  /** False until something has actually gone out through this connection.
+   *  While it is false the first automatic post is held for approval, so
+   *  the UI has to explain why a toggle that is on hasn't posted yet. */
+  has_published: boolean;
+}
+
+export type SocialPostStatus =
+  | "awaiting_review"
+  | "queued"
+  | "uploading"
+  | "published"
+  | "failed";
+
+export interface SocialPost {
+  id: string;
+  platform: SocialPlatform;
+  status: SocialPostStatus;
+  title: string | null;
+  /** What the platform actually applied, which is not always what was
+   *  asked for: an unaudited app can be forced to private or self-only. */
+  privacy: string;
+  url: string | null;
+  error: string | null;
+}

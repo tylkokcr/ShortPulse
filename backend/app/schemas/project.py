@@ -161,6 +161,34 @@ class Scene(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
 
+class PostCopy(BaseModel):
+    """What goes *around* the video when it is published, as opposed to
+    what is in it.
+
+    Written by the same LLM call that writes the script, rather than asked
+    for at publish time. The reason is the automatic path: a render that
+    finishes at three in the morning has nobody to caption it, and a
+    publisher holding no title cannot post to YouTube at all. Generating
+    it up front means the copy always exists; the editor makes it
+    editable, so nothing is decided by the model that a user can't undo.
+
+    One set of fields for every platform, trimmed per platform by each
+    publisher. The limits below are the tightest that matter — 100 is
+    YouTube's hard cap on a title, 2200 is the caption ceiling on both
+    TikTok and Instagram — so anything that fits here fits everywhere,
+    and the alternative (per-platform copy) is three fields to edit for a
+    difference most users don't want.
+
+    Hashtags are stored bare, without the leading '#'. Each platform has
+    its own opinion about where they go and how many count, and a stored
+    '#' would have to be stripped before any of them could be applied.
+    """
+
+    title: str = Field(default="", max_length=100)
+    description: str = Field(default="", max_length=2200)
+    hashtags: list[str] = Field(default_factory=list, max_length=15)
+
+
 class ScriptOutput(BaseModel):
     """Structured output returned by the script_engine LLM call."""
 
@@ -169,6 +197,10 @@ class ScriptOutput(BaseModel):
     scenes: list[Scene]
     total_duration_s: float
     call_to_action: str | None = None
+    # Absent on projects rendered before publishing existed, and on
+    # uploads, which skip the LLM entirely — so every reader has to cope
+    # with it being None rather than assume the generator filled it in.
+    post: PostCopy | None = None
 
 
 # --------------------------------------------------------------------------

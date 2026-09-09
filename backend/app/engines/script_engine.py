@@ -23,6 +23,7 @@ from pydantic import ValidationError
 from app.schemas.project import (
     LLMConfig,
     LLMProvider,
+    PostCopy,
     Scene,
     SceneAudio,
     SceneVisual,
@@ -126,6 +127,12 @@ a text-to-speech engine, which will speak an emoji's literal name instead \
 of skipping it.
 - End with a short call to action (follow, comment, etc.) unless the topic \
 clearly calls for a cliffhanger instead.
+- Also write the text that goes *around* the video when it is posted: a \
+"post" object with a "title" (under 100 characters, written to be clicked \
+on), a "description" (1-3 sentences), and 3 to 8 "hashtags". Write the \
+title and description in {language_name}. Give hashtags without the '#' \
+and without spaces. This is what appears on the post itself, not in the \
+video, so do not repeat the hook word for word.
 
 Respond with ONLY valid JSON, no markdown fences, matching this shape:
 {{
@@ -133,7 +140,12 @@ Respond with ONLY valid JSON, no markdown fences, matching this shape:
   "scenes": [
     {{"voiceover_line": "string", "visual_prompt": "string", "duration_s": 4}}
   ],
-  "call_to_action": "string or null"
+  "call_to_action": "string or null",
+  "post": {{
+    "title": "string",
+    "description": "string",
+    "hashtags": ["string"]
+  }}
 }}
 """
 
@@ -608,6 +620,64 @@ async def _rewrite_named_prompts(
             scenes[index]["visual_prompt"] = prompt.strip()
 
 
+_HASHTAG_STRIP = re.compile(r"[^0-9A-Za-z_À-ɏͰ-῿]+")
+
+
+def _to_post_copy(parsed: dict, topic: str, hook: str, call_to_action: str | None) -> PostCopy:
+    """The caption, title and tags the video is published under.
+
+    Never raises and never returns None. That is the point of it: the
+    automatic publish path runs when nobody is watching, and a model that
+    dropped the "post" key — which local ones do — must not be the reason
+    a finished render cannot be posted. So everything here degrades to
+    something derived from the script, which is always present.
+
+    The derived version is not as good as the written one. It is better
+    than a title of "" , which YouTube rejects outright.
+    """
+    raw = parsed.get("post")
+    if not isinstance(raw, dict):
+        raw = {}
+
+    title = _first_present(raw, ["title", "post_title", "headline"]) or hook or topic
+    description = (
+        _first_present(raw, ["description", "caption", "post_description", "body"])
+        or " ".join(part for part in (hook, call_to_action) if part)
+        or topic
+    )
+
+    tags: list[str] = []
+    raw_tags = raw.get("hashtags") or raw.get("tags") or []
+    # Models sometimes hand back "#one #two #three" as a single string
+    # instead of a list.
+    if isinstance(raw_tags, str):
+        raw_tags = raw_tags.split()
+    if isinstance(raw_tags, list):
+        for tag in raw_tags:
+            if not isinstance(tag, str):
+                continue
+            # Stored bare: the '#' is punctuation each platform applies
+            # itself, and a stored one would have to be stripped before
+            # any of them could use it. Spaces and emoji go too — a
+            # hashtag containing either is not a hashtag anywhere.
+            cleaned = _HASHTAG_STRIP.sub("", tag)
+            if cleaned and cleaned.lower() not in {t.lower() for t in tags}:
+                tags.append(cleaned)
+
+    try:
+        # Truncated rather than rejected. A model that wrote 140 characters
+        # of title produced usable copy and one unusable field, and losing
+        # the whole post over it would be the wrong trade.
+        return PostCopy(
+            title=title.strip()[:100],
+            description=description.strip()[:2200],
+            hashtags=tags[:15],
+        )
+    except ValidationError as exc:  # pragma: no cover - defensive
+        logger.warning("Unusable post copy (%s); falling back to the topic", exc)
+        return PostCopy(title=topic[:100], description=topic[:2200])
+
+
 def _to_script_output(
     topic: str, parsed: dict, video_length: VideoLength = VideoLength.SHORT
 ) -> ScriptOutput:
@@ -677,13 +747,17 @@ def _to_script_output(
         )
         scenes = scenes[:max_scenes]
 
+    hook = parsed.get("hook", scenes[0].audio.voiceover_line)
+    call_to_action = parsed.get("call_to_action")
+
     try:
         return ScriptOutput(
             topic=topic,
-            hook=parsed.get("hook", scenes[0].audio.voiceover_line),
+            hook=hook,
             scenes=scenes,
             total_duration_s=sum(s.duration_s for s in scenes),
-            call_to_action=parsed.get("call_to_action"),
+            call_to_action=call_to_action,
+            post=_to_post_copy(parsed, topic, hook, call_to_action),
         )
     except ValidationError as exc:
         raise ScriptGenerationError(f"Malformed script structure: {exc}") from exc
