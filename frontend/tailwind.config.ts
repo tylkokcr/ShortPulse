@@ -28,8 +28,15 @@ const config: Config = {
         // Signal orange. One accent, used for the thing you should look at
         // and nothing else — the record-light association is doing real
         // work for a video tool, which violet never did.
-        accent: "#ff5c1a",
-        "accent-hover": "#ff7438",
+        //
+        // It reads from a CSS variable so a visitor can swap which colour
+        // plays that part (see --accent in globals.css). The rule it obeys
+        // does not change with the value: still exactly one accent on
+        // screen, still only on the thing you should look at. Every
+        // alternative is checked to at least 6:1 against black, because
+        // Button's primary variant prints black text on top of it.
+        accent: "rgb(var(--accent) / <alpha-value>)",
+        "accent-hover": "rgb(var(--accent-hover) / <alpha-value>)",
         // Reserved for state that is genuinely live: a render in flight, a
         // socket connected. Never decoration.
         live: "#4ade80",

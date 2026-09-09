@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Github, Library } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
+import { AccentSwitcher } from "@/components/ui/AccentSwitcher";
 
 const REPO_URL = "https://github.com/tylkokcr/ShortPulse";
 
@@ -44,6 +45,10 @@ export function SiteHeader({
             <Github size={16} />
             Source
           </a>
+          {/* Hidden on small screens: five dots is a lot of tap targets to
+              spend on a phone header, and the choice is a preference rather
+              than a control anyone needs on the way to a render. */}
+          <AccentSwitcher className="hidden md:flex" />
           {right}
         </div>
       </div>

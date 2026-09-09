@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { PointerLight } from "@/components/ui/PointerLight";
 import { LoginPanel } from "@/components/auth/LoginScreen";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -46,7 +47,16 @@ export default function LoginPage() {
   if (loading || session || !enabled) return null;
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="relative flex min-h-screen flex-col">
+      {/* Same drafting surface as the landing hero, so arriving here from
+          the marketing page doesn't feel like landing in a different
+          product. See globals.css for why each mask needs its own layer. */}
+      <PointerLight className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[560px]">
+        <div className="bg-grid absolute inset-0" aria-hidden />
+        <div className="bg-grid-lit absolute inset-0" aria-hidden />
+        <div className="bg-grid-band absolute inset-0" aria-hidden />
+      </PointerLight>
+
       <SiteHeader />
 
       <main className="flex flex-1 items-center justify-center px-6 py-16">

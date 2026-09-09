@@ -24,6 +24,9 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
+import { PointerLight } from "@/components/ui/PointerLight";
+import { WordReveal } from "@/components/ui/WordReveal";
+import { CountUp } from "@/components/ui/CountUp";
 import { PhoneFrame } from "./PhoneFrame";
 import { Examples } from "./Examples";
 import { Pricing } from "./Pricing";
@@ -127,8 +130,16 @@ export function Landing() {
     <div className="relative min-h-screen">
       {/* Decorative layer, not the content wrapper — mask-image masks an
           element's entire rendered content, children included, so it can't
-          live on anything that also has to show real content beneath it. */}
-      <div className="bg-grid pointer-events-none absolute inset-x-0 top-0 -z-10 h-[640px]" aria-hidden />
+          live on anything that also has to show real content beneath it.
+          Three stacked copies of the same 64px rule: the flat one that was
+          always here, a brighter one revealed only under the cursor, and a
+          third that a slow band travels across. Each is masked separately,
+          which is why they are siblings rather than one element. */}
+      <PointerLight className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[640px]">
+        <div className="bg-grid absolute inset-0" aria-hidden />
+        <div className="bg-grid-lit absolute inset-0" aria-hidden />
+        <div className="bg-grid-band absolute inset-0" aria-hidden />
+      </PointerLight>
 
       <SiteHeader
         right={
@@ -162,9 +173,10 @@ export function Landing() {
           <Badge tone="accent" className="w-fit">
             Open source · self-hosted or hosted
           </Badge>
-          <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl">
-            Turn a topic into a <span className="text-accent-emphasis">ready-to-post</span> vertical video.
-          </h1>
+          <WordReveal className="text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl">
+            Turn a topic into a <span className="text-accent-emphasis">ready-to-post</span> vertical
+            video.
+          </WordReveal>
           <p className="max-w-lg text-lg leading-relaxed text-white/60">
             Script, voiceover, word-synced captions, visuals and music — assembled by a pipeline you
             can actually read. Pay per video or self-host it for nothing. No subscription either way.
@@ -177,7 +189,9 @@ export function Landing() {
             {STATS.map((stat) => (
               <div key={stat.label} className="flex flex-col gap-1">
                 <dt className="sr-only">{stat.label}</dt>
-                <dd className="font-mono text-xl font-medium text-white sm:text-2xl">{stat.value}</dd>
+                <dd className="font-mono text-xl font-medium text-white sm:text-2xl">
+                  <CountUp value={stat.value} />
+                </dd>
                 <span className="text-xs text-white/40">{stat.label}</span>
               </div>
             ))}

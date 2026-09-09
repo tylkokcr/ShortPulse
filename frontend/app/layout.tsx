@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Archivo, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { ACCENT_BOOT_SCRIPT } from "@/components/ui/AccentSwitcher";
 
 // Variable weight range rather than a fixed set: headlines want 600-700
 // and the same face at 400 carries body text, so loading it once covers
@@ -28,7 +29,23 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${archivo.variable} ${jetbrainsMono.variable}`}>
+    // suppressHydrationWarning covers exactly one attribute: the boot
+    // script below writes data-accent onto this element before React
+    // hydrates, so the server markup and the live DOM legitimately differ.
+    // It suppresses the warning for this element's attributes only — not
+    // for its children — which is why the script has to be the sole thing
+    // that touches <html>.
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${archivo.variable} ${jetbrainsMono.variable}`}
+    >
+      <head>
+        {/* Applies the stored accent before the first paint. Inline and
+            synchronous on purpose: anything deferred shows one frame of
+            the default colour on every navigation. */}
+        <script dangerouslySetInnerHTML={{ __html: ACCENT_BOOT_SCRIPT }} />
+      </head>
       <body className="font-sans">
         <AuthProvider>{children}</AuthProvider>
       </body>
