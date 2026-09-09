@@ -48,6 +48,49 @@ export const PROVIDER_LABELS: Record<OAuthProvider, string> = {
 };
 
 /**
+ * Check that Supabase will actually start this flow, before leaving.
+ *
+ * Supabase does *not* report a disabled provider the way it reports every
+ * other auth failure. An expired magic link comes back to our own page
+ * with `error` in the fragment, which is what readLinkError() reads. A
+ * provider that has not been configured in the dashboard instead answers
+ * the authorize request with a bare 400 JSON body:
+ *
+ *   {"code":400,"error_code":"validation_failed",
+ *    "msg":"Unsupported provider: provider is not enabled"}
+ *
+ * There is no redirect, so nothing of ours ever runs again. Left alone,
+ * pressing the main sign-in button strands the visitor on raw JSON with
+ * no way back — and this is a reachable state, not a hypothetical one:
+ * it is what a deployment looks like between shipping a provider in
+ * NEXT_PUBLIC_OAUTH_PROVIDERS and enabling it in the Supabase dashboard.
+ *
+ * So the URL is fetched before the browser is sent to it. A configured
+ * provider answers with a redirect to Google or Facebook, which `fetch`
+ * reports as an opaque response it cannot read — that opacity is the
+ * success signal here, not a problem.
+ *
+ * Fails open. If the check itself cannot run — offline, blocked, a
+ * timeout — the browser goes anyway: a working sign-in must not be
+ * blocked by a guard against a misconfiguration.
+ */
+async function providerIsEnabled(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url, { redirect: "manual" });
+    // An opaque redirect (status 0) is the healthy case: it means Supabase
+    // is sending the browser on to the provider.
+    if (response.status === 0 || response.ok) return null;
+    if (response.status >= 400 && response.status < 500) {
+      const body = await response.text();
+      return body.slice(0, 300);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Hand the browser over to the provider.
  *
  * This client runs the implicit flow (supabase-js's default), so the
@@ -57,13 +100,14 @@ export const PROVIDER_LABELS: Record<OAuthProvider, string> = {
  * because AuthProvider mounts globally and `detectSessionInUrl` does the
  * rest.
  *
- * Failures arrive the same way, in the fragment, and are read by
- * readLinkError() in LoginScreen — the same function that already had to
- * exist for expired magic links.
+ * Failures *after* the provider has been reached arrive in that same
+ * fragment and are read by readLinkError() in LoginScreen. Failures
+ * before it are the case providerIsEnabled exists for.
  *
- * On success this never returns anything useful: the browser is already
- * navigating away. Only a refusal to start the flow at all — a provider
- * that isn't enabled, most likely — comes back as a thrown error.
+ * `skipBrowserRedirect` is what makes the check possible: supabase-js
+ * builds the authorize URL and hands it back instead of navigating, so
+ * the URL that gets tested is the exact one the browser will visit rather
+ * than a second copy assembled here.
  */
 export async function signInWithProvider(
   provider: OAuthProvider,
@@ -71,9 +115,15 @@ export async function signInWithProvider(
 ): Promise<void> {
   if (!supabase) throw new Error("This install has no accounts.");
 
-  const { error } = await supabase.auth.signInWithOAuth({
+  const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
-    options: { redirectTo },
+    options: { redirectTo, skipBrowserRedirect: true },
   });
   if (error) throw error;
+  if (!data?.url) throw new Error("Couldn't start sign-in. Try again.");
+
+  const problem = await providerIsEnabled(data.url);
+  if (problem) throw new Error(problem);
+
+  window.location.assign(data.url);
 }
