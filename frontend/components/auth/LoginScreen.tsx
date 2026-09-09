@@ -40,6 +40,31 @@ function explain(message: string): string {
   if (text.includes("provider is not enabled") || text.includes("unsupported provider")) {
     return "That sign-in method isn't available right now. Use your email address instead.";
   }
+  // The single most likely wrong guess here is not a mistyped password: it
+  // is an account that has never had one. Every account made before this
+  // screen existed was created by a sign-in link or by Google, and Supabase
+  // reports "no password on file" and "wrong password" with the same
+  // string. Naming both readings costs one sentence and saves the user
+  // from retyping a password they never chose.
+  if (text.includes("invalid login credentials")) {
+    return (
+      "That email and password don't match. If you've only ever signed in with " +
+      "Google or a sign-in link, you don't have a password yet — use " +
+      "“Forgot your password?” to set one."
+    );
+  }
+  if (text.includes("already registered") || text.includes("user already exists")) {
+    return "There's already an account with that address. Sign in instead.";
+  }
+  if (text.includes("password should be") || text.includes("password is too short")) {
+    return "Passwords need to be at least 8 characters.";
+  }
+  if (text.includes("email not confirmed")) {
+    return "Confirm your email address first — check your inbox for the link we sent.";
+  }
+  if (text.includes("same password")) {
+    return "That's the password you already had. Pick a different one.";
+  }
   return message;
 }
 
@@ -129,10 +154,23 @@ const PROVIDER_ICONS: Record<OAuthProvider, (props: { size?: number }) => React.
  * With no providers configured this degrades to exactly the card that was
  * here before: heading, email field, button.
  */
+type Mode = "signin" | "signup";
+
+/** What the panel is waiting on. One at a time, so a second submit while
+ *  the first is in flight can't start a competing request. */
+type Busy = "password" | "link" | "reset" | null;
+
+/** The three things that end with "go and look in your email". They differ
+ *  only in wording, so they share one screen rather than three. */
+type Sent = { kind: "link" | "confirm" | "reset"; address: string } | null;
+
 export function LoginPanel({ className }: { className?: string }) {
   const signupCredits = useSignupCredits();
+  const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState<Busy>(null);
+  const [sent, setSent] = useState<Sent>(null);
   // Which provider is mid-redirect. The browser is on its way out, but on
   // a slow connection that takes long enough for a second click to start
   // a second flow.
@@ -161,23 +199,108 @@ export function LoginPanel({ className }: { className?: string }) {
     }
   }
 
-  async function sendLink(event: React.FormEvent) {
+  /**
+   * Email and password, in both directions.
+   *
+   * Signing up does not always produce a session. With "Confirm email" on
+   * in the Supabase dashboard, signUp succeeds, returns no session, and the
+   * account stays unusable until a link is clicked; with it off, the
+   * session arrives here and AuthProvider takes over. Reading
+   * `data.session` rather than assuming one is what lets that dashboard
+   * setting change without this file being wrong.
+   */
+  async function submitPassword(event: React.FormEvent) {
     event.preventDefault();
     if (!supabase) return;
 
-    setStatus("sending");
+    const address = email.trim();
+    setBusy("password");
+    setError(null);
+
+    if (mode === "signup") {
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: address,
+        password,
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (signUpError) {
+        setError(explain(signUpError.message));
+        setBusy(null);
+        return;
+      }
+      if (!data.session) setSent({ kind: "confirm", address });
+      setBusy(null);
+      return;
+    }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: address,
+      password,
+    });
+    if (signInError) setError(explain(signInError.message));
+    setBusy(null);
+  }
+
+  /**
+   * The passwordless way in, kept as a second door rather than the front
+   * one. Every account that existed before this screen was created by one
+   * of these, and a Facebook account registered against a phone number
+   * still has no password and no email to make one with.
+   */
+  async function sendLink() {
+    if (!supabase) return;
+    const address = email.trim();
+    if (!address) {
+      setError("Type your email address first.");
+      return;
+    }
+
+    setBusy("link");
     setError(null);
     const { error: sendError } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
+      email: address,
       options: { emailRedirectTo: window.location.origin },
     });
 
     if (sendError) {
       setError(explain(sendError.message));
-      setStatus("idle");
+      setBusy(null);
       return;
     }
-    setStatus("sent");
+    setSent({ kind: "link", address });
+    setBusy(null);
+  }
+
+  /**
+   * Also the way an older account gets its first password: Supabase treats
+   * "reset" and "set for the first time" as the same operation, which is
+   * why the invalid-credentials message points here.
+   *
+   * Supabase deliberately answers the same way whether or not the address
+   * exists, so this screen must not claim an email was sent to a real
+   * account — only that one was sent if there is one.
+   */
+  async function sendReset() {
+    if (!supabase) return;
+    const address = email.trim();
+    if (!address) {
+      setError("Type your email address first, then ask for a reset link.");
+      return;
+    }
+
+    setBusy("reset");
+    setError(null);
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(address, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    if (resetError) {
+      setError(explain(resetError.message));
+      setBusy(null);
+      return;
+    }
+    setSent({ kind: "reset", address });
+    setBusy(null);
   }
 
   return (
@@ -188,31 +311,54 @@ export function LoginPanel({ className }: { className?: string }) {
         className
       )}
     >
-      {status === "sent" ? (
+      {sent ? (
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-sm font-medium text-white">
             <Mail size={16} className="text-accent" />
             Check your inbox
           </div>
           <p className="text-sm text-white/50">
-            We sent a sign-in link to <span className="text-white/80">{email}</span>. It opens this
-            page already signed in. If it isn&apos;t there in a minute, check spam.
+            {sent.kind === "link" && (
+              <>
+                We sent a sign-in link to <span className="text-white/80">{sent.address}</span>. It
+                opens this page already signed in.
+              </>
+            )}
+            {sent.kind === "confirm" && (
+              <>
+                We sent a confirmation link to <span className="text-white/80">{sent.address}</span>.
+                Click it once and the account is ready — after that your password works here.
+              </>
+            )}
+            {/* Not "we sent you an email": Supabase answers a reset the same
+                way whether or not the address has an account, and saying
+                otherwise would turn this form into a way to find out who has
+                signed up. */}
+            {sent.kind === "reset" && (
+              <>
+                If <span className="text-white/80">{sent.address}</span> has an account, a link to
+                set a new password is on its way. It opens a page where you choose one.
+              </>
+            )}{" "}
+            If it isn&apos;t there in a minute, check spam.
           </p>
           <button
-            onClick={() => setStatus("idle")}
+            onClick={() => setSent(null)}
             className="self-start text-xs text-white/40 underline underline-offset-2 hover:text-white/70"
           >
-            Use a different address
+            Back to sign in
           </button>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
           <div>
             <h2 className="text-base font-semibold text-white">
-              Start with {signupCredits} free credits
+              {mode === "signup" ? `Start with ${signupCredits} free credits` : "Welcome back"}
             </h2>
             <p className="mt-1 text-sm text-white/50">
-              No card, no subscription. One account, however you sign in.
+              {mode === "signup"
+                ? "No card, no subscription. One account, however you sign in."
+                : "One account, however you signed up."}
             </p>
           </div>
 
@@ -251,7 +397,7 @@ export function LoginPanel({ className }: { className?: string }) {
             </div>
           )}
 
-          <form onSubmit={sendLink} className="flex flex-col gap-3">
+          <form onSubmit={submitPassword} className="flex flex-col gap-3">
             <label className="sr-only" htmlFor="email">
               Email
             </label>
@@ -265,15 +411,75 @@ export function LoginPanel({ className }: { className?: string }) {
               placeholder="you@example.com"
               className="rounded-lg border border-border bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-accent focus:outline-none"
             />
+            <label className="sr-only" htmlFor="password">
+              Password
+            </label>
+            {/* minLength only when signing up. Enforcing it on the way in
+                would lock out anyone whose existing password predates the
+                rule, and the server is the one that decides anyway. */}
+            <input
+              id="password"
+              type="password"
+              required
+              minLength={mode === "signup" ? 8 : undefined}
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={mode === "signup" ? "Choose a password — 8 characters or more" : "Password"}
+              className="rounded-lg border border-border bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-accent focus:outline-none"
+            />
             <Button
               type="submit"
               variant={oauthProviders.length > 0 ? "outline" : "gradient"}
-              disabled={status === "sending" || !email.trim() || redirecting !== null}
+              disabled={busy !== null || redirecting !== null || !email.trim() || !password}
             >
-              {status === "sending" ? "Sending..." : "Email me a sign-in link"}
-              {status !== "sending" && <ArrowRight size={16} />}
+              {busy === "password"
+                ? mode === "signup"
+                  ? "Creating account..."
+                  : "Signing in..."
+                : mode === "signup"
+                  ? "Create account"
+                  : "Sign in"}
+              {busy !== "password" && <ArrowRight size={16} />}
             </Button>
           </form>
+
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-white/40">
+            <button
+              type="button"
+              onClick={() => {
+                setMode(mode === "signin" ? "signup" : "signin");
+                setError(null);
+              }}
+              className="underline underline-offset-2 hover:text-white/70"
+            >
+              {mode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}
+            </button>
+            {mode === "signin" && (
+              <button
+                type="button"
+                onClick={sendReset}
+                disabled={busy !== null}
+                className="underline underline-offset-2 hover:text-white/70 disabled:opacity-50"
+              >
+                {busy === "reset" ? "Sending..." : "Forgot your password?"}
+              </button>
+            )}
+          </div>
+
+          <div className="rule" />
+
+          {/* Below the rule on purpose: it is the slower way in and the one
+              a returning user rarely wants, but it is also the only way in
+              for an account that has never had a password. */}
+          <button
+            type="button"
+            onClick={sendLink}
+            disabled={busy !== null || redirecting !== null}
+            className="self-start text-xs text-white/40 underline underline-offset-2 hover:text-white/70 disabled:opacity-50"
+          >
+            {busy === "link" ? "Sending..." : "Email me a sign-in link instead"}
+          </button>
 
           <p className="text-xs text-white/30">
             Prefer to run it yourself?{" "}

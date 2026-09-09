@@ -56,7 +56,7 @@ export default function LoginPage() {
               Sign in to <span className="text-accent-emphasis">ShortPulse</span>
             </h1>
             <p className="mt-2 text-sm text-white/50">
-              New here? Signing in creates your account — there&apos;s no separate sign-up.
+              A password, Google, or a link to your inbox — all three reach the same account.
             </p>
           </div>
 
