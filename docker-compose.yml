@@ -28,6 +28,9 @@ services:
         NEXT_PUBLIC_WS_ORIGIN: ${PUBLIC_WS_ORIGIN:-ws://localhost:8080}
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-}
+        # Sign-in providers. Empty means email links only, which is the
+        # only thing a self-hosted install could offer anyway.
+        NEXT_PUBLIC_OAUTH_PROVIDERS: ${NEXT_PUBLIC_OAUTH_PROVIDERS:-}
         # Named on the terms and privacy pages. Empty here: a self-hosted
         # install has no customers and nothing to answer for, and would
         # otherwise publish whoever wrote this file as its data controller.

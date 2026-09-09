@@ -24,7 +24,6 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
-import { LoginPanel } from "@/components/auth/LoginScreen";
 import { PhoneFrame } from "./PhoneFrame";
 import { Examples } from "./Examples";
 import { Pricing } from "./Pricing";
@@ -148,11 +147,11 @@ export function Landing() {
                 {link.label}
               </a>
             ))}
-            <a href="#sign-in">
+            <Link href="/login">
               <Button variant="secondary" size="sm">
                 Sign in
               </Button>
-            </a>
+            </Link>
           </>
         }
       />
@@ -185,11 +184,11 @@ export function Landing() {
           </dl>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
-            <a href="#sign-in">
+            <Link href="/login">
               <Button variant="gradient" size="lg">
                 Start creating
               </Button>
-            </a>
+            </Link>
             <a href={REPO_URL} target="_blank" rel="noreferrer">
               <Button variant="outline" size="lg">
                 <Github size={18} />
@@ -199,9 +198,13 @@ export function Landing() {
           </div>
         </div>
 
-        <div className="flex flex-col items-center gap-6">
+        {/* The sign-in card used to sit under this mock. It moved to
+            /login when identity providers arrived: the browser leaves the
+            app to visit Google or Facebook and has to come back to a page
+            that can report what happened, and "the middle of the landing
+            page" is not that place. */}
+        <div className="flex justify-center">
           <PreviewMock />
-          <LoginPanel className="w-full max-w-sm" />
         </div>
       </section>
 
@@ -354,11 +357,11 @@ export function Landing() {
             the repo and run the whole thing on your own hardware for nothing.
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <a href="#sign-in">
+            <Link href="/login">
               <Button variant="gradient" size="lg">
                 Start creating
               </Button>
-            </a>
+            </Link>
             <a href={REPO_URL} target="_blank" rel="noreferrer">
               <Button variant="outline" size="lg">
                 <Github size={18} />

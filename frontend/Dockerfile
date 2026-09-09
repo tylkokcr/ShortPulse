@@ -23,6 +23,13 @@ ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 ARG NEXT_PUBLIC_WS_ORIGIN
 
+# Which identity providers the sign-in screen offers. Comma separated,
+# empty by default: a provider only works once it has been given a client
+# id and secret in the Supabase dashboard, and a button for one that
+# hasn't been is a dead end on the first screen a stranger sees. The
+# hosted deployment turns them on one at a time as their paperwork clears.
+ARG NEXT_PUBLIC_OAUTH_PROVIDERS
+
 # Who runs this install — printed on the terms and privacy pages, which
 # have to name a controller and a contact to be worth anything. Left
 # unset, those pages say the operator hasn't published them rather than
@@ -38,6 +45,7 @@ ARG NEXT_PUBLIC_OPERATOR_DATA_REGION
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY \
     NEXT_PUBLIC_WS_ORIGIN=$NEXT_PUBLIC_WS_ORIGIN \
+    NEXT_PUBLIC_OAUTH_PROVIDERS=$NEXT_PUBLIC_OAUTH_PROVIDERS \
     NEXT_PUBLIC_OPERATOR_NAME=$NEXT_PUBLIC_OPERATOR_NAME \
     NEXT_PUBLIC_OPERATOR_ADDRESS=$NEXT_PUBLIC_OPERATOR_ADDRESS \
     NEXT_PUBLIC_OPERATOR_EMAIL=$NEXT_PUBLIC_OPERATOR_EMAIL \
