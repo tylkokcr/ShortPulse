@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import { editProject, uploadSecondaryClip } from "@/lib/api";
+import { useShortPulseStore } from "@/lib/store";
 import type { CaptionTrack, Layout, Project, TextOverlay, Word } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -79,6 +80,29 @@ function toWords(line: Line, text: string): Word[] {
   }));
 }
 
+/**
+ * A new, empty caption line at the end of the track.
+ *
+ * Words carry the timings, so a line invented in the UI still needs one to
+ * exist at all. It is given a second and a half after whatever currently
+ * ends last, which puts it after the speech rather than on top of it — and
+ * the timecode is editable through the same reflow every other line goes
+ * through once applied.
+ *
+ * Adding was always *possible* by typing extra words into an existing line
+ * and letting the chunker redistribute them, but nothing on screen said
+ * so, which is indistinguishable from it being impossible.
+ */
+function blankLine(lines: Line[]): Line {
+  const last = lines[lines.length - 1]?.words.at(-1);
+  const start = last ? last.end_ms + 200 : 0;
+  return {
+    words: [{ text: "New line", start_ms: start, end_ms: start + 1500, confidence: null }],
+    startMs: start,
+    text: "New line",
+  };
+}
+
 function timecode(ms: number): string {
   const total = Math.max(Math.round(ms / 1000), 0);
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
@@ -95,6 +119,14 @@ export function EditPanel({
 }) {
   const track = project.edit?.captions ?? project.captions ?? null;
 
+  // An edit replays the burn-in and overwrites final.mp4 in place, leaving
+  // the project "complete" and its id unchanged — so nothing in the player
+  // has any reason to fetch a new URL, and it keeps showing the video from
+  // before the edit. The user reads that as the edit having done nothing
+  // and reloads the page, which is the only thing that ever worked.
+  // Re-rolling a scene already bumped this; applying an edit did not.
+  const bumpVideoVersion = useShortPulseStore((s) => s.bumpVideoVersion);
+
   const [lines, setLines] = useState<Line[]>(() => (track ? toLines(track) : []));
   const [overlays, setOverlays] = useState<TextOverlay[]>(project.edit?.overlays ?? []);
   const [layout, setLayout] = useState<Layout>(project.edit?.layout ?? "full");
@@ -108,6 +140,10 @@ export function EditPanel({
 
   const original = useMemo(() => (track ? toLines(track) : []), [track]);
   const dirty =
+    // Length first: deleting the *last* line leaves every remaining index
+    // matching, so a per-index comparison alone would call it unchanged
+    // and leave Apply disabled on a real edit.
+    lines.length !== original.length ||
     lines.some((line, i) => line.text !== original[i]?.text) ||
     JSON.stringify(overlays) !== JSON.stringify(project.edit?.overlays ?? []) ||
     layout !== (project.edit?.layout ?? "full");
@@ -133,6 +169,7 @@ export function EditPanel({
         layout,
       });
       onApplied(updated);
+      bumpVideoVersion();
       // Re-derive from what came back rather than keeping what was typed.
       // Lines are chunks of N words, so shortening one line pulls words up
       // from the next and reflows everything after it — the panel has to
@@ -157,6 +194,14 @@ export function EditPanel({
           <span className="ml-auto font-mono text-[10px] text-white/30">
             {lines.length} lines
           </span>
+          <button
+            type="button"
+            onClick={() => setLines((current) => [...current, blankLine(current)])}
+            className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-white/60 transition-colors hover:border-accent/50 hover:text-white"
+          >
+            <Plus size={11} />
+            Add line
+          </button>
         </div>
 
         <div className="flex max-h-[340px] flex-col gap-1 overflow-y-auto pr-1">
@@ -183,6 +228,17 @@ export function EditPanel({
                     : "border-border text-white/70 hover:border-border-strong"
                 )}
               />
+              {/* Emptying the field already drops the line — toWords returns
+                  nothing for blank text — but that is a thing you have to
+                  know rather than see. */}
+              <button
+                type="button"
+                aria-label={`Delete line at ${timecode(line.startMs)}`}
+                onClick={() => setLines((current) => current.filter((_, j) => j !== i))}
+                className="shrink-0 rounded p-1 text-white/20 transition-colors hover:bg-white/5 hover:text-red-400"
+              >
+                <Trash2 size={12} />
+              </button>
             </div>
           ))}
         </div>
@@ -246,6 +302,7 @@ export function EditPanel({
                 setSecondary(updated.edit?.secondary_path ?? null);
                 setLayout("split_v");
                 onApplied(updated);
+                bumpVideoVersion();
               } catch (err) {
                 setError(err instanceof Error ? err.message : "Could not attach the clip");
               } finally {

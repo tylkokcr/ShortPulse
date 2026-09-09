@@ -26,7 +26,32 @@
 		}
 	}
 
+	# Content-hashed by the build — the filename changes whenever the bytes
+	# do — so these can be cached forever and never revalidated. This is the
+	# half of caching that is safe to be aggressive about.
+	handle /_next/static/* {
+		reverse_proxy web:3000 {
+			header_down Cache-Control "public, max-age=31536000, immutable"
+		}
+	}
+
+	# Everything else, HTML included.
+	#
+	# Next serves a prerendered page with `s-maxage=31536000` and no
+	# `max-age`. s-maxage binds shared caches only, so a browser sees a
+	# response with no freshness information at all and falls back to
+	# heuristic caching — it may reuse the document for a long time without
+	# ever asking. The symptom is a returning visitor being shown a build
+	# from weeks ago while everyone else sees the current one, which is
+	# exactly what happened here.
+	#
+	# `no-cache` does not mean "don't store": the copy is kept and
+	# revalidated. An unchanged page still costs one 304, and a deploy is
+	# picked up on the next visit rather than whenever the browser happens
+	# to give up on its guess.
 	handle {
-		reverse_proxy web:3000
+		reverse_proxy web:3000 {
+			header_down Cache-Control "no-cache"
+		}
 	}
 }
