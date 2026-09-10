@@ -361,3 +361,17 @@ body {
   -webkit-mask-image: linear-gradient(to bottom, black 55%, transparent 95%);
   mask-image: linear-gradient(to bottom, black 55%, transparent 95%);
 }
+
+/* The same field, turned down for a working surface.
+ *
+ * The studio is where someone sits for minutes with a form and a video
+ * preview, not a page they arrive at and decide on. Full-strength stars
+ * behind it would undo the contrast work the panels depend on, so this
+ * halves the brightness and the drift stays as slow as it was. Paired
+ * with a shorter, harder fade it reads as atmosphere above the fold and
+ * nothing at all where the controls are. */
+.stars-field.stars-quiet {
+  opacity: 1;
+  -webkit-mask-image: linear-gradient(to bottom, black 45%, transparent 92%);
+  mask-image: linear-gradient(to bottom, black 45%, transparent 92%);
+}

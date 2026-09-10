@@ -89,6 +89,17 @@ function CreateVideo() {
 
   return (
     <div className="relative min-h-screen">
+      {/* Atmosphere over the heading, nothing over the controls — see
+          .stars-quiet. The height ends around where the first section
+          starts, so the form never has anything behind it. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[620px]">
+        <div className="stars-field stars-quiet" aria-hidden>
+          <div className="stars-a" />
+          <div className="stars-b" />
+          <div className="stars-c" />
+        </div>
+      </div>
+
       <SiteHeader right={<AccountBar />} showLibrary />
 
       <main className="mx-auto max-w-5xl px-6 pb-32 pt-10">
