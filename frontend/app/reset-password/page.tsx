@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { KeyRound } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { GridBackdrop } from "@/components/ui/GridBackdrop";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -72,7 +73,9 @@ export default function ResetPasswordPage() {
   if (loading || !enabled) return null;
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="relative flex min-h-screen flex-col">
+      <GridBackdrop />
+
       <SiteHeader />
 
       <main className="flex flex-1 items-center justify-center px-6 py-16">

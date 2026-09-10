@@ -24,8 +24,8 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
-import { PointerLight } from "@/components/ui/PointerLight";
-import { StarField } from "@/components/ui/StarField";
+import { GridBackdrop } from "@/components/ui/GridBackdrop";
+import { WaveFloor } from "./WaveFloor";
 import { WordReveal } from "@/components/ui/WordReveal";
 import { CountUp } from "@/components/ui/CountUp";
 import { PhoneFrame } from "./PhoneFrame";
@@ -54,7 +54,11 @@ const statsFor = (signupCredits: number) => [
 
 const PIPELINE = [
   { icon: FileText, title: "Script", detail: "Ollama (local) or OpenAI breaks your topic into scenes" },
-  { icon: Mic, title: "Voiceover", detail: "Piper voices, fully local, 10 languages" },
+  // Nine, and it has to stay tied to LANGUAGE_OPTIONS: the stat above and
+  // the feature card below both say nine because that is what the picker
+  // offers, and this line said ten. Japanese is the one it was counting —
+  // deliberately dropped, because Piper ships no licensed voice for it.
+  { icon: Mic, title: "Voiceover", detail: "Piper voices, fully local, 9 languages" },
   { icon: Captions, title: "Captions", detail: "faster-whisper times every word for karaoke-style burn-in" },
   { icon: ImageIcon, title: "Visuals", detail: "AI stills or free stock footage; local text-to-video when you self-host" },
   { icon: Film, title: "Assemble", detail: "FFmpeg mixes ducked music and renders the final .mp4" },
@@ -129,20 +133,7 @@ export function Landing() {
 
   return (
     <div className="relative min-h-screen">
-      <StarField />
-
-      {/* Decorative layer, not the content wrapper — mask-image masks an
-          element's entire rendered content, children included, so it can't
-          live on anything that also has to show real content beneath it.
-          Three stacked copies of the same 64px rule: the flat one that was
-          always here, a brighter one revealed only under the cursor, and a
-          third that a slow band travels across. Each is masked separately,
-          which is why they are siblings rather than one element. */}
-      <PointerLight className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[640px]">
-        <div className="bg-grid absolute inset-0" aria-hidden />
-        <div className="bg-grid-lit absolute inset-0" aria-hidden />
-        <div className="bg-grid-band absolute inset-0" aria-hidden />
-      </PointerLight>
+      <GridBackdrop />
 
       <SiteHeader
         right={
@@ -365,7 +356,8 @@ export function Landing() {
 
       {/* Final CTA */}
       <Reveal>
-        <section className="mx-auto max-w-3xl px-6 py-20 text-center">
+        <section className="relative mx-auto max-w-3xl px-6 pb-32 pt-20 text-center">
+          <WaveFloor />
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Start with {signupCredits} credits. No card, no trial timer.
           </h2>

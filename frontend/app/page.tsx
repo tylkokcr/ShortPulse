@@ -20,7 +20,7 @@ import { useShortPulseStore } from "@/lib/store";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SiteHeader } from "@/components/layout/SiteHeader";
-import { StarField } from "@/components/ui/StarField";
+import { GridBackdrop } from "@/components/ui/GridBackdrop";
 import { ScriptEditor } from "@/components/editor/ScriptEditor";
 import { DurationSelector } from "@/components/editor/DurationSelector";
 import { LanguageSelector } from "@/components/editor/LanguageSelector";
@@ -90,7 +90,7 @@ function CreateVideo() {
 
   return (
     <div className="relative min-h-screen">
-      <StarField />
+      <GridBackdrop />
 
       <SiteHeader right={<AccountBar />} showLibrary />
 
