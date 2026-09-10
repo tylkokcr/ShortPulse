@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
 import { PointerLight } from "@/components/ui/PointerLight";
+import { StarField } from "@/components/ui/StarField";
 import { WordReveal } from "@/components/ui/WordReveal";
 import { CountUp } from "@/components/ui/CountUp";
 import { PhoneFrame } from "./PhoneFrame";
@@ -128,6 +129,8 @@ export function Landing() {
 
   return (
     <div className="relative min-h-screen">
+      <StarField />
+
       {/* Decorative layer, not the content wrapper — mask-image masks an
           element's entire rendered content, children included, so it can't
           live on anything that also has to show real content beneath it.
@@ -136,11 +139,6 @@ export function Landing() {
           third that a slow band travels across. Each is masked separately,
           which is why they are siblings rather than one element. */}
       <PointerLight className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[640px]">
-        <div className="stars-field" aria-hidden>
-          <div className="stars-a" />
-          <div className="stars-b" />
-          <div className="stars-c" />
-        </div>
         <div className="bg-grid absolute inset-0" aria-hidden />
         <div className="bg-grid-lit absolute inset-0" aria-hidden />
         <div className="bg-grid-band absolute inset-0" aria-hidden />

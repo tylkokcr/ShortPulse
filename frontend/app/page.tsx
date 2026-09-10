@@ -20,6 +20,7 @@ import { useShortPulseStore } from "@/lib/store";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { StarField } from "@/components/ui/StarField";
 import { ScriptEditor } from "@/components/editor/ScriptEditor";
 import { DurationSelector } from "@/components/editor/DurationSelector";
 import { LanguageSelector } from "@/components/editor/LanguageSelector";
@@ -89,16 +90,7 @@ function CreateVideo() {
 
   return (
     <div className="relative min-h-screen">
-      {/* Atmosphere over the heading, nothing over the controls — see
-          .stars-quiet. The height ends around where the first section
-          starts, so the form never has anything behind it. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[620px]">
-        <div className="stars-field stars-quiet" aria-hidden>
-          <div className="stars-a" />
-          <div className="stars-b" />
-          <div className="stars-c" />
-        </div>
-      </div>
+      <StarField />
 
       <SiteHeader right={<AccountBar />} showLibrary />
 
