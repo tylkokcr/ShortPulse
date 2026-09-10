@@ -52,6 +52,11 @@ export default function LoginPage() {
           the marketing page doesn't feel like landing in a different
           product. See globals.css for why each mask needs its own layer. */}
       <PointerLight className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[560px]">
+        <div className="stars-field" aria-hidden>
+          <div className="stars-a" />
+          <div className="stars-b" />
+          <div className="stars-c" />
+        </div>
         <div className="bg-grid absolute inset-0" aria-hidden />
         <div className="bg-grid-lit absolute inset-0" aria-hidden />
         <div className="bg-grid-band absolute inset-0" aria-hidden />

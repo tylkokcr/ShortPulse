@@ -136,6 +136,11 @@ export function Landing() {
           third that a slow band travels across. Each is masked separately,
           which is why they are siblings rather than one element. */}
       <PointerLight className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[640px]">
+        <div className="stars-field" aria-hidden>
+          <div className="stars-a" />
+          <div className="stars-b" />
+          <div className="stars-c" />
+        </div>
         <div className="bg-grid absolute inset-0" aria-hidden />
         <div className="bg-grid-lit absolute inset-0" aria-hidden />
         <div className="bg-grid-band absolute inset-0" aria-hidden />
