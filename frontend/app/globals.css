@@ -297,3 +297,38 @@ body {
     animation: marquee 90s linear infinite;
   }
 }
+
+/* The swell that travels along the waveform.
+ *
+ * Every bar runs the same animation; only the phase differs, stepped by
+ * index. That is the difference between this and an equaliser: bars that
+ * bounce independently produce noise with no silhouette, bars that lag
+ * their neighbour by a fixed amount produce a wave moving through a shape
+ * that stays recognisable.
+ *
+ * The numbers are not arbitrary. `alternate` makes the period twice the
+ * duration — 7.2s — and 72 bars at 100ms of lag each is exactly 7.2s of
+ * spread, so precisely one wave spans one copy of the wave. The bar after
+ * the last is therefore in the same phase as the first, and the marquee's
+ * seam stays invisible while this runs on top of it.
+ *
+ * transform-box: fill-box is what makes transform-origin mean "this rect"
+ * rather than the SVG's own origin; without it every bar scales from the
+ * top-left of the viewBox and the row shears instead of breathing. */
+@media (prefers-reduced-motion: no-preference) {
+  .wave-bar {
+    transform-box: fill-box;
+    transform-origin: bottom;
+    animation: wave-breathe 3.6s ease-in-out infinite alternate;
+    animation-delay: calc(var(--i) * -100ms);
+  }
+}
+
+@keyframes wave-breathe {
+  from {
+    transform: scaleY(0.42);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}

@@ -17,6 +17,12 @@
  * trick, and the same keyframe, as the marquee. The first six bars are
  * eased into the last one for the same reason.
  *
+ * The bars also breathe. Not independently — that is an equaliser, and an
+ * equaliser with no audio behind it is a readout of nothing. Here one slow
+ * swell travels along the row, so the shape stays the shape and the whole
+ * waveform undulates, the way a level does while a voice is being spoken
+ * over it.
+ *
  * Static markup, no client hooks: nothing here reacts to anything, so it
  * renders on the server and never hydrates.
  */
@@ -53,6 +59,12 @@ function Wave() {
             width={BAR_W}
             height={h}
             rx={BAR_W / 2}
+            className="wave-bar"
+            // --i drives the phase, so the swell arrives at each bar a
+            // fixed moment after the one before it. See globals.css: the
+            // step is chosen so exactly one wave spans the copy, which is
+            // what keeps the loop seam invisible.
+            style={{ "--i": i } as React.CSSProperties}
             // Taller bars sit slightly brighter, the way a louder moment
             // reads as a stronger mark in any real waveform view.
             fill={`rgba(255,255,255,${(0.05 + value * 0.09).toFixed(3)})`}
