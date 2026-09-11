@@ -14,11 +14,19 @@ import type { ArtStyle } from "@/lib/types";
  * rather than an aesthetic preference.
  *
  * Hovering one plays it. The motion is not an animation invented for the
- * page: it is the same Ken Burns pan and zoom `render_scene_clip` applies
- * to a still, generated from these exact frames with the filter out of
- * render_engine.py. A visitor hovering a card is therefore watching what
- * Fast Hybrid actually does with an image, which is the one thing a grid
- * of stills cannot say.
+ * page: it is the same zoompan Ken Burns move `render_scene_clip` applies
+ * to a still, generated from these exact frames. A visitor hovering a card
+ * is therefore watching what Fast Hybrid actually does with an image,
+ * which is the one thing a grid of stills cannot say.
+ *
+ * One deliberate difference from the renderer: there the zoom runs one
+ * way, because a scene plays once and is followed by the next one. These
+ * loop, and a one-way zoom loops by snapping back — the frame jumped every
+ * few seconds under the pointer. So the zoom and pan here follow a raised
+ * cosine instead: out to the peak at the midpoint and back, which puts the
+ * last frame on top of the first. Measured as the difference between those
+ * two frames, the seam went from 11.8dB to 26-35dB, the remainder being
+ * H.264 noise rather than anything that moves.
  */
 const FALLBACK: ArtStyle[] = [
   { id: "photoreal", name: "Photoreal", description: "Looks like footage.", sample: "photoreal.jpg", is_default: true },
