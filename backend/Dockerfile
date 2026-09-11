@@ -72,4 +72,13 @@ EXPOSE 8000
 # Single worker on purpose: renders are queued in-process and bounded by
 # MAX_CONCURRENT_RENDERS. A second worker would double that limit without
 # knowing it, and each holds its own copy of the Whisper model.
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+# --proxy-headers with a trusted-proxy wildcard: without it request.client
+# is the TCP peer, which behind Caddy is always the proxy — so the rate
+# limiter bucketed every anonymous caller together (one visitor could lock
+# the landing page's price fetch for all of them) and no log ever saw a
+# real visitor address. The wildcard is safe only because port 8000 is
+# never published to the host (see docker-compose*.yml — only the proxy
+# binds 80/443), so the sole thing that can set X-Forwarded-For is Caddy.
+# If the API is ever exposed directly, this must become the proxy's real
+# address or callers can spoof their way past the per-IP limit.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--proxy-headers", "--forwarded-allow-ips", "*"]

@@ -343,7 +343,19 @@ class OutroConfig(BaseModel):
 class ProjectConfig(BaseModel):
     """Top-level request body for POST /api/projects."""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    # Server default is a UUID, but the field is in the request body, so a
+    # client can send its own value. That id becomes a path segment —
+    # project_dir() joins it onto storage_root — so an unconstrained string
+    # is a directory traversal: `id="../../etc"` writes the render outside
+    # the storage root. The pattern pins it to the characters a UUID (or any
+    # sane slug) actually uses; anything with a slash or a dot is a 422
+    # before it can reach the filesystem. project_dir() enforces the same
+    # invariant a second time, because a schema is the wrong and only place
+    # to rely on for a filesystem-safety guarantee.
+    id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()),
+        pattern=r"^[A-Za-z0-9_-]{1,64}$",
+    )
     topic: str
     source: ProjectSource = ProjectSource.GENERATED
     raw_script: str | None = Field(

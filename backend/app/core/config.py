@@ -279,8 +279,19 @@ def get_settings() -> Settings:
 
 
 def project_dir(project_id: str) -> Path:
-    """Root directory for a single project's generated assets."""
-    path = get_settings().storage_root / project_id
+    """Root directory for a single project's generated assets.
+
+    The id is validated at the schema (ProjectConfig.id is pattern-bound),
+    but this function is the one that turns it into a path and mkdir's it,
+    so it re-checks rather than trusting that every caller came through the
+    schema. A migration backfill, a test, or a future endpoint that builds
+    an id some other way would otherwise reopen the traversal this closes.
+    The result must live directly under storage_root and nowhere else.
+    """
+    root = get_settings().storage_root.resolve()
+    path = (root / project_id).resolve()
+    if path.parent != root:
+        raise ValueError(f"Unsafe project id: {project_id!r}")
     for sub in ("audio", "visuals", "subtitles", "output", "source"):
         (path / sub).mkdir(parents=True, exist_ok=True)
     return path

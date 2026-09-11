@@ -12,6 +12,34 @@
 {$SITE_ADDRESS::80} {
 	encode gzip
 
+	# Security headers on every response.
+	#
+	# None of these were being sent, which for a public deployment is a
+	# gap in itself. What each one buys:
+	#   - HSTS: the browser refuses plain HTTP to this host for a year,
+	#     closing the one-request downgrade window the 308 redirect leaves
+	#     open. preload-eligible, but not submitted anywhere yet.
+	#   - X-Frame-Options DENY: the app can't be framed, so the sign-in
+	#     screen can't be clickjacked. CSP frame-ancestors says the same to
+	#     newer browsers; both are cheap.
+	#   - nosniff: a response typed text/plain can't be reinterpreted as
+	#     script by MIME sniffing.
+	#   - Referrer-Policy: a click out never leaks the full path — media
+	#     URLs carry a signed token in the query string, and this keeps it
+	#     out of a third party's referer log.
+	# No Content-Security-Policy beyond frame-ancestors: a real one has to
+	# be built against what the Next bundle actually loads, and a wrong one
+	# breaks the page silently. That is its own task, not a one-liner here.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Frame-Options "DENY"
+		Content-Security-Policy "frame-ancestors 'none'"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Drop the framework fingerprint Next sets on every response.
+		-X-Powered-By
+	}
+
 	# Render progress. Matched before /api/* because it is a protocol
 	# upgrade rather than a request/response, and Caddy proxies it as one.
 	handle /ws/* {
