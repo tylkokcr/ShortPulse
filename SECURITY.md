@@ -172,14 +172,19 @@ The proxy sends HSTS, `nosniff`, `X-Frame-Options: DENY` and a
 `Referrer-Policy` that keeps the token in a media URL's query string out of
 a third party's referer log.
 
-The Content-Security-Policy is in two headers on purpose. Enforced is the
-part that cannot break this app because the app never contained what it
-forbids: `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`,
-`frame-ancestors 'none'`. The full policy — `default-src 'self'` with the
-one third-party origin the browser is allowed to reach, which is the
-deployment's Supabase project — ships alongside it as
-`Content-Security-Policy-Report-Only` until it has been exercised against a
-signed-in session.
+The Content-Security-Policy is `default-src 'self'`, and the only
+third-party origin the browser is allowed to reach is the deployment's own
+Supabase project. It is enforced, not Report-Only.
+
+It got there in two stages, which is the order worth repeating for any
+change to it: the four directives that cannot break a page because the app
+never contained what they forbid — `object-src 'none'`, `base-uri 'self'`,
+`form-action 'self'`, `frame-ancestors 'none'` — were enforced immediately,
+while the rest shipped as `Content-Security-Policy-Report-Only` and moved
+into the enforced header only after a signed-in session had been clicked
+through with the console open. A wrong CSP fails silently, and the editor,
+a render and the library are pages no check from outside the deployment can
+reach.
 
 `script-src` has to include `'unsafe-inline'`. Next inlines a hydration
 script whose contents differ per page, so no hash covers it, and a nonce
@@ -204,10 +209,6 @@ Currently true, and deliberately listed rather than quietly omitted:
   still missing.
 - **Prompts reach a local LLM unfiltered.** There is no moderation on what
   a user can ask for.
-- **The full CSP is not enforced yet.** It is deployed as Report-Only, so
-  today it blocks nothing; the enforced header is the four-directive subset
-  above. It moves once a signed-in session has been clicked through with the
-  console open.
 
 ## Dependencies
 
