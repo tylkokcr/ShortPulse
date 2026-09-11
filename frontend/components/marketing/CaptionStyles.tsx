@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { CAPTION_PRESETS } from "@/lib/captionStyles";
 import { Card } from "@/components/ui/Card";
@@ -9,9 +9,33 @@ import { Card } from "@/components/ui/Card";
  * Shows the caption presets before sign-up, driven by the same
  * `CAPTION_PRESETS` the studio picker and the renderer use — so this can't
  * advertise a look the product doesn't actually produce.
+ *
+ * The captions sit over moving footage rather than a flat panel, because
+ * a caption's whole job is to stay readable over something that moves. On
+ * a gradient, every preset looks fine and the outline widths and drop
+ * shadows that separate them do nothing visible; over a real frame the
+ * differences are the point.
+ *
+ * The clip is the tracked art-style sample, not one of the `/examples`
+ * renders: those are gitignored and absent from a fresh clone, and they
+ * already have captions burned into them, which would sit underneath
+ * these and read as double subtitles.
  */
 export function CaptionStyles() {
   const [activeId, setActiveId] = useState(CAPTION_PRESETS[0].id);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Autoplay is muted and loops, which browsers allow — but not for
+  // someone who asked the system for less motion. They get the poster,
+  // which is the clip's own first frame, so the captions still sit over a
+  // real frame rather than a gradient.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    void video.play().catch(() => {});
+  }, []);
+
   const active = CAPTION_PRESETS.find((p) => p.id === activeId) ?? CAPTION_PRESETS[0];
   const words = ["captions", "that", "land", "on", "the", "beat"];
   const perLine = active.style.max_words_per_line;
@@ -77,9 +101,24 @@ export function CaptionStyles() {
               align
             )}
           >
+            <video
+              ref={videoRef}
+              src="/art-styles/photoreal.mp4"
+              poster="/art-styles/photoreal.jpg"
+              aria-hidden
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            {/* The same reason the renderer draws an outline: white text
+                over a bright frame needs something under it. */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/40" />
+
             <p
               className={clsx(
-                "text-center font-extrabold leading-tight",
+                "relative z-10 text-center font-extrabold leading-tight",
                 active.style.uppercase ? "uppercase" : "normal-case",
                 active.style.font_size >= 90
                   ? "text-2xl"
