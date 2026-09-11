@@ -48,3 +48,44 @@ def test_build_ass_subtitles_offsets_multi_scene_timestamps(tmp_path: Path):
     assert len(dialogue_lines) == 2
     # Second scene's word should start at scene_0's duration_ms offset (500ms), not 0.
     assert dialogue_lines[1].split(",")[1] == "0:00:00.50"
+
+
+def test_turkish_uppercase_keeps_the_dotted_i(tmp_path: Path):
+    """`str.upper()` turns Turkish "i" into "I", which is a different
+    letter there — the caption reads RITME instead of RİTME. Burned into
+    the frame, so there is no fixing it after the render."""
+    words = [
+        Word(text="sözlerin", start_ms=0, end_ms=300),
+        Word(text="ritme", start_ms=300, end_ms=600),
+    ]
+    output_path = tmp_path / "captions.ass"
+
+    build_ass_subtitles([_scene(0, words)], SubtitleStyle(), output_path, language="tr")
+
+    content = output_path.read_text(encoding="utf-8")
+    assert "SÖZLERİN" in content
+    assert "RİTME" in content
+    assert "RITME" not in content
+
+
+def test_dotless_i_still_uppercases_to_plain_i(tmp_path: Path):
+    """The other half of the Turkish pair: "ı" must stay dotless as "I",
+    which is what str.upper() already does — the fix must not break it."""
+    words = [Word(text="ışık", start_ms=0, end_ms=300)]
+    output_path = tmp_path / "captions.ass"
+
+    build_ass_subtitles([_scene(0, words)], SubtitleStyle(), output_path, language="tr")
+
+    assert "IŞIK" in output_path.read_text(encoding="utf-8")
+
+
+def test_non_turkish_uppercase_is_unchanged(tmp_path: Path):
+    """English is the default and must not acquire dotted capitals."""
+    words = [Word(text="vivid", start_ms=0, end_ms=300)]
+    output_path = tmp_path / "captions.ass"
+
+    build_ass_subtitles([_scene(0, words)], SubtitleStyle(), output_path, language="en")
+
+    content = output_path.read_text(encoding="utf-8")
+    assert "VIVID" in content
+    assert "İ" not in content

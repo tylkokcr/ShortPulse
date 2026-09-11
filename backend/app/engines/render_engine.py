@@ -427,6 +427,7 @@ async def render_project(
     ffprobe_binary: str = "ffprobe",
     scene_gap_s: float = DEFAULT_SCENE_GAP_S,
     on_scene_rendered=None,
+    language: str = "en",
 ) -> Path:
     """Full assembly: render each scene clip, THEN build subtitles (using
     each clip's real, frame-quantized duration rather than the pre-render
@@ -443,7 +444,12 @@ async def render_project(
             await on_scene_rendered(scene.index + 1, len(scenes))
 
     subtitle_ass_path = build_ass_subtitles(
-        scenes, subtitle_style, subtitle_output_path, play_res=(target.width, target.height)
+        scenes,
+        subtitle_style,
+        subtitle_output_path,
+        play_res=(target.width, target.height),
+        # Casing rules differ by language — see subtitle_engine._uppercase.
+        language=language,
     )
 
     concatenated = await concat_scene_clips(clip_paths, output_dir, ffmpeg_binary)

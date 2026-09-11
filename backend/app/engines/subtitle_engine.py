@@ -73,10 +73,31 @@ def _chunk_words(words: list[Word], max_words_per_line: int) -> list[SubtitleLin
     return lines
 
 
-def _render_line_text(line: SubtitleLine, active_index: int, style: SubtitleStyle) -> str:
+# Uppercasing is not language-neutral, and the one case that matters here
+# is Turkish. It has two i's — dotted and dotless — and `str.upper()` maps
+# "i" to "I", which in Turkish is the *other* letter: "ritme" comes out
+# "RITME" where it should read "RİTME". Wrong in a way a Turkish reader
+# catches instantly and nobody else notices, and burned into the frame
+# where it can't be corrected afterwards. The substitution runs before
+# .upper() because "İ".upper() is already "İ"; the dotless "ı" needs no
+# help, since "ı".upper() is correctly "I".
+_UPPERCASE_PRE: dict[str, dict[int, str]] = {
+    "tr": str.maketrans({"i": "İ"}),
+    "az": str.maketrans({"i": "İ"}),
+}
+
+
+def _uppercase(text: str, language: str) -> str:
+    table = _UPPERCASE_PRE.get(language.split("-")[0].lower())
+    return (text.translate(table) if table else text).upper()
+
+
+def _render_line_text(
+    line: SubtitleLine, active_index: int, style: SubtitleStyle, language: str
+) -> str:
     parts: list[str] = []
     for i, word in enumerate(line.words):
-        text = word.text.upper() if style.uppercase else word.text
+        text = _uppercase(word.text, language) if style.uppercase else word.text
         text = _sanitize(text)
         if i == active_index:
             parts.append(f"{{\\c{style.highlight_color}\\fscx112\\fscy112}}{text}{{\\r}}")
@@ -85,12 +106,12 @@ def _render_line_text(line: SubtitleLine, active_index: int, style: SubtitleStyl
     return " ".join(parts)
 
 
-def _events_for_line(line: SubtitleLine, style: SubtitleStyle) -> list[str]:
+def _events_for_line(line: SubtitleLine, style: SubtitleStyle, language: str) -> list[str]:
     events: list[str] = []
     for i, word in enumerate(line.words):
         start = _format_timestamp(word.start_ms)
         end = _format_timestamp(word.end_ms)
-        text = _render_line_text(line, active_index=i, style=style)
+        text = _render_line_text(line, active_index=i, style=style, language=language)
         events.append(f"Dialogue: 0,{start},{end},Default,,0,0,0,,{text}")
     return events
 
@@ -153,6 +174,7 @@ def build_ass_from_words(
     output_path: Path,
     play_res: tuple[int, int] = (1080, 1920),
     overlays: list[TextOverlay] | None = None,
+    language: str = "en",
 ) -> Path:
     """Build an .ass file from words already timed against the finished
     video.
@@ -164,7 +186,7 @@ def build_ass_from_words(
     """
     events: list[str] = []
     for line in _chunk_words(words, style.max_words_per_line):
-        events.extend(_events_for_line(line, style))
+        events.extend(_events_for_line(line, style, language))
     # Layer 1, so authored text draws above the caption track where they
     # happen to occupy the same moment.
     events.extend(_events_for_overlays(overlays or []))
@@ -244,7 +266,10 @@ def build_ass_subtitles(
     style: SubtitleStyle,
     output_path: Path,
     play_res: tuple[int, int] = (1080, 1920),
+    language: str = "en",
 ) -> Path:
     """Build a single .ass file covering the full timeline of a generated
     project."""
-    return build_ass_from_words(absolute_words(scenes), style, output_path, play_res)
+    return build_ass_from_words(
+        absolute_words(scenes), style, output_path, play_res, language=language
+    )

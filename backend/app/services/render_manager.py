@@ -331,6 +331,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 ffprobe_binary=settings.ffprobe_binary,
                 scene_gap_s=settings.scene_gap_s,
                 on_scene_rendered=on_scene_rendered,
+                language=config.language,
             )
 
         video_s = sum(
@@ -506,6 +507,7 @@ async def run_upload_pipeline(project: Project, settings: Settings) -> None:
                 # over, not our vertical default — burning a 1080x1920
                 # layout onto landscape footage puts the text off-screen.
                 play_res=(probed.width, probed.height),
+                language=config.language,
             )
 
         # 3. Burn in -----------------------------------------------------------

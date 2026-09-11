@@ -70,6 +70,7 @@ async def apply_edit(project: Project, edit: EditSpec, settings: Settings) -> Pa
         # text off-screen.
         play_res=probed,
         overlays=edit.overlays,
+        language=project.config.language,
     )
 
     secondary = None
