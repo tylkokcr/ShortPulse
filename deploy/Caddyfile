@@ -27,15 +27,56 @@
 	#   - Referrer-Policy: a click out never leaks the full path — media
 	#     URLs carry a signed token in the query string, and this keeps it
 	#     out of a third party's referer log.
-	# No Content-Security-Policy beyond frame-ancestors: a real one has to
-	# be built against what the Next bundle actually loads, and a wrong one
-	# breaks the page silently. That is its own task, not a one-liner here.
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Frame-Options "DENY"
-		Content-Security-Policy "frame-ancestors 'none'"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
+
+		# Content-Security-Policy, deliberately split across two headers.
+		#
+		# A wrong CSP breaks a page silently — the browser blocks a script
+		# and nothing in the UI says why — so the policy is rolled out in
+		# the order of what can be proven. Enforced here is only the part
+		# that cannot break this app, because it forbids things the app has
+		# never contained: there is no <object> or <embed>, no <base>, no
+		# iframe, and no form that posts anywhere but this origin. Each one
+		# closes a real injection route — <base> rewrites every relative URL
+		# on the page, and form-action is how an injected form exfiltrates a
+		# password field.
+		Content-Security-Policy "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+
+		# The rest of the policy rides along as Report-Only: browsers apply
+		# it, report what it would have blocked to the console, and block
+		# nothing. Flip it into the header above once a signed-in session
+		# has been clicked through with the console open — the editor, a
+		# render and the library are the pages this file cannot reach from
+		# outside.
+		#
+		# Measured against the deployed bundle rather than guessed at:
+		#   - 'unsafe-inline' for scripts is not optional here. Next inlines
+		#     a hydration script whose contents differ per page, so a hash
+		#     can't cover it, and a nonce would mean rendering every page
+		#     per-request and giving up the prerendering the cache rules
+		#     above depend on. The accent boot script in app/layout.tsx is
+		#     inline for the same reason it exists: it must run before the
+		#     first paint.
+		#   - style likewise: React writes style="" attributes throughout.
+		#   - data: for images is the SVG noise texture the page background
+		#     is built from; blob: is the local preview of a file the user
+		#     picked, before it is uploaded (components/editor/UploadPreview).
+		#   - connect-src is the interesting one, and the reason the rest is
+		#     worth having: it is what stops injected script from posting a
+		#     token or a script to somewhere else. Supabase is the only
+		#     third party the browser talks to, and the socket origin is
+		#     the render progress feed. Both are taken from the variables
+		#     the web image is built with rather than written out again
+		#     here, because a policy that names a different host than the
+		#     bundle calls is a policy that blocks the app.
+		# Verified with zero violations on /, /login, /credits, /library,
+		# /terms, /privacy, /reset-password and /settings/connections.
+		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self'; connect-src 'self' {$SUPABASE_ORIGIN:} {$WS_ORIGIN:ws://localhost:8080}; frame-src 'none'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+
 		# Drop the framework fingerprint Next sets on every response.
 		-X-Powered-By
 	}

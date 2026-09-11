@@ -166,6 +166,28 @@ builds its `SET` clause by interpolation; column names there may only come
 from a hardcoded whitelist, and `test_column_names_cannot_be_injected`
 fails if that whitelist is removed.
 
+### Browser-side headers
+
+The proxy sends HSTS, `nosniff`, `X-Frame-Options: DENY` and a
+`Referrer-Policy` that keeps the token in a media URL's query string out of
+a third party's referer log.
+
+The Content-Security-Policy is in two headers on purpose. Enforced is the
+part that cannot break this app because the app never contained what it
+forbids: `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`,
+`frame-ancestors 'none'`. The full policy — `default-src 'self'` with the
+one third-party origin the browser is allowed to reach, which is the
+deployment's Supabase project — ships alongside it as
+`Content-Security-Policy-Report-Only` until it has been exercised against a
+signed-in session.
+
+`script-src` has to include `'unsafe-inline'`. Next inlines a hydration
+script whose contents differ per page, so no hash covers it, and a nonce
+would mean rendering every page per request. That weakens the policy against
+injected inline script and is worth saying plainly: what the policy still
+buys is `connect-src`, which is what stops injected script from posting a
+token to an origin of the attacker's choosing.
+
 ## Known gaps
 
 Currently true, and deliberately listed rather than quietly omitted:
@@ -182,6 +204,10 @@ Currently true, and deliberately listed rather than quietly omitted:
   still missing.
 - **Prompts reach a local LLM unfiltered.** There is no moderation on what
   a user can ask for.
+- **The full CSP is not enforced yet.** It is deployed as Report-Only, so
+  today it blocks nothing; the enforced header is the four-directive subset
+  above. It moves once a signed-in session has been clicked through with the
+  console open.
 
 ## Dependencies
 

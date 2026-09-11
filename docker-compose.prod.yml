@@ -25,6 +25,10 @@ services:
     environment:
       # Turns the Caddyfile from :80 into a site with a certificate.
       SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS to your domain}
+      # Matches the wss the web image is built with a few lines down. The
+      # base file's default is the laptop's ws://localhost:8080, which on a
+      # domain would leave the CSP naming a socket nobody opens.
+      WS_ORIGIN: wss://${SITE_ADDRESS:?}
     volumes:
       # Issued certificates and the ACME account key. Without this a
       # restart re-requests every certificate, and Let's Encrypt's rate

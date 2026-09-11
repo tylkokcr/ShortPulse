@@ -18,6 +18,19 @@ services:
     ports: ["8080:80"]
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+    environment:
+      # Named in the Caddyfile's connect-src: Supabase is the only origin
+      # besides this one that the browser is allowed to talk to. Read from
+      # the same variable the web image is built with, so the policy cannot
+      # describe a different Supabase project than the client actually
+      # calls. Empty in the self-hosted shape, where there is no Supabase
+      # and the source simply drops out of the policy.
+      SUPABASE_ORIGIN: ${NEXT_PUBLIC_SUPABASE_URL:-}
+      # Same value the web image gets as NEXT_PUBLIC_WS_ORIGIN below:
+      # the socket the browser opens for render progress, which is a
+      # connect-src of its own because ws:// is a different scheme
+      # than the page's http://.
+      WS_ORIGIN: ${PUBLIC_WS_ORIGIN:-ws://localhost:8080}
     restart: unless-stopped
 
   web:
