@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import { useShortPulseStore } from "@/lib/store";
 import { presetById } from "@/lib/captionStyles";
-import type { AspectRatio } from "@/lib/types";
+import type { AspectRatio, LanguageCode } from "@/lib/types";
 
 /**
  * A live composite of the choices made so far.
@@ -24,16 +24,52 @@ const ASPECT_CLASS: Record<AspectRatio, string> = {
   "16:9": "aspect-video max-w-[320px]",
 };
 
-const PREVIEW_CAPTION = ["your", "words", "land", "on", "the", "beat"];
+/**
+ * The stand-in caption, in the language that will actually be rendered.
+ *
+ * Every other control on the left shows up on the right; language was the
+ * one that didn't, so picking Türkçe or Deutsch left an English line
+ * sitting under the frame — the preview quietly contradicting the setting
+ * above it. The lines all say the same thing, because what is being
+ * previewed is the caption's *shape*: where it breaks, whether it is
+ * uppercase, which word is lit. A translation that runs longer or shorter
+ * than the English is the point rather than a problem — that is what the
+ * line will do in the render too.
+ *
+ * Keyed by LanguageCode rather than by LANGUAGE_OPTIONS, so a language
+ * added to the type without a line here fails the build instead of
+ * silently falling back to English. "ja" is in the type but not offered
+ * yet: Piper ships no Japanese voice.
+ */
+const PREVIEW_CAPTION: Record<LanguageCode, string[]> = {
+  en: ["your", "words", "land", "on", "the", "beat"],
+  tr: ["sözlerin", "ritme", "tam", "oturur"],
+  es: ["tus", "palabras", "caen", "al", "ritmo"],
+  fr: ["tes", "mots", "tombent", "sur", "le", "rythme"],
+  de: ["deine", "Worte", "treffen", "den", "Beat"],
+  pt: ["suas", "palavras", "caem", "no", "ritmo"],
+  ja: ["言葉が", "ビートに", "乗る"],
+  ar: ["كلماتك", "تنزل", "على", "الإيقاع"],
+  ru: ["твои", "слова", "попадают", "в", "ритм"],
+  it: ["le", "tue", "parole", "cadono", "a", "tempo"],
+};
+
+/**
+ * Arabic is the one right-to-left language on offer. The words are laid
+ * out as individual spans here, so without this the browser renders them
+ * left to right and the line reads backwards to anyone who can read it.
+ */
+const RTL_LANGUAGES: ReadonlySet<LanguageCode> = new Set<LanguageCode>(["ar"]);
 
 export function StudioPreview() {
   const { draft } = useShortPulseStore();
   const preset = presetById(draft.captionPreset);
   const perLine = preset.style.max_words_per_line;
+  const caption = PREVIEW_CAPTION[draft.language];
 
   const lines: string[][] = [];
-  for (let i = 0; i < PREVIEW_CAPTION.length; i += perLine) {
-    lines.push(PREVIEW_CAPTION.slice(i, i + perLine));
+  for (let i = 0; i < caption.length; i += perLine) {
+    lines.push(caption.slice(i, i + perLine));
   }
 
   const placement =
@@ -76,6 +112,14 @@ export function StudioPreview() {
         <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/70 to-transparent" />
 
         <p
+          // Not decoration: CSS `text-transform: uppercase` follows the
+          // element's language, and Turkish "i" uppercases to "İ" rather
+          // than "I". Without this the preview shows RITME where the
+          // render now writes RİTME (see subtitle_engine._uppercase) —
+          // the preview would be lying about the one thing it exists to
+          // show.
+          lang={draft.language}
+          dir={RTL_LANGUAGES.has(draft.language) ? "rtl" : "ltr"}
           className={clsx(
             "relative z-10 px-3 pb-4 text-center font-extrabold leading-tight",
             preset.style.uppercase ? "uppercase" : "normal-case",
