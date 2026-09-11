@@ -381,24 +381,40 @@ export function Landing() {
         </section>
       </Reveal>
 
+      {/* Three items of very unequal width — a 24px mark, a sentence, a
+          repo URL — and justify-between centres none of them. It centres
+          the middle item in whatever slack the outer two leave, which
+          coincides with the page centre only if those two are the same
+          width. They aren't, so the tagline sat noticeably left of the
+          Terms/Privacy row directly beneath it, which *is* centred: two
+          lines that both look centred, disagreeing about where the centre
+          is. Giving the outer two an equal flex basis fixes it at every
+          width, because they then absorb the same share of the slack
+          regardless of what they contain. */}
       <footer className="border-t border-border/60 px-6 py-8">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 sm:flex-row">
-          <LogoMark className="h-6 w-6 opacity-60" />
-          <div className="flex items-center gap-4 text-xs text-white/30">
-            <span>MIT licensed · No tracking, no dark patterns.</span>
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
+          <div className="flex justify-start sm:flex-1">
+            <LogoMark className="h-6 w-6 opacity-60" />
           </div>
-          <a
-            href={REPO_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70"
-          >
-            <Github size={14} />
-            github.com/tylkokcr/ShortPulse
-          </a>
+
+          <span className="text-center text-xs text-white/30">
+            MIT licensed · No tracking, no dark patterns.
+          </span>
+
+          <div className="flex justify-end sm:flex-1">
+            <a
+              href={REPO_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70"
+            >
+              <Github size={14} />
+              github.com/tylkokcr/ShortPulse
+            </a>
+          </div>
         </div>
 
-        <div className="mx-auto mt-6 flex max-w-6xl items-center justify-center gap-5 text-xs text-white/30">
+        <div className="mx-auto mt-5 flex max-w-6xl items-center justify-center gap-5 text-xs text-white/30">
           <Link href="/terms" className="transition-colors hover:text-white/60">
             Terms
           </Link>
