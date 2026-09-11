@@ -45,12 +45,18 @@ interface Example {
 
 const EXAMPLES: Example[] = [
   { slug: "honey", title: "Why honey never spoils", language: "English", seconds: 24, scenes: 5 },
+  { slug: "dreams-tr", title: "Neden gece rüya görürüz?", language: "Türkçe", seconds: 18, scenes: 5 },
+  { slug: "moon-fr", title: "Pourquoi la lune change-t-elle de forme ?", language: "Français", seconds: 25, scenes: 6 },
   { slug: "ocean", title: "Why the ocean is salty", language: "English", seconds: 19, scenes: 5 },
-  { slug: "dreams-tr", title: "Neden gece rüya görürüz?", language: "Türkçe", seconds: 24, scenes: 5 },
-  { slug: "lightning", title: "How lightning actually forms", language: "English", seconds: 23, scenes: 5 },
+  { slug: "leaves-de", title: "Warum färben sich Blätter im Herbst?", language: "Deutsch", seconds: 20, scenes: 5 },
   { slug: "sky-es", title: "¿Por qué el cielo es azul?", language: "Español", seconds: 17, scenes: 5 },
+  { slug: "cats-ar", title: "لماذا تخاف القطط من الماء؟", language: "العربية", seconds: 21, scenes: 5 },
+  { slug: "lightning", title: "How lightning actually forms", language: "English", seconds: 23, scenes: 5 },
+  { slug: "yawn-pt", title: "Por que bocejamos?", language: "Português", seconds: 26, scenes: 5 },
   { slug: "coffee", title: "Why coffee wakes you up", language: "English", seconds: 24, scenes: 5 },
-  { slug: "cats-tr", title: "Kediler neden kutuları sever?", language: "Türkçe", seconds: 12, scenes: 3 },
+  { slug: "night-ru", title: "Почему небо ночью тёмное?", language: "Русский", seconds: 11, scenes: 5 },
+  { slug: "cats-tr", title: "Kediler neden kutuları sever?", language: "Türkçe", seconds: 22, scenes: 5 },
+  { slug: "espresso-it", title: "Perché il caffè ci sveglia?", language: "Italiano", seconds: 16, scenes: 5 },
   { slug: "volcano", title: "Why volcanoes erupt", language: "English", seconds: 24, scenes: 5 },
   { slug: "goosebumps", title: "Why we get goosebumps", language: "English", seconds: 18, scenes: 5 },
   { slug: "sleep", title: "A simple trick for better sleep", language: "English", seconds: 19, scenes: 5 },
@@ -69,16 +75,21 @@ const EXAMPLES: Example[] = [
 /**
  * Pexels' API terms require a visible link back to Pexels and credit to
  * the videographer. The pipeline records who shot each clip at fetch time;
- * this is that list, deduplicated across all ten videos.
+ * this is that list, deduplicated across all sixteen stock-footage videos.
  */
 const FOOTAGE_CREDITS = [
-  "khezez | خزاز", "Angela Roma", "Joolsmagools ®️", "Ron Lach", "K", "Bav Vadgama", "Sema",
-  "Mizuno K", "Anna Shvets", "Adventure Studio", "Marina Leonova", "Pachon in Motion",
-  "Matthias Groeneveld", "LauraB", "Darina Belonogova", "cottonbro studio", "Nicola Narracci",
-  "Photoviewx", "Koushalya Karthikeyan", "Ana Sandu", "Nadezhda Moryak", "Michael Burrows",
-  "Tima Miroshnichenko", "Emrah", "John Diez", "Mikhail Nilov", "Nikita Ryumshin", "Artem Podrez",
-  "Muhtelifane", "aslı aydoğdu", "Bahri Gün", "Kakada Chuon", "JUN HO LEE", "Ben Prater",
-  "Timur Weber", "Canan İldeniz", "Anna Pou", "Ambareesh Sridhar Photography", "Masha Glazova",
+  "Aaron Burden", "Abdullah | 4K", "Adventure Studio", "Alexey Chudin",
+  "Ambareesh Sridhar Photography", "Ana Sandu", "Angela Roma", "Anna Pou", "Anna Shvets",
+  "Artem Podrez", "aslı aydoğdu", "Bahri Gün", "Bav Vadgama", "Ben Prater",
+  "Canan İldeniz", "cottonbro studio", "Darina Belonogova", "Deti riyanti", "Ebahir",
+  "Emrah", "Hale Ş", "Iceberg San", "Ilya Lyzhin", "John Diez", "Joolsmagools ®️",
+  "Juan Camilo Trujillo  Botero 🇨🇴📸", "JUN HO LEE", "K", "Kakada Chuon", "khezez | خزاز",
+  "Koushalya Karthikeyan", "LauraB", "Lentes  Bella", "Marina Leonova", "Masha Glazova",
+  "Matthias Groeneveld", "Max Medyk", "Michael Burrows", "Mikhail Nilov", "Mizuno K",
+  "Muhtelifane", "Nadezhda Moryak", "Nicola Narracci", "Nikita Ryumshin",
+  "Pachon in Motion", "Pavel Danilyuk", "Photoviewx", "RDNE Stock project",
+  "ROMAN ODINTSOV", "Ron Lach", "Sema", "Shan Ali", "Stefanie Jockschat",
+  "Tima Miroshnichenko", "Timur Weber", "Toni.063371 -  Antonio Sáez", "Şahin Doğdu"
 ];
 
 export function Examples() {
@@ -87,12 +98,12 @@ export function Examples() {
       <div className="mx-auto mb-8 flex max-w-6xl flex-col gap-2 px-6">
         <span className="font-mono text-xs uppercase tracking-widest text-accent">Real output</span>
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Eleven videos this pipeline actually made
+          Seventeen videos this pipeline actually made
         </h2>
         <p className="max-w-xl text-sm text-white/50">
-          Unedited output — AI-written script, Piper voiceover, word-synced captions, in three
-          languages. Ten use real stock footage; the one marked AI stills was drawn by the paid
-          mode. Hover any one to play it.
+          Unedited output — AI-written script, Piper voiceover, word-synced captions, in all nine
+          languages the product offers. Sixteen use real stock footage; the one marked AI stills was
+          drawn by the paid mode. Hover any one to play it.
         </p>
       </div>
 
