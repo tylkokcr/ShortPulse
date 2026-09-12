@@ -212,9 +212,21 @@ Currently true, and deliberately listed rather than quietly omitted:
 
 ## Dependencies
 
-`pip-audit` and `npm audit` both report no known vulnerabilities. Re-check
-before each release rather than trusting this line — it was true when
-written, which is a different claim.
+Re-check before each release rather than trusting this section — it was
+true when written, which is a different claim. Checked 2026-09-12:
+
+- **Backend:** `pip-audit` reports no known vulnerabilities.
+- **What ships in the web image:** `npm audit --omit=dev` reports none.
+  Two had to be fixed to get there, both surfaced the day the repository
+  went public and Dependabot could see it: a critical pair in Next's image
+  optimisation and a high in `sharp`. Next is now 16.3.5.
+- **Dev-only, still open:** three advisories reached through
+  `eslint-config-next`, which is pinned two majors behind at 14.2.5. They
+  do not ship — the runtime stage copies `.next/standalone` and nothing
+  else — and nothing uses the package either: there is no ESLint config
+  file in the repository, and `next lint` was removed in Next 16, so the
+  `lint` script fails on every run. Linting needs setting up again or the
+  dependency needs dropping; leaving it is what keeps the alerts open.
 
 ## How this code was reviewed
 
