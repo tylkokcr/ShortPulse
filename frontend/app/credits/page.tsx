@@ -102,6 +102,10 @@ function Credits() {
     setError(null);
     try {
       const { url } = await startCheckout(pack.id);
+      // The rule is about mutating module-scope state. Assigning
+      // location.href is a browser navigation, and leaving this page for
+      // the provider is the whole point of the function.
+      // eslint-disable-next-line react-hooks/immutability
       window.location.href = url;
     } catch (err) {
       setError(
