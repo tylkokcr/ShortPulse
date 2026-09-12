@@ -15,7 +15,7 @@ import logging
 import re
 from pathlib import Path
 
-from app.schemas.project import Scene, TTSProvider, VoiceConfig, Word
+from app.schemas.project import Scene, Segment, TTSProvider, VoiceConfig, Word
 
 logger = logging.getLogger(__name__)
 
@@ -77,20 +77,29 @@ async def synthesize_scene_audio(
 
 
 async def synthesize_line(
-    text: str, voice: VoiceConfig, output_path: Path, language: str = "en"
+    text: str,
+    voice: VoiceConfig,
+    output_path: Path,
+    language: str = "en",
+    length_scale: float | None = None,
 ) -> Path:
     """Speak one line to `output_path`.
 
     Split out of `synthesize_scene_audio` so the voice-preview endpoint
     goes through the same provider dispatch a real render does — a preview
     produced by a different code path is a preview that can lie.
+
+    `length_scale` stretches or compresses the delivery: below 1 is faster,
+    above 1 is slower. Only Piper honours it, and only dubbing asks for it,
+    where a translated sentence has to land inside the slot the original
+    occupied. Left unset everywhere else, which is the voice's natural pace.
     """
     cleaned = clean_text_for_tts(text)
 
     if voice.provider == TTSProvider.EDGE_TTS:
         await _synthesize_edge_tts(cleaned, voice, output_path)
     elif voice.provider == TTSProvider.PIPER:
-        await _synthesize_piper(cleaned, voice, output_path, language)
+        await _synthesize_piper(cleaned, voice, output_path, language, length_scale)
     elif voice.provider == TTSProvider.COQUI_XTTS:
         await _synthesize_xtts(cleaned, voice, output_path)
     else:
@@ -183,13 +192,23 @@ def _load_piper_voice(voice_key: str):
 
 
 async def _synthesize_piper(
-    text: str, voice: VoiceConfig, output_path: Path, language: str = "en"
+    text: str,
+    voice: VoiceConfig,
+    output_path: Path,
+    language: str = "en",
+    length_scale: float | None = None,
 ) -> None:
     """Fully local synthesis with a Piper ONNX voice (MIT licensed).
 
     Unlike edge-tts this runs entirely on the machine — no network call, no
     third-party terms to comply with — which is what makes it viable as the
     default for a hosted service.
+
+    `VoiceConfig.rate` is deliberately not consulted here: it is an edge-tts
+    string ("+10%") and Piper expresses the same idea as a multiplier on
+    phoneme length. `length_scale` is that multiplier, passed explicitly by
+    the one caller that needs it rather than inferred from a field shaped
+    for a different engine.
     """
     import asyncio
     import wave
@@ -198,10 +217,15 @@ async def _synthesize_piper(
 
     def _run() -> None:
         piper_voice = _load_piper_voice(voice_key)
+        syn_config = None
+        if length_scale is not None:
+            from piper import SynthesisConfig
+
+            syn_config = SynthesisConfig(length_scale=length_scale)
         # Piper emits WAV; the rest of the pipeline is format-agnostic since
         # ffmpeg reads whatever the scene clip step is handed.
         with wave.open(str(output_path), "wb") as wav:
-            piper_voice.synthesize_wav(text, wav)
+            piper_voice.synthesize_wav(text, wav, syn_config=syn_config)
 
     await asyncio.to_thread(_run)
 
@@ -230,6 +254,57 @@ def _get_whisper_model(model_size: str, device: str, compute_type: str):
             model_size, device=device, compute_type=compute_type
         )
     return _whisper_model_cache[cache_key]
+
+
+def transcribe_segments(
+    audio_path: Path,
+    model_size: str = "small",
+    device: str = "cpu",
+    compute_type: str = "int8",
+    language: str | None = None,
+) -> list[Segment]:
+    """Transcribe into sentences, each carrying its own words.
+
+    `transcribe_word_timestamps` below flattens Whisper's segments away,
+    which is right for captions — they are chunked by word count, not by
+    sentence. Dubbing cannot use that: it translates a sentence at a time
+    and has to put the replacement back in the slot the original occupied.
+    So this keeps what the other one discards. Same model, same cache, one
+    pass either way.
+
+    Segments with no words are dropped rather than kept as empty slots:
+    Whisper emits them for music and silence, and there is nothing to
+    translate or re-speak in one.
+    """
+    model = _get_whisper_model(model_size, device, compute_type)
+    segments, _info = model.transcribe(str(audio_path), word_timestamps=True, language=language)
+
+    out: list[Segment] = []
+    for segment in segments:
+        words = [
+            Word(
+                text=word.word.strip(),
+                start_ms=round(word.start * 1000),
+                end_ms=round(word.end * 1000),
+                confidence=getattr(word, "probability", None),
+            )
+            for word in segment.words or []
+        ]
+        if not words:
+            continue
+        out.append(
+            Segment(
+                text=segment.text.strip(),
+                # Whisper's own segment bounds can sit a little outside the
+                # first and last word; the words are what the caption track
+                # is drawn from, so take the tighter pair and keep the two
+                # consistent.
+                start_ms=min(round(segment.start * 1000), words[0].start_ms),
+                end_ms=max(round(segment.end * 1000), words[-1].end_ms),
+                words=words,
+            )
+        )
+    return out
 
 
 def transcribe_word_timestamps(

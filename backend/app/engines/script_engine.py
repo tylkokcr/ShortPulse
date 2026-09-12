@@ -366,6 +366,19 @@ async def _call_llm(config: LLMConfig, system_prompt: str, prompt: str) -> str:
     raise ScriptGenerationError(f"Unsupported LLM provider: {config.provider}")
 
 
+async def complete_json(config: LLMConfig, system_prompt: str, prompt: str) -> dict:
+    """Ask the configured model for JSON and hand back the parsed object.
+
+    The same provider dispatch and the same forgiving parser the script
+    generator uses — local models wrap JSON in prose often enough that
+    anything calling a model needs `_extract_json`, not `json.loads`.
+    Exposed so other services (dubbing) get that behaviour without
+    reaching into this module's privates or building a second LLM client.
+    """
+    raw = await _call_llm(config, system_prompt, prompt)
+    return _extract_json(raw)
+
+
 def _first_present(d: dict, keys: list[str]) -> str | None:
     for key in keys:
         value = d.get(key)

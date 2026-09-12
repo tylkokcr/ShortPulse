@@ -64,6 +64,13 @@ _LENGTH_MULTIPLIER = {
 # but it is the cheapest thing the product does.
 AUTOCAPTION_COST = 1
 
+# A dub is the autocaption pass plus a translation call and one synthesis
+# per sentence — more work than captions, and still nothing beside a
+# generated render, which pays for images. Two rather than one because the
+# syntheses are the slowest part of the whole upload path, and one credit
+# would price a five-minute job the same as a thirty-second one.
+DUB_COST = 2
+
 
 # Re-rolling one scene's visual on a finished video.
 #
@@ -81,7 +88,7 @@ def cost_for(config: ProjectConfig) -> int:
     """Credits a render of this shape costs. Deterministic: the caller is
     quoted this before the render starts and charged exactly this."""
     if config.source == ProjectSource.UPLOAD:
-        return AUTOCAPTION_COST
+        return DUB_COST if config.dub_language else AUTOCAPTION_COST
     mode = VisualMode(config.visual_mode)
     length = VideoLength(config.video_length)
     return _MODE_COST[mode] * _LENGTH_MULTIPLIER[length]

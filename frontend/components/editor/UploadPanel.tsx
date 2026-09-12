@@ -6,6 +6,7 @@ import { ArrowRight, Captions, FileVideo, TriangleAlert, Upload } from "lucide-r
 import clsx from "clsx";
 import { InsufficientCreditsError, uploadVideo } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
+import { LANGUAGE_OPTIONS } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LanguageSelector } from "./LanguageSelector";
@@ -13,7 +14,7 @@ import { CaptionStyleSelector } from "./CaptionStyleSelector";
 import { UploadPreview } from "./UploadPreview";
 
 /**
- * The second way in: caption a video the user already has.
+ * The second way in: caption — or dub — a video the user already has.
  *
  * Everything the generate path does before the burn-in has already
  * happened in whatever they shot, so this collects only what the captioner
@@ -39,6 +40,9 @@ export function UploadPanel() {
   const [dragging, setDragging] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Local rather than in the draft store: the target language is a
+  // property of this one action, not of a project that outlives it.
+  const [dubLanguage, setDubLanguage] = useState("");
 
   function choose(next: File | null) {
     setError(null);
@@ -59,14 +63,18 @@ export function UploadPanel() {
     try {
       const project = await uploadVideo(
         file,
-        { language: draft.language, title: file.name.replace(/\.[^.]+$/, "") },
+        {
+          language: draft.language,
+          title: file.name.replace(/\.[^.]+$/, ""),
+          dubLanguage,
+        },
         setProgress
       );
       router.push(`/project/${project.config.id}`);
     } catch (err) {
       setError(
         err instanceof InsufficientCreditsError
-          ? `Captioning costs ${err.required} credit${err.required === 1 ? "" : "s"} and you have ${err.balance}.`
+          ? `${dubLanguage ? "Dubbing" : "Captioning"} costs ${err.required} credit${err.required === 1 ? "" : "s"} and you have ${err.balance}.`
           : err instanceof Error
             ? err.message
             : "Upload failed"
@@ -140,6 +148,35 @@ export function UploadPanel() {
           <LanguageSelector />
           <p className="mt-1.5 text-xs text-white/40">
             Telling it the language up front stops short clips getting mis-detected.
+          </p>
+        </div>
+
+        <div>
+          <label
+            htmlFor="dub-language"
+            className="mb-1.5 block text-sm font-medium text-white/70"
+          >
+            Speak it in another language
+          </label>
+          <select
+            id="dub-language"
+            value={dubLanguage}
+            onChange={(event) => setDubLanguage(event.target.value)}
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-white outline-none transition-colors hover:border-border-strong focus:border-accent"
+          >
+            <option value="">Don&apos;t — just add captions</option>
+            {LANGUAGE_OPTIONS.filter((option) => option.code !== draft.language).map(
+              (option) => (
+                <option key={option.code} value={option.code}>
+                  {option.label}
+                </option>
+              )
+            )}
+          </select>
+          <p className="mt-1.5 text-xs text-white/40">
+            {dubLanguage
+              ? "The speech is translated and spoken again over your original picture. Nothing about the video changes, so if you are on camera your lips won't match the new language — dubbed video normally looks like this."
+              : "Leave this alone to keep the original audio and only burn in captions."}
           </p>
         </div>
 

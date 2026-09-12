@@ -96,6 +96,26 @@ class Word(BaseModel):
     confidence: float | None = None
 
 
+class Segment(BaseModel):
+    """A spoken sentence, with the words inside it.
+
+    Whisper produces these and `transcribe_word_timestamps` throws them
+    away, because captions only ever needed the words. Dubbing needs the
+    sentence: it is the unit that gets translated, and its start and end
+    are the slot the replacement speech has to fit into. Keeping the words
+    as well means a dub can still burn captions without transcribing twice.
+    """
+
+    text: str
+    start_ms: int
+    end_ms: int
+    words: list[Word] = Field(default_factory=list)
+
+    @property
+    def duration_ms(self) -> int:
+        return max(self.end_ms - self.start_ms, 0)
+
+
 class SceneAudio(BaseModel):
     voiceover_line: str
     audio_path: str | None = None
@@ -377,6 +397,19 @@ class ProjectConfig(BaseModel):
     # Ignored by stock_media for the same reason art_style is.
     negative_prompt: str | None = Field(default=None, max_length=400)
     video_length: VideoLength = VideoLength.SHORT
+    # Set only on uploads, and only when the caller asked for a dub: the
+    # language the video should come out speaking. `language` above stays
+    # what it always was, the language the source is *in*, because the
+    # transcription pass needs it and guessing costs accuracy.
+    #
+    # Not validated against the voice catalogue here — that lives in
+    # audio_engine, which imports this module. The upload route checks it
+    # before anything is charged.
+    dub_language: str | None = Field(
+        default=None,
+        pattern=r"^[a-z]{2}$",
+        description="Target language for dubbing an uploaded video. None means no dub.",
+    )
     language: str = Field(
         default="en",
         description="BCP-47-ish language code for the spoken script (hook/voiceover/CTA). "

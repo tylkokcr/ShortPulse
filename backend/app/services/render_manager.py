@@ -36,7 +36,15 @@ from app.schemas.project import (
     VideoLength,
     VisualMode,
 )
-from app.services import art_styles, credits, db, project_store, publish_manager, uploads
+from app.services import (
+    art_styles,
+    credits,
+    db,
+    dubbing,
+    project_store,
+    publish_manager,
+    uploads,
+)
 from app.services.connection_manager import connection_manager
 
 logger = logging.getLogger(__name__)
@@ -473,22 +481,69 @@ async def run_upload_pipeline(project: Project, settings: Settings) -> None:
             progress_pct=10,
             message="Listening to the video and timing every word...",
         )
+        dubbing_to = config.dub_language
+        segments: list = []
         with timings.stage("transcription"):
             # faster-whisper decodes the container itself, so the mp4 goes
             # in directly — no separate audio extraction step.
-            words = await asyncio.to_thread(
-                audio_engine.transcribe_word_timestamps,
-                source,
-                settings.whisper_model_size,
-                settings.whisper_device,
-                settings.whisper_compute_type,
-                config.language,
-            )
+            #
+            # A dub needs the sentences, not just the words: a sentence is
+            # what gets translated, and its start and end are the slot the
+            # replacement speech has to land in. Same model, same single
+            # pass either way.
+            if dubbing_to:
+                segments = await asyncio.to_thread(
+                    audio_engine.transcribe_segments,
+                    source,
+                    settings.whisper_model_size,
+                    settings.whisper_device,
+                    settings.whisper_compute_type,
+                    config.language,
+                )
+                words = [word for segment in segments for word in segment.words]
+            else:
+                words = await asyncio.to_thread(
+                    audio_engine.transcribe_word_timestamps,
+                    source,
+                    settings.whisper_model_size,
+                    settings.whisper_device,
+                    settings.whisper_compute_type,
+                    config.language,
+                )
 
         if not words:
             raise RuntimeError(
                 "No speech was found in that video, so there is nothing to caption."
             )
+
+        # 1b. Dub -------------------------------------------------------------
+        voice_track: Path | None = None
+        if dubbing_to:
+            await _emit(
+                project_id,
+                stage=RenderStage.AUDIO_SYNTHESIS,
+                progress_pct=30,
+                message=f"Translating {len(segments)} lines and speaking them...",
+            )
+            with timings.stage("dubbing"):
+                translations = await dubbing.translate_segments(
+                    segments, config.language, dubbing_to, config.llm
+                )
+                source_ms = await render_engine.probe_duration_ms(
+                    source, settings.ffprobe_binary
+                )
+                voice_track, spoken = await dubbing.build_dub_track(
+                    segments,
+                    translations,
+                    config.voice,
+                    dubbing_to,
+                    source_ms,
+                    paths / "audio",
+                    ffmpeg_binary=settings.ffmpeg_binary,
+                    ffprobe_binary=settings.ffprobe_binary,
+                )
+            # Caption what is now being said, not what was said before.
+            words = dubbing.words_from_segments(spoken)
 
         # 2. Subtitles ---------------------------------------------------------
         await _emit(
@@ -507,7 +562,10 @@ async def run_upload_pipeline(project: Project, settings: Settings) -> None:
                 # over, not our vertical default — burning a 1080x1920
                 # layout onto landscape footage puts the text off-screen.
                 play_res=(probed.width, probed.height),
-                language=config.language,
+                # Casing follows the language on screen, which after a dub
+                # is the language spoken into it (see subtitle_engine's
+                # Turkish dotted-i handling for why this matters).
+                language=dubbing_to or config.language,
             )
 
         # 3. Burn in -----------------------------------------------------------
@@ -526,6 +584,7 @@ async def run_upload_pipeline(project: Project, settings: Settings) -> None:
                 output_path,
                 target=render_engine.RenderTarget(probed.width, probed.height, config.fps),
                 ffmpeg_binary=settings.ffmpeg_binary,
+                voice_track=voice_track,
             )
 
         timings.write(

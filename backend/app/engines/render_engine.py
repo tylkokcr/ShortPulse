@@ -109,6 +109,22 @@ async def _scene_duration_s(
     return scene.duration_s
 
 
+async def run_ffmpeg(args: list[str], ffmpeg_binary: str = "ffmpeg") -> None:
+    """Run one ffmpeg invocation, raising RenderError on a non-zero exit.
+
+    A thin public name for `_run_ffmpeg` so other services can build a
+    filtergraph of their own (services/dubbing.py does) without either
+    reaching into this module's privates or growing a second, differently
+    behaved subprocess wrapper.
+    """
+    await _run_ffmpeg(args, ffmpeg_binary)
+
+
+async def probe_duration_ms(path: Path, ffprobe_binary: str = "ffprobe") -> int:
+    """Exact container duration in ms. Public alias of `_probe_duration_ms`."""
+    return await _probe_duration_ms(path, ffprobe_binary)
+
+
 async def _probe_duration_ms(path: Path, ffprobe_binary: str) -> int:
     """Exact container duration, in ms, of a rendered clip or an audio file.
 
@@ -302,6 +318,7 @@ async def finalize_render(
     target: RenderTarget,
     ffmpeg_binary: str = "ffmpeg",
     secondary_video: Path | None = None,
+    voice_track: Path | None = None,
 ) -> Path:
     """The single composite pass: lay out the frame, burn in the text, mix
     the audio, encode.
@@ -315,6 +332,12 @@ async def finalize_render(
     centre-cropped. The soundtrack stays the top one's. Silencing the
     bottom clip is not a stylistic choice — the format exists to put
     ambient footage under narration, and two voices at once is unwatchable.
+
+    `voice_track` replaces the video's own audio instead of mixing with it,
+    which is what a dub is. The picture is not touched, so it cannot drift;
+    the caller is responsible for handing over a track as long as the video
+    (services/dubbing.py builds one on a bed of silence for exactly that
+    reason). Without it the audio comes from the video, as before.
     """
     # ass filter paths must have colons/backslashes escaped for the ffmpeg
     # filtergraph parser, particularly on Windows-style paths.
@@ -338,6 +361,17 @@ async def finalize_render(
     music_enabled = bool(music.enabled and music.track_path)
     if music_enabled:
         inputs += ["-i", str(music.track_path)]
+    if voice_track is not None:
+        inputs += ["-i", str(voice_track)]
+
+    # Which stream the voice comes from. Input 0 is the video, so its own
+    # audio is "0:a"; a replacement track is whatever index it landed on
+    # after the optional secondary and music inputs above. Everything
+    # downstream refers to the voice through this one name, so the mixing
+    # below reads the same whether the speech is the original or a dub.
+    voice_stream = "0:a"
+    if voice_track is not None:
+        voice_stream = f"{1 + (secondary_video is not None) + music_enabled}:a"
 
     if secondary_video is not None:
         half = target.height // 2
@@ -360,7 +394,7 @@ async def finalize_render(
         audio_chain = (
             f";[{music_index}:a]volume={music.volume_db}dB,aloop=loop=-1:size=2e9[music];"
             + (
-                "[music][0:a]sidechaincompress=threshold=0.05:ratio=8:attack=5:release=300[ducked];"
+                f"[music][{voice_stream}]sidechaincompress=threshold=0.05:ratio=8:attack=5:release=300[ducked];"
                 if music.duck_on_voice
                 else "[music]anull[ducked];"
             )
@@ -369,7 +403,7 @@ async def finalize_render(
             # the voice and the already-ducked music) to guard against
             # clipping — that's what made the mixed music barely audible
             # and the voice noticeably quieter than the no-music path.
-            + "[0:a][ducked]amix=inputs=2:duration=first:dropout_transition=2:normalize=0[aout]"
+            + f"[{voice_stream}][ducked]amix=inputs=2:duration=first:dropout_transition=2:normalize=0[aout]"
         )
         audio_map = ["-map", "[aout]"]
     else:
@@ -377,8 +411,10 @@ async def finalize_render(
         # Explicit, not default: with a second video input ffmpeg's stream
         # selection would be free to prefer the bottom clip's audio track
         # over the narration (see _render_video_scene_clip for the same
-        # trap costing a whole scene's voiceover).
-        audio_map = ["-map", "0:a?"]
+        # trap costing a whole scene's voiceover). A dub makes that
+        # explicitness load-bearing rather than defensive — the track we
+        # want is not the one ffmpeg would pick.
+        audio_map = ["-map", voice_stream if voice_track is not None else "0:a?"]
 
     args = [
         "-i", str(concatenated_video),

@@ -111,13 +111,16 @@ export function createProject(config: Partial<ProjectConfig> & { topic: string }
  */
 export async function uploadVideo(
   file: File,
-  options: { language: string; title?: string },
+  options: { language: string; title?: string; dubLanguage?: string },
   onProgress?: (fraction: number) => void
 ): Promise<Project> {
   const form = new FormData();
   form.append("file", file);
   form.append("language", options.language);
   form.append("title", options.title ?? "");
+  // Empty means "no dub, just captions". `language` stays what the video
+  // is spoken in either way — it is what the transcription pass is told.
+  form.append("dub_language", options.dubLanguage ?? "");
 
   const headers = await authHeaders();
 

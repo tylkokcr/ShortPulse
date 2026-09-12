@@ -51,6 +51,11 @@ Extras:
   whatever the model imagined for it.
 - **Synced transcript panel** — the project page highlights the scene that's
   currently playing and seeks the video when you click one.
+- **Dub a video you already have** — upload footage and have the speech
+  translated and spoken again in any of the nine languages, laid back over
+  the original picture sentence by sentence. Nothing about the video is
+  altered, so if the speaker is on camera their lips won't match the new
+  language — the way dubbed video normally looks. Lip-sync is not attempted.
 
 ## Repository layout
 
