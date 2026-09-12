@@ -4,6 +4,19 @@ Open-source AI video agent that turns a topic or script into a ready-to-post
 vertical video (1080x1920, TikTok/Reels/Shorts). Runs on your own machine —
 no subscription, no paid API.
 
+<p align="center">
+  <img src="docs/demo.gif" alt="A five-second excerpt of a finished render: stock footage with word-by-word captions burning in" width="280">
+</p>
+
+<p align="center">
+  <sub>
+    Five seconds of one finished render, unedited — topic in, this out. The
+    captions highlight a word at a time because faster-whisper timed them per
+    word, which is the difference between this and a subtitle track.
+    <a href="https://shortpulse.app/#examples">Sixteen more, in nine languages</a>.
+  </sub>
+</p>
+
 **What "local" means here, precisely:** scripting (Ollama), voiceover
 (Piper), transcription (faster-whisper), image/video generation
 (SDXL/RealVisXL/LTX-Video) and rendering (FFmpeg) all run offline on your
