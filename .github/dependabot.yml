@@ -1,0 +1,37 @@
+# Routine dependency bumps. The security half of Dependabot is a repository
+# setting and is already on; this file is the other half — ordinary version
+# updates, which is what keeps a CVE from landing on a tree that is already
+# six months behind and cannot take the patch without a migration.
+#
+# Grouped deliberately: one maintainer, and five separate pull requests a
+# week is how this ends up ignored. One PR per ecosystem is reviewable.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    groups:
+      frontend:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /backend
+    schedule:
+      interval: weekly
+    groups:
+      backend:
+        patterns: ["*"]
+
+  # The base images, which nothing else watches: python: and node: tags go
+  # stale silently, and a rebuilt container inherits whatever the old tag
+  # has accumulated.
+  - package-ecosystem: docker
+    directories:
+      - /backend
+      - /frontend
+    schedule:
+      interval: weekly
+    groups:
+      images:
+        patterns: ["*"]
