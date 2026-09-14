@@ -2,8 +2,15 @@ import Link from "next/link";
 import { Github, Library } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { AccentSwitcher } from "@/components/ui/AccentSwitcher";
+import { ConnectionsLink } from "@/components/layout/ConnectionsLink";
 
 const REPO_URL = "https://github.com/tylkokcr/ShortPulse";
+
+// Shared by every item in the bar. Hidden below `sm`: the header is already
+// at its width budget on a phone, and none of these is on the path to a
+// render.
+const NAV_LINK =
+  "hidden items-center gap-1.5 text-sm text-white/50 transition-colors hover:text-white sm:flex";
 
 /**
  * Shared top bar for every screen — marketing, studio and project pages.
@@ -28,19 +35,19 @@ export function SiteHeader({
         </Link>
         <div className="flex items-center gap-5">
           {showLibrary && (
-            <Link
-              href="/library"
-              className="hidden items-center gap-1.5 text-sm text-white/50 transition-colors hover:text-white sm:flex"
-            >
-              <Library size={16} />
-              Library
-            </Link>
+            <>
+              <Link href="/library" className={NAV_LINK}>
+                <Library size={16} />
+                Library
+              </Link>
+              <ConnectionsLink className={NAV_LINK} />
+            </>
           )}
           <a
             href={REPO_URL}
             target="_blank"
             rel="noreferrer"
-            className="hidden items-center gap-1.5 text-sm text-white/50 transition-colors hover:text-white sm:flex"
+            className={NAV_LINK}
           >
             <Github size={16} />
             Source
