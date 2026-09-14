@@ -185,3 +185,49 @@ def test_tampered_ciphertext_is_rejected():
     blob[-1] ^= 0xFF
     with pytest.raises(TokenDecryptionError):
         TokenCipher("s").decrypt(bytes(blob))
+
+
+# --- the callback has to survive the front door --------------------------
+#
+# Found in a screen recording of the real flow: the grant succeeded, and
+# what came back was {"detail": "Not authenticated"} on a blank page. A
+# redirect from Google carries no Authorization header, so with
+# REQUIRE_AUTH on the middleware refused it before the route could store
+# the tokens — and because the nonce is single-use, reloading could not
+# recover it. Publishing was unreachable in production while every unit
+# test here passed.
+
+
+def _callback_app():
+    from fastapi import FastAPI
+
+    from app.api.middleware import SupabaseAuthMiddleware
+    from app.api.routes import social as social_route
+
+    app = FastAPI()
+    app.include_router(social_route.router)
+    app.add_middleware(SupabaseAuthMiddleware, verifier=None, require_auth=True, signup_grant=0)
+    return app
+
+
+async def _get(app, path: str):
+    import httpx
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        return await client.get(path, follow_redirects=False)
+
+
+async def test_the_oauth_callback_is_reachable_without_a_bearer_token():
+    """It answers the browser rather than the API client that never called."""
+    response = await _get(_callback_app(), "/api/social/callback/youtube?error=access_denied")
+
+    assert response.status_code == 303
+    assert "/connections" in response.headers["location"]
+
+
+async def test_the_rest_of_publishing_still_needs_a_token():
+    """The exemption is the callback path, not the feature."""
+    response = await _get(_callback_app(), "/api/social/connections")
+
+    assert response.status_code == 401

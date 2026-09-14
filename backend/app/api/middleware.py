@@ -103,6 +103,27 @@ _UNAUTHENTICATED_PATHS = _PUBLIC_PATHS | {
 # and it can never be covered by the exact-match set above.
 _MEDIA_PATHS = re.compile(r"^/api/projects/[^/]+/(download|poster|scenes/\d+/thumb)$")
 
+# Where a platform sends the browser back after the user presses Allow.
+#
+# The same shape again, and the most expensive place yet to find it: the
+# grant succeeds at Google, the browser is redirected here, and this
+# middleware answers 401 before the route can store the tokens. What the
+# user sees, having just authorised the app, is a blank page reading
+# {"detail": "Not authenticated"} — and the connection cannot be
+# recovered by reloading, because the nonce is consumed on first claim.
+#
+# A redirect arriving from Google carries no Authorization header and
+# never could. The credential it does carry is `state`: 32 random bytes,
+# issued to one user for one platform, single-use and expiring in
+# minutes. That is a narrower claim than a bearer token, which would
+# prove only that somebody was logged in — the same argument the webhook
+# signature makes above.
+#
+# Exempt unconditionally rather than only when `state` is present: a
+# callback without one is how "the user pressed Cancel" arrives, and it
+# has to reach the route to be turned into a redirect a human can read.
+_SOCIAL_CALLBACK_PATH = re.compile(r"^/api/social/callback/[^/]+$")
+
 
 def _authenticates_itself(request: Request) -> bool:
     """Whether this request carries a credential this middleware can't read.
@@ -118,6 +139,8 @@ def _authenticates_itself(request: Request) -> bool:
     bearer token, which would prove only that somebody was logged in.
     """
     if request.url.path in _UNAUTHENTICATED_PATHS:
+        return True
+    if _SOCIAL_CALLBACK_PATH.match(request.url.path):
         return True
     return bool(_MEDIA_PATHS.match(request.url.path) and request.query_params.get("token"))
 
