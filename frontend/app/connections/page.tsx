@@ -250,10 +250,17 @@ function ConnectionRow({
             connection.auto_publish ? "bg-accent" : "bg-white/15"
           )}
         >
+          {/* left-0.5 rather than leaving it to the static position: a
+              button centres its content, so an absolute knob with no left
+              starts from the middle of the track. Translated from there it
+              overran the right edge and pushed through the gap-3 into the
+              label, which is what "automatically" was sitting under. The
+              track is 36px and the knob 16px, so 2px each side and a 16px
+              throw puts it flush at both ends. */}
           <span
             className={clsx(
-              "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform duration-200",
-              connection.auto_publish ? "translate-x-[18px]" : "translate-x-0.5"
+              "absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform duration-200",
+              connection.auto_publish ? "translate-x-4" : "translate-x-0"
             )}
           />
         </button>
