@@ -1,19 +1,19 @@
 # --- Web framework -----------------------------------------------------
-fastapi>=0.111
-uvicorn[standard]>=0.30
-pydantic>=2.7
-pydantic-settings>=2.3
-websockets>=12.0
-httpx>=0.27
-python-multipart>=0.0.9
+fastapi>=0.141.1
+uvicorn[standard]>=0.52.4
+pydantic>=2.13.5
+pydantic-settings>=2.15.0
+websockets>=17.1
+httpx>=0.28.1
+python-multipart>=0.0.32
 
 # --- LLM ------------------------------------------------------------
-openai>=1.35            # optional: only needed if using the OpenAI provider
+openai>=3.13.0            # optional: only needed if using the OpenAI provider
 
 # --- TTS / ASR --------------------------------------------------------
-piper-tts>=1.2            # default: local, MIT-licensed ONNX voices
-edge-tts>=6.1             # optional fallback; free but no commercial licence
-faster-whisper>=1.0
+piper-tts>=1.8.0            # default: local, MIT-licensed ONNX voices
+edge-tts>=7.2.8             # optional fallback; free but no commercial licence
+faster-whisper>=1.2.1
 # TTS>=0.22              # optional: Coqui XTTS-v2 voice cloning, uncomment to enable
 
 # --- Visual generation --------------------------------------------------
@@ -22,30 +22,30 @@ faster-whisper>=1.0
 # because it is ~3GB installed and a stock_media deployment never loads it —
 # every torch/diffusers import in this codebase is inside the function that
 # needs it, so the app starts and renders happily without them.
-pillow>=10.0
+pillow>=12.3.0
 
 # --- Persistence ---------------------------------------------------------
-asyncpg>=0.29           # Postgres driver; Supabase in prod, container locally
+asyncpg>=0.31.0           # Postgres driver; Supabase in prod, container locally
 
 # --- Auth (hosted deployment only; unused when SUPABASE_URL is unset) -----
 # [crypto] pulls in `cryptography`, needed for the ES256/RS256 asymmetric
 # signing keys Supabase issues. Without it PyJWT can only do HMAC.
-pyjwt[crypto]>=2.9
+pyjwt[crypto]>=2.14.0
 
 # --- Payments -----------------------------------------------------------
 # Only needed on a hosted deployment that sells credits. Absent keys, the
 # checkout endpoints report themselves unavailable and everything else runs.
-stripe>=10
+stripe>=15.6.1
 
 # --- Monitoring (optional) ----------------------------------------------
 # Inert without SENTRY_DSN. Worth having on a deployment because the
 # pipeline catches its own failures, so nothing else would report them.
-sentry-sdk[fastapi]>=2
+sentry-sdk[fastapi]>=2.69.1
 
 # --- Rendering --------------------------------------------------------
 ffmpeg-python>=0.2.0     # thin wrapper kept for future use; core pipeline shells out directly
 
 # --- Dev / testing ------------------------------------------------------
-pytest>=8.2
-pytest-asyncio>=0.23
-ruff>=0.5
+pytest>=9.1.1
+pytest-asyncio>=1.4.0
+ruff>=0.16.7
