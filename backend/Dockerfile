@@ -11,7 +11,7 @@
 # what it used to do. Add requirements-diffusion.txt and a GPU base image
 # to run either of them locally.
 
-FROM python:3.12-slim AS base
+FROM python:3.14-slim AS base
 
 # ffmpeg is the renderer, not an optional extra. Debian's build includes
 # libass, which the subtitle burn-in needs — the RUN below fails the build
