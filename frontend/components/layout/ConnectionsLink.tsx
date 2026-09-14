@@ -35,7 +35,7 @@ export function ConnectionsLink({ className }: { className?: string }) {
   if (!configured) return null;
 
   return (
-    <Link href="/settings/connections" className={className}>
+    <Link href="/connections" className={className}>
       <Share2 size={16} />
       Connections
     </Link>

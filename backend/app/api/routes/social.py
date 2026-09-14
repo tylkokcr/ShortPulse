@@ -193,12 +193,12 @@ async def finish_connect(
 
     Always ends in a redirect to the app, never in a JSON body: a human is
     looking at this, having just pressed Allow. Failures are reported
-    through a query parameter the settings page reads, for the same reason
+    through a query parameter the connections page reads, for the same reason
     the sign-in screen reads its errors out of the URL — the alternative
     is a raw error page with no way back.
     """
     settings = get_settings()
-    app_url = f"{settings.public_base_url.rstrip('/')}/settings/connections"
+    app_url = f"{settings.public_base_url.rstrip('/')}/connections"
 
     def back(problem: str | None = None) -> RedirectResponse:
         # 303 rather than 302: this was a GET, and the browser should

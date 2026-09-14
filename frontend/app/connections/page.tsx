@@ -140,7 +140,7 @@ function Connections() {
       <SiteHeader right={<AccountBar />} showLibrary />
 
       <main className="mx-auto max-w-3xl px-6 pb-24 pt-10">
-        <span className="font-mono text-xs uppercase tracking-widest text-accent">Settings</span>
+        <span className="font-mono text-xs uppercase tracking-widest text-accent">Publishing</span>
         <h1 className="mt-1.5 text-3xl font-semibold tracking-tight">Connected accounts</h1>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/50">
           Publish a finished video straight to the places it was made for. Connecting an account

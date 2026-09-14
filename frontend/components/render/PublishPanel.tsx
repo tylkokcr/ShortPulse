@@ -100,7 +100,7 @@ export function PublishPanel({ project }: { project: Project }) {
           Connect a YouTube, Instagram or TikTok account and you can post a finished render
           straight from here.
         </p>
-        <Link href="/settings/connections" className="mt-1">
+        <Link href="/connections" className="mt-1">
           <Button size="sm" variant="secondary">
             Connect an account
           </Button>
