@@ -332,7 +332,27 @@ def _upload_error(response: httpx.Response) -> PublishError:
         return PublishError("YouTube rejected the hashtags. Remove any unusual characters.")
     if reason == "forbiddenPrivacySetting":
         return PublishError("This channel isn't allowed to publish with that visibility.")
+    if reason == "youtubeSignupRequired":
+        # A Google account is not a YouTube account. A fresh one has no
+        # channel until somebody visits youtube.com and makes one, and
+        # uploading to it answers 401 — which read as a dead grant and
+        # sent the user to reconnect, retiring a connection that was
+        # fine and suggesting the one thing that cannot help. Checked
+        # before the status, because the status is the misleading part.
+        return PublishError(
+            "This Google account doesn't have a YouTube channel yet. Open youtube.com, "
+            "create one, then try publishing again — there's no need to reconnect."
+        )
     if response.status_code in (401, 403):
+        # Logged because this is where an unrecognised reason ends up
+        # looking like a revoked grant. Without the reason string there
+        # is nothing to tell the difference from the outside.
+        logger.warning(
+            "YouTube refused the upload (%s, reason=%r): %s",
+            response.status_code,
+            reason,
+            detail[:300],
+        )
         return ConnectionRevoked(
             "YouTube refused the upload for this account. Reconnect it and try again."
         )

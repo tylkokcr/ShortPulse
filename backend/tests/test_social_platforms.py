@@ -218,3 +218,38 @@ def test_an_unrecognised_meta_error_still_reaches_the_user():
     error = graph_error(response, action="video")
     assert isinstance(error, PublishError)
     assert "file_url" in str(error)
+
+
+# --- the one that cost a demo recording ---------------------------------
+
+
+def test_an_account_with_no_channel_is_not_a_revoked_grant():
+    """A fresh Google account has no YouTube channel, and uploading to one
+    answers 401. Read as a dead grant it retires a perfectly good
+    connection and tells the user to do the one thing that cannot help."""
+    from app.services.social.youtube import _upload_error
+
+    response = httpx.Response(
+        401,
+        json={
+            "error": {
+                "errors": [{"reason": "youtubeSignupRequired"}],
+                "message": "Unauthorized",
+            }
+        },
+    )
+
+    error = _upload_error(response)
+    assert not isinstance(error, ConnectionRevoked)
+    assert "youtube.com" in str(error)
+
+
+def test_an_actually_dead_youtube_grant_is_still_reported_as_one():
+    """The narrower case must not have swallowed the general one."""
+    from app.services.social.youtube import _upload_error
+
+    response = httpx.Response(
+        401, json={"error": {"errors": [{"reason": "authError"}], "message": "Invalid"}}
+    )
+
+    assert isinstance(_upload_error(response), ConnectionRevoked)
