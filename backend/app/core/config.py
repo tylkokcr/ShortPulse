@@ -224,6 +224,34 @@ class Settings(BaseSettings):
     youtube_client_id: str | None = None
     youtube_client_secret: str | None = None
 
+    # Instagram Reels and Facebook Page video, via the Graph API.
+    #
+    # One app for both — Meta does not separate them, and neither does
+    # anything here: setting these offers both destinations or neither.
+    #
+    # The gate is not a key, it is paperwork. Posting for anyone but the
+    # app's own developer needs business verification, which needs a
+    # registered business. Instagram adds a requirement on the *user*
+    # too: a Business or Creator account linked to a Page, because
+    # personal accounts cannot be posted to by any app.
+    meta_app_id: str | None = None
+    meta_app_secret: str | None = None
+
+    # TikTok, via the Content Posting API.
+    #
+    # `client_key`, which is TikTok's name for what everyone else calls a
+    # client id — the mismatch is theirs and is worth keeping visible
+    # here rather than renaming it to match the others.
+    #
+    # Two things an unaudited client should be expected to do: drop
+    # videos into the user's inbox as drafts rather than posting them,
+    # and refuse the sixth user in any 24 hours. Both are states to
+    # report, not failures to fix. Uploads also require this deployment's
+    # domain to be verified under URL properties in TikTok's developer
+    # portal, because TikTok fetches the file rather than receiving it.
+    tiktok_client_key: str | None = None
+    tiktok_client_secret: str | None = None
+
     # How long the signed URL handed to a platform stays valid. Longer
     # than the playback TTL above because nothing is watching this one:
     # the platform fetches on its own schedule, behind its own queue, and

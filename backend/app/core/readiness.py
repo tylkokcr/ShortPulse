@@ -130,7 +130,10 @@ def check(settings) -> list[Warning_]:
 
     # Publishing is configured per platform, so "any platform at all" is
     # the condition for the settings the whole feature shares.
-    social_configured = bool(getattr(settings, "youtube_client_id", None))
+    social_configured = any(
+        getattr(settings, name, None)
+        for name in ("youtube_client_id", "meta_app_id", "tiktok_client_key")
+    )
 
     if social_configured and not getattr(settings, "social_token_secret", None):
         warnings.append(

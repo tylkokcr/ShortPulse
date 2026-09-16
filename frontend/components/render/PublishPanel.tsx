@@ -9,9 +9,6 @@ import {
   Eye,
   Loader2,
   Send,
-  Youtube,
-  Instagram,
-  Music2,
 } from "lucide-react";
 import clsx from "clsx";
 import {
@@ -20,21 +17,10 @@ import {
   getSocialConnections,
   publishProject,
 } from "@/lib/api";
-import type { Project, SocialConnection, SocialPlatform, SocialPost } from "@/lib/types";
+import type { Project, SocialConnection, SocialPost } from "@/lib/types";
+import { PLATFORM_ICONS as ICONS, PLATFORM_LABELS as LABELS } from "@/lib/platforms";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-
-const LABELS: Record<SocialPlatform, string> = {
-  youtube: "YouTube",
-  instagram: "Instagram",
-  tiktok: "TikTok",
-};
-
-const ICONS: Record<SocialPlatform, typeof Youtube> = {
-  youtube: Youtube,
-  instagram: Instagram,
-  tiktok: Music2,
-};
 
 /**
  * Publish a finished video to a connected account.

@@ -453,7 +453,7 @@ export const DEFAULT_OUTRO_CONFIG: OutroConfig = {
 
 /** Platforms this deployment is configured for. Absent ones are not shown
  *  at all rather than shown disabled — see /api/social/platforms. */
-export type SocialPlatform = "youtube" | "instagram" | "tiktok";
+export type SocialPlatform = "youtube" | "instagram" | "facebook" | "tiktok";
 
 export interface SocialConnection {
   id: string;

@@ -199,7 +199,9 @@ class PublishQueue:
                         pool, connection.id, tokens, self._cipher
                     )
 
-            outcome = await publisher.publish(tokens, self._build_target(project, post))
+            outcome = await publisher.publish(
+                tokens, self._build_target(project, post, connection)
+            )
         except ConnectionRevoked as exc:
             # The grant is gone, not just this post. Retiring the
             # connection stops every later automatic post from queueing
@@ -227,7 +229,12 @@ class PublishQueue:
         await social_store.mark_first_post(pool, connection.id)
         logger.info("Published %s to %s as %s", post.project_id, connection.platform, outcome.url)
 
-    def _build_target(self, project: Project, post: social_store.Post) -> PublishTarget:
+    def _build_target(
+        self,
+        project: Project,
+        post: social_store.Post,
+        connection: social_store.ConnectionWithTokens,
+    ) -> PublishTarget:
         """Everything a publisher needs, in the form it needs it.
 
         Both the file and a URL, because which one is dead weight depends
@@ -243,6 +250,7 @@ class PublishQueue:
         return PublishTarget(
             video_path=Path(project.output_path or ""),
             video_url=f"{base}/api/projects/{project.config.id}/download?token={token}",
+            account_id=connection.external_account_id,
             title=post.title or "",
             description=post.description or "",
             hashtags=post.hashtags,

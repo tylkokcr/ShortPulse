@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Plus, Trash2, Youtube, Instagram, Music2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import clsx from "clsx";
 import {
   disconnectSocial,
@@ -11,25 +11,12 @@ import {
   startSocialConnect,
 } from "@/lib/api";
 import type { SocialConnection, SocialPlatform } from "@/lib/types";
+import { PLATFORM_ICONS, PLATFORM_LABELS } from "@/lib/platforms";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { AccountBar } from "@/components/auth/AccountBar";
 import { RequireAuth } from "@/components/auth/RequireAuth";
-
-const PLATFORM_LABELS: Record<SocialPlatform, string> = {
-  youtube: "YouTube",
-  instagram: "Instagram",
-  tiktok: "TikTok",
-};
-
-const PLATFORM_ICONS: Record<SocialPlatform, typeof Youtube> = {
-  youtube: Youtube,
-  instagram: Instagram,
-  // lucide has no TikTok mark; a music note is the closest honest stand-in
-  // and is not pretending to be their logo.
-  tiktok: Music2,
-};
 
 /**
  * What the OAuth callback can report.

@@ -17,12 +17,16 @@ import logging
 
 from app.core.config import Settings
 from app.services.social.base import SocialPublisher
+from app.services.social.facebook import FacebookPublisher
+from app.services.social.instagram import InstagramPublisher
+from app.services.social.tiktok import TikTokPublisher
 from app.services.social.youtube import YouTubePublisher
 
 logger = logging.getLogger(__name__)
 
-# Ordered as they should appear in the UI.
-PLATFORMS = ("youtube", "instagram", "tiktok")
+# Ordered as they should appear in the UI, which is the order their
+# reviews were expected to clear rather than anything about the code.
+PLATFORMS = ("youtube", "instagram", "facebook", "tiktok")
 
 
 def redirect_uri(settings: Settings, platform: str) -> str:
@@ -51,9 +55,29 @@ def build_publishers(settings: Settings) -> dict[str, SocialPublisher]:
             redirect_uri=redirect_uri(settings, "youtube"),
         )
 
-    # Instagram and TikTok land here once their app reviews clear. The
-    # seam they plug into is already in base.py; what is missing is their
-    # paperwork, not their code.
+    # One Meta app, two destinations. They are configured together
+    # because they cannot be configured apart: the same app id, the same
+    # login dialog, and the same business verification decides both.
+    # Offering one and not the other would be a setting that does not
+    # exist on Meta's side.
+    if settings.meta_app_id and settings.meta_app_secret:
+        publishers["instagram"] = InstagramPublisher(
+            app_id=settings.meta_app_id,
+            app_secret=settings.meta_app_secret,
+            redirect_uri=redirect_uri(settings, "instagram"),
+        )
+        publishers["facebook"] = FacebookPublisher(
+            app_id=settings.meta_app_id,
+            app_secret=settings.meta_app_secret,
+            redirect_uri=redirect_uri(settings, "facebook"),
+        )
+
+    if settings.tiktok_client_key and settings.tiktok_client_secret:
+        publishers["tiktok"] = TikTokPublisher(
+            client_key=settings.tiktok_client_key,
+            client_secret=settings.tiktok_client_secret,
+            redirect_uri=redirect_uri(settings, "tiktok"),
+        )
 
     if publishers:
         logger.info("Publishing enabled for: %s", ", ".join(sorted(publishers)))

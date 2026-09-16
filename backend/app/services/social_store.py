@@ -46,6 +46,9 @@ class ConnectionWithTokens:
     id: str
     platform: str
     user_id: str
+    # The platform's own id for the destination, needed by the publishers
+    # that can reach more than one — see PublishTarget.account_id.
+    external_account_id: str
     tokens: OAuthTokens
     first_post_at: datetime | None
 
@@ -134,8 +137,8 @@ async def load_for_publish(
     """The only function that decrypts. Called by the publish manager."""
     row = await pool.fetchrow(
         """
-        select id, platform, user_id, access_token_enc, refresh_token_enc,
-               access_expires_at, scopes, first_post_at
+        select id, platform, user_id, external_account_id, access_token_enc,
+               refresh_token_enc, access_expires_at, scopes, first_post_at
         from social_connections
         where id = $1 and revoked_at is null
         """,
@@ -148,6 +151,7 @@ async def load_for_publish(
         id=str(row["id"]),
         platform=row["platform"],
         user_id=str(row["user_id"]),
+        external_account_id=row["external_account_id"],
         tokens=OAuthTokens(
             access_token=cipher.decrypt(row["access_token_enc"]) or "",
             refresh_token=cipher.decrypt(row["refresh_token_enc"]),

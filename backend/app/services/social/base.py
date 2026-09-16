@@ -97,6 +97,16 @@ class PublishTarget:
     video_url: str
     title: str
     description: str
+    # Where on the platform this goes, when the token alone does not say.
+    #
+    # YouTube ignores it: the grant is for one channel and the upload has
+    # nowhere else to land. Instagram and Facebook both need it — one
+    # Facebook login can administer several Pages and the Instagram
+    # account behind each, so "post as this user" is not an address. It
+    # is the id chosen when the account was connected, carried through so
+    # that publishing goes where the user said rather than wherever the
+    # platform happens to list first.
+    account_id: str = ""
     hashtags: list[str] = field(default_factory=list)
     # What the user asked for. What they get may be less: an unaudited
     # TikTok client cannot post anything but SELF_ONLY, and an unverified
