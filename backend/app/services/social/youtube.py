@@ -9,14 +9,19 @@ just a channel.
 Two things about this API are worth knowing before reading the code,
 because both look like bugs otherwise:
 
-  * **An unaudited project's uploads are forced to private.** Every video
-    inserted from an API project that has not passed Google's audit is
-    private no matter what `privacyStatus` asks for. This is not an error
-    and nothing in the response complains — the video simply arrives
-    private. So the outcome reports the privacy that was *requested* as
-    unverified until the audit lands, and the UI says so, because
-    otherwise the only symptom is a user insisting their video never
-    published.
+  * **Uploads may be forced to private, and may not be.** The documented
+    rule is that a project which has not passed Google's audit uploads
+    private whatever `privacyStatus` asks for, with nothing in the
+    response complaining. Observed on 2026-09-17, from this project
+    before its audit: the video arrived *public*. The difference appears
+    to be the OAuth client's publishing status — Testing forces private,
+    Production does not — but that is inference from one case, not
+    something Google states.
+
+    Which is why nothing here trusts either answer. The outcome reports
+    the privacy the API read back rather than the one that was asked
+    for, so whichever rule is in force, the UI shows what actually
+    happened to the user's own video.
   * **Uploads bill to their own quota bucket**, separate from the
     10,000-unit daily pool, at roughly 100 uploads a day. Running out
     reads as a 403 with a quota reason and has nothing to do with the
