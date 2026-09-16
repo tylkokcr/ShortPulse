@@ -253,3 +253,49 @@ def test_an_actually_dead_youtube_grant_is_still_reported_as_one():
     )
 
     assert isinstance(_upload_error(response), ConnectionRevoked)
+
+
+def test_a_grant_without_the_upload_scope_is_refused_at_connect_time():
+    """The consent screen's permissions are checkboxes and unticking the
+    YouTube one still completes the flow. Stored, that grant fails much
+    later as a 403 that reads as a revoked account."""
+    import asyncio
+
+    import httpx as _httpx
+
+    from app.services.social.youtube import YouTubePublisher
+
+    def handler(request: _httpx.Request) -> _httpx.Response:
+        return _httpx.Response(
+            200,
+            json={
+                "access_token": "at",
+                "refresh_token": "rt",
+                "expires_in": 3600,
+                # Signed in, but never granted the upload permission.
+                "scope": "openid email profile",
+            },
+        )
+
+    publisher = YouTubePublisher("id", "secret", "https://shortpulse.app/cb")
+    transport = _httpx.MockTransport(handler)
+
+    async def run():
+        import app.services.social.youtube as mod
+
+        original = _httpx.AsyncClient
+
+        def patched(*args, **kwargs):
+            kwargs["transport"] = transport
+            return original(*args, **kwargs)
+
+        mod.httpx.AsyncClient = patched
+        try:
+            await publisher.exchange_code("code")
+        finally:
+            mod.httpx.AsyncClient = original
+
+    with pytest.raises(PublishError) as caught:
+        asyncio.run(run())
+
+    assert "permission to upload" in str(caught.value)

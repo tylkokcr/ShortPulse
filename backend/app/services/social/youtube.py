@@ -54,8 +54,9 @@ _UPLOAD_URL = "https://www.googleapis.com/upload/youtube/v3/videos"
 # and title for the UI, but it is a second sensitive scope to justify in
 # the audit in exchange for a nicer label, so the account is identified by
 # the Google user instead — see the brand-account note in exchange_code.
+_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
 _SCOPES = [
-    "https://www.googleapis.com/auth/youtube.upload",
+    _UPLOAD_SCOPE,
     "openid",
     "email",
     "profile",
@@ -141,6 +142,20 @@ class YouTubePublisher:
                 raise PublishError(
                     "Google didn't return a long-lived token. Remove ShortPulse from your "
                     "Google account's third-party access list, then connect again."
+                )
+
+            if _UPLOAD_SCOPE not in tokens.scopes:
+                # The consent screen's permissions are checkboxes, and on
+                # an unverified project the user reaches them through a
+                # warning that encourages granting as little as possible.
+                # Unticking this one still completes the flow: the grant
+                # is real, it signs them in, and it cannot upload. Stored,
+                # it fails much later as a 403 that reads as a revoked
+                # account — which is a lie, and sends them to reconnect
+                # exactly as they did the first time.
+                raise PublishError(
+                    "ShortPulse wasn't given permission to upload to YouTube. Connect again "
+                    "and leave the YouTube box ticked on Google's permission screen."
                 )
 
             # Identified by the Google account rather than the channel,
