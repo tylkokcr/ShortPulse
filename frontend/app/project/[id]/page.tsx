@@ -8,6 +8,7 @@ import { useShortPulseStore } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { AccountBar } from "@/components/auth/AccountBar";
+import { RequireAuth } from "@/components/auth/RequireAuth";
 import { RenderPreview } from "@/components/render/RenderPreview";
 import { TranscriptPanel } from "@/components/render/TranscriptPanel";
 import { StockCredits } from "@/components/render/StockCredits";
@@ -21,6 +22,15 @@ export default function ProjectPage(props: { params: Promise<{ id: string }> }) 
   // Next 15 made route params a promise. This is a client component, so it
   // unwraps with use() rather than await.
   const { id } = use(props.params);
+
+  return (
+    <RequireAuth>
+      <Project id={id} />
+    </RequireAuth>
+  );
+}
+
+function Project({ id }: { id: string }) {
   const activeProject = useShortPulseStore((s) => s.activeProject);
   const bumpVideoVersion = useShortPulseStore((s) => s.bumpVideoVersion);
   const setCredits = useShortPulseStore((s) => s.setCredits);
