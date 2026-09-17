@@ -299,3 +299,44 @@ def test_a_grant_without_the_upload_scope_is_refused_at_connect_time():
         asyncio.run(run())
 
     assert "permission to upload" in str(caught.value)
+
+
+def test_a_tiktok_grant_without_the_upload_scope_is_refused_at_connect_time():
+    """Same shape as the YouTube case, with a worse ending: the first post
+    fails with a permission error that reads as a dead grant, so the
+    account the user just connected disappears from their list."""
+    import asyncio
+
+    import httpx as _httpx
+
+    from app.services.social import tiktok as mod
+
+    def handler(request: _httpx.Request) -> _httpx.Response:
+        return _httpx.Response(
+            200,
+            json={
+                "access_token": "at",
+                "refresh_token": "rt",
+                "expires_in": 3600,
+                "open_id": "oid",
+                # Signed in; never allowed to upload.
+                "scope": "user.info.basic",
+            },
+        )
+
+    publisher = mod.TikTokPublisher("key", "secret", "https://shortpulse.app/cb")
+    transport = _httpx.MockTransport(handler)
+    original = _httpx.AsyncClient
+
+    def patched(*args, **kwargs):
+        kwargs["transport"] = transport
+        return original(*args, **kwargs)
+
+    mod.httpx.AsyncClient = patched
+    try:
+        with pytest.raises(PublishError) as caught:
+            asyncio.run(publisher.exchange_code("code"))
+    finally:
+        mod.httpx.AsyncClient = original
+
+    assert "permission to upload" in str(caught.value)

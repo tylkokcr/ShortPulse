@@ -65,7 +65,8 @@ _STATUS_URL = "https://open.tiktokapis.com/v2/post/publish/status/fetch/"
 # to somebody's account without them seeing it first is not the product.
 # `user.info.basic` is the smallest thing that answers "whose account is
 # this", which is half the connection's primary key.
-_SCOPES = ["user.info.basic", "video.upload"]
+_UPLOAD_SCOPE = "video.upload"
+_SCOPES = ["user.info.basic", _UPLOAD_SCOPE]
 
 # The inbox transfer is TikTok pulling from us, so nothing here waits on
 # bytes — these are ordinary API calls.
@@ -135,6 +136,29 @@ class TikTokPublisher:
             open_id = payload.get("open_id")
             if not open_id:
                 raise PublishError("TikTok connected but didn't say which account it was.")
+
+            if _UPLOAD_SCOPE not in tokens.scopes:
+                # The same failure YouTube produced, for the same reason
+                # and with a worse ending: the grant completes, signs the
+                # account in, and cannot upload. The first post then fails
+                # with a permission error that this code reads as a dead
+                # grant — so the connection is retired and the user watches
+                # the account they just added disappear.
+                #
+                # Most often this is the app, not the user: `video.upload`
+                # has to be enabled under Scopes in TikTok's developer
+                # portal, and a client without it authorises fine.
+                logger.error(
+                    "TikTok granted %s but not %s — check the app's Scopes in the "
+                    "developer portal",
+                    tokens.scopes,
+                    _UPLOAD_SCOPE,
+                )
+                raise PublishError(
+                    "TikTok didn't give ShortPulse permission to upload videos. Connect again "
+                    "and allow video uploads — if it keeps happening, this app's TikTok "
+                    "configuration is missing the upload scope."
+                )
 
             # Best effort: the display name is decoration, and a account
             # that grants upload but not profile reading is still a
@@ -321,6 +345,13 @@ def _download_failure(reason: str) -> PublishError:
 
 def _api_error(response: httpx.Response) -> PublishError:
     if response.status_code in (401, 403):
+        # Logged because this answer retires the connection: the account
+        # vanishes from the user's list, and without the body there is
+        # nothing to say whether the grant really died or the app was
+        # simply never allowed to upload.
+        logger.warning(
+            "TikTok refused the upload (%s): %s", response.status_code, response.text[:300]
+        )
         return ConnectionRevoked(
             "TikTok refused the upload for this account. Reconnect it and try again."
         )

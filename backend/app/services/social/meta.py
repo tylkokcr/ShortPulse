@@ -216,6 +216,17 @@ def graph_error(response: httpx.Response, *, action: str) -> PublishError:
     message = error.get("message", "")
 
     if code == 190 or response.status_code in (401, 403):
+        # Logged for the same reason as the other two: this answer retires
+        # the connection, and a mislabelled permission problem then looks
+        # like the user's account revoking itself.
+        logger.warning(
+            "Meta refused the %s (%s, code=%s/%s): %s",
+            action,
+            response.status_code,
+            code,
+            subcode,
+            message[:300],
+        )
         return ConnectionRevoked(
             "Facebook no longer allows ShortPulse to post for you. Reconnect the account."
         )
