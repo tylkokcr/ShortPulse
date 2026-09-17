@@ -3,6 +3,7 @@ import { Archivo, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ACCENT_BOOT_SCRIPT } from "@/components/ui/AccentSwitcher";
+import { siteUrl } from "@/lib/siteUrl";
 
 // Variable weight range rather than a fixed set: headlines want 600-700
 // and the same face at 400 carries body text, so loading it once covers
@@ -21,7 +22,14 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ["400", "500"],
 });
 
+const site = siteUrl();
+
 export const metadata: Metadata = {
+  // Everything behind sign-in renders the landing page to a crawler, so
+  // without this Google sees the same content at half a dozen addresses
+  // and picks one of them itself. Pointing them all at the root says
+  // which one is the page.
+  ...(site ? { metadataBase: new URL(site), alternates: { canonical: "/" } } : {}),
   title: "ShortPulse — Local AI Short-Form Video Agent",
   description:
     "Turn a topic or script into a ready-to-post vertical video. Script, voiceover, captions, visuals and music, assembled on your own machine — no subscription.",
