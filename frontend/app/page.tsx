@@ -245,8 +245,11 @@ function CreateVideo() {
           depend on a file rather than on the draft. */}
       {mode === "generate" && (
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/60 bg-background/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4">
-          <p className="hidden items-center gap-1.5 text-xs text-white/40 sm:flex">
+        {/* Two rows on a phone, one on a desktop. The price used to be
+            `hidden sm:flex`, which put the button that spends credits on
+            the one screen size that never showed what it costs. */}
+        <div className="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-4">
+          <p className="flex items-center gap-1.5 text-xs text-white/40">
             {price !== undefined ? (
               <>
                 <Coins size={13} />
@@ -294,7 +297,10 @@ function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void 
   ];
 
   return (
-    <div className="animate-fade-up mt-6 inline-flex rounded-md border border-border bg-surface p-1">
+    // `flex` rather than `inline-flex` below sm so the two halves share the
+    // width evenly instead of each wrapping its label onto a second line,
+    // which is what "Generate from a topic" did at 390px.
+    <div className="animate-fade-up mt-6 flex rounded-md border border-border bg-surface p-1 sm:inline-flex">
       {tabs.map((tab) => (
         <button
           key={tab.id}
@@ -302,7 +308,7 @@ function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void 
           onClick={() => onChange(tab.id)}
           aria-pressed={mode === tab.id}
           className={clsx(
-            "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200",
+            "flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 sm:flex-none sm:justify-start sm:px-4 sm:text-sm",
             mode === tab.id
               ? "bg-surface-raised text-white shadow-sm"
               : "text-white/50 hover:text-white/80"

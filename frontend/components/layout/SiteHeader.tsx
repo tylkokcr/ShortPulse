@@ -3,12 +3,14 @@ import { Github, Library } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { AccentSwitcher } from "@/components/ui/AccentSwitcher";
 import { ConnectionsLink } from "@/components/layout/ConnectionsLink";
+import { MobileNav } from "@/components/layout/MobileNav";
 
 const REPO_URL = "https://github.com/tylkokcr/ShortPulse";
 
-// Shared by every item in the bar. Hidden below `sm`: the header is already
-// at its width budget on a phone, and none of these is on the path to a
-// render.
+// Shared by every item in the bar. Hidden below `sm`, where the header is
+// at its width budget — MobileNav carries the same links behind one
+// button there, which it did not always, and for a while a phone simply
+// had no way to reach them.
 const NAV_LINK =
   "hidden items-center gap-1.5 text-sm text-white/50 transition-colors hover:text-white sm:flex";
 
@@ -28,8 +30,11 @@ export function SiteHeader({
   showLibrary?: boolean;
 }) {
   return (
+    // `relative` so the mobile panel can hang off the bar rather than off
+    // the page, which is what keeps it under the header when the page is
+    // scrolled.
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/75 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
+      <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-3 px-6 py-4 sm:gap-4">
         <Link href="/" className="transition-opacity hover:opacity-80">
           <Logo />
         </Link>
@@ -57,6 +62,7 @@ export function SiteHeader({
               than a control anyone needs on the way to a render. */}
           <AccentSwitcher className="hidden md:flex" />
           {right}
+          <MobileNav showLibrary={showLibrary} />
         </div>
       </div>
     </header>
