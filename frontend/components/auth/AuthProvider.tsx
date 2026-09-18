@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, authEnabled } from "@/lib/supabase";
 
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthState>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(authEnabled);
 
@@ -47,6 +49,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signOut() {
     await supabase?.auth.signOut();
+    // Leave the page as well as the session. RequireAuth swaps in the
+    // landing page where the session used to be, which is right for a
+    // visitor who followed a link to /connections — but after signing
+    // out it leaves the address bar naming a page that is no longer
+    // there. Going home makes the URL true again.
+    router.replace("/");
   }
 
   return (
