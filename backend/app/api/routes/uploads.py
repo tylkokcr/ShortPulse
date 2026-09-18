@@ -17,6 +17,8 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 
+from pydantic import ValidationError
+
 from app.api.deps import billing_enabled, current_user_id, db_pool
 from app.core.config import get_settings, project_dir
 from app.schemas.project import (
@@ -26,6 +28,7 @@ from app.schemas.project import (
     Project,
     ProjectConfig,
     ProjectSource,
+    SubtitleStyle,
 )
 from app.services import credits, project_store, uploads
 
@@ -46,6 +49,11 @@ async def upload_video(
     language: str = Form("en"),
     title: str = Form(""),
     dub_language: str = Form(""),
+    # JSON in a form field: the file forces multipart, and this is a
+    # nested object. Empty keeps the schema's defaults, which is what an
+    # older client sends and what a self-hosted script that posts a file
+    # and nothing else should still get.
+    subtitles: str = Form(""),
     user_id: str | None = Depends(current_user_id),
 ) -> Project:
     """Accept a video, then queue it for transcription and caption burn-in.
@@ -101,6 +109,19 @@ async def upload_video(
         language=language,
         dub_language=dub or None,
     )
+
+    if subtitles.strip():
+        # Validated rather than trusted: this arrives as a string, and a
+        # malformed one should be a 422 naming the field rather than a
+        # render that silently falls back to the default and leaves the
+        # user wondering why the style they picked did nothing — which is
+        # exactly the bug this parameter exists to fix.
+        try:
+            config.subtitles = SubtitleStyle.model_validate_json(subtitles)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=422, detail="That caption style isn't valid."
+            ) from exc
     # The translation runs through the same model the script engine uses,
     # and like there it comes from settings rather than from the request —
     # this endpoint takes no llm block, and it should stay that way.

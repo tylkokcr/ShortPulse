@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LanguageSelector } from "./LanguageSelector";
 import { CaptionStyleSelector } from "./CaptionStyleSelector";
+import { presetById } from "@/lib/captionStyles";
 import { UploadPreview } from "./UploadPreview";
 
 /**
@@ -67,6 +68,10 @@ export function UploadPanel() {
           language: draft.language,
           title: file.name.replace(/\.[^.]+$/, ""),
           dubLanguage,
+          // The picker below has been on this panel from the start; what
+          // was missing was this line, so every upload came back Classic
+          // whatever was chosen.
+          subtitles: presetById(draft.captionPreset).style,
         },
         setProgress
       );

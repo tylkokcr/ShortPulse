@@ -88,21 +88,40 @@ export function CaptionPreview({
               ? "text-[10px]"
               : "text-[9px]"
         )}
-        style={{
-          // Stand-in for the ASS outline, which is a stroke around glyphs
-          // rather than a drop shadow.
-          textShadow: `0 0 ${preset.style.outline_width}px #000, 0 1px 2px #000`,
-        }}
+        style={
+          preset.style.box
+            ? // A filled strip, so no stroke to imitate. The words sit on
+              // it as one run rather than as separate chips, which is how
+              // libass draws a boxed line.
+              { backgroundColor: preset.previewBox, boxShadow: `0 0 0 2px ${preset.previewBox}` }
+            : {
+                // Stand-in for the ASS outline, which is a stroke around
+                // glyphs rather than a drop shadow.
+                textShadow: `0 0 ${preset.style.outline_width}px #000, 0 1px 2px #000`,
+              }
+        }
       >
-        {words.map((word, i) => (
-          <span
-            key={word}
-            style={{ color: i === activeIndex ? preset.previewHighlight : "#fff" }}
-          >
-            {word}
-            {i < words.length - 1 ? " " : ""}
-          </span>
-        ))}
+        {words.map((word, i) => {
+          const active = i === activeIndex;
+          return (
+            <span
+              key={word}
+              style={
+                preset.style.box
+                  ? {
+                      // The active word's *block* changes, not its
+                      // letters — the same swap the renderer makes.
+                      color: preset.previewText ?? "#fff",
+                      backgroundColor: active ? preset.previewHighlight : undefined,
+                    }
+                  : { color: active ? preset.previewHighlight : "#fff" }
+              }
+            >
+              {word}
+              {i < words.length - 1 ? " " : ""}
+            </span>
+          );
+        })}
       </p>
     </div>
   );

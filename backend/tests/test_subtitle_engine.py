@@ -89,3 +89,63 @@ def test_non_turkish_uppercase_is_unchanged(tmp_path: Path):
     content = output_path.read_text(encoding="utf-8")
     assert "VIVID" in content
     assert "İ" not in content
+
+
+# --- boxed captions ------------------------------------------------------
+
+
+def test_a_boxed_style_asks_libass_for_a_filled_box():
+    """BorderStyle 3 fills OutlineColour behind the text instead of
+    stroking the glyphs with it. One number, and the only look a single
+    bundled font could not otherwise produce."""
+    from app.engines.subtitle_engine import _header_for
+    from app.schemas.project import SubtitleStyle
+
+    header = _header_for(SubtitleStyle(box=True), (1080, 1920))
+    style_line = next(l for l in header.splitlines() if l.startswith("Style:"))
+
+    # Name,Fontname,Fontsize,Primary,Secondary,Outline,Back,Bold,Italic,
+    # Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,...
+    assert style_line.split(",")[15] == "3"
+
+
+def test_an_ordinary_style_still_asks_for_an_outline():
+    from app.engines.subtitle_engine import _header_for
+    from app.schemas.project import SubtitleStyle
+
+    header = _header_for(SubtitleStyle(), (1080, 1920))
+    style_line = next(l for l in header.splitlines() if l.startswith("Style:"))
+
+    assert style_line.split(",")[15] == "1"
+
+
+def test_a_boxed_active_word_recolours_the_box_not_the_letters():
+    """\\3c is the box under BorderStyle 3. Recolouring the text there
+    would put the highlight against a filled background and lose it."""
+    from app.engines.subtitle_engine import _render_line_text, SubtitleLine
+    from app.schemas.project import SubtitleStyle, Word
+
+    line = SubtitleLine(
+        words=[Word(text="a", start_ms=0, end_ms=100), Word(text="b", start_ms=100, end_ms=200)],
+        start_ms=0,
+        end_ms=200,
+    )
+    style = SubtitleStyle(box=True, highlight_color="&H000045FF")
+
+    text = _render_line_text(line, active_index=0, style=style, language="en")
+
+    assert "\\3c&H000045FF" in text
+    # No scale-up: it would make the active word's box taller than the
+    # ones beside it and put a lump in the strip.
+    assert "\\fscx" not in text
+
+
+def test_an_outlined_active_word_still_grows_and_recolours_the_text():
+    from app.engines.subtitle_engine import _render_line_text, SubtitleLine
+    from app.schemas.project import SubtitleStyle, Word
+
+    line = SubtitleLine(words=[Word(text="a", start_ms=0, end_ms=100)], start_ms=0, end_ms=100)
+    text = _render_line_text(line, active_index=0, style=SubtitleStyle(), language="en")
+
+    assert "\\fscx112" in text
+    assert "\\3c" not in text

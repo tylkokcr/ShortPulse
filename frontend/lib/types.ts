@@ -160,6 +160,12 @@ export interface SubtitleStyle {
   position: string;
   max_words_per_line: number;
   uppercase: boolean;
+  /** Fill a box behind the words instead of outlining them, with
+   *  `outline_color` as the box and `highlight_color` marking the active
+   *  word's block rather than its letters. */
+  box?: boolean;
+  shadow?: number;
+  letter_spacing?: number;
 }
 
 export interface MusicConfig {

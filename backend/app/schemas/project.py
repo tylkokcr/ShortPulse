@@ -265,6 +265,18 @@ class SubtitleStyle(BaseModel):
     position: str = "bottom_third"
     max_words_per_line: int = 4
     uppercase: bool = True
+    # Fill a box behind the words rather than stroking their edges —
+    # ASS BorderStyle 3, where outline_color becomes the box. The active
+    # word recolours the box instead of the text, which is the look most
+    # short-form captions use and the one thing that made a preset look
+    # genuinely different while a single font ships with the app.
+    box: bool = False
+    # Drop shadow depth in pixels, 0 for none. Only legible off a box:
+    # against an outline it muddies the edge it is meant to separate.
+    shadow: int = Field(default=0, ge=0, le=12)
+    # ASS `Spacing`, in pixels between glyphs. Small numbers only — past
+    # a few pixels a four-word line stops fitting the frame.
+    letter_spacing: int = Field(default=0, ge=0, le=10)
 
 
 class CaptionTrack(BaseModel):

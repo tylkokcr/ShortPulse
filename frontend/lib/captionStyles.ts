@@ -22,6 +22,13 @@ export interface CaptionPreset {
   description: string;
   /** CSS colour matching `style.highlight_color`, for the live preview. */
   previewHighlight: string;
+  /** CSS colour matching `style.outline_color`, which on a boxed preset is
+   *  the strip behind the words rather than a stroke around them. */
+  previewBox?: string;
+  /** CSS colour matching `style.primary_color`. Only worth stating where
+   *  it is not white — a dark box wants white words and a white one does
+   *  not, and the preview has to make the same choice the renderer does. */
+  previewText?: string;
   style: SubtitleStyle;
 }
 
@@ -84,6 +91,79 @@ export const CAPTION_PRESETS: CaptionPreset[] = [
       outline_width: 5,
       position: "middle",
       max_words_per_line: 3,
+    },
+  },
+
+  // Boxed. The active word's *block* changes colour rather than its
+  // letters, which is why these read differently from anything above
+  // however the colours are set — and why they hold up over pale or busy
+  // footage, where an outline is the first thing to disappear.
+  {
+    id: "block",
+    name: "Block",
+    description: "White on a black strip, active word in orange.",
+    previewHighlight: "#FF4500",
+    previewBox: "#000000",
+    style: {
+      ...BASE,
+      box: true,
+      outline_color: "&H00000000",
+      highlight_color: "&H000045FF",
+      outline_width: 8,
+      max_words_per_line: 3,
+    },
+  },
+  {
+    id: "tape",
+    name: "Tape",
+    description: "A red band with a yellow active word. Loud on purpose.",
+    previewHighlight: "#FFFF00",
+    previewBox: "#FF1428",
+    style: {
+      ...BASE,
+      box: true,
+      outline_color: "&H002814FF",
+      highlight_color: "&H0000FFFF",
+      outline_width: 10,
+      max_words_per_line: 3,
+      letter_spacing: 1,
+    },
+  },
+  {
+    id: "news",
+    name: "News",
+    description: "Sentence case in a dark band, centred. Quiet and legible.",
+    previewHighlight: "#7DD3FC",
+    previewBox: "#0F172A",
+    style: {
+      ...BASE,
+      box: true,
+      font_size: 68,
+      outline_color: "&H001E120F",
+      highlight_color: "&H00FCD37D",
+      outline_width: 8,
+      max_words_per_line: 5,
+      uppercase: false,
+      position: "middle",
+    },
+  },
+  {
+    id: "sticker",
+    name: "Sticker",
+    description: "Big words on a white block, high on the frame.",
+    previewHighlight: "#FF2D95",
+    previewBox: "#FFFFFF",
+    previewText: "#141414",
+    style: {
+      ...BASE,
+      box: true,
+      font_size: 92,
+      primary_color: "&H00141414",
+      outline_color: "&H00FFFFFF",
+      highlight_color: "&H00952DFF",
+      outline_width: 10,
+      max_words_per_line: 2,
+      position: "top_third",
     },
   },
 ];

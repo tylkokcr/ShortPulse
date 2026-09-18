@@ -29,7 +29,7 @@ PlayResY: {play_res_y}
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,{font_family},{font_size},{primary_color},&H000000FF,{outline_color},&H00000000,-1,0,0,0,100,100,0,0,1,{outline_width},0,{alignment},60,60,{margin_v},1
+Style: Default,{font_family},{font_size},{primary_color},&H000000FF,{outline_color},&H00000000,-1,0,0,0,100,100,{spacing},0,{border_style},{outline_width},{shadow},{alignment},60,60,{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -100,7 +100,21 @@ def _render_line_text(
         text = _uppercase(word.text, language) if style.uppercase else word.text
         text = _sanitize(text)
         if i == active_index:
-            parts.append(f"{{\\c{style.highlight_color}\\fscx112\\fscy112}}{text}{{\\r}}")
+            # In a boxed style the glyphs stay readable and the *box*
+            # changes colour — \3c is the box under BorderStyle 3, the
+            # same tag that would be the outline otherwise. Recolouring
+            # the text instead would put the highlight colour against a
+            # filled background and lose most of its contrast.
+            # And no scale-up in a box. The 12% that makes a word pop on
+            # an outlined caption makes its box taller than the ones
+            # beside it, so the strip comes out with a lump in the middle
+            # — the colour is doing the work there anyway.
+            if style.box:
+                parts.append(f"{{\\3c{style.highlight_color}}}{text}{{\\r}}")
+            else:
+                parts.append(
+                    f"{{\\c{style.highlight_color}\\fscx112\\fscy112}}{text}{{\\r}}"
+                )
         else:
             parts.append(f"{{\\c{style.primary_color}}}{text}{{\\r}}")
     return " ".join(parts)
@@ -125,6 +139,15 @@ def _header_for(style: SubtitleStyle, play_res: tuple[int, int]) -> str:
         primary_color=style.primary_color,
         outline_color=style.outline_color,
         outline_width=style.outline_width,
+        # BorderStyle 3 fills a box behind the text in OutlineColour
+        # instead of stroking the glyphs with it. One number, and it is
+        # the whole difference between a caption that floats over the
+        # picture and one that sits in a block — which is the look most
+        # short-form video actually uses, and the only one this could not
+        # previously produce with a single font.
+        border_style=3 if style.box else 1,
+        shadow=style.shadow,
+        spacing=style.letter_spacing,
         alignment=_ALIGNMENT_BY_POSITION.get(style.position, 2),
         margin_v=_MARGIN_V_BY_POSITION.get(style.position, 260),
     )

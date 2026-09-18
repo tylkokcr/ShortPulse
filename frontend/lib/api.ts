@@ -13,6 +13,7 @@ import type {
   SocialConnection,
   SocialPlatform,
   SocialPost,
+  SubtitleStyle,
   TextOverlay,
   Voice,
   VisualModeAvailability,
@@ -111,7 +112,12 @@ export function createProject(config: Partial<ProjectConfig> & { topic: string }
  */
 export async function uploadVideo(
   file: File,
-  options: { language: string; title?: string; dubLanguage?: string },
+  options: {
+    language: string;
+    title?: string;
+    dubLanguage?: string;
+    subtitles?: SubtitleStyle;
+  },
   onProgress?: (fraction: number) => void
 ): Promise<Project> {
   const form = new FormData();
@@ -121,6 +127,13 @@ export async function uploadVideo(
   // Empty means "no dub, just captions". `language` stays what the video
   // is spoken in either way — it is what the transcription pass is told.
   form.append("dub_language", options.dubLanguage ?? "");
+  // JSON inside a multipart field, because the file has to be multipart
+  // and the style is a nested object. Omitted, the backend keeps its own
+  // defaults — which is what this endpoint did for every upload until
+  // now, picker on screen and all.
+  if (options.subtitles) {
+    form.append("subtitles", JSON.stringify(options.subtitles));
+  }
 
   const headers = await authHeaders();
 
