@@ -340,3 +340,33 @@ def test_a_tiktok_grant_without_the_upload_scope_is_refused_at_connect_time():
         mod.httpx.AsyncClient = original
 
     assert "permission to upload" in str(caught.value)
+
+
+def test_an_unverified_domain_does_not_retire_the_connection():
+    """Observed in production: TikTok answers the upload 403 with
+    url_ownership_unverified, _api_error read the status before the body,
+    and the account the user had just connected was deleted with a note
+    telling them to reconnect it — which cannot fix a domain nobody
+    verified, so they would do it again."""
+    from app.services.social.tiktok import _api_error
+
+    response = httpx.Response(
+        403,
+        json={
+            "error": {
+                "code": "url_ownership_unverified",
+                "message": "Please review our URL ownership verification rules",
+            }
+        },
+    )
+
+    error = _api_error(response)
+    assert not isinstance(error, ConnectionRevoked)
+    assert "isn't set up" in str(error)
+
+
+def test_a_403_with_no_code_is_still_treated_as_a_dead_grant():
+    """Reading the body first must not have lost the fallback."""
+    from app.services.social.tiktok import _api_error
+
+    assert isinstance(_api_error(httpx.Response(403, text="nope")), ConnectionRevoked)

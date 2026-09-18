@@ -344,13 +344,40 @@ def _download_failure(reason: str) -> PublishError:
 
 
 def _api_error(response: httpx.Response) -> PublishError:
-    if response.status_code in (401, 403):
-        # Logged because this answer retires the connection: the account
-        # vanishes from the user's list, and without the body there is
-        # nothing to say whether the grant really died or the app was
-        # simply never allowed to upload.
+    # The body first, the status second. TikTok answers 403 for things
+    # that have nothing to do with this account's grant — an unverified
+    # domain among them — and reading the status first turned every one
+    # of those into a revoked connection, which deleted the account the
+    # user had just added and told them to reconnect it. Reconnecting
+    # cannot fix a domain that was never verified, so they would do it
+    # again, and again.
+    #
+    # Same ordering mistake as youtube.py's youtubeSignupRequired, made
+    # twice in one file's lifetime: the status is the misleading part, so
+    # it is the fallback rather than the first test.
+    try:
+        error = response.json().get("error", {})
+    except ValueError:
+        error = {}
+
+    code = error.get("code", "")
+    if code and code not in ("ok",):
         logger.warning(
-            "TikTok refused the upload (%s): %s", response.status_code, response.text[:300]
+            "TikTok refused the upload (%s, code=%s): %s",
+            response.status_code,
+            code,
+            error.get("message", "")[:300],
+        )
+        return _mapped_error(error)
+
+    if response.status_code in (401, 403):
+        # No code to go on, so the status is all there is. Logged because
+        # this answer retires the connection and the account vanishes
+        # from the user's list.
+        logger.warning(
+            "TikTok refused the upload (%s), no error code: %s",
+            response.status_code,
+            response.text[:300],
         )
         return ConnectionRevoked(
             "TikTok refused the upload for this account. Reconnect it and try again."
@@ -361,10 +388,7 @@ def _api_error(response: httpx.Response) -> PublishError:
         )
     if response.status_code >= 500:
         return PublishError("TikTok had a problem accepting the upload.", retryable=True)
-    try:
-        return _mapped_error(response.json().get("error", {}))
-    except ValueError:
-        return PublishError("TikTok rejected the upload.")
+    return PublishError("TikTok rejected the upload.")
 
 
 def _mapped_error(error: dict) -> PublishError:
