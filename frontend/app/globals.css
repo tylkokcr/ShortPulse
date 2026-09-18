@@ -332,3 +332,15 @@ body {
     transform: scaleY(1);
   }
 }
+
+/* Hides the server-rendered landing for a browser that already has a
+   session, before the first paint. SESSION_BOOT_SCRIPT sets the
+   attribute in the document head, so this applies without React having
+   run — which is the whole point: the signed-in user never sees the
+   marketing page flash past on the way to their studio.
+
+   A crawler sets no attribute and so is shown the page, which is why
+   the homepage has content in it at all. See components/auth/sessionBoot.ts. */
+html[data-session="1"] [data-landing-boot] {
+  display: none;
+}

@@ -3,6 +3,7 @@ import { Archivo, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ACCENT_BOOT_SCRIPT } from "@/components/ui/AccentSwitcher";
+import { SESSION_BOOT_SCRIPT } from "@/components/auth/sessionBoot";
 import { siteUrl } from "@/lib/siteUrl";
 
 // Variable weight range rather than a fixed set: headlines want 600-700
@@ -52,7 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Applies the stored accent before the first paint. Inline and
             synchronous on purpose: anything deferred shows one frame of
             the default colour on every navigation. */}
-        <script dangerouslySetInnerHTML={{ __html: ACCENT_BOOT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: `${ACCENT_BOOT_SCRIPT}\n${SESSION_BOOT_SCRIPT}` }} />
       </head>
       <body className="font-sans">
         <AuthProvider>{children}</AuthProvider>

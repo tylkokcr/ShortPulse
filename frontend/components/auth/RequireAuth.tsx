@@ -19,10 +19,21 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
 
   if (!enabled) return <>{children}</>;
 
-  // Deliberately blank rather than a spinner: the session lookup resolves
-  // from local storage in a few milliseconds, and a flash of "sign in" for
-  // an already-signed-in user looks broken.
-  if (loading) return null;
+  // The landing page, not a blank — this is also the server's render,
+  // and returning null there shipped every page as an empty document.
+  //
+  // `data-landing-boot` is what keeps the original intent: a flash of
+  // "sign in" for an already-signed-in user looks broken, so
+  // SESSION_BOOT_SCRIPT marks the document before first paint and CSS
+  // hides this branch where a session is already stored. A crawler has
+  // neither, and gets the page.
+  if (loading) {
+    return (
+      <div data-landing-boot>
+        <Landing />
+      </div>
+    );
+  }
 
   if (!session) return <Landing />;
   return <>{children}</>;
