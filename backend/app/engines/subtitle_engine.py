@@ -13,10 +13,66 @@ in render_engine.py.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 
 from app.schemas.project import Scene, SubtitleStyle, TextOverlay, Word
+
+logger = logging.getLogger(__name__)
+
+# Which bundled font can draw which language.
+#
+# Not a preference — a capability, measured from each file's cmap rather
+# than assumed from its Google Fonts listing. libass does not report a
+# missing glyph; it draws an empty box and returns success, so a font
+# asked for a script it does not have produces a finished video full of
+# tofu and no error anywhere. That is exactly what Arabic did in
+# production until this map existed: the language picker offered it, the
+# render succeeded, and every caption came out as rectangles.
+#
+# The display faces are Latin-only by nature, so a project in Russian or
+# Arabic falls back rather than being refused — the style is a
+# preference, the alphabet is not.
+_LATIN = frozenset({"en", "tr", "es", "fr", "de", "pt", "it"})
+FONT_COVERAGE: dict[str, frozenset[str]] = {
+    "Montserrat": _LATIN | {"ru"},
+    "Anton": _LATIN,
+    "Bangers": _LATIN,
+    # No ğ/ş/ı, so Turkish is not in its Latin set despite the rest being.
+    "Permanent Marker": _LATIN - {"tr"},
+    # Latin as well as Arabic, which is not why it is here but is worth
+    # recording accurately: this map is what each file *can* draw, not
+    # what it is for. A test measures it against the files, and declaring
+    # a narrower set than the truth is how that test earns its keep.
+    "Noto Sans Arabic": _LATIN | {"ar"},
+}
+
+# Where a language goes when the chosen font cannot draw it. Montserrat
+# covers everything the app offers except Arabic, which has no Latin face
+# to fall back to at all.
+_FALLBACK_BY_LANGUAGE = {"ar": "Noto Sans Arabic"}
+_DEFAULT_FONT = "Montserrat"
+
+
+def font_for(font_family: str, language: str) -> str:
+    """The font that can actually draw this language, preferring the
+    requested one.
+
+    Silent substitution is the right answer here and a surprising one, so
+    it is logged: a caption in the wrong face is a cosmetic
+    disappointment, and a caption in empty boxes is an unusable video.
+    """
+    lang = (language or "en").lower()
+    if lang in FONT_COVERAGE.get(font_family, frozenset()):
+        return font_family
+
+    substitute = _FALLBACK_BY_LANGUAGE.get(lang, _DEFAULT_FONT)
+    if font_family:
+        logger.info(
+            "Captions in %r: %s cannot draw it, using %s", lang, font_family, substitute
+        )
+    return substitute
 
 ASS_HEADER_TEMPLATE = """[Script Info]
 Title: ShortPulse Auto Subtitles
@@ -130,11 +186,14 @@ def _events_for_line(line: SubtitleLine, style: SubtitleStyle, language: str) ->
     return events
 
 
-def _header_for(style: SubtitleStyle, play_res: tuple[int, int]) -> str:
+def _header_for(style: SubtitleStyle, play_res: tuple[int, int], language: str = "en") -> str:
     return ASS_HEADER_TEMPLATE.format(
         play_res_x=play_res[0],
         play_res_y=play_res[1],
-        font_family=style.font_family,
+        # Resolved here rather than at the picker: the language is a
+        # property of the project and the style is a preference, so
+        # this is the last place that knows both.
+        font_family=font_for(style.font_family, language),
         font_size=style.font_size,
         primary_color=style.primary_color,
         outline_color=style.outline_color,
@@ -215,7 +274,7 @@ def build_ass_from_words(
     events.extend(_events_for_overlays(overlays or []))
 
     output_path.write_text(
-        _header_for(style, play_res) + "\n".join(events) + "\n", encoding="utf-8"
+        _header_for(style, play_res, language) + "\n".join(events) + "\n", encoding="utf-8"
     )
     return output_path
 

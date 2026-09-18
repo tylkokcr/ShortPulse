@@ -10,11 +10,15 @@ import type { SubtitleStyle } from "./types";
  * Colours are ASS `&HAABBGGRR` — byte-reversed from CSS hex, which is why
  * each one carries the CSS equivalent alongside it for the preview swatch.
  *
- * `font_family` is deliberately the same everywhere. libass silently falls
- * back to a default face when a font isn't installed on the render
- * machine, so a preset that switched fonts would look correct here and
- * wrong in the output — a failure nobody would catch until they watched
- * the finished video.
+ * `font_family` may only name a font this repository actually ships, in
+ * app/assets/fonts. libass silently substitutes a face it cannot find, so
+ * a preset naming anything else would look right here and wrong in the
+ * output — a failure nobody catches until they watch the video.
+ *
+ * The same applies per language: a font covers the alphabets it covers,
+ * and the backend swaps in one that can draw the project's language when
+ * the chosen face cannot. `notCovered` below is that fact made visible, so
+ * the picker can say so before the render rather than after.
  */
 export interface CaptionPreset {
   id: string;
@@ -29,8 +33,17 @@ export interface CaptionPreset {
    *  it is not white — a dark box wants white words and a white one does
    *  not, and the preview has to make the same choice the renderer does. */
   previewText?: string;
+  /** Languages this preset's font cannot draw, which the renderer will
+   *  substitute Montserrat (or Noto Sans Arabic) for. Mirrors
+   *  `subtitle_engine.FONT_COVERAGE`; keep the two in step. */
+  notCovered?: string[];
+  /** CSS stack for the preview, matching the bundled face. */
+  previewFont?: string;
   style: SubtitleStyle;
 }
+
+/** Languages none of the display faces can draw — they are Latin-only. */
+const NON_LATIN = ["ar", "ru"];
 
 const BASE: SubtitleStyle = {
   font_family: "Montserrat",
@@ -164,6 +177,64 @@ export const CAPTION_PRESETS: CaptionPreset[] = [
       outline_width: 10,
       max_words_per_line: 2,
       position: "top_third",
+    },
+  },
+
+  // The three that change the letterforms rather than their colour. Each
+  // names a face bundled in app/assets/fonts; none of them can draw
+  // Cyrillic or Arabic, which is what `notCovered` is for.
+  {
+    id: "impact",
+    name: "Impact",
+    description: "Tall condensed caps. Fits more per line and shouts.",
+    previewHighlight: "#FACC15",
+    previewFont: "var(--font-caption-anton), 'Arial Narrow', sans-serif",
+    notCovered: NON_LATIN,
+    style: {
+      ...BASE,
+      font_family: "Anton",
+      font_size: 104,
+      highlight_color: "&H0015CCFA",
+      outline_width: 5,
+      max_words_per_line: 3,
+    },
+  },
+  {
+    id: "comic",
+    name: "Comic",
+    description: "Hand-lettered, on a yellow block. Playful.",
+    previewHighlight: "#F43F5E",
+    previewBox: "#FACC15",
+    previewText: "#141414",
+    previewFont: "var(--font-caption-bangers), 'Comic Sans MS', cursive",
+    notCovered: NON_LATIN,
+    style: {
+      ...BASE,
+      font_family: "Bangers",
+      box: true,
+      font_size: 100,
+      primary_color: "&H00141414",
+      outline_color: "&H0015CCFA",
+      highlight_color: "&H005E3FF4",
+      outline_width: 10,
+      max_words_per_line: 3,
+    },
+  },
+  {
+    id: "marker",
+    name: "Marker",
+    description: "Felt-tip handwriting. No Turkish — it has no ğ, ş or ı.",
+    previewHighlight: "#34D399",
+    previewFont: "var(--font-caption-marker), cursive",
+    notCovered: [...NON_LATIN, "tr"],
+    style: {
+      ...BASE,
+      font_family: "Permanent Marker",
+      font_size: 92,
+      highlight_color: "&H0099D334",
+      outline_width: 5,
+      max_words_per_line: 3,
+      uppercase: false,
     },
   },
 ];

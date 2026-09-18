@@ -149,3 +149,84 @@ def test_an_outlined_active_word_still_grows_and_recolours_the_text():
 
     assert "\\fscx112" in text
     assert "\\3c" not in text
+
+
+# --- fonts that can actually draw the language ---------------------------
+
+
+def test_arabic_gets_a_font_that_has_arabic():
+    """The bug this map was written for: Montserrat has no Arabic glyphs,
+    libass does not say so, and every caption came out an empty box."""
+    from app.engines.subtitle_engine import font_for
+
+    assert font_for("Montserrat", "ar") == "Noto Sans Arabic"
+
+
+def test_a_display_face_is_kept_where_it_covers_the_language():
+    from app.engines.subtitle_engine import font_for
+
+    assert font_for("Anton", "tr") == "Anton"
+
+
+def test_a_display_face_is_swapped_out_where_it_does_not():
+    """Latin-only by nature. The style is a preference; the alphabet is
+    not, so the language wins."""
+    from app.engines.subtitle_engine import font_for
+
+    assert font_for("Anton", "ru") == "Montserrat"
+    assert font_for("Anton", "ar") == "Noto Sans Arabic"
+
+
+def test_permanent_marker_loses_turkish_specifically():
+    """It has no ğ, ş or ı — measured from the file, not assumed."""
+    from app.engines.subtitle_engine import font_for
+
+    assert font_for("Permanent Marker", "tr") == "Montserrat"
+    assert font_for("Permanent Marker", "en") == "Permanent Marker"
+
+
+def test_every_font_named_in_the_coverage_map_actually_ships():
+    """A preset naming a font that is not in the image renders in
+    whatever libass finds instead, silently."""
+    from fontTools.ttLib import TTFont
+
+    from app.core.config import FONTS_DIR
+    from app.engines.subtitle_engine import FONT_COVERAGE
+
+    families = set()
+    for path in FONTS_DIR.glob("*.ttf"):
+        font = TTFont(path, fontNumber=0, lazy=True)
+        families |= {str(r) for r in font["name"].names if r.nameID == 1}
+
+    assert set(FONT_COVERAGE) <= families
+
+
+def test_the_coverage_map_matches_what_the_files_contain():
+    """Measured rather than declared: a font that loses a glyph in an
+    upstream update should fail here, not in somebody's video."""
+    from fontTools.ttLib import TTFont
+
+    from app.core.config import FONTS_DIR
+    from app.engines.subtitle_engine import FONT_COVERAGE
+
+    probes = {
+        "en": "Hello", "tr": "ğşıİ", "es": "ñáé", "fr": "àçê", "de": "äöüß",
+        "pt": "ãõçá", "it": "àèìòù", "ru": "Привет", "ar": "مرحبا",
+    }
+
+    by_family = {}
+    for path in FONTS_DIR.glob("*.ttf"):
+        font = TTFont(path, fontNumber=0)
+        codepoints = set()
+        for table in font["cmap"].tables:
+            codepoints |= set(table.cmap)
+        for record in font["name"].names:
+            if record.nameID == 1:
+                by_family[str(record)] = codepoints
+
+    for family, languages in FONT_COVERAGE.items():
+        drawable = {
+            lang for lang, sample in probes.items()
+            if all(ord(ch) in by_family[family] for ch in sample)
+        }
+        assert drawable == set(languages), f"{family}: file says {sorted(drawable)}"

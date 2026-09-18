@@ -366,15 +366,20 @@ def test_the_caption_font_ships_with_the_app():
     Google publishes reports itself as "Montserrat Thin", so a style asking
     for "Montserrat" does not match it, and if it did every caption would
     be hairline. The bundled file is pinned to weight 700 and renamed.
+
+    Named explicitly rather than taken as the only file in the directory,
+    which it stopped being when the display faces arrived — the wider
+    "every font a preset names actually ships" check lives in
+    test_subtitle_engine.py.
     """
     import struct
 
     from app.core.config import FONTS_DIR
 
-    fonts = list(FONTS_DIR.glob("*.ttf"))
-    assert fonts, f"no caption font shipped in {FONTS_DIR}"
+    montserrat = FONTS_DIR / "Montserrat-Bold.ttf"
+    assert montserrat.is_file(), f"no Montserrat shipped in {FONTS_DIR}"
 
-    data = fonts[0].read_bytes()
+    data = montserrat.read_bytes()
     table_count = struct.unpack(">H", data[4:6])[0]
     name_table = next(
         struct.unpack(">I", data[12 + i * 16 + 8 : 12 + i * 16 + 12])[0]

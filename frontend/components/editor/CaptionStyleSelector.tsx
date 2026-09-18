@@ -2,13 +2,18 @@
 
 import clsx from "clsx";
 import { CAPTION_PRESETS, type CaptionPreset } from "@/lib/captionStyles";
+import { CAPTION_FONT_VARS } from "@/lib/captionFonts";
+import { LANGUAGE_OPTIONS } from "@/lib/types";
 import { useShortPulseStore } from "@/lib/store";
 
 export function CaptionStyleSelector() {
   const { draft, setDraft } = useShortPulseStore();
+  const languageLabel =
+    LANGUAGE_OPTIONS.find((option) => option.code === draft.language)?.label ?? draft.language;
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    // The font variables hang here so every preview below resolves them.
+    <div className={clsx("grid grid-cols-2 gap-3 sm:grid-cols-4", CAPTION_FONT_VARS)}>
       {CAPTION_PRESETS.map((preset) => {
         const selected = draft.captionPreset === preset.id;
         return (
@@ -35,6 +40,15 @@ export function CaptionStyleSelector() {
               <div className="mt-0.5 text-[11px] leading-snug text-white/40">
                 {preset.description}
               </div>
+              {/* Said here rather than discovered in the finished video.
+                  The render substitutes a face that can draw the
+                  language, which is the right thing to do and a
+                  surprising one to find out afterwards. */}
+              {preset.notCovered?.includes(draft.language) && (
+                <div className="mt-1 text-[11px] leading-snug text-amber-400/80">
+                  Not available in {languageLabel} — this one keeps the default lettering.
+                </div>
+              )}
             </div>
           </button>
         );
@@ -88,8 +102,11 @@ export function CaptionPreview({
               ? "text-[10px]"
               : "text-[9px]"
         )}
-        style={
-          preset.style.box
+        style={{
+          // The real face, loaded through next/font — a preview in Arial
+          // claiming to be Anton is worse than no preview.
+          fontFamily: preset.previewFont,
+          ...(preset.style.box
             ? // A filled strip, so no stroke to imitate. The words sit on
               // it as one run rather than as separate chips, which is how
               // libass draws a boxed line.
@@ -98,8 +115,8 @@ export function CaptionPreview({
                 // Stand-in for the ASS outline, which is a stroke around
                 // glyphs rather than a drop shadow.
                 textShadow: `0 0 ${preset.style.outline_width}px #000, 0 1px 2px #000`,
-              }
-        }
+              }),
+        }}
       >
         {words.map((word, i) => {
           const active = i === activeIndex;
