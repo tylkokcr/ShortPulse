@@ -256,7 +256,15 @@ function PostState({
       {/* The honest answer to "why isn't my video public". An app that has
           not passed the platform's audit has its uploads forced private,
           and nothing in the API says so at the time. */}
-      {post.privacy !== "public" && <span className="text-white/40">{post.privacy}</span>}
+      {post.privacy === "draft" ? (
+        // TikTok takes a draft, not a post: it lands in the app's inbox
+        // for the user to caption and publish themselves. Saying "draft"
+        // alone reads as something went half-done, and there is no link
+        // to offer — the inbox exists only inside the phone app.
+        <span className="text-white/40">waiting in your TikTok inbox</span>
+      ) : (
+        post.privacy !== "public" && <span className="text-white/40">{post.privacy}</span>
+      )}
       {post.url && (
         <a
           href={post.url}

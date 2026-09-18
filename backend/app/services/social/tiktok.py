@@ -255,10 +255,13 @@ class TikTokPublisher:
 
         return PublishOutcome(
             platform_post_id=publish_id,
-            # There is no video to link to: it is sitting in the user's
-            # notifications waiting for them to finish it. Sending them to
-            # the inbox is the only honest destination.
-            url="https://www.tiktok.com/notifications",
+            # No link, because there is nowhere on the web to send them.
+            # The draft is in the TikTok app's inbox, which has no web
+            # route at all — tiktok.com/notifications, tried first, is a
+            # 404 for everyone. A link that always fails is worse than
+            # the absence of one, and the UI says where the video is
+            # instead.
+            url=None,
             # Nothing was published, so nothing has a visibility yet. The
             # user chooses it when they post from the draft, and claiming
             # the requested privacy here would be a lie the UI repeats.
