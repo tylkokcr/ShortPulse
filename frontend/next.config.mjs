@@ -1,3 +1,5 @@
+import createNextIntlPlugin from "next-intl/plugin";
+
 /** @type {import('next').NextConfig} */
 
 // Where this server proxies /api/* to. A host, not just a port: in a
@@ -28,4 +30,8 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// Points next-intl at i18n/request.ts, which is how a server component
+// gets the right catalogue without every page passing one down.
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
+
+export default withNextIntl(nextConfig);

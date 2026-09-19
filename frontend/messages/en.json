@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "title": "ShortPulse — Local AI Short-Form Video Agent",
+    "description": "Turn a topic or script into a ready-to-post vertical video. Script, voiceover, captions, visuals and music, assembled on your own machine — no subscription."
+  },
+  "nav": {
+    "library": "Library",
+    "connections": "Connections",
+    "source": "Source",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "accent": "Accent",
+    "language": "Language",
+    "creditsRemaining": "Credits remaining — click to top up"
+  }
+}

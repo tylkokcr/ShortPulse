@@ -1,5 +1,8 @@
 import type { MetadataRoute } from "next";
+import { routing } from "@/i18n/routing";
 import { siteUrl } from "@/lib/siteUrl";
+
+const PRIVATE = ["/library", "/connections", "/credits", "/project/", "/reset-password"];
 
 /**
  * What a crawler may read.
@@ -18,7 +21,16 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/api/", "/library", "/connections", "/credits", "/project/", "/reset-password"],
+      // Each private path in every language. A bare "/library" would
+      // leave /tr/library open, and those URLs are per-user with the
+      // landing page behind them for anyone signed out — four more
+      // addresses showing the same marketing copy is exactly the
+      // duplicate-content shape the sitemap is arranged to avoid.
+      disallow: PRIVATE.flatMap((path) =>
+        routing.locales.map((locale) =>
+          locale === routing.defaultLocale ? path : `/${locale}${path}`
+        )
+      ).concat("/api/"),
     },
     // Omitted rather than guessed on an install that has no public
     // address: a sitemap line pointing at localhost is worse than none.
