@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { FolderOpen, Loader2, Plus } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 import { deleteProject, listProjects } from "@/lib/api";
 import type { Project } from "@/lib/types";
 import { Button } from "@/components/ui/Button";

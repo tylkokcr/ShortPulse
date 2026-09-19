@@ -1,10 +1,10 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Check, Coins, Loader2, TriangleAlert } from "lucide-react";
 import clsx from "clsx";
+import { Link } from "@/i18n/navigation";
 import { getCredits, getPublicPricing, startCheckout } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
 import type { CreditPack } from "@/lib/types";

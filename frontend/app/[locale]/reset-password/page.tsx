@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { KeyRound } from "lucide-react";
+import { useRouter } from "@/i18n/navigation";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { GridBackdrop } from "@/components/ui/GridBackdrop";
 import { Card } from "@/components/ui/Card";

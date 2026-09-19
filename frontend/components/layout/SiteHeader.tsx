@@ -1,9 +1,11 @@
-import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Github, Library } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 import { Logo } from "@/components/ui/Logo";
 import { AccentSwitcher } from "@/components/ui/AccentSwitcher";
 import { ConnectionsLink } from "@/components/layout/ConnectionsLink";
 import { MobileNav } from "@/components/layout/MobileNav";
+import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 
 const REPO_URL = "https://github.com/tylkokcr/ShortPulse";
 
@@ -29,6 +31,8 @@ export function SiteHeader({
    *  offering one to a signed-out visitor leads straight to a login wall. */
   showLibrary?: boolean;
 }) {
+  const t = useTranslations("nav");
+
   return (
     // `relative` so the mobile panel can hang off the bar rather than off
     // the page, which is what keeps it under the header when the page is
@@ -43,7 +47,7 @@ export function SiteHeader({
             <>
               <Link href="/library" className={NAV_LINK}>
                 <Library size={16} />
-                Library
+                {t("library")}
               </Link>
               <ConnectionsLink className={NAV_LINK} />
             </>
@@ -55,11 +59,12 @@ export function SiteHeader({
             className={NAV_LINK}
           >
             <Github size={16} />
-            Source
+            {t("source")}
           </a>
           {/* Hidden on small screens: five dots is a lot of tap targets to
               spend on a phone header, and the choice is a preference rather
               than a control anyone needs on the way to a render. */}
+          <LanguageSwitcher className="hidden sm:flex" />
           <AccentSwitcher className="hidden md:flex" />
           {right}
           <MobileNav showLibrary={showLibrary} />

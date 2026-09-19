@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Github, Library, Menu, Share2, X } from "lucide-react";
 import clsx from "clsx";
+import { useTranslations } from "next-intl";
 import { AccentSwitcher } from "@/components/ui/AccentSwitcher";
+import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
+import { Link } from "@/i18n/navigation";
 import { getSocialPlatforms } from "@/lib/api";
 
 /**
@@ -23,6 +25,7 @@ import { getSocialPlatforms } from "@/lib/api";
 export function MobileNav({ showLibrary }: { showLibrary: boolean }) {
   const [open, setOpen] = useState(false);
   const [publishes, setPublishes] = useState(false);
+  const t = useTranslations("nav");
 
   useEffect(() => {
     if (!showLibrary) return;
@@ -47,7 +50,7 @@ export function MobileNav({ showLibrary }: { showLibrary: boolean }) {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        aria-label={open ? "Close menu" : "Open menu"}
+        aria-label={open ? t("closeMenu") : t("openMenu")}
         aria-expanded={open}
         // 40px square: the smallest target that is still comfortable with
         // a thumb, and the same height as the account bar beside it.
@@ -79,7 +82,7 @@ export function MobileNav({ showLibrary }: { showLibrary: boolean }) {
                 <MobileLink
                   href="/library"
                   icon={Library}
-                  label="Library"
+                  label={t("library")}
                   onNavigate={() => setOpen(false)}
                 />
               )}
@@ -87,7 +90,7 @@ export function MobileNav({ showLibrary }: { showLibrary: boolean }) {
                 <MobileLink
                   href="/connections"
                   icon={Share2}
-                  label="Connections"
+                  label={t("connections")}
                   onNavigate={() => setOpen(false)}
                 />
               )}
@@ -98,10 +101,14 @@ export function MobileNav({ showLibrary }: { showLibrary: boolean }) {
                 className={MOBILE_LINK}
               >
                 <Github size={17} className="shrink-0 text-white/40" />
-                Source
+                {t("source")}
               </a>
-              <div className="flex items-center justify-between border-t border-border/60 py-4">
-                <span className="text-sm text-white/40">Accent</span>
+              <div className="flex items-center justify-between border-b border-border/60 py-3">
+                <span className="text-sm text-white/40">{t("language")}</span>
+                <LanguageSwitcher />
+              </div>
+              <div className="flex items-center justify-between py-4">
+                <span className="text-sm text-white/40">{t("accent")}</span>
                 <AccentSwitcher />
               </div>
             </div>

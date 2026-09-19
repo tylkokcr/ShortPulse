@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Loader2, Play, Trash2, TriangleAlert, Upload, Wand2 } from "lucide-react";
 import clsx from "clsx";
+import { Link } from "@/i18n/navigation";
 import { getMediaUrl } from "@/lib/api";
 import type { Project } from "@/lib/types";
 import { Badge } from "@/components/ui/Badge";

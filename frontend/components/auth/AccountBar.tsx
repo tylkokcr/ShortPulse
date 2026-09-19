@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { Coins, LogOut } from "lucide-react";
 import { getCredits } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
@@ -18,6 +19,7 @@ import { useAuth } from "./AuthProvider";
 export function AccountBar() {
   const { session, enabled, signOut } = useAuth();
   const { credits, setCredits } = useShortPulseStore();
+  const t = useTranslations("nav");
 
   useEffect(() => {
     if (!enabled || !session) return;
@@ -39,7 +41,7 @@ export function AccountBar() {
             pricing section, which signed-in users never see. */}
         <Link
           href="/credits"
-          title="Credits remaining — click to top up"
+          title={t("creditsRemaining")}
           className="flex items-center gap-1.5 text-white/70 transition-colors hover:text-accent"
         >
           <Coins size={13} />
@@ -50,7 +52,7 @@ export function AccountBar() {
           className="flex items-center gap-1 text-white/40 hover:text-white/80"
         >
           <LogOut size={13} />
-          Sign out
+          {t("signOut")}
         </button>
       </div>
     </div>

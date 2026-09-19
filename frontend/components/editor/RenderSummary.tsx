@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { Clock, Coins, Film, Layers, Ratio, TriangleAlert } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 import { useShortPulseStore } from "@/lib/store";
 import type { AspectRatio, VideoLength, VisualMode } from "@/lib/types";
 import { Card } from "@/components/ui/Card";

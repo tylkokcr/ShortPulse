@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { Link, useRouter } from "@/i18n/navigation";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { GridBackdrop } from "@/components/ui/GridBackdrop";
 import { LoginPanel } from "@/components/auth/LoginScreen";

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Share2 } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 import { getSocialPlatforms } from "@/lib/api";
 
 /**

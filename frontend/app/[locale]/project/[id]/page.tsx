@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { use, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ListTree, Pencil } from "lucide-react";
 import clsx from "clsx";
+import { Link } from "@/i18n/navigation";
 import { useShortPulseStore } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
 import { SiteHeader } from "@/components/layout/SiteHeader";

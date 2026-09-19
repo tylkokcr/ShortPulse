@@ -14,5 +14,38 @@
     "accent": "Accent",
     "language": "Language",
     "creditsRemaining": "Credits remaining — click to top up"
+  },
+  "howItWorks": {
+    "eyebrow": "How it works",
+    "title": "Three decisions, then it runs itself",
+    "topic": {
+      "title": "Give it a topic",
+      "detail": "One line is enough — the LLM writes the scene breakdown, the hook and the call to action. Already have a script? Paste it and the AI only splits it into scenes."
+    },
+    "look": {
+      "title": "Pick how it looks",
+      "detail": "Language, length, visual engine and caption style. The exact credit cost and an estimated render time are shown before you commit to anything."
+    },
+    "watch": {
+      "title": "Watch it build, then post it",
+      "detail": "Progress streams live over a WebSocket, stage by stage. You get a 1080x1920 MP4 with burned-in captions and ducked music — yours to download, no watermark."
+    }
+  },
+  "builtOn": {
+    "title": "Built on open source you can audit",
+    "roles": {
+      "ollama": "local LLM runtime",
+      "llama3": "scene scripting",
+      "piper": "neural voiceover",
+      "whisper": "word-level timing",
+      "sdxl": "image generation",
+      "realvis": "photoreal stills",
+      "ltx": "text-to-video",
+      "ffmpeg": "assembly & encoding",
+      "libass": "burned-in captions",
+      "pexels": "stock footage",
+      "fastapi": "render API",
+      "next": "this interface"
+    }
   }
 }

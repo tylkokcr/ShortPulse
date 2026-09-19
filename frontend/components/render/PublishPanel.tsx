@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import {
   AlertCircle,
   CheckCircle2,
@@ -17,6 +16,7 @@ import {
   getSocialConnections,
   publishProject,
 } from "@/lib/api";
+import { Link } from "@/i18n/navigation";
 import type { Project, SocialConnection, SocialPost } from "@/lib/types";
 import { PLATFORM_ICONS as ICONS, PLATFORM_LABELS as LABELS } from "@/lib/platforms";
 import { Button } from "@/components/ui/Button";

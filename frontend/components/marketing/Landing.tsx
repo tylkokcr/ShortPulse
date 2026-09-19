@@ -16,7 +16,7 @@ import {
   Github,
   Sparkles,
 } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { LogoMark } from "@/components/ui/Logo";
 import { useSignupCredits } from "@/lib/signupCredits";

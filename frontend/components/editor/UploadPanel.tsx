@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ArrowRight, Captions, FileVideo, TriangleAlert, Upload } from "lucide-react";
 import clsx from "clsx";
+import { useRouter } from "@/i18n/navigation";
 import { InsufficientCreditsError, uploadVideo } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
 import { LANGUAGE_OPTIONS } from "@/lib/types";

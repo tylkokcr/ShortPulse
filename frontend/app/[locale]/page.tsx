@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   FileText,
   Palette,
@@ -15,6 +13,7 @@ import {
   Upload,
 } from "lucide-react";
 import clsx from "clsx";
+import { Link, useRouter } from "@/i18n/navigation";
 import { createProject, InsufficientCreditsError } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
 import { Button } from "@/components/ui/Button";
