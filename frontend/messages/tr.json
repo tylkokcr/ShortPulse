@@ -258,5 +258,61 @@
       "timing": "Sahne başına süre, doğrudan kelime düzeyindeki deşifreden",
       "credits": "Görüntü künyeleri senin için toplanır, kopyalama düğmesiyle"
     }
+  },
+  "login": {
+    "pageTitle": "<accent>ShortPulse</accent>'a giriş yap",
+    "pageSub": "Şifre, Google ya da e-postana gelen bir bağlantı — üçü de aynı hesaba açılıyor.",
+    "heading": {
+      "signup": "{credits} ücretsiz krediyle başla",
+      "signin": "Tekrar hoş geldin"
+    },
+    "sub": {
+      "signup": "Kart yok, abonelik yok. Nasıl giriş yaparsan yap tek hesap.",
+      "signin": "Nasıl kaydolduysan ol, tek hesap."
+    },
+    "emailPlaceholder": "sen@ornek.com",
+    "passwordPlaceholder": "Şifre",
+    "passwordPlaceholderNew": "Bir şifre seç — en az 8 karakter",
+    "createAccount": "Hesap oluştur",
+    "toSignup": "Yeni misin? Hesap oluştur",
+    "toSignin": "Zaten hesabın var mı? Giriş yap",
+    "forgotPassword": "Şifreni mi unuttun?",
+    "emailLink": "Bunun yerine bana giriş bağlantısı gönder",
+    "continueWith": "{provider} ile devam et",
+    "opening": "{provider} açılıyor...",
+    "selfHost": "Kendin çalıştırmayı mı tercih edersin? <repo>Depoyu klonla</repo> — MIT lisanslı, hesap gerekmiyor.",
+    "busy": {
+      "creating": "Hesap oluşturuluyor...",
+      "signingIn": "Giriş yapılıyor...",
+      "sending": "Gönderiliyor..."
+    },
+    "sent": {
+      "title": "Gelen kutunu kontrol et",
+      "link": "<address></address> adresine bir giriş bağlantısı gönderdik. Bağlantı bu sayfayı girişi yapılmış olarak açar.",
+      "confirm": "<address></address> adresine bir doğrulama bağlantısı gönderdik. Bir kez tıkla, hesap hazır olsun — sonrasında şifren burada çalışır.",
+      "reset": "<address></address> adresine ait bir hesap varsa, yeni şifre belirleme bağlantısı yolda. Bağlantı şifreni seçeceğin bir sayfayı açar.",
+      "spam": "Bir dakika içinde gelmezse spam klasörüne bak.",
+      "back": "Girişe dön"
+    },
+    "errors": {
+      "rateLimit": "Kısa sürede çok fazla giriş e-postası istendi. Gelen kutunu — spam dahil — zaten gönderdiğimiz bir bağlantı için kontrol et ya da bir saat sonra tekrar dene.",
+      "invalidEmail": "Bu geçerli bir e-posta adresine benzemiyor.",
+      "signupsClosed": "Bu adresin henüz kaydolmasına izin verilmiyor.",
+      "providerOff": "Bu giriş yöntemi şu anda kullanılamıyor. Bunun yerine e-posta adresini kullan.",
+      "badCredentials": "Bu e-posta ve şifre eşleşmiyor. Şimdiye kadar yalnızca Google ya da giriş bağlantısıyla girdiysen henüz bir şifren yok — belirlemek için “Şifreni mi unuttun?” bağlantısını kullan.",
+      "alreadyRegistered": "Bu adresle zaten bir hesap var. Bunun yerine giriş yap.",
+      "passwordShort": "Şifreler en az 8 karakter olmalı.",
+      "unconfirmed": "Önce e-posta adresini doğrula — gönderdiğimiz bağlantı için gelen kutuna bak.",
+      "samePassword": "Bu zaten kullandığın şifre. Farklı birini seç.",
+      "emailFirst": "Önce e-posta adresini yaz.",
+      "emailFirstReset": "Önce e-posta adresini yaz, sonra sıfırlama bağlantısı iste."
+    },
+    "linkErrors": {
+      "expired": "Bu giriş bağlantısının süresi dolmuş ya da zaten kullanılmış — bağlantılar tek seferlik çalışır ve bazı e-posta sağlayıcıları tarama için bağlantıları açar. Kendine yenisini gönder.",
+      "noEmail": "Bu hesap bizimle bir e-posta adresi paylaşmadı, oysa seni tanımak için buna ihtiyacımız var. Bunun yerine aşağıdan e-postanla giriş yap.",
+      "cancelled": "Giriş iptal edildi. Hiçbir şey olmadı — istediğin zaman tekrar dene.",
+      "stale": "Bu giriş bağlantısı artık geçerli değil. Kendine yenisini gönder.",
+      "generic": "Bu giriş bağlantısı çalışmadı. Kendine yenisini gönder."
+    }
   }
 }

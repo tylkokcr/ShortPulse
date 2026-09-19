@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Mail, ArrowRight } from "lucide-react";
 import clsx from "clsx";
+import { useTranslations } from "next-intl";
 import { supabase } from "@/lib/supabase";
 import {
   oauthProviders,
@@ -16,56 +17,40 @@ import { GoogleIcon, FacebookIcon } from "@/components/auth/ProviderIcons";
 import { useSignupCredits } from "@/lib/signupCredits";
 
 /**
- * Supabase's auth errors are written for developers. Rewrite the ones a
- * user can actually act on; pass anything else through rather than
- * inventing a friendlier message for a problem we haven't identified.
+ * Supabase's auth errors are written for developers. Map the ones a user
+ * can actually act on to a catalogue key; return null for anything else,
+ * and the caller shows Supabase's own words rather than inventing a
+ * friendlier message for a problem we haven't identified.
+ *
+ * Keys rather than sentences because this screen speaks four languages —
+ * and because the untranslated fallback then stays visibly untranslated,
+ * which is the honest signal that we did not recognise the error.
  */
-function explain(message: string): string {
+function explainKey(message: string): string | null {
   const text = message.toLowerCase();
-  if (text.includes("rate limit")) {
-    return (
-      "Too many sign-in emails in a short time. Check your inbox — including spam — " +
-      "for a link we already sent, or try again in an hour."
-    );
-  }
-  if (text.includes("invalid") && text.includes("email")) {
-    return "That doesn't look like a valid email address.";
-  }
-  if (text.includes("signups not allowed") || text.includes("signup is disabled")) {
-    return "This address isn't allowed to sign up yet.";
-  }
+  if (text.includes("rate limit")) return "errors.rateLimit";
+  if (text.includes("invalid") && text.includes("email")) return "errors.invalidEmail";
+  if (text.includes("signups not allowed") || text.includes("signup is disabled"))
+    return "errors.signupsClosed";
   // A provider that is listed in NEXT_PUBLIC_OAUTH_PROVIDERS but was never
   // switched on in the Supabase dashboard. A user can do nothing about it,
   // so point them at the door that does open rather than at the setting.
-  if (text.includes("provider is not enabled") || text.includes("unsupported provider")) {
-    return "That sign-in method isn't available right now. Use your email address instead.";
-  }
+  if (text.includes("provider is not enabled") || text.includes("unsupported provider"))
+    return "errors.providerOff";
   // The single most likely wrong guess here is not a mistyped password: it
   // is an account that has never had one. Every account made before this
   // screen existed was created by a sign-in link or by Google, and Supabase
   // reports "no password on file" and "wrong password" with the same
   // string. Naming both readings costs one sentence and saves the user
   // from retyping a password they never chose.
-  if (text.includes("invalid login credentials")) {
-    return (
-      "That email and password don't match. If you've only ever signed in with " +
-      "Google or a sign-in link, you don't have a password yet — use " +
-      "“Forgot your password?” to set one."
-    );
-  }
-  if (text.includes("already registered") || text.includes("user already exists")) {
-    return "There's already an account with that address. Sign in instead.";
-  }
-  if (text.includes("password should be") || text.includes("password is too short")) {
-    return "Passwords need to be at least 8 characters.";
-  }
-  if (text.includes("email not confirmed")) {
-    return "Confirm your email address first — check your inbox for the link we sent.";
-  }
-  if (text.includes("same password")) {
-    return "That's the password you already had. Pick a different one.";
-  }
-  return message;
+  if (text.includes("invalid login credentials")) return "errors.badCredentials";
+  if (text.includes("already registered") || text.includes("user already exists"))
+    return "errors.alreadyRegistered";
+  if (text.includes("password should be") || text.includes("password is too short"))
+    return "errors.passwordShort";
+  if (text.includes("email not confirmed")) return "errors.unconfirmed";
+  if (text.includes("same password")) return "errors.samePassword";
+  return null;
 }
 
 /**
@@ -80,34 +65,21 @@ function explain(message: string): string {
  * OAuth failures land in exactly the same place, for the same reason, so
  * this function covers both — the provider ones were free.
  */
-function explainLinkError(code: string, description: string): string {
-  if (code === "otp_expired") {
-    return (
-      "That sign-in link has expired or was already used — they work once, and " +
-      "some mail providers open links to scan them. Send yourself a fresh one."
-    );
-  }
+function explainLinkErrorKey(code: string, description: string): string | null {
+  if (code === "otp_expired") return "linkErrors.expired";
   // Facebook accounts registered with a phone number have no email to
   // hand over, and Supabase needs one to key the account on. The user
   // reads this as "Facebook didn't work" and needs to be told the way in
   // that does, not the reason it didn't.
-  if (description.toLowerCase().includes("email")) {
-    if (description.toLowerCase().includes("external provider")) {
-      return (
-        "That account didn't share an email address with us, and we need one to " +
-        "identify you. Sign in with your email below instead."
-      );
-    }
-  }
+  const detail = description.toLowerCase();
+  if (detail.includes("email") && detail.includes("external provider")) return "linkErrors.noEmail";
   if (code === "access_denied") {
     // Also what a cancelled provider consent screen reports. Saying the
     // link is invalid to someone who simply pressed "Cancel" would be
     // describing a failure that didn't happen.
-    return description.toLowerCase().includes("denied")
-      ? "Sign-in was cancelled. Nothing happened — try again whenever you like."
-      : "That sign-in link is no longer valid. Send yourself a fresh one.";
+    return detail.includes("denied") ? "linkErrors.cancelled" : "linkErrors.stale";
   }
-  return description || "That sign-in link didn't work. Send yourself a fresh one.";
+  return description ? null : "linkErrors.generic";
 }
 
 /**
@@ -118,7 +90,7 @@ function explainLinkError(code: string, description: string): string {
  * and leaves everything else alone. The query string is checked as well
  * because the PKCE flow reports there instead.
  */
-function readLinkError(): string | null {
+function readLinkError(): { key: string | null; raw: string } | null {
   if (typeof window === "undefined") return null;
   for (const raw of [window.location.hash.replace(/^#/, ""), window.location.search.replace(/^\?/, "")]) {
     const params = new URLSearchParams(raw);
@@ -127,10 +99,11 @@ function readLinkError(): string | null {
     // Clear it, so a refresh doesn't re-accuse a link the user has since
     // replaced, and so the address bar stops showing raw error codes.
     window.history.replaceState(null, "", window.location.pathname);
-    return explainLinkError(
-      params.get("error_code") || error,
-      params.get("error_description")?.replace(/\+/g, " ") ?? ""
-    );
+    const description = params.get("error_description")?.replace(/\+/g, " ") ?? "";
+    return {
+      key: explainLinkErrorKey(params.get("error_code") || error, description),
+      raw: description,
+    };
   }
   return null;
 }
@@ -165,7 +138,20 @@ type Busy = "password" | "link" | "reset" | null;
 type Sent = { kind: "link" | "confirm" | "reset"; address: string } | null;
 
 export function LoginPanel({ className }: { className?: string }) {
+  const t = useTranslations("login");
   const signupCredits = useSignupCredits();
+
+  // Both helpers end the same way: a key we recognised becomes a sentence
+  // in the reader's language, and anything else stays in Supabase's own
+  // words. Showing English there is deliberate — an untranslated message
+  // is the visible sign that we did not recognise the error, which is
+  // more use than a smooth translation of the wrong thing.
+  const fromSupabase = (message: string) => {
+    const key = explainKey(message);
+    return key ? t(key) : message;
+  };
+  const fromLink = (failure: { key: string | null; raw: string }) =>
+    failure.key ? t(failure.key) : failure.raw;
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -182,7 +168,7 @@ export function LoginPanel({ className }: { className?: string }) {
   // reports it failing.
   useEffect(() => {
     const failure = readLinkError();
-    if (failure) setError(failure);
+    if (failure) setError(fromLink(failure));
   }, []);
 
   async function startProvider(provider: OAuthProvider) {
@@ -194,7 +180,7 @@ export function LoginPanel({ className }: { className?: string }) {
       // instead of the thing they were trying to reach.
       await signInWithProvider(provider, window.location.href);
     } catch (err) {
-      setError(explain(err instanceof Error ? err.message : String(err)));
+      setError(fromSupabase(err instanceof Error ? err.message : String(err)));
       setRedirecting(null);
     }
   }
@@ -224,7 +210,7 @@ export function LoginPanel({ className }: { className?: string }) {
         options: { emailRedirectTo: window.location.origin },
       });
       if (signUpError) {
-        setError(explain(signUpError.message));
+        setError(fromSupabase(signUpError.message));
         setBusy(null);
         return;
       }
@@ -237,7 +223,7 @@ export function LoginPanel({ className }: { className?: string }) {
       email: address,
       password,
     });
-    if (signInError) setError(explain(signInError.message));
+    if (signInError) setError(fromSupabase(signInError.message));
     setBusy(null);
   }
 
@@ -251,7 +237,7 @@ export function LoginPanel({ className }: { className?: string }) {
     if (!supabase) return;
     const address = email.trim();
     if (!address) {
-      setError("Type your email address first.");
+      setError(t("errors.emailFirst"));
       return;
     }
 
@@ -263,7 +249,7 @@ export function LoginPanel({ className }: { className?: string }) {
     });
 
     if (sendError) {
-      setError(explain(sendError.message));
+      setError(fromSupabase(sendError.message));
       setBusy(null);
       return;
     }
@@ -284,7 +270,7 @@ export function LoginPanel({ className }: { className?: string }) {
     if (!supabase) return;
     const address = email.trim();
     if (!address) {
-      setError("Type your email address first, then ask for a reset link.");
+      setError(t("errors.emailFirstReset"));
       return;
     }
 
@@ -295,7 +281,7 @@ export function LoginPanel({ className }: { className?: string }) {
     });
 
     if (resetError) {
-      setError(explain(resetError.message));
+      setError(fromSupabase(resetError.message));
       setBusy(null);
       return;
     }
@@ -315,50 +301,47 @@ export function LoginPanel({ className }: { className?: string }) {
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-sm font-medium text-white">
             <Mail size={16} className="text-accent" />
-            Check your inbox
+            {t("sent.title")}
           </div>
           <p className="text-sm text-white/50">
             {sent.kind === "link" && (
-              <>
-                We sent a sign-in link to <span className="text-white/80">{sent.address}</span>. It
-                opens this page already signed in.
-              </>
+              t.rich("sent.link", {
+                address: () => <span className="text-white/80">{sent.address}</span>,
+              })
             )}
             {sent.kind === "confirm" && (
-              <>
-                We sent a confirmation link to <span className="text-white/80">{sent.address}</span>.
-                Click it once and the account is ready — after that your password works here.
-              </>
+              t.rich("sent.confirm", {
+                address: () => <span className="text-white/80">{sent.address}</span>,
+              })
             )}
             {/* Not "we sent you an email": Supabase answers a reset the same
                 way whether or not the address has an account, and saying
                 otherwise would turn this form into a way to find out who has
                 signed up. */}
             {sent.kind === "reset" && (
-              <>
-                If <span className="text-white/80">{sent.address}</span> has an account, a link to
-                set a new password is on its way. It opens a page where you choose one.
-              </>
+              t.rich("sent.reset", {
+                address: () => <span className="text-white/80">{sent.address}</span>,
+              })
             )}{" "}
-            If it isn&apos;t there in a minute, check spam.
+            {t("sent.spam")}
           </p>
           <button
             onClick={() => setSent(null)}
             className="self-start text-xs text-white/40 underline underline-offset-2 hover:text-white/70"
           >
-            Back to sign in
+            {t("sent.back")}
           </button>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
           <div>
             <h2 className="text-base font-semibold text-white">
-              {mode === "signup" ? `Start with ${signupCredits} free credits` : "Welcome back"}
+              {mode === "signup" ? t("heading.signup", { credits: signupCredits }) : t("heading.signin")}
             </h2>
             <p className="mt-1 text-sm text-white/50">
               {mode === "signup"
-                ? "No card, no subscription. One account, however you sign in."
-                : "One account, however you signed up."}
+                ? t("sub.signup")
+                : t("sub.signin")}
             </p>
           </div>
 
@@ -376,9 +359,11 @@ export function LoginPanel({ className }: { className?: string }) {
                     className="w-full"
                   >
                     <Icon size={17} />
+                    {/* The provider's own name is a brand and stays as it
+                        is; only the verb around it is language. */}
                     {redirecting === provider
-                      ? `Opening ${PROVIDER_LABELS[provider]}...`
-                      : `Continue with ${PROVIDER_LABELS[provider]}`}
+                      ? t("opening", { provider: PROVIDER_LABELS[provider] })
+                      : t("continueWith", { provider: PROVIDER_LABELS[provider] })}
                   </Button>
                 );
               })}
@@ -408,7 +393,7 @@ export function LoginPanel({ className }: { className?: string }) {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder={t("emailPlaceholder")}
               className="rounded-lg border border-border bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-accent focus:outline-none"
             />
             <label className="sr-only" htmlFor="password">
@@ -425,7 +410,7 @@ export function LoginPanel({ className }: { className?: string }) {
               autoComplete={mode === "signup" ? "new-password" : "current-password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={mode === "signup" ? "Choose a password — 8 characters or more" : "Password"}
+              placeholder={mode === "signup" ? t("passwordPlaceholderNew") : t("passwordPlaceholder")}
               className="rounded-lg border border-border bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-accent focus:outline-none"
             />
             <Button
@@ -435,10 +420,10 @@ export function LoginPanel({ className }: { className?: string }) {
             >
               {busy === "password"
                 ? mode === "signup"
-                  ? "Creating account..."
-                  : "Signing in..."
+                  ? t("busy.creating")
+                  : t("busy.signingIn")
                 : mode === "signup"
-                  ? "Create account"
+                  ? t("createAccount")
                   : "Sign in"}
               {busy !== "password" && <ArrowRight size={16} />}
             </Button>
@@ -453,7 +438,7 @@ export function LoginPanel({ className }: { className?: string }) {
               }}
               className="underline underline-offset-2 hover:text-white/70"
             >
-              {mode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}
+              {mode === "signin" ? t("toSignup") : t("toSignin")}
             </button>
             {mode === "signin" && (
               <button
@@ -462,7 +447,7 @@ export function LoginPanel({ className }: { className?: string }) {
                 disabled={busy !== null}
                 className="underline underline-offset-2 hover:text-white/70 disabled:opacity-50"
               >
-                {busy === "reset" ? "Sending..." : "Forgot your password?"}
+                {busy === "reset" ? t("busy.sending") : t("forgotPassword")}
               </button>
             )}
           </div>
@@ -478,20 +463,22 @@ export function LoginPanel({ className }: { className?: string }) {
             disabled={busy !== null || redirecting !== null}
             className="self-start text-xs text-white/40 underline underline-offset-2 hover:text-white/70 disabled:opacity-50"
           >
-            {busy === "link" ? "Sending..." : "Email me a sign-in link instead"}
+            {busy === "link" ? t("busy.sending") : t("emailLink")}
           </button>
 
           <p className="text-xs text-white/30">
-            Prefer to run it yourself?{" "}
-            <a
-              href="https://github.com/tylkokcr/ShortPulse"
-              target="_blank"
-              rel="noreferrer"
-              className="underline underline-offset-2 hover:text-white/60"
-            >
-              Clone the repo
-            </a>{" "}
-            — MIT licensed, no account needed.
+            {t.rich("selfHost", {
+              repo: (chunks) => (
+                <a
+                  href="https://github.com/tylkokcr/ShortPulse"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-2 hover:text-white/60"
+                >
+                  {chunks}
+                </a>
+              ),
+            })}
           </p>
         </div>
       )}

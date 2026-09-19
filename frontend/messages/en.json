@@ -258,5 +258,61 @@
       "timing": "Per-scene timing, straight from the word-level transcript",
       "credits": "Footage credits collected for you, with a copy button"
     }
+  },
+  "login": {
+    "pageTitle": "Sign in to <accent>ShortPulse</accent>",
+    "pageSub": "A password, Google, or a link to your inbox — all three reach the same account.",
+    "heading": {
+      "signup": "Start with {credits} free credits",
+      "signin": "Welcome back"
+    },
+    "sub": {
+      "signup": "No card, no subscription. One account, however you sign in.",
+      "signin": "One account, however you signed up."
+    },
+    "emailPlaceholder": "you@example.com",
+    "passwordPlaceholder": "Password",
+    "passwordPlaceholderNew": "Choose a password — 8 characters or more",
+    "createAccount": "Create account",
+    "toSignup": "New here? Create an account",
+    "toSignin": "Already have an account? Sign in",
+    "forgotPassword": "Forgot your password?",
+    "emailLink": "Email me a sign-in link instead",
+    "continueWith": "Continue with {provider}",
+    "opening": "Opening {provider}...",
+    "selfHost": "Prefer to run it yourself? <repo>Clone the repo</repo> — MIT licensed, no account needed.",
+    "busy": {
+      "creating": "Creating account...",
+      "signingIn": "Signing in...",
+      "sending": "Sending..."
+    },
+    "sent": {
+      "title": "Check your inbox",
+      "link": "We sent a sign-in link to <address></address>. It opens this page already signed in.",
+      "confirm": "We sent a confirmation link to <address></address>. Click it once and the account is ready — after that your password works here.",
+      "reset": "If <address></address> has an account, a link to set a new password is on its way. It opens a page where you choose one.",
+      "spam": "If it isn't there in a minute, check spam.",
+      "back": "Back to sign in"
+    },
+    "errors": {
+      "rateLimit": "Too many sign-in emails in a short time. Check your inbox — including spam — for a link we already sent, or try again in an hour.",
+      "invalidEmail": "That doesn't look like a valid email address.",
+      "signupsClosed": "This address isn't allowed to sign up yet.",
+      "providerOff": "That sign-in method isn't available right now. Use your email address instead.",
+      "badCredentials": "That email and password don't match. If you've only ever signed in with Google or a sign-in link, you don't have a password yet — use “Forgot your password?” to set one.",
+      "alreadyRegistered": "There's already an account with that address. Sign in instead.",
+      "passwordShort": "Passwords need to be at least 8 characters.",
+      "unconfirmed": "Confirm your email address first — check your inbox for the link we sent.",
+      "samePassword": "That's the password you already had. Pick a different one.",
+      "emailFirst": "Type your email address first.",
+      "emailFirstReset": "Type your email address first, then ask for a reset link."
+    },
+    "linkErrors": {
+      "expired": "That sign-in link has expired or was already used — they work once, and some mail providers open links to scan them. Send yourself a fresh one.",
+      "noEmail": "That account didn't share an email address with us, and we need one to identify you. Sign in with your email below instead.",
+      "cancelled": "Sign-in was cancelled. Nothing happened — try again whenever you like.",
+      "stale": "That sign-in link is no longer valid. Send yourself a fresh one.",
+      "generic": "That sign-in link didn't work. Send yourself a fresh one."
+    }
   }
 }

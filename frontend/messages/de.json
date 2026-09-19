@@ -258,5 +258,61 @@
       "timing": "Timing pro Szene, direkt aus dem Transkript auf Wortebene",
       "credits": "Material-Credits für dich gesammelt, mit Kopierknopf"
     }
+  },
+  "login": {
+    "pageTitle": "Bei <accent>ShortPulse</accent> anmelden",
+    "pageSub": "Ein Passwort, Google oder ein Link in dein Postfach — alle drei führen zum selben Konto.",
+    "heading": {
+      "signup": "Starte mit {credits} Gratis-Credits",
+      "signin": "Willkommen zurück"
+    },
+    "sub": {
+      "signup": "Keine Karte, kein Abo. Ein Konto, egal wie du dich anmeldest.",
+      "signin": "Ein Konto, egal wie du dich registriert hast."
+    },
+    "emailPlaceholder": "du@beispiel.de",
+    "passwordPlaceholder": "Passwort",
+    "passwordPlaceholderNew": "Wähle ein Passwort — mindestens 8 Zeichen",
+    "createAccount": "Konto erstellen",
+    "toSignup": "Neu hier? Konto erstellen",
+    "toSignin": "Schon ein Konto? Anmelden",
+    "forgotPassword": "Passwort vergessen?",
+    "emailLink": "Schick mir stattdessen einen Anmeldelink",
+    "continueWith": "Weiter mit {provider}",
+    "opening": "{provider} wird geöffnet...",
+    "selfHost": "Lieber selbst betreiben? <repo>Repository klonen</repo> — MIT-lizenziert, kein Konto nötig.",
+    "busy": {
+      "creating": "Konto wird erstellt...",
+      "signingIn": "Anmeldung läuft...",
+      "sending": "Wird gesendet..."
+    },
+    "sent": {
+      "title": "Sieh in dein Postfach",
+      "link": "Wir haben einen Anmeldelink an <address></address> geschickt. Er öffnet diese Seite bereits angemeldet.",
+      "confirm": "Wir haben einen Bestätigungslink an <address></address> geschickt. Einmal anklicken, dann ist das Konto fertig — danach funktioniert dein Passwort hier.",
+      "reset": "Falls <address></address> ein Konto hat, ist ein Link zum Setzen eines neuen Passworts unterwegs. Er öffnet eine Seite, auf der du eines wählst.",
+      "spam": "Wenn er nach einer Minute nicht da ist, sieh im Spam nach.",
+      "back": "Zurück zur Anmeldung"
+    },
+    "errors": {
+      "rateLimit": "Zu viele Anmelde-E-Mails in kurzer Zeit. Sieh in deinem Postfach — auch im Spam — nach einem Link, den wir bereits geschickt haben, oder versuch es in einer Stunde erneut.",
+      "invalidEmail": "Das sieht nicht nach einer gültigen E-Mail-Adresse aus.",
+      "signupsClosed": "Diese Adresse darf sich noch nicht registrieren.",
+      "providerOff": "Diese Anmeldemethode ist gerade nicht verfügbar. Nutze stattdessen deine E-Mail-Adresse.",
+      "badCredentials": "E-Mail und Passwort passen nicht zusammen. Wenn du dich bisher nur mit Google oder einem Anmeldelink angemeldet hast, hast du noch kein Passwort — setze eines über „Passwort vergessen?“.",
+      "alreadyRegistered": "Mit dieser Adresse gibt es bereits ein Konto. Melde dich stattdessen an.",
+      "passwordShort": "Passwörter brauchen mindestens 8 Zeichen.",
+      "unconfirmed": "Bestätige zuerst deine E-Mail-Adresse — sieh im Postfach nach dem Link, den wir geschickt haben.",
+      "samePassword": "Das ist das Passwort, das du schon hattest. Wähle ein anderes.",
+      "emailFirst": "Gib zuerst deine E-Mail-Adresse ein.",
+      "emailFirstReset": "Gib zuerst deine E-Mail-Adresse ein und fordere dann einen Link zum Zurücksetzen an."
+    },
+    "linkErrors": {
+      "expired": "Dieser Anmeldelink ist abgelaufen oder wurde bereits verwendet — sie funktionieren einmal, und manche Mail-Anbieter öffnen Links zum Prüfen. Schick dir einen neuen.",
+      "noEmail": "Dieses Konto hat uns keine E-Mail-Adresse übermittelt, und wir brauchen eine, um dich zu identifizieren. Melde dich stattdessen unten mit deiner E-Mail an.",
+      "cancelled": "Die Anmeldung wurde abgebrochen. Es ist nichts passiert — versuch es, wann immer du magst, erneut.",
+      "stale": "Dieser Anmeldelink ist nicht mehr gültig. Schick dir einen neuen.",
+      "generic": "Dieser Anmeldelink hat nicht funktioniert. Schick dir einen neuen."
+    }
   }
 }

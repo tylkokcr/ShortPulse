@@ -258,5 +258,61 @@
       "timing": "Czas każdej sceny prosto z transkrypcji co do słowa",
       "credits": "Zebrane dla ciebie napisy końcowe do materiałów, z przyciskiem kopiowania"
     }
+  },
+  "login": {
+    "pageTitle": "Zaloguj się do <accent>ShortPulse</accent>",
+    "pageSub": "Hasło, Google albo link na twoją skrzynkę — wszystkie trzy prowadzą do tego samego konta.",
+    "heading": {
+      "signup": "Zacznij z {credits} darmowymi kredytami",
+      "signin": "Witaj ponownie"
+    },
+    "sub": {
+      "signup": "Bez karty, bez abonamentu. Jedno konto, niezależnie od sposobu logowania.",
+      "signin": "Jedno konto, niezależnie od tego, jak się zarejestrowałeś."
+    },
+    "emailPlaceholder": "ty@przyklad.pl",
+    "passwordPlaceholder": "Hasło",
+    "passwordPlaceholderNew": "Wybierz hasło — co najmniej 8 znaków",
+    "createAccount": "Załóż konto",
+    "toSignup": "Pierwszy raz? Załóż konto",
+    "toSignin": "Masz już konto? Zaloguj się",
+    "forgotPassword": "Nie pamiętasz hasła?",
+    "emailLink": "Wyślij mi zamiast tego link do logowania",
+    "continueWith": "Kontynuuj z {provider}",
+    "opening": "Otwieranie {provider}...",
+    "selfHost": "Wolisz uruchomić to samodzielnie? <repo>Sklonuj repozytorium</repo> — licencja MIT, konto niepotrzebne.",
+    "busy": {
+      "creating": "Tworzenie konta...",
+      "signingIn": "Logowanie...",
+      "sending": "Wysyłanie..."
+    },
+    "sent": {
+      "title": "Sprawdź skrzynkę",
+      "link": "Wysłaliśmy link do logowania na <address></address>. Otwiera tę stronę już zalogowaną.",
+      "confirm": "Wysłaliśmy link potwierdzający na <address></address>. Kliknij go raz i konto jest gotowe — od tej pory twoje hasło tu działa.",
+      "reset": "Jeśli <address></address> ma konto, link do ustawienia nowego hasła jest w drodze. Otwiera stronę, na której je wybierzesz.",
+      "spam": "Jeśli nie dotrze w ciągu minuty, sprawdź spam.",
+      "back": "Wróć do logowania"
+    },
+    "errors": {
+      "rateLimit": "Zbyt wiele e-maili logowania w krótkim czasie. Sprawdź skrzynkę — również spam — czy nie ma tam linku, który już wysłaliśmy, albo spróbuj za godzinę.",
+      "invalidEmail": "To nie wygląda na poprawny adres e-mail.",
+      "signupsClosed": "Ten adres nie może jeszcze założyć konta.",
+      "providerOff": "Ta metoda logowania jest teraz niedostępna. Użyj zamiast niej swojego adresu e-mail.",
+      "badCredentials": "Ten e-mail i hasło do siebie nie pasują. Jeśli logowałeś się dotąd tylko przez Google albo linkiem, nie masz jeszcze hasła — ustaw je przez „Nie pamiętasz hasła?”.",
+      "alreadyRegistered": "Konto z tym adresem już istnieje. Zaloguj się zamiast zakładać nowe.",
+      "passwordShort": "Hasło musi mieć co najmniej 8 znaków.",
+      "unconfirmed": "Najpierw potwierdź swój adres e-mail — sprawdź skrzynkę i kliknij wysłany link.",
+      "samePassword": "To hasło, które już miałeś. Wybierz inne.",
+      "emailFirst": "Najpierw wpisz swój adres e-mail.",
+      "emailFirstReset": "Najpierw wpisz adres e-mail, a potem poproś o link resetujący."
+    },
+    "linkErrors": {
+      "expired": "Ten link do logowania wygasł albo został już użyty — działają jednorazowo, a niektórzy dostawcy poczty otwierają linki, żeby je przeskanować. Wyślij sobie nowy.",
+      "noEmail": "To konto nie udostępniło nam adresu e-mail, a potrzebujemy go, żeby cię zidentyfikować. Zaloguj się zamiast tego poniżej swoim e-mailem.",
+      "cancelled": "Logowanie zostało anulowane. Nic się nie stało — spróbuj ponownie, kiedy zechcesz.",
+      "stale": "Ten link do logowania nie jest już ważny. Wyślij sobie nowy.",
+      "generic": "Ten link do logowania nie zadziałał. Wyślij sobie nowy."
+    }
   }
 }
