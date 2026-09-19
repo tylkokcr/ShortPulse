@@ -47,5 +47,130 @@
       "fastapi": "render API",
       "next": "this interface"
     }
+  },
+  "landing": {
+    "nav": {
+      "examples": "Examples",
+      "howItWorks": "How it works",
+      "pricing": "Pricing",
+      "faq": "FAQ"
+    },
+    "signIn": "Sign in",
+    "startCreating": "Start creating",
+    "viewSource": "View source",
+    "badge": "Open source · self-hosted or hosted",
+    "headline": "Turn a topic into a <accent>ready-to-post</accent> vertical video.",
+    "sub": "Script, voiceover, word-synced captions, visuals and music — assembled by a pipeline you can actually read. Pay per video or self-host it for nothing. No subscription either way.",
+    "stats": {
+      "languages": "languages",
+      "artStyles": "art styles",
+      "freeCredits": "free credits",
+      "licensed": "licensed"
+    },
+    "pipeline": {
+      "eyebrow": "Pipeline",
+      "title": "Five local stages, one finished .mp4",
+      "script": {
+        "title": "Script",
+        "detail": "Ollama (local) or OpenAI breaks your topic into scenes"
+      },
+      "voiceover": {
+        "title": "Voiceover",
+        "detail": "Piper voices, fully local, 9 languages"
+      },
+      "captions": {
+        "title": "Captions",
+        "detail": "faster-whisper times every word for karaoke-style burn-in"
+      },
+      "visuals": {
+        "title": "Visuals",
+        "detail": "AI stills or free stock footage; local text-to-video when you self-host"
+      },
+      "assemble": {
+        "title": "Assemble",
+        "detail": "FFmpeg mixes ducked music and renders the final .mp4"
+      }
+    },
+    "features": {
+      "eyebrow": "What's built in",
+      "title": "Everything short-form video needs, none of it gated",
+      "local": {
+        "title": "Runs on your machine",
+        "detail": "Self-host it and scripting, voiceover, transcription, visuals and rendering all execute locally — only stock footage touches the network. The hosted service trades that away deliberately: it has no GPU, so the script and the AI stills come from paid APIs."
+      },
+      "captions": {
+        "title": "Word-synced captions",
+        "detail": "faster-whisper gives word-level timing, so captions highlight one word at a time instead of dumping a full line."
+      },
+      "languages": {
+        "title": "9 languages",
+        "detail": "Script, voiceover and subtitles generate natively in English, Turkish, Spanish, German, Arabic and more."
+      },
+      "music": {
+        "title": "Auto-ducked music",
+        "detail": "Background music sidechain-ducks under the voiceover automatically — no manual mixing."
+      },
+      "stills": {
+        "title": "Photoreal stills or real footage",
+        "detail": "A RealVisXL still per scene with a Ken Burns move over it, or a matching Pexels clip. Self-hosting with a GPU adds local text-to-video, which this service doesn't run."
+      },
+      "outro": {
+        "title": "Branded outro card",
+        "detail": "An optional closing card rendered locally with Pillow, so the last frame is your call-to-action, not a diffusion guess."
+      }
+    },
+    "comparison": {
+      "eyebrow": "Why not just subscribe",
+      "title": "What changes when it's local and open",
+      "them": "Typical subscription tool",
+      "price": {
+        "label": "What you pay",
+        "us": "Per video, or nothing self-hosted",
+        "them": "$20–50/mo, posted or not"
+      },
+      "idle": {
+        "label": "Idle months",
+        "us": "Cost nothing",
+        "them": "Billed anyway"
+      },
+      "source": {
+        "label": "Source code",
+        "us": "MIT, fully readable",
+        "them": "Closed"
+      },
+      "where": {
+        "label": "Where it runs",
+        "us": "Your machine, or ours",
+        "them": "Their servers only"
+      },
+      "custom": {
+        "label": "Customization",
+        "us": "Edit prompts, swap models freely",
+        "them": "Locked to their pipeline"
+      },
+      "credits": {
+        "label": "Unused credits",
+        "us": "Never expire",
+        "them": "Reset every month"
+      }
+    },
+    "limits": {
+      "title": "Built to survive scrutiny",
+      "intro": "Marketing pages hide the rough edges. Ours are in the README, in full — here are a few of them, so you know before you clone it:",
+      "stills": "AI stills draw faces convincingly and extremities badly — hands, feet and full-body shots are where a frame falls apart, so the script engine keeps people in close and medium shots. Legible text is beyond the model entirely: it cannot write a label, a sign or a book cover.",
+      "aiVideo": "ai_video (local text-to-video) only runs where you supply the GPU. It is not available on this hosted service: renting one costs more per video than the mode is priced at, so we would rather not offer it than offer it badly.",
+      "llm": "Small local LLMs occasionally under-count scenes; the script engine retries and drops malformed ones rather than failing the render.",
+      "stock": "Stock footage is a closest-match, not a guarantee — Pexels clips can be loosely related to the scene."
+    },
+    "cta": {
+      "title": "Start with {credits} credits. No card, no trial timer.",
+      "sub": "That's enough to judge it by. Buy more only if it earns it — or clone the repo and run the whole thing on your own hardware for nothing.",
+      "readCode": "Read the code"
+    },
+    "footer": {
+      "tagline": "MIT licensed · No tracking, no dark patterns.",
+      "terms": "Terms",
+      "privacy": "Privacy"
+    }
   }
 }

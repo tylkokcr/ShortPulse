@@ -16,6 +16,7 @@ import {
   Github,
   Sparkles,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { LogoMark } from "@/components/ui/Logo";
@@ -40,96 +41,46 @@ import { Faq } from "./Faq";
 
 const REPO_URL = "https://github.com/tylkokcr/ShortPulse";
 
+// Fragment ids are addresses, not copy — they stay English in every
+// language so a link shared from the Turkish page still opens the
+// right section of the German one.
+const ANCHORS = {
+  examples: "#examples",
+  howItWorks: "#how-it-works",
+  pricing: "#pricing",
+  faq: "#faq",
+} as const;
+
 // Numbers a visitor reads as being about *this* service, so nothing here
 // may depend on how the deployment happens to be configured. "3 visual
 // engines" was true of the repository and false of the site the moment
 // ai_video was refused here — and this component is static, with no way
 // to know. Art styles are in the code and the same everywhere.
-const statsFor = (signupCredits: number) => [
-  { value: "9", label: "languages" },
-  { value: "6", label: "art styles" },
-  { value: String(signupCredits), label: "free credits" },
-  { value: "MIT", label: "licensed" },
-];
+// Only the icon and the order live here now. The number in each stat is
+// still code — "9" is tied to LANGUAGE_OPTIONS and a translator must not
+// be able to change it, which is exactly what putting it in a catalogue
+// would allow.
+const STAT_VALUES = (signupCredits: number) => ["9", "6", String(signupCredits), "MIT"];
+const STAT_KEYS = ["languages", "artStyles", "freeCredits", "licensed"] as const;
 
-const PIPELINE = [
-  { icon: FileText, title: "Script", detail: "Ollama (local) or OpenAI breaks your topic into scenes" },
-  // Nine, and it has to stay tied to LANGUAGE_OPTIONS: the stat above and
-  // the feature card below both say nine because that is what the picker
-  // offers, and this line said ten. Japanese is the one it was counting —
-  // deliberately dropped, because Piper ships no licensed voice for it.
-  { icon: Mic, title: "Voiceover", detail: "Piper voices, fully local, 9 languages" },
-  { icon: Captions, title: "Captions", detail: "faster-whisper times every word for karaoke-style burn-in" },
-  { icon: ImageIcon, title: "Visuals", detail: "AI stills or free stock footage; local text-to-video when you self-host" },
-  { icon: Film, title: "Assemble", detail: "FFmpeg mixes ducked music and renders the final .mp4" },
-];
+const PIPELINE_ICONS = [FileText, Mic, Captions, ImageIcon, Film];
+const PIPELINE_KEYS = ["script", "voiceover", "captions", "visuals", "assemble"] as const;
 
-const FEATURES = [
-  {
-    icon: Lock,
-    title: "Runs on your machine",
-    detail:
-      "Self-host it and scripting, voiceover, transcription, visuals and rendering all execute locally — only stock footage touches the network. The hosted service trades that away deliberately: it has no GPU, so the script and the AI stills come from paid APIs.",
-  },
-  {
-    icon: Captions,
-    title: "Word-synced captions",
-    detail: "faster-whisper gives word-level timing, so captions highlight one word at a time instead of dumping a full line.",
-  },
-  {
-    icon: Globe,
-    title: "9 languages",
-    detail: "Script, voiceover and subtitles generate natively in English, Turkish, Spanish, German, Arabic and more.",
-  },
-  {
-    icon: Music,
-    title: "Auto-ducked music",
-    detail: "Background music sidechain-ducks under the voiceover automatically — no manual mixing.",
-  },
-  {
-    icon: ImageIcon,
-    title: "Photoreal stills or real footage",
-    detail: "A RealVisXL still per scene with a Ken Burns move over it, or a matching Pexels clip. Self-hosting with a GPU adds local text-to-video, which this service doesn't run.",
-  },
-  {
-    icon: Sparkles,
-    title: "Branded outro card",
-    detail: "An optional closing card rendered locally with Pillow, so the last frame is your call-to-action, not a diffusion guess.",
-  },
-];
+const FEATURE_ICONS = [Lock, Captions, Globe, Music, ImageIcon, Sparkles];
+const FEATURE_KEYS = [
+  "local", "captions", "languages", "music", "stills", "outro",
+] as const;
 
-const COMPARISON = [
-  // "nothing", not "$0": this is our own price and the deployment charges
-  // euros, so a dollar sign here is the same defect 8a1d635 removed from
-  // the pricing cards. Worded rather than formatted because this table is
-  // static copy with no access to the server's currency — and free costs
-  // the same in every currency.
-  { label: "What you pay", us: "Per video, or nothing self-hosted", them: "$20–50/mo, posted or not" },
-  { label: "Idle months", us: "Cost nothing", them: "Billed anyway" },
-  { label: "Source code", us: "MIT, fully readable", them: "Closed" },
-  { label: "Where it runs", us: "Your machine, or ours", them: "Their servers only" },
-  { label: "Customization", us: "Edit prompts, swap models freely", them: "Locked to their pipeline" },
-  { label: "Unused credits", us: "Never expire", them: "Reset every month" },
-];
+const COMPARISON_KEYS = [
+  "price", "idle", "source", "where", "custom", "credits",
+] as const;
 
-const LIMITATIONS = [
-  // Rewritten against a side-by-side of both modes on the same topic
-  // rather than from memory. The old wording — "mangles faces, hands and
-  // any on-screen text, so it suits objects and scenery far better than
-  // people" — described local diffusion, and stopped being true when
-  // fast_hybrid moved to RealVisXL over an API: faces came back the
-  // strongest thing in the frame. Talking the paid mode down on the
-  // strength of an observation about a backend this service no longer
-  // runs is worse than saying nothing.
-  "AI stills draw faces convincingly and extremities badly — hands, feet and full-body shots are where a frame falls apart, so the script engine keeps people in close and medium shots. Legible text is beyond the model entirely: it cannot write a label, a sign or a book cover.",
-  "ai_video (local text-to-video) only runs where you supply the GPU. It is not available on this hosted service: renting one costs more per video than the mode is priced at, so we would rather not offer it than offer it badly.",
-  "Small local LLMs occasionally under-count scenes; the script engine retries and drops malformed ones rather than failing the render.",
-  "Stock footage is a closest-match, not a guarantee — Pexels clips can be loosely related to the scene.",
-];
+const LIMITATION_KEYS = ["stills", "aiVideo", "llm", "stock"] as const;
 
 export function Landing() {
   const signupCredits = useSignupCredits();
-  const STATS = statsFor(signupCredits);
+  const t = useTranslations("landing");
+  const statValues = STAT_VALUES(signupCredits);
 
   return (
     <div className="relative min-h-screen">
@@ -138,23 +89,18 @@ export function Landing() {
       <SiteHeader
         right={
           <>
-            {[
-              { href: "#examples", label: "Examples" },
-              { href: "#how-it-works", label: "How it works" },
-              { href: "#pricing", label: "Pricing" },
-              { href: "#faq", label: "FAQ" },
-            ].map((link) => (
+            {(["examples", "howItWorks", "pricing", "faq"] as const).map((key) => (
               <a
-                key={link.href}
-                href={link.href}
+                key={key}
+                href={ANCHORS[key]}
                 className="hidden text-sm text-white/50 transition-colors hover:text-white md:block"
               >
-                {link.label}
+                {t(`nav.${key}`)}
               </a>
             ))}
             <Link href="/login">
               <Button variant="secondary" size="sm">
-                Sign in
+                {t("signIn")}
               </Button>
             </Link>
           </>
@@ -165,28 +111,32 @@ export function Landing() {
       <section className="mx-auto grid max-w-6xl gap-12 px-6 pb-20 pt-16 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:pt-24">
         <div className="flex flex-col gap-6">
           <Badge tone="accent" className="w-fit">
-            Open source · self-hosted or hosted
+            {t("badge")}
           </Badge>
           <WordReveal className="text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl">
-            Turn a topic into a <span className="text-accent-emphasis">ready-to-post</span> vertical
-            video.
+            {/* Rich rather than two strings: which words carry the accent
+                colour is a property of the sentence, and a language that
+                orders it differently has to be able to move the emphasis
+                with the phrase. */}
+            {t.rich("headline", {
+              accent: (chunks) => <span className="text-accent-emphasis">{chunks}</span>,
+            })}
           </WordReveal>
           <p className="max-w-lg text-lg leading-relaxed text-white/60">
-            Script, voiceover, word-synced captions, visuals and music — assembled by a pipeline you
-            can actually read. Pay per video or self-host it for nothing. No subscription either way.
+            {t("sub")}
           </p>
 
           {/* Two across on a phone: four columns leaves ~73px each, which
               wraps "visual engines" onto two lines and makes the row read
               as noise rather than as four facts. */}
           <dl className="grid grid-cols-2 gap-4 border-t border-border pt-6 sm:grid-cols-4">
-            {STATS.map((stat) => (
-              <div key={stat.label} className="flex flex-col gap-1">
-                <dt className="sr-only">{stat.label}</dt>
+            {STAT_KEYS.map((key, i) => (
+              <div key={key} className="flex flex-col gap-1">
+                <dt className="sr-only">{t(`stats.${key}`)}</dt>
                 <dd className="font-mono text-xl font-medium text-white sm:text-2xl">
-                  <CountUp value={stat.value} />
+                  <CountUp value={statValues[i]} />
                 </dd>
-                <span className="text-xs text-white/40">{stat.label}</span>
+                <span className="text-xs text-white/40">{t(`stats.${key}`)}</span>
               </div>
             ))}
           </dl>
@@ -194,13 +144,13 @@ export function Landing() {
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <Link href="/login">
               <Button variant="gradient" size="lg">
-                Start creating
+                {t("startCreating")}
               </Button>
             </Link>
             <a href={REPO_URL} target="_blank" rel="noreferrer">
               <Button variant="outline" size="lg">
                 <Github size={18} />
-                View source
+                {t("viewSource")}
               </Button>
             </a>
           </div>
@@ -242,20 +192,23 @@ export function Landing() {
       {/* Pipeline */}
       <Reveal>
         <section className="mx-auto max-w-6xl px-6 py-16">
-          <SectionHeading eyebrow="Pipeline" title="Five local stages, one finished .mp4" />
+          <SectionHeading eyebrow={t("pipeline.eyebrow")} title={t("pipeline.title")} />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {PIPELINE.map((step, i) => (
-              <Reveal key={step.title} delay={i * 70} className="h-full">
+            {PIPELINE_KEYS.map((key, i) => {
+              const Icon = PIPELINE_ICONS[i];
+              return (
+              <Reveal key={key} delay={i * 70} className="h-full">
                 <Card interactive className="flex h-full flex-col gap-3 bg-grain">
                   <div className="flex items-center justify-between">
-                    <step.icon size={20} className="text-accent" />
+                    <Icon size={20} className="text-accent" />
                     <span className="font-mono text-xs text-white/30">0{i + 1}</span>
                   </div>
-                  <h3 className="text-sm font-semibold">{step.title}</h3>
-                  <p className="text-xs leading-relaxed text-white/50">{step.detail}</p>
+                  <h3 className="text-sm font-semibold">{t(`pipeline.${key}.title`)}</h3>
+                  <p className="text-xs leading-relaxed text-white/50">{t(`pipeline.${key}.detail`)}</p>
                 </Card>
               </Reveal>
-            ))}
+              );
+            })}
           </div>
         </section>
       </Reveal>
@@ -263,17 +216,20 @@ export function Landing() {
       {/* Features */}
       <Reveal>
         <section className="mx-auto max-w-6xl px-6 py-16">
-          <SectionHeading eyebrow="What's built in" title="Everything short-form video needs, none of it gated" />
+          <SectionHeading eyebrow={t("features.eyebrow")} title={t("features.title")} />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((feature, i) => (
-              <Reveal key={feature.title} delay={(i % 3) * 70} className="h-full">
+            {FEATURE_KEYS.map((key, i) => {
+              const Icon = FEATURE_ICONS[i];
+              return (
+              <Reveal key={key} delay={(i % 3) * 70} className="h-full">
                 <Card className="flex h-full flex-col gap-3">
-                  <feature.icon size={20} className="text-white/40" />
-                  <h3 className="text-sm font-semibold">{feature.title}</h3>
-                  <p className="text-xs leading-relaxed text-white/50">{feature.detail}</p>
+                  <Icon size={20} className="text-white/40" />
+                  <h3 className="text-sm font-semibold">{t(`features.${key}.title`)}</h3>
+                  <p className="text-xs leading-relaxed text-white/50">{t(`features.${key}.detail`)}</p>
                 </Card>
               </Reveal>
-            ))}
+              );
+            })}
           </div>
         </section>
       </Reveal>
@@ -281,7 +237,7 @@ export function Landing() {
       {/* Comparison */}
       <Reveal>
         <section className="mx-auto max-w-6xl px-6 py-16">
-          <SectionHeading eyebrow="Why not just subscribe" title="What changes when it's local and open" />
+          <SectionHeading eyebrow={t("comparison.eyebrow")} title={t("comparison.title")} />
           <Card className="overflow-x-auto p-0">
             <table className="w-full min-w-[560px] border-collapse text-sm">
               <thead>
@@ -292,23 +248,23 @@ export function Landing() {
                       <LogoMark className="h-4 w-4" /> ShortPulse
                     </span>
                   </th>
-                  <th className="px-5 py-3 font-medium">Typical subscription tool</th>
+                  <th className="px-5 py-3 font-medium">{t("comparison.them")}</th>
                 </tr>
               </thead>
               <tbody>
-                {COMPARISON.map((row) => (
-                  <tr key={row.label} className="border-b border-border/60 last:border-0">
-                    <td className="px-5 py-3.5 text-white/50">{row.label}</td>
+                {COMPARISON_KEYS.map((key) => (
+                  <tr key={key} className="border-b border-border/60 last:border-0">
+                    <td className="px-5 py-3.5 text-white/50">{t(`comparison.${key}.label`)}</td>
                     <td className="px-5 py-3.5 font-medium text-white">
                       <span className="inline-flex items-center gap-1.5">
                         <Check size={14} className="text-accent" />
-                        {row.us}
+                        {t(`comparison.${key}.us`)}
                       </span>
                     </td>
                     <td className="px-5 py-3.5 text-white/40">
                       <span className="inline-flex items-center gap-1.5">
                         <X size={14} className="text-white/25" />
-                        {row.them}
+                        {t(`comparison.${key}.them`)}
                       </span>
                     </td>
                   </tr>
@@ -330,18 +286,17 @@ export function Landing() {
           <Card className="flex flex-col gap-5 border-border-strong bg-surface-raised sm:flex-row sm:items-start sm:gap-8">
             <div className="flex shrink-0 items-center gap-2 sm:w-56">
               <Server size={18} className="text-white/40" />
-              <h3 className="text-sm font-semibold text-white/80">Built to survive scrutiny</h3>
+              <h3 className="text-sm font-semibold text-white/80">{t("limits.title")}</h3>
             </div>
             <div className="flex flex-col gap-2.5">
               <p className="text-sm text-white/50">
-                Marketing pages hide the rough edges. Ours are in the README, in full — here are a
-                few of them, so you know before you clone it:
+                {t("limits.intro")}
               </p>
               <ul className="flex flex-col gap-1.5">
-                {LIMITATIONS.map((item) => (
-                  <li key={item} className="flex gap-2 text-sm text-white/50">
+                {LIMITATION_KEYS.map((key) => (
+                  <li key={key} className="flex gap-2 text-sm text-white/50">
                     <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-white/30" />
-                    {item}
+                    {t(`limits.${key}`)}
                   </li>
                 ))}
               </ul>
@@ -359,22 +314,21 @@ export function Landing() {
         <section className="relative mx-auto max-w-3xl px-6 pb-32 pt-20 text-center">
           <WaveFloor />
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Start with {signupCredits} credits. No card, no trial timer.
+            {t("cta.title", { credits: signupCredits })}
           </h2>
           <p className="mx-auto mt-3 max-w-md text-white/50">
-            That&apos;s enough to judge it by. Buy more only if it earns it — or clone
-            the repo and run the whole thing on your own hardware for nothing.
+            {t("cta.sub")}
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Link href="/login">
               <Button variant="gradient" size="lg">
-                Start creating
+                {t("startCreating")}
               </Button>
             </Link>
             <a href={REPO_URL} target="_blank" rel="noreferrer">
               <Button variant="outline" size="lg">
                 <Github size={18} />
-                Read the code
+                {t("cta.readCode")}
               </Button>
             </a>
           </div>
@@ -398,7 +352,7 @@ export function Landing() {
           </div>
 
           <span className="text-center text-xs text-white/30">
-            MIT licensed · No tracking, no dark patterns.
+            {t("footer.tagline")}
           </span>
 
           <div className="flex justify-end sm:flex-1">
@@ -416,10 +370,10 @@ export function Landing() {
 
         <div className="mx-auto mt-5 flex max-w-6xl items-center justify-center gap-5 text-xs text-white/30">
           <Link href="/terms" className="transition-colors hover:text-white/60">
-            Terms
+            {t("footer.terms")}
           </Link>
           <Link href="/privacy" className="transition-colors hover:text-white/60">
-            Privacy
+            {t("footer.privacy")}
           </Link>
         </div>
       </footer>
