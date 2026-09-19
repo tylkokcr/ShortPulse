@@ -1,262 +1,262 @@
 {
   "meta": {
-    "title": "ShortPulse — Local AI Short-Form Video Agent",
-    "description": "Turn a topic or script into a ready-to-post vertical video. Script, voiceover, captions, visuals and music, assembled on your own machine — no subscription."
+    "title": "ShortPulse — Yerel Çalışan Kısa Video Yapay Zekâsı",
+    "description": "Bir konuyu ya da metni, paylaşmaya hazır dikey videoya çevir. Senaryo, seslendirme, altyazı, görsel ve müzik — kendi makinende birleştirilir, abonelik yok."
   },
   "nav": {
-    "library": "Library",
-    "connections": "Connections",
-    "source": "Source",
-    "signIn": "Sign in",
-    "signOut": "Sign out",
-    "openMenu": "Open menu",
-    "closeMenu": "Close menu",
-    "accent": "Accent",
-    "language": "Language",
-    "creditsRemaining": "Credits remaining — click to top up"
+    "library": "Kütüphane",
+    "connections": "Bağlantılar",
+    "source": "Kaynak kod",
+    "signIn": "Giriş yap",
+    "signOut": "Çıkış yap",
+    "openMenu": "Menüyü aç",
+    "closeMenu": "Menüyü kapat",
+    "accent": "Vurgu rengi",
+    "language": "Dil",
+    "creditsRemaining": "Kalan kredi — yüklemek için tıkla"
   },
   "howItWorks": {
-    "eyebrow": "How it works",
-    "title": "Three decisions, then it runs itself",
+    "eyebrow": "Nasıl çalışır",
+    "title": "Üç karar, gerisi kendiliğinden",
     "topic": {
-      "title": "Give it a topic",
-      "detail": "One line is enough — the LLM writes the scene breakdown, the hook and the call to action. Already have a script? Paste it and the AI only splits it into scenes."
+      "title": "Bir konu ver",
+      "detail": "Tek cümle yeter — sahne dökümünü, açılışı ve kapanış çağrısını dil modeli yazar. Metnin hazırsa yapıştır, yapay zekâ yalnızca sahnelere böler."
     },
     "look": {
-      "title": "Pick how it looks",
-      "detail": "Language, length, visual engine and caption style. The exact credit cost and an estimated render time are shown before you commit to anything."
+      "title": "Görünümünü seç",
+      "detail": "Dil, uzunluk, görsel motor ve altyazı stili. Başlamadan önce tam kredi maliyetini ve tahmini süreyi görürsün."
     },
     "watch": {
-      "title": "Watch it build, then post it",
-      "detail": "Progress streams live over a WebSocket, stage by stage. You get a 1080x1920 MP4 with burned-in captions and ducked music — yours to download, no watermark."
+      "title": "Oluşmasını izle, sonra paylaş",
+      "detail": "İlerleme WebSocket üzerinden aşama aşama akar. Elinde altyazısı gömülü, müziği kısılmış 1080x1920 MP4 kalır — filigransız, indirip istediğini yaparsın."
     }
   },
   "builtOn": {
-    "title": "Built on open source you can audit",
+    "title": "Denetleyebileceğin açık kaynak üzerine kurulu",
     "roles": {
-      "ollama": "local LLM runtime",
-      "llama3": "scene scripting",
-      "piper": "neural voiceover",
-      "whisper": "word-level timing",
-      "sdxl": "image generation",
-      "realvis": "photoreal stills",
-      "ltx": "text-to-video",
-      "ffmpeg": "assembly & encoding",
-      "libass": "burned-in captions",
-      "pexels": "stock footage",
-      "fastapi": "render API",
-      "next": "this interface"
+      "ollama": "yerel dil modeli çalıştırıcısı",
+      "llama3": "sahne senaryosu",
+      "piper": "sinirsel seslendirme",
+      "whisper": "kelime düzeyinde zamanlama",
+      "sdxl": "görsel üretimi",
+      "realvis": "foto-gerçekçi kareler",
+      "ltx": "metinden videoya",
+      "ffmpeg": "birleştirme ve kodlama",
+      "libass": "gömülü altyazı",
+      "pexels": "stok görüntü",
+      "fastapi": "render API'si",
+      "next": "bu arayüz"
     }
   },
   "landing": {
     "nav": {
-      "examples": "Examples",
-      "howItWorks": "How it works",
-      "pricing": "Pricing",
-      "faq": "FAQ"
+      "examples": "Örnekler",
+      "howItWorks": "Nasıl çalışır",
+      "pricing": "Fiyatlar",
+      "faq": "SSS"
     },
-    "signIn": "Sign in",
-    "startCreating": "Start creating",
-    "viewSource": "View source",
-    "badge": "Open source · self-hosted or hosted",
-    "headline": "Turn a topic into a <accent>ready-to-post</accent> vertical video.",
-    "sub": "Script, voiceover, word-synced captions, visuals and music — assembled by a pipeline you can actually read. Pay per video or self-host it for nothing. No subscription either way.",
+    "signIn": "Giriş yap",
+    "startCreating": "Üretmeye başla",
+    "viewSource": "Kaynak kodu gör",
+    "badge": "Açık kaynak · kendin barındır ya da bizde çalıştır",
+    "headline": "Bir konuyu <accent>paylaşmaya hazır</accent> dikey videoya çevir.",
+    "sub": "Senaryo, seslendirme, kelimesi kelimesine altyazı, görseller ve müzik — gerçekten okuyabileceğin bir hattan geçerek birleşir. Video başına öde ya da kendin barındırıp hiç ödeme. İki durumda da abonelik yok.",
     "stats": {
-      "languages": "languages",
-      "artStyles": "art styles",
-      "freeCredits": "free credits",
-      "licensed": "licensed"
+      "languages": "dil",
+      "artStyles": "çizim stili",
+      "freeCredits": "ücretsiz kredi",
+      "licensed": "lisans"
     },
     "pipeline": {
-      "eyebrow": "Pipeline",
-      "title": "Five local stages, one finished .mp4",
+      "eyebrow": "İşlem hattı",
+      "title": "Beş yerel aşama, tek bitmiş .mp4",
       "script": {
-        "title": "Script",
-        "detail": "Ollama (local) or OpenAI breaks your topic into scenes"
+        "title": "Senaryo",
+        "detail": "Ollama (yerel) ya da OpenAI konuyu sahnelere böler"
       },
       "voiceover": {
-        "title": "Voiceover",
-        "detail": "Piper voices, fully local, 9 languages"
+        "title": "Seslendirme",
+        "detail": "Piper sesleri, tamamen yerel, 9 dil"
       },
       "captions": {
-        "title": "Captions",
-        "detail": "faster-whisper times every word for karaoke-style burn-in"
+        "title": "Altyazı",
+        "detail": "faster-whisper her kelimeyi zamanlar, karaoke gibi gömülür"
       },
       "visuals": {
-        "title": "Visuals",
-        "detail": "AI stills or free stock footage; local text-to-video when you self-host"
+        "title": "Görseller",
+        "detail": "Yapay zekâ kareleri ya da ücretsiz stok görüntü; kendin barındırırsan yerel metinden videoya"
       },
       "assemble": {
-        "title": "Assemble",
-        "detail": "FFmpeg mixes ducked music and renders the final .mp4"
+        "title": "Birleştirme",
+        "detail": "FFmpeg müziği kısıp son .mp4'ü üretir"
       }
     },
     "features": {
-      "eyebrow": "What's built in",
-      "title": "Everything short-form video needs, none of it gated",
+      "eyebrow": "İçinde ne var",
+      "title": "Kısa videonun ihtiyacı olan her şey, hiçbiri kilitli değil",
       "local": {
-        "title": "Runs on your machine",
-        "detail": "Self-host it and scripting, voiceover, transcription, visuals and rendering all execute locally — only stock footage touches the network. The hosted service trades that away deliberately: it has no GPU, so the script and the AI stills come from paid APIs."
+        "title": "Kendi makinende çalışır",
+        "detail": "Kendin barındırdığında senaryo, seslendirme, deşifre, görseller ve render tamamen yerelde çalışır — ağa çıkan tek şey stok görüntü. Barındırılan servis bunu bilerek takas eder: GPU'su yok, bu yüzden senaryo ve yapay zekâ kareleri ücretli API'lerden gelir."
       },
       "captions": {
-        "title": "Word-synced captions",
-        "detail": "faster-whisper gives word-level timing, so captions highlight one word at a time instead of dumping a full line."
+        "title": "Kelimesi kelimesine altyazı",
+        "detail": "faster-whisper kelime düzeyinde zamanlama verir, böylece altyazı tüm satırı basmak yerine tek tek kelimeleri vurgular."
       },
       "languages": {
-        "title": "9 languages",
-        "detail": "Script, voiceover and subtitles generate natively in English, Turkish, Spanish, German, Arabic and more."
+        "title": "9 dil",
+        "detail": "Senaryo, seslendirme ve altyazı İngilizce, Türkçe, İspanyolca, Almanca, Arapça ve daha fazlasında doğrudan üretilir."
       },
       "music": {
-        "title": "Auto-ducked music",
-        "detail": "Background music sidechain-ducks under the voiceover automatically — no manual mixing."
+        "title": "Otomatik kısılan müzik",
+        "detail": "Arka plan müziği seslendirmenin altında otomatik olarak kısılır — elle mixleme yok."
       },
       "stills": {
-        "title": "Photoreal stills or real footage",
-        "detail": "A RealVisXL still per scene with a Ken Burns move over it, or a matching Pexels clip. Self-hosting with a GPU adds local text-to-video, which this service doesn't run."
+        "title": "Foto-gerçekçi kareler ya da gerçek görüntü",
+        "detail": "Sahne başına üzerinde Ken Burns hareketi olan bir RealVisXL karesi ya da eşleşen bir Pexels klibi. GPU'yla kendin barındırırsan yerel metinden videoya da eklenir; bu serviste çalışmaz."
       },
       "outro": {
-        "title": "Branded outro card",
-        "detail": "An optional closing card rendered locally with Pillow, so the last frame is your call-to-action, not a diffusion guess."
+        "title": "Markalı kapanış kartı",
+        "detail": "Pillow ile yerelde üretilen isteğe bağlı kapanış kartı — son kare senin çağrın olur, difüzyonun tahmini değil."
       }
     },
     "comparison": {
-      "eyebrow": "Why not just subscribe",
-      "title": "What changes when it's local and open",
-      "them": "Typical subscription tool",
+      "eyebrow": "Neden abonelik değil",
+      "title": "Yerel ve açık olunca ne değişir",
+      "them": "Tipik abonelik aracı",
       "price": {
-        "label": "What you pay",
-        "us": "Per video, or nothing self-hosted",
-        "them": "$20–50/mo, posted or not"
+        "label": "Ne ödersin",
+        "us": "Video başına, kendin barındırırsan hiç",
+        "them": "Aylık 20–50 $, paylaşsan da paylaşmasan da"
       },
       "idle": {
-        "label": "Idle months",
-        "us": "Cost nothing",
-        "them": "Billed anyway"
+        "label": "Kullanmadığın aylar",
+        "us": "Hiçbir şey",
+        "them": "Yine faturalanır"
       },
       "source": {
-        "label": "Source code",
-        "us": "MIT, fully readable",
-        "them": "Closed"
+        "label": "Kaynak kod",
+        "us": "MIT, baştan sona okunabilir",
+        "them": "Kapalı"
       },
       "where": {
-        "label": "Where it runs",
-        "us": "Your machine, or ours",
-        "them": "Their servers only"
+        "label": "Nerede çalışır",
+        "us": "Senin makinende ya da bizde",
+        "them": "Sadece kendi sunucularında"
       },
       "custom": {
-        "label": "Customization",
-        "us": "Edit prompts, swap models freely",
-        "them": "Locked to their pipeline"
+        "label": "Özelleştirme",
+        "us": "Promptları düzenle, modelleri serbestçe değiştir",
+        "them": "Kendi hatlarına kilitli"
       },
       "credits": {
-        "label": "Unused credits",
-        "us": "Never expire",
-        "them": "Reset every month"
+        "label": "Kullanılmayan kredi",
+        "us": "Hiç sona ermez",
+        "them": "Her ay sıfırlanır"
       }
     },
     "limits": {
-      "title": "Built to survive scrutiny",
-      "intro": "Marketing pages hide the rough edges. Ours are in the README, in full — here are a few of them, so you know before you clone it:",
-      "stills": "AI stills draw faces convincingly and extremities badly — hands, feet and full-body shots are where a frame falls apart, so the script engine keeps people in close and medium shots. Legible text is beyond the model entirely: it cannot write a label, a sign or a book cover.",
-      "aiVideo": "ai_video (local text-to-video) only runs where you supply the GPU. It is not available on this hosted service: renting one costs more per video than the mode is priced at, so we would rather not offer it than offer it badly.",
-      "llm": "Small local LLMs occasionally under-count scenes; the script engine retries and drops malformed ones rather than failing the render.",
-      "stock": "Stock footage is a closest-match, not a guarantee — Pexels clips can be loosely related to the scene."
+      "title": "İncelemeye dayanacak şekilde",
+      "intro": "Pazarlama sayfaları pürüzleri saklar. Bizimkiler README'de, eksiksiz — klonlamadan önce bilesin diye birkaçı burada:",
+      "stills": "Yapay zekâ kareleri yüzleri ikna edici, uzuvları kötü çizer — eller, ayaklar ve tam boy planlar karenin dağıldığı yerdir, bu yüzden senaryo motoru insanları yakın ve orta planda tutar. Okunabilir yazı modelin tamamen dışında: bir etiket, tabela ya da kitap kapağı yazamaz.",
+      "aiVideo": "ai_video (yerel metinden videoya) yalnızca GPU'yu sen sağladığında çalışır. Bu barındırılan serviste yok: GPU kiralamak videonun fiyatından pahalıya geliyor, kötü sunmaktansa hiç sunmamayı tercih ediyoruz.",
+      "llm": "Küçük yerel dil modelleri bazen sahne sayısını eksik verir; senaryo motoru render'ı düşürmek yerine yeniden dener ve bozuk olanları atar.",
+      "stock": "Stok görüntü en yakın eşleşmedir, garanti değil — Pexels klipleri sahneyle gevşek ilişkili olabilir."
     },
     "cta": {
-      "title": "Start with {credits} credits. No card, no trial timer.",
-      "sub": "That's enough to judge it by. Buy more only if it earns it — or clone the repo and run the whole thing on your own hardware for nothing.",
-      "readCode": "Read the code"
+      "title": "{credits} krediyle başla. Kart yok, deneme sayacı yok.",
+      "sub": "Değerlendirmene yeter. Hak ederse devamını alırsın — ya da depoyu klonlayıp her şeyi kendi donanımında bedavaya çalıştırırsın.",
+      "readCode": "Kodu oku"
     },
     "footer": {
-      "tagline": "MIT licensed · No tracking, no dark patterns.",
-      "terms": "Terms",
-      "privacy": "Privacy"
+      "tagline": "MIT lisanslı · Takip yok, karanlık desen yok.",
+      "terms": "Şartlar",
+      "privacy": "Gizlilik"
     }
   },
   "faq": {
-    "eyebrow": "FAQ",
-    "title": "The questions worth asking first",
+    "eyebrow": "SSS",
+    "title": "Önce sorulmaya değer sorular",
     "groups": {
-      "videos": "Videos",
-      "billing": "Credits & billing",
-      "selfHosting": "Self-hosting"
+      "videos": "Videolar",
+      "billing": "Kredi ve ödeme",
+      "selfHosting": "Kendin barındırma"
     },
     "items": {
       "output": {
-        "q": "What exactly do I get?",
-        "a": "A 1080x1920 MP4, H.264/AAC, with the voiceover, word-synced captions burned in, background music ducked under the voice, and an optional closing card. No watermark, on every plan including the free credits."
+        "q": "Tam olarak ne alıyorum?",
+        "a": "1080x1920 MP4, H.264/AAC; seslendirme, gömülü kelime senkronlu altyazı, sesin altında kısılmış arka plan müziği ve isteğe bağlı kapanış kartı. Ücretsiz krediler dahil her planda filigransız."
       },
       "duration": {
-        "q": "How long does a render take?",
-        "a": "On this service, a short with stock footage takes about 45 seconds end to end. AI stills take one to two minutes: the images come from a hosted GPU at roughly 8 seconds each, but the first one after a quiet spell waits for the model to load. Self-hosted on an Apple Silicon M-series the stills are much slower — about 78 seconds per scene, so ~7 minutes for a short — because your own machine is doing the diffusion."
+        "q": "Bir render ne kadar sürer?",
+        "a": "Bu serviste stok görüntülü kısa bir video uçtan uca yaklaşık 45 saniye. Yapay zekâ kareleri bir-iki dakika: görseller barındırılan bir GPU'dan kare başına yaklaşık 8 saniyede gelir, ama sessiz bir aradan sonraki ilki modelin yüklenmesini bekler. Apple Silicon M serisinde kendin barındırdığında kareler çok daha yavaş — sahne başına yaklaşık 78 saniye, yani kısa bir video için ~7 dakika — çünkü difüzyonu kendi makinen yapıyor."
       },
       "languages": {
-        "q": "Which languages are supported?",
-        "a": "Nine: English, Turkish, Spanish, French, German, Portuguese, Arabic, Russian and Italian. Script, voiceover and subtitles are all produced in the language you pick. Japanese is missing because Piper ships no Japanese voice we can use commercially."
+        "q": "Hangi diller destekleniyor?",
+        "a": "Dokuz: İngilizce, Türkçe, İspanyolca, Fransızca, Almanca, Portekizce, Arapça, Rusça ve İtalyanca. Senaryo, seslendirme ve altyazı seçtiğin dilde üretilir. Japonca yok, çünkü Piper'ın ticari olarak kullanabileceğimiz bir Japonca sesi yok."
       },
       "script": {
-        "q": "Can I use my own script?",
-        "a": "Yes. Paste it and the LLM only splits it into scenes and writes the visual prompts — your wording reaches the voiceover untouched."
+        "q": "Kendi metnimi kullanabilir miyim?",
+        "a": "Evet. Yapıştır; dil modeli yalnızca sahnelere böler ve görsel promptlarını yazar — senin ifaden seslendirmeye olduğu gibi geçer."
       },
       "posting": {
-        "q": "Do you post to TikTok or YouTube for me?",
-        "a": "No. ShortPulse renders the file and hands it to you; publishing is still your job. If auto-posting is the feature you actually want, another tool will serve you better today."
+        "q": "TikTok ya da YouTube'a benim yerime paylaşıyor musunuz?",
+        "a": "Hayır. ShortPulse dosyayı üretip sana verir; paylaşmak hâlâ senin işin. Asıl istediğin özellik otomatik paylaşımsa bugün başka bir araç sana daha iyi hizmet eder."
       },
       "ownership": {
-        "q": "Do I own what I make?",
-        "a": "Yes. Download it and do what you like with it. When you use the stock-footage mode, credit the videographers in your post description — the project page collects the names and links for you, and Pexels' licence requires it."
+        "q": "Ürettiğim şey bana mı ait?",
+        "a": "Evet. İndir ve istediğini yap. Stok görüntü modunu kullandığında paylaşım açıklamanda videografları belirt — proje sayfası isimleri ve bağlantıları senin için toplar, Pexels lisansı bunu şart koşuyor."
       },
       "pricing": {
-        "q": "How does pricing work?",
-        "a": "Credits, bought once. A render costs 1 credit with stock footage and 3 with AI stills, doubled for medium length and tripled for long. You see the exact cost before you start it. (Local text-to-video is 10, and only applies if you self-host — it is not offered here.)"
+        "q": "Fiyatlandırma nasıl işliyor?",
+        "a": "Kredi, bir kez satın alınır. Bir render stok görüntüyle 1 kredi, yapay zekâ kareleriyle 3; orta uzunlukta iki katı, uzunda üç katı. Başlamadan önce tam maliyeti görürsün. (Yerel metinden videoya 10 kredidir ve yalnızca kendin barındırırsan geçerlidir — burada sunulmuyor.)"
       },
       "expiry": {
-        "q": "Do credits expire?",
-        "a": "No. Nothing renews and nothing resets monthly — the ledger has no expiry, so credits sit there until you spend them."
+        "q": "Krediler sona erer mi?",
+        "a": "Hayır. Hiçbir şey yenilenmez, aylık sıfırlanmaz — defterde son kullanma yok, krediler harcayana kadar durur."
       },
       "failure": {
-        "q": "What if a render fails?",
-        "a": "The credits go back automatically. Refunds are tied to the project and can only happen once, so a failure can't leave you charged for a video you never got."
+        "q": "Render başarısız olursa?",
+        "a": "Krediler otomatik iade edilir. İadeler projeye bağlıdır ve yalnızca bir kez olabilir, yani bir hata seni hiç almadığın bir videonun parasıyla baş başa bırakamaz."
       },
       "freeTier": {
-        "q": "Is there really a free tier?",
-        "a": "{credits} credits when you sign up, no card. One of your videos can use AI stills — that one is on us, so you see the paid mode before deciding anything — and the rest of the grant renders stock-footage videos at 1 credit each. Re-rolling a scene and further AI-stills renders need a credit pack."
+        "q": "Gerçekten ücretsiz bir katman var mı?",
+        "a": "Kaydolduğunda {credits} kredi, kart istemeden. Videolarından biri yapay zekâ karelerini kullanabilir — o bizden, karar vermeden önce ücretli modu görürsün — kalan hak ise 1 kredilik stok görüntü videoları üretir. Sahneyi yeniden üretmek ve daha fazla yapay zekâ karesi için kredi paketi gerekir."
       },
       "diy": {
-        "q": "Can I run this myself instead?",
-        "a": "Yes, and it costs nothing. The whole thing is MIT — clone it, point it at your own Ollama and GPU, and there are no accounts, no credits and no limits. Credits exist only because the hosted instance runs on hardware somebody pays for."
+        "q": "Bunu kendim çalıştırabilir miyim?",
+        "a": "Evet, hem de bedava. Tamamı MIT — klonla, kendi Ollama'na ve GPU'na yönlendir; hesap yok, kredi yok, sınır yok. Krediler yalnızca barındırılan örnek birinin parasını ödediği donanımda çalıştığı için var."
       },
       "local": {
-        "q": "Is it genuinely local?",
-        "a": "When you self-host, yes: scripting, voiceover, transcription, image generation and rendering all run on your machine, and the one stage that reaches the network is stock footage from Pexels. This hosted service is the trade-off — it has no GPU, so scripts come from OpenAI and AI stills from Replicate. Voiceover, captions and rendering still happen on our server, and the code is the same either way."
+        "q": "Gerçekten yerel mi?",
+        "a": "Kendin barındırdığında evet: senaryo, seslendirme, deşifre, görsel üretimi ve render kendi makinende çalışır, ağa çıkan tek aşama Pexels'ten gelen stok görüntü. Barındırılan servis ise takas: GPU'su yok, bu yüzden senaryolar OpenAI'dan, yapay zekâ kareleri Replicate'ten gelir. Seslendirme, altyazı ve render yine bizim sunucumuzda olur ve kod iki durumda da aynıdır."
       },
       "roughEdges": {
-        "q": "What are the rough edges?",
-        "a": "AI stills draw faces well and extremities badly — hands, feet and full-body shots are where a frame falls apart — and legible text is beyond the model entirely. Local text-to-video needs a serious GPU, which is why this service doesn't offer it at all. Small local LLMs sometimes return fewer scenes than asked. All of it is in the README's Known limitations section."
+        "q": "Pürüzler neler?",
+        "a": "Yapay zekâ kareleri yüzleri iyi, uzuvları kötü çizer — eller, ayaklar ve tam boy planlar karenin dağıldığı yerdir — okunabilir yazı ise modelin tamamen dışındadır. Yerel metinden videoya ciddi bir GPU ister, bu servis de bu yüzden onu hiç sunmaz. Küçük yerel dil modelleri bazen istenenden az sahne döndürür. Hepsi README'nin Known limitations bölümünde."
       }
     }
   },
   "artStyles": {
-    "eyebrow": "Art styles",
-    "title": "Six looks, one prompt away",
-    "sub": "Every frame below is a real render — same model, same settings, same subject. We picked a subject with a face and hands on purpose, because that's the hardest thing to get right and the reason most of these looks are stylized."
+    "eyebrow": "Çizim stilleri",
+    "title": "Altı görünüm, tek prompt uzağında",
+    "sub": "Aşağıdaki her kare gerçek bir render — aynı model, aynı ayarlar, aynı özne. Özneyi yüzü ve elleri olacak şekilde bilerek seçtik, çünkü doğru çizilmesi en zor şey bu ve bu görünümlerin çoğunun stilize olmasının sebebi de bu."
   },
   "captionStyles": {
-    "eyebrow": "Caption styles",
-    "title": "The part that actually holds attention",
-    "sub": "Captions are timed per word by faster-whisper, so the active word highlights on the syllable it's spoken. Pick how that looks — size, colour, placement and how many words sit on screen at once."
+    "eyebrow": "Altyazı stilleri",
+    "title": "Dikkati asıl tutan kısım",
+    "sub": "Altyazılar faster-whisper ile kelime kelime zamanlanır, böylece aktif kelime söylendiği hecede vurgulanır. Bunun nasıl görüneceğini sen seç — boyut, renk, konum ve aynı anda ekranda kaç kelime duracağı."
   },
   "editor": {
-    "eyebrow": "The editor",
-    "title": "Every scene, lined up against the video",
-    "sub": "When a render finishes you get the whole breakdown next to the player — what the voice says, how long each scene runs, and where it sits in the timeline.",
-    "breakdown": "Scene breakdown",
-    "scene": "Scene {n}",
+    "eyebrow": "Editör",
+    "title": "Her sahne, videonun karşısında sıralı",
+    "sub": "Render bittiğinde oynatıcının yanında tüm dökümü alırsın — ses ne diyor, her sahne ne kadar sürüyor ve zaman çizelgesinde nerede duruyor.",
+    "breakdown": "Sahne dökümü",
+    "scene": "Sahne {n}",
     "capabilities": {
-      "jump": "Click any scene to jump the video to it",
-      "highlight": "The playing scene highlights itself as it goes",
-      "timing": "Per-scene timing, straight from the word-level transcript",
-      "credits": "Footage credits collected for you, with a copy button"
+      "jump": "Videoyu o sahneye atlatmak için herhangi bir sahneye tıkla",
+      "highlight": "Oynayan sahne ilerledikçe kendini vurgular",
+      "timing": "Sahne başına süre, doğrudan kelime düzeyindeki deşifreden",
+      "credits": "Görüntü künyeleri senin için toplanır, kopyalama düğmesiyle"
     }
   }
 }

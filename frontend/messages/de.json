@@ -1,262 +1,262 @@
 {
   "meta": {
-    "title": "ShortPulse — Local AI Short-Form Video Agent",
-    "description": "Turn a topic or script into a ready-to-post vertical video. Script, voiceover, captions, visuals and music, assembled on your own machine — no subscription."
+    "title": "ShortPulse — Lokaler KI-Agent für Kurzvideos",
+    "description": "Aus einem Thema oder Skript wird ein fertiges Hochformat-Video. Skript, Voiceover, Untertitel, Bilder und Musik — auf dem eigenen Rechner zusammengesetzt, ganz ohne Abo."
   },
   "nav": {
-    "library": "Library",
-    "connections": "Connections",
-    "source": "Source",
-    "signIn": "Sign in",
-    "signOut": "Sign out",
-    "openMenu": "Open menu",
-    "closeMenu": "Close menu",
-    "accent": "Accent",
-    "language": "Language",
-    "creditsRemaining": "Credits remaining — click to top up"
+    "library": "Bibliothek",
+    "connections": "Verbindungen",
+    "source": "Quellcode",
+    "signIn": "Anmelden",
+    "signOut": "Abmelden",
+    "openMenu": "Menü öffnen",
+    "closeMenu": "Menü schließen",
+    "accent": "Akzentfarbe",
+    "language": "Sprache",
+    "creditsRemaining": "Verbleibende Credits — zum Aufladen klicken"
   },
   "howItWorks": {
-    "eyebrow": "How it works",
-    "title": "Three decisions, then it runs itself",
+    "eyebrow": "So funktioniert es",
+    "title": "Drei Entscheidungen, den Rest macht es selbst",
     "topic": {
-      "title": "Give it a topic",
-      "detail": "One line is enough — the LLM writes the scene breakdown, the hook and the call to action. Already have a script? Paste it and the AI only splits it into scenes."
+      "title": "Gib ihm ein Thema",
+      "detail": "Eine Zeile genügt — das Sprachmodell schreibt die Szenenaufteilung, den Einstieg und den Call-to-Action. Skript schon fertig? Einfügen, und die KI teilt es nur in Szenen auf."
     },
     "look": {
-      "title": "Pick how it looks",
-      "detail": "Language, length, visual engine and caption style. The exact credit cost and an estimated render time are shown before you commit to anything."
+      "title": "Wähle, wie es aussieht",
+      "detail": "Sprache, Länge, Bildengine und Untertitelstil. Die genauen Credit-Kosten und eine geschätzte Renderzeit stehen fest, bevor du dich festlegst."
     },
     "watch": {
-      "title": "Watch it build, then post it",
-      "detail": "Progress streams live over a WebSocket, stage by stage. You get a 1080x1920 MP4 with burned-in captions and ducked music — yours to download, no watermark."
+      "title": "Zusehen, dann posten",
+      "detail": "Der Fortschritt läuft live über einen WebSocket, Stufe für Stufe. Heraus kommt ein 1080x1920-MP4 mit eingebrannten Untertiteln und abgesenkter Musik — zum Herunterladen, ohne Wasserzeichen."
     }
   },
   "builtOn": {
-    "title": "Built on open source you can audit",
+    "title": "Gebaut auf quelloffener Software, die du prüfen kannst",
     "roles": {
-      "ollama": "local LLM runtime",
-      "llama3": "scene scripting",
-      "piper": "neural voiceover",
-      "whisper": "word-level timing",
-      "sdxl": "image generation",
-      "realvis": "photoreal stills",
-      "ltx": "text-to-video",
-      "ffmpeg": "assembly & encoding",
-      "libass": "burned-in captions",
-      "pexels": "stock footage",
-      "fastapi": "render API",
-      "next": "this interface"
+      "ollama": "lokale LLM-Laufzeit",
+      "llama3": "Szenenskript",
+      "piper": "neuronales Voiceover",
+      "whisper": "Timing auf Wortebene",
+      "sdxl": "Bildgenerierung",
+      "realvis": "fotorealistische Stills",
+      "ltx": "Text-zu-Video",
+      "ffmpeg": "Zusammenbau & Encoding",
+      "libass": "eingebrannte Untertitel",
+      "pexels": "Stockmaterial",
+      "fastapi": "Render-API",
+      "next": "diese Oberfläche"
     }
   },
   "landing": {
     "nav": {
-      "examples": "Examples",
-      "howItWorks": "How it works",
-      "pricing": "Pricing",
+      "examples": "Beispiele",
+      "howItWorks": "So funktioniert es",
+      "pricing": "Preise",
       "faq": "FAQ"
     },
-    "signIn": "Sign in",
-    "startCreating": "Start creating",
-    "viewSource": "View source",
-    "badge": "Open source · self-hosted or hosted",
-    "headline": "Turn a topic into a <accent>ready-to-post</accent> vertical video.",
-    "sub": "Script, voiceover, word-synced captions, visuals and music — assembled by a pipeline you can actually read. Pay per video or self-host it for nothing. No subscription either way.",
+    "signIn": "Anmelden",
+    "startCreating": "Loslegen",
+    "viewSource": "Quellcode ansehen",
+    "badge": "Open Source · selbst hosten oder gehostet nutzen",
+    "headline": "Aus einem Thema ein <accent>fertig postbares</accent> Hochformat-Video.",
+    "sub": "Skript, Voiceover, wortgenaue Untertitel, Bilder und Musik — zusammengesetzt von einer Pipeline, die du wirklich nachlesen kannst. Pro Video zahlen oder selbst hosten und nichts zahlen. Ein Abo gibt es so oder so nicht.",
     "stats": {
-      "languages": "languages",
-      "artStyles": "art styles",
-      "freeCredits": "free credits",
-      "licensed": "licensed"
+      "languages": "Sprachen",
+      "artStyles": "Bildstile",
+      "freeCredits": "Gratis-Credits",
+      "licensed": "lizenziert"
     },
     "pipeline": {
       "eyebrow": "Pipeline",
-      "title": "Five local stages, one finished .mp4",
+      "title": "Fünf lokale Stufen, ein fertiges .mp4",
       "script": {
-        "title": "Script",
-        "detail": "Ollama (local) or OpenAI breaks your topic into scenes"
+        "title": "Skript",
+        "detail": "Ollama (lokal) oder OpenAI zerlegt dein Thema in Szenen"
       },
       "voiceover": {
         "title": "Voiceover",
-        "detail": "Piper voices, fully local, 9 languages"
+        "detail": "Piper-Stimmen, vollständig lokal, 9 Sprachen"
       },
       "captions": {
-        "title": "Captions",
-        "detail": "faster-whisper times every word for karaoke-style burn-in"
+        "title": "Untertitel",
+        "detail": "faster-whisper timt jedes Wort für das Einbrennen im Karaoke-Stil"
       },
       "visuals": {
-        "title": "Visuals",
-        "detail": "AI stills or free stock footage; local text-to-video when you self-host"
+        "title": "Bilder",
+        "detail": "KI-Stills oder kostenloses Stockmaterial; lokales Text-zu-Video, wenn du selbst hostest"
       },
       "assemble": {
-        "title": "Assemble",
-        "detail": "FFmpeg mixes ducked music and renders the final .mp4"
+        "title": "Zusammenbau",
+        "detail": "FFmpeg mischt die abgesenkte Musik und rendert das finale .mp4"
       }
     },
     "features": {
-      "eyebrow": "What's built in",
-      "title": "Everything short-form video needs, none of it gated",
+      "eyebrow": "Was eingebaut ist",
+      "title": "Alles, was Kurzvideo braucht, und nichts davon hinter einer Schranke",
       "local": {
-        "title": "Runs on your machine",
-        "detail": "Self-host it and scripting, voiceover, transcription, visuals and rendering all execute locally — only stock footage touches the network. The hosted service trades that away deliberately: it has no GPU, so the script and the AI stills come from paid APIs."
+        "title": "Läuft auf deinem Rechner",
+        "detail": "Selbst gehostet laufen Skript, Voiceover, Transkription, Bilder und Rendering vollständig lokal — nur das Stockmaterial geht ins Netz. Der gehostete Dienst gibt das bewusst auf: Er hat keine GPU, deshalb kommen Skript und KI-Stills von kostenpflichtigen APIs."
       },
       "captions": {
-        "title": "Word-synced captions",
-        "detail": "faster-whisper gives word-level timing, so captions highlight one word at a time instead of dumping a full line."
+        "title": "Wortgenaue Untertitel",
+        "detail": "faster-whisper liefert Timing auf Wortebene, sodass Untertitel ein Wort nach dem anderen hervorheben statt eine ganze Zeile hinzuwerfen."
       },
       "languages": {
-        "title": "9 languages",
-        "detail": "Script, voiceover and subtitles generate natively in English, Turkish, Spanish, German, Arabic and more."
+        "title": "9 Sprachen",
+        "detail": "Skript, Voiceover und Untertitel entstehen direkt auf Englisch, Türkisch, Spanisch, Deutsch, Arabisch und mehr."
       },
       "music": {
-        "title": "Auto-ducked music",
-        "detail": "Background music sidechain-ducks under the voiceover automatically — no manual mixing."
+        "title": "Automatisch abgesenkte Musik",
+        "detail": "Die Hintergrundmusik wird per Sidechain automatisch unter dem Voiceover abgesenkt — kein manuelles Mischen."
       },
       "stills": {
-        "title": "Photoreal stills or real footage",
-        "detail": "A RealVisXL still per scene with a Ken Burns move over it, or a matching Pexels clip. Self-hosting with a GPU adds local text-to-video, which this service doesn't run."
+        "title": "Fotorealistische Stills oder echtes Material",
+        "detail": "Pro Szene ein RealVisXL-Still mit Ken-Burns-Fahrt darüber, oder ein passender Pexels-Clip. Selbst gehostet mit GPU kommt lokales Text-zu-Video dazu, das dieser Dienst nicht anbietet."
       },
       "outro": {
-        "title": "Branded outro card",
-        "detail": "An optional closing card rendered locally with Pillow, so the last frame is your call-to-action, not a diffusion guess."
+        "title": "Abschlusskarte im eigenen Look",
+        "detail": "Eine optionale Abschlusskarte, lokal mit Pillow gerendert — das letzte Bild ist dein Call-to-Action, keine Vermutung eines Diffusionsmodells."
       }
     },
     "comparison": {
-      "eyebrow": "Why not just subscribe",
-      "title": "What changes when it's local and open",
-      "them": "Typical subscription tool",
+      "eyebrow": "Warum kein Abo",
+      "title": "Was sich ändert, wenn es lokal und offen ist",
+      "them": "Typisches Abo-Tool",
       "price": {
-        "label": "What you pay",
-        "us": "Per video, or nothing self-hosted",
-        "them": "$20–50/mo, posted or not"
+        "label": "Was du zahlst",
+        "us": "Pro Video, selbst gehostet gar nichts",
+        "them": "20–50 $/Monat, ob gepostet oder nicht"
       },
       "idle": {
-        "label": "Idle months",
-        "us": "Cost nothing",
-        "them": "Billed anyway"
+        "label": "Monate ohne Nutzung",
+        "us": "Kosten nichts",
+        "them": "Werden trotzdem berechnet"
       },
       "source": {
-        "label": "Source code",
-        "us": "MIT, fully readable",
-        "them": "Closed"
+        "label": "Quellcode",
+        "us": "MIT, vollständig lesbar",
+        "them": "Geschlossen"
       },
       "where": {
-        "label": "Where it runs",
-        "us": "Your machine, or ours",
-        "them": "Their servers only"
+        "label": "Wo es läuft",
+        "us": "Auf deinem Rechner oder unserem",
+        "them": "Nur auf deren Servern"
       },
       "custom": {
-        "label": "Customization",
-        "us": "Edit prompts, swap models freely",
-        "them": "Locked to their pipeline"
+        "label": "Anpassbarkeit",
+        "us": "Prompts bearbeiten, Modelle frei tauschen",
+        "them": "An deren Pipeline gebunden"
       },
       "credits": {
-        "label": "Unused credits",
-        "us": "Never expire",
-        "them": "Reset every month"
+        "label": "Ungenutzte Credits",
+        "us": "Verfallen nie",
+        "them": "Werden monatlich zurückgesetzt"
       }
     },
     "limits": {
-      "title": "Built to survive scrutiny",
-      "intro": "Marketing pages hide the rough edges. Ours are in the README, in full — here are a few of them, so you know before you clone it:",
-      "stills": "AI stills draw faces convincingly and extremities badly — hands, feet and full-body shots are where a frame falls apart, so the script engine keeps people in close and medium shots. Legible text is beyond the model entirely: it cannot write a label, a sign or a book cover.",
-      "aiVideo": "ai_video (local text-to-video) only runs where you supply the GPU. It is not available on this hosted service: renting one costs more per video than the mode is priced at, so we would rather not offer it than offer it badly.",
-      "llm": "Small local LLMs occasionally under-count scenes; the script engine retries and drops malformed ones rather than failing the render.",
-      "stock": "Stock footage is a closest-match, not a guarantee — Pexels clips can be loosely related to the scene."
+      "title": "Gebaut, um einer Prüfung standzuhalten",
+      "intro": "Marketingseiten verstecken die rauen Kanten. Unsere stehen vollständig im README — hier ein paar davon, damit du es weißt, bevor du klonst:",
+      "stills": "KI-Stills zeichnen Gesichter überzeugend und Extremitäten schlecht — an Händen, Füßen und Ganzkörperaufnahmen zerfällt ein Bild, deshalb hält die Skript-Engine Personen in Nah- und Halbnah-Einstellungen. Lesbare Schrift liegt ganz außerhalb des Modells: Es kann kein Schild, kein Etikett und keinen Buchtitel schreiben.",
+      "aiVideo": "ai_video (lokales Text-zu-Video) läuft nur, wenn du die GPU stellst. Im gehosteten Dienst gibt es das nicht: Eine GPU zu mieten kostet pro Video mehr, als der Modus kostet — dann lieber gar nicht anbieten als schlecht.",
+      "llm": "Kleine lokale Sprachmodelle zählen Szenen gelegentlich zu niedrig; die Skript-Engine versucht es erneut und verwirft fehlerhafte, statt den Render scheitern zu lassen.",
+      "stock": "Stockmaterial ist die nächstbeste Übereinstimmung, keine Garantie — Pexels-Clips können nur lose zur Szene passen."
     },
     "cta": {
-      "title": "Start with {credits} credits. No card, no trial timer.",
-      "sub": "That's enough to judge it by. Buy more only if it earns it — or clone the repo and run the whole thing on your own hardware for nothing.",
-      "readCode": "Read the code"
+      "title": "Starte mit {credits} Credits. Keine Karte, kein Testzeitraum.",
+      "sub": "Genug, um es zu beurteilen. Kaufe mehr nur, wenn es sich lohnt — oder klone das Repository und lass alles kostenlos auf deiner eigenen Hardware laufen.",
+      "readCode": "Code lesen"
     },
     "footer": {
-      "tagline": "MIT licensed · No tracking, no dark patterns.",
-      "terms": "Terms",
-      "privacy": "Privacy"
+      "tagline": "MIT-lizenziert · Kein Tracking, keine Dark Patterns.",
+      "terms": "AGB",
+      "privacy": "Datenschutz"
     }
   },
   "faq": {
     "eyebrow": "FAQ",
-    "title": "The questions worth asking first",
+    "title": "Die Fragen, die man zuerst stellen sollte",
     "groups": {
       "videos": "Videos",
-      "billing": "Credits & billing",
-      "selfHosting": "Self-hosting"
+      "billing": "Credits & Abrechnung",
+      "selfHosting": "Selbst hosten"
     },
     "items": {
       "output": {
-        "q": "What exactly do I get?",
-        "a": "A 1080x1920 MP4, H.264/AAC, with the voiceover, word-synced captions burned in, background music ducked under the voice, and an optional closing card. No watermark, on every plan including the free credits."
+        "q": "Was genau bekomme ich?",
+        "a": "Ein 1080x1920-MP4, H.264/AAC, mit Voiceover, eingebrannten wortgenauen Untertiteln, unter der Stimme abgesenkter Hintergrundmusik und optionaler Abschlusskarte. Kein Wasserzeichen, in jedem Tarif — auch mit den Gratis-Credits."
       },
       "duration": {
-        "q": "How long does a render take?",
-        "a": "On this service, a short with stock footage takes about 45 seconds end to end. AI stills take one to two minutes: the images come from a hosted GPU at roughly 8 seconds each, but the first one after a quiet spell waits for the model to load. Self-hosted on an Apple Silicon M-series the stills are much slower — about 78 seconds per scene, so ~7 minutes for a short — because your own machine is doing the diffusion."
+        "q": "Wie lange dauert ein Render?",
+        "a": "In diesem Dienst dauert ein kurzes Video mit Stockmaterial etwa 45 Sekunden von Anfang bis Ende. KI-Stills brauchen ein bis zwei Minuten: Die Bilder kommen von einer gehosteten GPU mit rund 8 Sekunden pro Bild, aber das erste nach einer ruhigen Phase wartet auf das Laden des Modells. Selbst gehostet auf einem Apple Silicon der M-Serie sind die Stills deutlich langsamer — etwa 78 Sekunden pro Szene, also ~7 Minuten für ein kurzes Video — weil dein eigener Rechner die Diffusion übernimmt."
       },
       "languages": {
-        "q": "Which languages are supported?",
-        "a": "Nine: English, Turkish, Spanish, French, German, Portuguese, Arabic, Russian and Italian. Script, voiceover and subtitles are all produced in the language you pick. Japanese is missing because Piper ships no Japanese voice we can use commercially."
+        "q": "Welche Sprachen werden unterstützt?",
+        "a": "Neun: Englisch, Türkisch, Spanisch, Französisch, Deutsch, Portugiesisch, Arabisch, Russisch und Italienisch. Skript, Voiceover und Untertitel entstehen alle in der gewählten Sprache. Japanisch fehlt, weil Piper keine japanische Stimme mitbringt, die wir kommerziell nutzen dürfen."
       },
       "script": {
-        "q": "Can I use my own script?",
-        "a": "Yes. Paste it and the LLM only splits it into scenes and writes the visual prompts — your wording reaches the voiceover untouched."
+        "q": "Kann ich mein eigenes Skript verwenden?",
+        "a": "Ja. Füge es ein, und das Sprachmodell teilt es nur in Szenen auf und schreibt die Bild-Prompts — deine Formulierung erreicht das Voiceover unverändert."
       },
       "posting": {
-        "q": "Do you post to TikTok or YouTube for me?",
-        "a": "No. ShortPulse renders the file and hands it to you; publishing is still your job. If auto-posting is the feature you actually want, another tool will serve you better today."
+        "q": "Postet ihr für mich auf TikTok oder YouTube?",
+        "a": "Nein. ShortPulse rendert die Datei und übergibt sie dir; das Veröffentlichen bleibt deine Aufgabe. Wenn automatisches Posten die Funktion ist, die du eigentlich willst, ist ein anderes Werkzeug heute besser für dich."
       },
       "ownership": {
-        "q": "Do I own what I make?",
-        "a": "Yes. Download it and do what you like with it. When you use the stock-footage mode, credit the videographers in your post description — the project page collects the names and links for you, and Pexels' licence requires it."
+        "q": "Gehört mir, was ich erstelle?",
+        "a": "Ja. Lade es herunter und mach damit, was du willst. Wenn du den Stockmaterial-Modus nutzt, nenne die Videografen in deiner Beschreibung — die Projektseite sammelt Namen und Links für dich, und die Pexels-Lizenz verlangt es."
       },
       "pricing": {
-        "q": "How does pricing work?",
-        "a": "Credits, bought once. A render costs 1 credit with stock footage and 3 with AI stills, doubled for medium length and tripled for long. You see the exact cost before you start it. (Local text-to-video is 10, and only applies if you self-host — it is not offered here.)"
+        "q": "Wie funktioniert die Abrechnung?",
+        "a": "Credits, einmalig gekauft. Ein Render kostet 1 Credit mit Stockmaterial und 3 mit KI-Stills, bei mittlerer Länge verdoppelt und bei langer verdreifacht. Die genauen Kosten siehst du, bevor du startest. (Lokales Text-zu-Video kostet 10 und gilt nur beim Selbsthosten — hier wird es nicht angeboten.)"
       },
       "expiry": {
-        "q": "Do credits expire?",
-        "a": "No. Nothing renews and nothing resets monthly — the ledger has no expiry, so credits sit there until you spend them."
+        "q": "Verfallen Credits?",
+        "a": "Nein. Nichts erneuert sich, nichts wird monatlich zurückgesetzt — das Konto kennt kein Ablaufdatum, Credits bleiben liegen, bis du sie ausgibst."
       },
       "failure": {
-        "q": "What if a render fails?",
-        "a": "The credits go back automatically. Refunds are tied to the project and can only happen once, so a failure can't leave you charged for a video you never got."
+        "q": "Was, wenn ein Render fehlschlägt?",
+        "a": "Die Credits kommen automatisch zurück. Erstattungen hängen am Projekt und können nur einmal erfolgen, sodass ein Fehlschlag dich nicht mit den Kosten für ein Video zurücklässt, das du nie bekommen hast."
       },
       "freeTier": {
-        "q": "Is there really a free tier?",
-        "a": "{credits} credits when you sign up, no card. One of your videos can use AI stills — that one is on us, so you see the paid mode before deciding anything — and the rest of the grant renders stock-footage videos at 1 credit each. Re-rolling a scene and further AI-stills renders need a credit pack."
+        "q": "Gibt es wirklich ein kostenloses Kontingent?",
+        "a": "{credits} Credits bei der Anmeldung, ohne Karte. Eines deiner Videos darf KI-Stills nutzen — das geht auf uns, damit du den bezahlten Modus siehst, bevor du dich entscheidest — der Rest des Guthabens rendert Videos mit Stockmaterial zu je 1 Credit. Eine Szene neu zu würfeln und weitere KI-Still-Renders brauchen ein Credit-Paket."
       },
       "diy": {
-        "q": "Can I run this myself instead?",
-        "a": "Yes, and it costs nothing. The whole thing is MIT — clone it, point it at your own Ollama and GPU, and there are no accounts, no credits and no limits. Credits exist only because the hosted instance runs on hardware somebody pays for."
+        "q": "Kann ich das stattdessen selbst betreiben?",
+        "a": "Ja, und es kostet nichts. Das Ganze ist MIT — klone es, richte es auf dein eigenes Ollama und deine GPU aus, und es gibt keine Konten, keine Credits und keine Limits. Credits existieren nur, weil die gehostete Instanz auf Hardware läuft, die jemand bezahlt."
       },
       "local": {
-        "q": "Is it genuinely local?",
-        "a": "When you self-host, yes: scripting, voiceover, transcription, image generation and rendering all run on your machine, and the one stage that reaches the network is stock footage from Pexels. This hosted service is the trade-off — it has no GPU, so scripts come from OpenAI and AI stills from Replicate. Voiceover, captions and rendering still happen on our server, and the code is the same either way."
+        "q": "Ist es wirklich lokal?",
+        "a": "Beim Selbsthosten ja: Skript, Voiceover, Transkription, Bildgenerierung und Rendering laufen alle auf deinem Rechner, und die einzige Stufe, die ins Netz geht, ist Stockmaterial von Pexels. Der gehostete Dienst ist der Kompromiss — er hat keine GPU, deshalb kommen Skripte von OpenAI und KI-Stills von Replicate. Voiceover, Untertitel und Rendering passieren weiterhin auf unserem Server, und der Code ist in beiden Fällen derselbe."
       },
       "roughEdges": {
-        "q": "What are the rough edges?",
-        "a": "AI stills draw faces well and extremities badly — hands, feet and full-body shots are where a frame falls apart — and legible text is beyond the model entirely. Local text-to-video needs a serious GPU, which is why this service doesn't offer it at all. Small local LLMs sometimes return fewer scenes than asked. All of it is in the README's Known limitations section."
+        "q": "Wo sind die rauen Kanten?",
+        "a": "KI-Stills zeichnen Gesichter gut und Extremitäten schlecht — an Händen, Füßen und Ganzkörperaufnahmen zerfällt ein Bild — und lesbare Schrift liegt ganz außerhalb des Modells. Lokales Text-zu-Video braucht eine ernstzunehmende GPU, weshalb dieser Dienst es gar nicht anbietet. Kleine lokale Sprachmodelle liefern manchmal weniger Szenen als angefragt. Alles steht im Abschnitt Known limitations des README."
       }
     }
   },
   "artStyles": {
-    "eyebrow": "Art styles",
-    "title": "Six looks, one prompt away",
-    "sub": "Every frame below is a real render — same model, same settings, same subject. We picked a subject with a face and hands on purpose, because that's the hardest thing to get right and the reason most of these looks are stylized."
+    "eyebrow": "Bildstile",
+    "title": "Sechs Looks, einen Prompt entfernt",
+    "sub": "Jedes Bild unten ist ein echter Render — dasselbe Modell, dieselben Einstellungen, dasselbe Motiv. Wir haben bewusst ein Motiv mit Gesicht und Händen gewählt, weil genau das am schwersten richtig hinzubekommen ist und der Grund, warum die meisten dieser Looks stilisiert sind."
   },
   "captionStyles": {
-    "eyebrow": "Caption styles",
-    "title": "The part that actually holds attention",
-    "sub": "Captions are timed per word by faster-whisper, so the active word highlights on the syllable it's spoken. Pick how that looks — size, colour, placement and how many words sit on screen at once."
+    "eyebrow": "Untertitelstile",
+    "title": "Der Teil, der die Aufmerksamkeit wirklich hält",
+    "sub": "Untertitel werden von faster-whisper pro Wort getimt, sodass das aktive Wort genau auf der gesprochenen Silbe hervorgehoben wird. Wähle, wie das aussieht — Größe, Farbe, Position und wie viele Wörter gleichzeitig zu sehen sind."
   },
   "editor": {
-    "eyebrow": "The editor",
-    "title": "Every scene, lined up against the video",
-    "sub": "When a render finishes you get the whole breakdown next to the player — what the voice says, how long each scene runs, and where it sits in the timeline.",
-    "breakdown": "Scene breakdown",
-    "scene": "Scene {n}",
+    "eyebrow": "Der Editor",
+    "title": "Jede Szene, aufgereiht neben dem Video",
+    "sub": "Wenn ein Render fertig ist, bekommst du die gesamte Aufteilung neben dem Player — was die Stimme sagt, wie lang jede Szene läuft und wo sie in der Zeitleiste sitzt.",
+    "breakdown": "Szenenaufteilung",
+    "scene": "Szene {n}",
     "capabilities": {
-      "jump": "Click any scene to jump the video to it",
-      "highlight": "The playing scene highlights itself as it goes",
-      "timing": "Per-scene timing, straight from the word-level transcript",
-      "credits": "Footage credits collected for you, with a copy button"
+      "jump": "Auf eine Szene klicken, um das Video dorthin zu springen",
+      "highlight": "Die laufende Szene hebt sich selbst hervor",
+      "timing": "Timing pro Szene, direkt aus dem Transkript auf Wortebene",
+      "credits": "Material-Credits für dich gesammelt, mit Kopierknopf"
     }
   }
 }
