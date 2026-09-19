@@ -172,5 +172,91 @@
       "terms": "Terms",
       "privacy": "Privacy"
     }
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "The questions worth asking first",
+    "groups": {
+      "videos": "Videos",
+      "billing": "Credits & billing",
+      "selfHosting": "Self-hosting"
+    },
+    "items": {
+      "output": {
+        "q": "What exactly do I get?",
+        "a": "A 1080x1920 MP4, H.264/AAC, with the voiceover, word-synced captions burned in, background music ducked under the voice, and an optional closing card. No watermark, on every plan including the free credits."
+      },
+      "duration": {
+        "q": "How long does a render take?",
+        "a": "On this service, a short with stock footage takes about 45 seconds end to end. AI stills take one to two minutes: the images come from a hosted GPU at roughly 8 seconds each, but the first one after a quiet spell waits for the model to load. Self-hosted on an Apple Silicon M-series the stills are much slower — about 78 seconds per scene, so ~7 minutes for a short — because your own machine is doing the diffusion."
+      },
+      "languages": {
+        "q": "Which languages are supported?",
+        "a": "Nine: English, Turkish, Spanish, French, German, Portuguese, Arabic, Russian and Italian. Script, voiceover and subtitles are all produced in the language you pick. Japanese is missing because Piper ships no Japanese voice we can use commercially."
+      },
+      "script": {
+        "q": "Can I use my own script?",
+        "a": "Yes. Paste it and the LLM only splits it into scenes and writes the visual prompts — your wording reaches the voiceover untouched."
+      },
+      "posting": {
+        "q": "Do you post to TikTok or YouTube for me?",
+        "a": "No. ShortPulse renders the file and hands it to you; publishing is still your job. If auto-posting is the feature you actually want, another tool will serve you better today."
+      },
+      "ownership": {
+        "q": "Do I own what I make?",
+        "a": "Yes. Download it and do what you like with it. When you use the stock-footage mode, credit the videographers in your post description — the project page collects the names and links for you, and Pexels' licence requires it."
+      },
+      "pricing": {
+        "q": "How does pricing work?",
+        "a": "Credits, bought once. A render costs 1 credit with stock footage and 3 with AI stills, doubled for medium length and tripled for long. You see the exact cost before you start it. (Local text-to-video is 10, and only applies if you self-host — it is not offered here.)"
+      },
+      "expiry": {
+        "q": "Do credits expire?",
+        "a": "No. Nothing renews and nothing resets monthly — the ledger has no expiry, so credits sit there until you spend them."
+      },
+      "failure": {
+        "q": "What if a render fails?",
+        "a": "The credits go back automatically. Refunds are tied to the project and can only happen once, so a failure can't leave you charged for a video you never got."
+      },
+      "freeTier": {
+        "q": "Is there really a free tier?",
+        "a": "{credits} credits when you sign up, no card. One of your videos can use AI stills — that one is on us, so you see the paid mode before deciding anything — and the rest of the grant renders stock-footage videos at 1 credit each. Re-rolling a scene and further AI-stills renders need a credit pack."
+      },
+      "diy": {
+        "q": "Can I run this myself instead?",
+        "a": "Yes, and it costs nothing. The whole thing is MIT — clone it, point it at your own Ollama and GPU, and there are no accounts, no credits and no limits. Credits exist only because the hosted instance runs on hardware somebody pays for."
+      },
+      "local": {
+        "q": "Is it genuinely local?",
+        "a": "When you self-host, yes: scripting, voiceover, transcription, image generation and rendering all run on your machine, and the one stage that reaches the network is stock footage from Pexels. This hosted service is the trade-off — it has no GPU, so scripts come from OpenAI and AI stills from Replicate. Voiceover, captions and rendering still happen on our server, and the code is the same either way."
+      },
+      "roughEdges": {
+        "q": "What are the rough edges?",
+        "a": "AI stills draw faces well and extremities badly — hands, feet and full-body shots are where a frame falls apart — and legible text is beyond the model entirely. Local text-to-video needs a serious GPU, which is why this service doesn't offer it at all. Small local LLMs sometimes return fewer scenes than asked. All of it is in the README's Known limitations section."
+      }
+    }
+  },
+  "artStyles": {
+    "eyebrow": "Art styles",
+    "title": "Six looks, one prompt away",
+    "sub": "Every frame below is a real render — same model, same settings, same subject. We picked a subject with a face and hands on purpose, because that's the hardest thing to get right and the reason most of these looks are stylized."
+  },
+  "captionStyles": {
+    "eyebrow": "Caption styles",
+    "title": "The part that actually holds attention",
+    "sub": "Captions are timed per word by faster-whisper, so the active word highlights on the syllable it's spoken. Pick how that looks — size, colour, placement and how many words sit on screen at once."
+  },
+  "editor": {
+    "eyebrow": "The editor",
+    "title": "Every scene, lined up against the video",
+    "sub": "When a render finishes you get the whole breakdown next to the player — what the voice says, how long each scene runs, and where it sits in the timeline.",
+    "breakdown": "Scene breakdown",
+    "scene": "Scene {n}",
+    "capabilities": {
+      "jump": "Click any scene to jump the video to it",
+      "highlight": "The playing scene highlights itself as it goes",
+      "timing": "Per-scene timing, straight from the word-level transcript",
+      "credits": "Footage credits collected for you, with a copy button"
+    }
   }
 }

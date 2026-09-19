@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { listArtStyles } from "@/lib/api";
 import type { ArtStyle } from "@/lib/types";
 
@@ -38,6 +39,7 @@ const FALLBACK: ArtStyle[] = [
 ];
 
 export function ArtStyles() {
+  const t = useTranslations("artStyles");
   const [styles, setStyles] = useState<ArtStyle[]>(FALLBACK);
 
   useEffect(() => {
@@ -51,14 +53,12 @@ export function ArtStyles() {
   return (
     <section id="styles" className="mx-auto max-w-6xl scroll-mt-20 px-6 py-16">
       <div className="mb-8 flex flex-col gap-2">
-        <span className="font-mono text-xs uppercase tracking-widest text-accent">Art styles</span>
+        <span className="font-mono text-xs uppercase tracking-widest text-accent">{t("eyebrow")}</span>
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Six looks, one prompt away
+          {t("title")}
         </h2>
         <p className="max-w-xl text-sm text-white/50">
-          Every frame below is a real render — same model, same settings, same subject. We picked a
-          subject with a face and hands on purpose, because that&apos;s the hardest thing to get
-          right and the reason most of these looks are stylized.
+          {t("sub")}
         </p>
       </div>
 

@@ -1,4 +1,5 @@
 import { MousePointerClick, Clock, Copy, Waves } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 
@@ -17,31 +18,32 @@ const SCENES = [
   { line: "Additionally, honey's sugar content is so high that it dehydrates any microorganisms.", seconds: 4.0 },
 ];
 
+// Icon and key; the sentence beside each is in the catalogue.
 const CAPABILITIES = [
-  { icon: MousePointerClick, text: "Click any scene to jump the video to it" },
-  { icon: Waves, text: "The playing scene highlights itself as it goes" },
-  { icon: Clock, text: "Per-scene timing, straight from the word-level transcript" },
-  { icon: Copy, text: "Footage credits collected for you, with a copy button" },
-];
+  { key: "jump", icon: MousePointerClick },
+  { key: "highlight", icon: Waves },
+  { key: "timing", icon: Clock },
+  { key: "credits", icon: Copy },
+] as const;
 
 export function EditorShowcase() {
+  const t = useTranslations("editor");
   return (
     <section className="mx-auto max-w-6xl px-6 py-16">
       <div className="mb-8 flex flex-col gap-2">
-        <span className="font-mono text-xs uppercase tracking-widest text-accent">The editor</span>
+        <span className="font-mono text-xs uppercase tracking-widest text-accent">{t("eyebrow")}</span>
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Every scene, lined up against the video
+          {t("title")}
         </h2>
         <p className="max-w-xl text-sm text-white/50">
-          When a render finishes you get the whole breakdown next to the player — what the voice
-          says, how long each scene runs, and where it sits in the timeline.
+          {t("sub")}
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px] lg:items-start">
         <Card className="flex flex-col gap-3 bg-surface-raised">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-white/70">Scene breakdown</h3>
+            <h3 className="text-sm font-medium text-white/70">{t("breakdown")}</h3>
             <Badge tone="live">Playing</Badge>
           </div>
 
@@ -58,7 +60,7 @@ export function EditorShowcase() {
               }`}
             >
               <div className="mb-1 flex items-center justify-between text-xs text-white/40">
-                <span>Scene {i + 1}</span>
+                <span>{t("scene", { n: i + 1 })}</span>
                 <span>{scene.seconds.toFixed(1)}s</span>
               </div>
               <p className="text-sm text-white/70">{scene.line}</p>
@@ -81,9 +83,9 @@ export function EditorShowcase() {
 
           <ul className="flex flex-col gap-2.5">
             {CAPABILITIES.map((item) => (
-              <li key={item.text} className="flex items-start gap-2 text-xs text-white/50">
+              <li key={item.key} className="flex items-start gap-2 text-xs text-white/50">
                 <item.icon size={14} className="mt-0.5 shrink-0 text-accent" />
-                {item.text}
+                {t(`capabilities.${item.key}`)}
               </li>
             ))}
           </ul>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import { CAPTION_PRESETS } from "@/lib/captionStyles";
 import { Card } from "@/components/ui/Card";
@@ -22,6 +23,7 @@ import { Card } from "@/components/ui/Card";
  * these and read as double subtitles.
  */
 export function CaptionStyles() {
+  const t = useTranslations("captionStyles");
   const [activeId, setActiveId] = useState(CAPTION_PRESETS[0].id);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -52,14 +54,12 @@ export function CaptionStyles() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-16">
       <div className="mb-8 flex flex-col gap-2">
-        <span className="font-mono text-xs uppercase tracking-widest text-accent">Caption styles</span>
+        <span className="font-mono text-xs uppercase tracking-widest text-accent">{t("eyebrow")}</span>
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          The part that actually holds attention
+          {t("title")}
         </h2>
         <p className="max-w-xl text-sm text-white/50">
-          Captions are timed per word by faster-whisper, so the active word highlights on the
-          syllable it&apos;s spoken. Pick how that looks — size, colour, placement and how many words
-          sit on screen at once.
+          {t("sub")}
         </p>
       </div>
 
