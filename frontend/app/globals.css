@@ -344,3 +344,47 @@ body {
 html[data-session="1"] [data-landing-boot] {
   display: none;
 }
+
+/* Accent changes cross-fade instead of snapping.
+ *
+ * The switcher is right there in the header, so changing accent is a
+ * deliberate act the visitor is watching — and a repaint between two
+ * frames reads as a glitch rather than as a choice taking effect. The
+ * variable itself cannot be transitioned (it holds "R G B", not a
+ * colour), but every element that resolves it can be, and changing
+ * --accent changes their computed value.
+ *
+ * Tied to real input, like .bg-grid-lit: with nobody touching the
+ * switcher this rule never runs. It is not decoration.
+ *
+ * 260ms because the five swatches sit next to each other — long enough to
+ * read as one colour becoming another, short enough that clicking along
+ * the row still feels direct. Elements carrying their own shorter
+ * transition (the 150ms hover on Card) keep it; this only supplies one
+ * where there was none. */
+.text-accent,
+.text-accent-emphasis,
+.bg-accent,
+.border-accent,
+.fill-accent,
+.stroke-accent {
+  transition: color 260ms ease, background-color 260ms ease, border-color 260ms ease,
+    fill 260ms ease, stroke 260ms ease;
+}
+
+/* Depth, from a light source rather than from colour.
+ *
+ * Panels were a flat fill, which is why a page of them reads as one sheet
+ * with lines drawn on it. A 2% lift along the top edge is the whole
+ * change: enough that a card looks lit from above and therefore sits *on*
+ * something, not enough to be read as a gradient fill. Neutral on
+ * purpose —
+ * the rule that there is exactly one accent on screen is not what was
+ * making this flat. */
+.surface-lit {
+  background-image: linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 0.045),
+    rgb(255 255 255 / 0) 55%
+  );
+}
