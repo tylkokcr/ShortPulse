@@ -202,6 +202,7 @@ export function EditPanel({
   onApplied,
   onSeek,
   currentTime = 0,
+  videoDurationS = 0,
 }: {
   project: Project;
   onApplied: (project: Project) => void;
@@ -210,6 +211,9 @@ export function EditPanel({
    *  the span can be placed against what is actually on screen rather
    *  than against a number. */
   currentTime?: number;
+  /** The video's real length, measured by the player. 0 before its header
+   *  has loaded. */
+  videoDurationS?: number;
 }) {
   const track = project.edit?.captions ?? project.captions ?? null;
 
@@ -234,18 +238,22 @@ export function EditPanel({
 
   // How long the timelines are.
   //
-  // No single field is reliable on its own: an upload has no script, and
-  // a script's total_duration_s is what was asked for rather than what
-  // the audio came out as. The last word's end is the one measurement
-  // taken from the finished render, so it is the floor; overlays already
-  // stored past it widen the track rather than being drawn off the end
-  // of it, which is what an older project with a stale end time does.
+  // The player's own reading, or the last caption word until it arrives.
+  // Deliberately NOT the script's total_duration_s: that is what was
+  // asked of the model, and the audio does not come out at that length —
+  // on the project this was first tried against the script said 32s and
+  // the render was 26.6s, so a handle dragged to the right-hand end of
+  // the track landed five seconds past the last frame.
+  //
+  // Overlays already stored past the end still widen the track. They are
+  // wrong, but drawing them off the end would make them invisible and
+  // therefore unfixable, which is worse than showing a long track.
   const durationMs = useMemo(() => {
+    const measured = videoDurationS * 1000;
     const lastWord = track?.words.at(-1)?.end_ms ?? 0;
-    const script = (project.script?.total_duration_s ?? 0) * 1000;
     const overlayEnd = overlays.reduce((max, o) => Math.max(max, o.end_ms), 0);
-    return Math.max(lastWord, script, overlayEnd, 1000);
-  }, [track, project.script, overlays]);
+    return Math.max(measured || lastWord, overlayEnd, 1000);
+  }, [videoDurationS, track, overlays]);
 
   const original = useMemo(() => (track ? toLines(track) : []), [track]);
   const dirty =

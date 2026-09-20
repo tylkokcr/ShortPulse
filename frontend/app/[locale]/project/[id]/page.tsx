@@ -37,6 +37,9 @@ function Project({ id }: { id: string }) {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const [currentTime, setCurrentTime] = useState(0);
+  // Read off the <video> once its header lands. 0 until then, which the
+  // timeline reads as "fall back to the captions".
+  const [videoDurationS, setVideoDurationS] = useState(0);
   const [tab, setTab] = useState<"scenes" | "edit">("scenes");
 
   // The store only holds a project this tab created. Arriving from the
@@ -214,6 +217,7 @@ function Project({ id }: { id: string }) {
                 onApplied={setProject}
                 onSeek={handleSeek}
                 currentTime={currentTime}
+                videoDurationS={videoDurationS}
               />
             ) : (
               <Card className="text-sm text-white/40">Loading...</Card>
@@ -225,6 +229,7 @@ function Project({ id }: { id: string }) {
               projectId={id}
               videoRef={videoRef}
               onTimeUpdate={setCurrentTime}
+              onDuration={setVideoDurationS}
               verdict={{ current: videoVerdict, onSubmit: handleVerdict }}
             />
             {/* Only once there is a file to publish. Before that the panel

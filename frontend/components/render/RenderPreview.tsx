@@ -18,6 +18,10 @@ interface RenderPreviewProps {
    * a scene can seek playback. Falls back to an internal ref when omitted. */
   videoRef?: RefObject<HTMLVideoElement | null>;
   onTimeUpdate?: (seconds: number) => void;
+  /** The finished video's real length, once the browser has read it.
+   *  The only measurement of it anywhere on this page — the script's
+   *  total is what was asked of the model, not what the audio became. */
+  onDuration?: (seconds: number) => void;
   /** Asked once the video exists and can be watched. Omitted on a
    *  self-hosted install, where there is nobody to tell. */
   verdict?: {
@@ -62,7 +66,13 @@ function queueMessage(project?: Project | null): string {
   return `${ahead} render${ahead === 1 ? "" : "s"} ahead of you${when}.`;
 }
 
-export function RenderPreview({ projectId, videoRef, onTimeUpdate, verdict }: RenderPreviewProps) {
+export function RenderPreview({
+  projectId,
+  videoRef,
+  onTimeUpdate,
+  onDuration,
+  verdict,
+}: RenderPreviewProps) {
   const { activeProject, setActiveProject, renderProgress, setRenderProgress, videoVersion } =
     useShortPulseStore();
   const internalVideoRef = useRef<HTMLVideoElement>(null);
@@ -177,6 +187,13 @@ export function RenderPreview({ projectId, videoRef, onTimeUpdate, verdict }: Re
             autoPlay
             loop
             onTimeUpdate={(e) => onTimeUpdate?.(e.currentTarget.currentTime)}
+            onLoadedMetadata={(e) => {
+              // Infinity on a stream and NaN before the header is parsed;
+              // neither is a length, and both would make a timeline of
+              // the wrong size rather than no timeline.
+              const seconds = e.currentTarget.duration;
+              if (Number.isFinite(seconds) && seconds > 0) onDuration?.(seconds);
+            }}
             className="h-full w-full object-contain"
           />
         ) : isFailed ? (
