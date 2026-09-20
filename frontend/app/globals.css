@@ -97,6 +97,13 @@ body {
 .grid-backdrop {
   -webkit-mask-image: linear-gradient(to bottom, black 0%, black 10%, transparent 72%);
   mask-image: linear-gradient(to bottom, black 0%, black 10%, transparent 72%);
+  /* The accent wash inside drifts on a transform that scales it past 1,
+     which is what keeps its gradients moving without an edge ever coming
+     into view. Scaled-up children still count towards the document's
+     scrollable area, so without this the landing page scrolled sideways
+     by a few pixels — invisible on a desktop, a page that slides under
+     your thumb on a phone. */
+  overflow: hidden;
 }
 
 /* Replaces the gradient-filled headline. Emphasis now comes from weight

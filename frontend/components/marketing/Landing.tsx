@@ -83,7 +83,14 @@ export function Landing() {
   const statValues = STAT_VALUES(signupCredits);
 
   return (
-    <div className="relative min-h-screen">
+    // overflow-x-clip, not overflow-x-hidden: the wave floor under the
+    // closing section is width:100vw so it spans the window rather than
+    // the prose column, and 100vw counts the scrollbar while the content
+    // box does not — so it hangs a scrollbar's width past both edges and
+    // the whole page slid sideways under a thumb. `clip` trims that
+    // without making this a scroll container, which `hidden` would, and
+    // which would strand the sticky header below.
+    <div className="relative min-h-screen overflow-x-clip">
       <GridBackdrop />
 
       <SiteHeader
