@@ -1,5 +1,6 @@
 "use client";
 
+import { Megaphone } from "lucide-react";
 import clsx from "clsx";
 import type { ScriptOutput } from "@/lib/types";
 import { SceneRegenerate } from "./SceneRegenerate";
@@ -216,12 +217,25 @@ export function TranscriptPanel({
         </p>
       )}
 
-      {script.call_to_action && (
-        <div className="flex gap-3 pt-4">
-          <span className="mt-0.5 w-10 shrink-0 font-mono text-[10px] uppercase tracking-widest text-white/30">
-            cta
-          </span>
-          <p className="text-sm leading-relaxed text-white/60">{script.call_to_action}</p>
+      {/* The call to action, shown only when it is not already above.
+          With the outro card on, render_manager appends the CTA as a real
+          scene — so this block was printing the closing line twice, once
+          as a scene with a timecode and once again underneath. With the
+          card off it never reaches the video at all: it becomes the
+          fallback for the post description, which is a different place
+          and worth saying out loud, because a line sitting under the
+          transcript in the same type as the scenes above reads as
+          something that got spoken. */}
+      {script.call_to_action && !script.scenes.some((scene) => scene.is_outro) && (
+        <div className="mt-4 flex gap-3 rounded-lg border border-border bg-black/20 px-3 py-2.5">
+          <Megaphone size={13} className="mt-0.5 shrink-0 text-white/30" />
+          <div className="flex min-w-0 flex-col gap-1">
+            <p className="text-sm leading-relaxed text-white/60">{script.call_to_action}</p>
+            <p className="text-[11px] leading-relaxed text-white/30">
+              Not in the video — the outro card is off. It fills in the post description if
+              you publish without writing one.
+            </p>
+          </div>
         </div>
       )}
     </div>
