@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Share2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { getSocialPlatforms } from "@/lib/api";
 
@@ -20,6 +21,7 @@ import { getSocialPlatforms } from "@/lib/api";
  * signed-out pages get a 401 from, and the same silence is right there.
  */
 export function ConnectionsLink({ className }: { className?: string }) {
+  const t = useTranslations("nav");
   const [configured, setConfigured] = useState(false);
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export function ConnectionsLink({ className }: { className?: string }) {
   return (
     <Link href="/connections" className={className}>
       <Share2 size={16} />
-      Connections
+      {t("connections")}
     </Link>
   );
 }

@@ -173,6 +173,61 @@
       "privacy": "Datenschutz"
     }
   },
+  "examples": {
+    "eyebrow": "Echte Ergebnisse",
+    "title": "Siebzehn Videos, die diese Pipeline tatsächlich gemacht hat",
+    "intro": "Ungeschnittenes Ergebnis — KI-geschriebenes Skript, Piper-Sprecher, wortgenaue Untertitel, in allen neun Sprachen des Produkts. Sechzehn nutzen echtes Stockmaterial; das mit AI stills markierte hat der kostenpflichtige Modus gezeichnet. Zum Abspielen mit der Maus darüberfahren."
+  },
+  "pricing": {
+    "eyebrow": "Preise",
+    "title": "Zahl für Videos, nicht für einen Monat, den du nicht genutzt hast",
+    "intro": "Credits sind einmalig und verfallen nie. Kein Abo verlängert sich, nichts bucht erneut ab, solange du nicht erneut kaufst — und alles steht weiterhin unter MIT, falls du es lieber selbst betreibst.",
+    "free": {
+      "name": "Kostenlos",
+      "blurb": "Jedes neue Konto, ohne Karte.",
+      "credits": "{credits} Credits bei der Anmeldung",
+      "firstAiFree": "Dein erstes AI-Stills-Video gratis",
+      "thenStock": "Danach Videos mit Stockmaterial ab 1 Credit",
+      "stockOnly": "Videos mit Stockmaterial ab 1 Credit",
+      "everyLanguage": "Alle Sprachen",
+      "noWatermark": "Kein Wasserzeichen",
+      "cta": "Kostenlos starten"
+    },
+    "packs": {
+      "starter": {
+        "name": "Starter",
+        "blurb": "Zum Ausprobieren, ob das Posten zur Gewohnheit wird."
+      },
+      "creator": {
+        "name": "Creator",
+        "blurb": "Täglich ein Short, mit Luft für Wiederholungen."
+      },
+      "studio": {
+        "name": "Studio",
+        "blurb": "Mehrere Konten oder Arbeit für Kunden."
+      }
+    },
+    "popular": "Am häufigsten gewählt",
+    "taxIncluded": "inkl. MwSt.",
+    "oneOff": "einmalig",
+    "packCredits": "{credits} Credits",
+    "standardVideos": "~{count} Standard-Videos",
+    "stockVideos": "~{count} mit Stockmaterial",
+    "neverExpire": "Verfallen nie",
+    "packCta": "{credits} Credits kaufen",
+    "selfHost": {
+      "title": "Oder zahl gar nichts",
+      "body": "Betreib es selbst und der Preis ist null, für immer — Credits gibt es nur, weil die gehostete Instanz auf Hardware rendert, die jemand bezahlen muss.",
+      "cta": "Kostenlos selbst betreiben"
+    },
+    "tariff": {
+      "stock": "1 Credit = Stockmaterial",
+      "aiStills": "3 = AI stills",
+      "localVideo": "10 = lokales Text-zu-Video",
+      "note": "{rates}, jeweils ×2 bei mittlerer und ×3 bei langer Länge. Die genauen Kosten siehst du, bevor ein Render startet."
+    },
+    "currencyNote": "Preise in {currency}. Karten aus jedem Land funktionieren — deine Bank rechnet zu ihrem eigenen Kurs um."
+  },
   "faq": {
     "eyebrow": "FAQ",
     "title": "Die Fragen, die man zuerst stellen sollte",

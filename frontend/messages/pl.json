@@ -173,6 +173,61 @@
       "privacy": "Prywatność"
     }
   },
+  "examples": {
+    "eyebrow": "Prawdziwe efekty",
+    "title": "Siedemnaście filmów, które ten pipeline naprawdę zrobił",
+    "intro": "Materiał bez montażu — scenariusz napisany przez AI, lektor Piper, napisy zsynchronizowane co do słowa, we wszystkich dziewięciu językach produktu. Szesnaście korzysta z prawdziwych materiałów stockowych; ten oznaczony AI stills narysował tryb płatny. Najedź na dowolny, żeby go odtworzyć."
+  },
+  "pricing": {
+    "eyebrow": "Cennik",
+    "title": "Płacisz za filmy, nie za niewykorzystany miesiąc",
+    "intro": "Kredyty kupujesz jednorazowo i nigdy nie tracą ważności. Żaden plan się nie odnawia, nic nie obciąży cię ponownie, dopóki sam nie kupisz — a całość nadal jest na licencji MIT, jeśli wolisz uruchomić ją u siebie.",
+    "free": {
+      "name": "Za darmo",
+      "blurb": "Każde nowe konto, bez karty.",
+      "credits": "{credits} kredytów przy rejestracji",
+      "firstAiFree": "Pierwszy film w trybie AI stills gratis",
+      "thenStock": "Potem filmy ze stocku już od 1 kredytu",
+      "stockOnly": "Filmy ze stocku już od 1 kredytu",
+      "everyLanguage": "Wszystkie języki",
+      "noWatermark": "Bez znaku wodnego",
+      "cta": "Zacznij za darmo"
+    },
+    "packs": {
+      "starter": {
+        "name": "Starter",
+        "blurb": "Na sprawdzenie, czy publikowanie wejdzie w nawyk."
+      },
+      "creator": {
+        "name": "Creator",
+        "blurb": "Jeden film dziennie i zapas na poprawki tych nieudanych."
+      },
+      "studio": {
+        "name": "Studio",
+        "blurb": "Kilka kont albo praca dla klienta."
+      }
+    },
+    "popular": "Najczęściej wybierany",
+    "taxIncluded": "z VAT",
+    "oneOff": "jednorazowo",
+    "packCredits": "{credits} kredytów",
+    "standardVideos": "~{count} filmów standard",
+    "stockVideos": "~{count} z materiałem stockowym",
+    "neverExpire": "Nie tracą ważności",
+    "packCta": "Kup {credits} kredytów",
+    "selfHost": {
+      "title": "Albo nie płać wcale",
+      "body": "Uruchom u siebie i cena to zero, na zawsze — kredyty istnieją tylko dlatego, że hostowana wersja renderuje na sprzęcie, za który ktoś płaci.",
+      "cta": "Uruchom u siebie za darmo"
+    },
+    "tariff": {
+      "stock": "1 kredyt = materiał stockowy",
+      "aiStills": "3 = AI stills",
+      "localVideo": "10 = lokalny text-to-video",
+      "note": "{rates}, każdy ×2 przy średniej i ×3 przy długiej. Dokładny koszt poznajesz przed startem renderu."
+    },
+    "currencyNote": "Ceny w {currency}. Karty z każdego kraju działają — przeliczenia dokonuje twój bank po własnym kursie."
+  },
   "faq": {
     "eyebrow": "FAQ",
     "title": "Pytania, które warto zadać najpierw",

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { Volume2, VolumeX, Play } from "lucide-react";
 import clsx from "clsx";
@@ -93,18 +94,16 @@ const FOOTAGE_CREDITS = [
 ];
 
 export function Examples() {
+  const t = useTranslations("examples");
+
   return (
     <section className="py-16">
       <div className="mx-auto mb-8 flex max-w-6xl flex-col gap-2 px-6">
-        <span className="font-mono text-xs uppercase tracking-widest text-accent">Real output</span>
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Seventeen videos this pipeline actually made
-        </h2>
-        <p className="max-w-xl text-sm text-white/50">
-          Unedited output — AI-written script, Piper voiceover, word-synced captions, in all nine
-          languages the product offers. Sixteen use real stock footage; the one marked AI stills was
-          drawn by the paid mode. Hover any one to play it.
-        </p>
+        <span className="font-mono text-xs uppercase tracking-widest text-accent">
+          {t("eyebrow")}
+        </span>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t("title")}</h2>
+        <p className="max-w-xl text-sm text-white/50">{t("intro")}</p>
       </div>
 
       {/* Edges faded so clips enter and leave rather than being chopped off.

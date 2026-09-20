@@ -173,6 +173,61 @@
       "privacy": "Gizlilik"
     }
   },
+  "examples": {
+    "eyebrow": "Gerçek çıktı",
+    "title": "Bu hattın gerçekten ürettiği on yedi video",
+    "intro": "Düzenlenmemiş çıktı — yapay zekânın yazdığı metin, Piper seslendirme, kelimeye kilitli altyazılar; ürünün sunduğu dokuz dilin hepsinde. On altısı gerçek stok görüntü kullanıyor; AI stills işaretli olan ücretli modda çizildi. Oynatmak için üzerine gel."
+  },
+  "pricing": {
+    "eyebrow": "Fiyatlandırma",
+    "title": "Kullanmadığın aya değil, videoya öde",
+    "intro": "Krediler tek seferlik ve süresi dolmuyor. Hiçbir plan yenilenmiyor, yeniden satın almadıkça bir daha ücret çıkmıyor — ve kendin çalıştırmak istersen her şey hâlâ MIT lisanslı.",
+    "free": {
+      "name": "Ücretsiz",
+      "blurb": "Her yeni hesap, kart istemeden.",
+      "credits": "Kayıtta {credits} kredi",
+      "firstAiFree": "İlk AI stills videon ücretsiz",
+      "thenStock": "Sonrası: 1 krediden başlayan stok görüntü videoları",
+      "stockOnly": "1 krediden başlayan stok görüntü videoları",
+      "everyLanguage": "Bütün diller",
+      "noWatermark": "Filigran yok",
+      "cta": "Ücretsiz başla"
+    },
+    "packs": {
+      "starter": {
+        "name": "Starter",
+        "blurb": "Paylaşım alışkanlığını yoklamak için."
+      },
+      "creator": {
+        "name": "Creator",
+        "blurb": "Günde bir video, tutmayanları yeniden çekecek kadar da pay."
+      },
+      "studio": {
+        "name": "Studio",
+        "blurb": "Birden fazla hesap ya da müşteri işi."
+      }
+    },
+    "popular": "En çok seçilen",
+    "taxIncluded": "KDV dahil",
+    "oneOff": "tek seferlik",
+    "packCredits": "{credits} kredi",
+    "standardVideos": "~{count} standart video",
+    "stockVideos": "~{count} stok görüntüyle",
+    "neverExpire": "Süresi dolmaz",
+    "packCta": "{credits} kredi al",
+    "selfHost": {
+      "title": "Ya da hiç ödeme",
+      "body": "Kendi sunucunda çalıştır, fiyat sonsuza kadar sıfır — krediler yalnızca barındırılan sürümün render'ları birinin ödediği donanımda çalıştığı için var.",
+      "cta": "Ücretsiz kendin kur"
+    },
+    "tariff": {
+      "stock": "1 kredi = stok görüntü",
+      "aiStills": "3 = AI stills",
+      "localVideo": "10 = yerel metinden videoya",
+      "note": "{rates}; orta uzunlukta ×2, uzunda ×3. Render başlamadan önce kesin tutar sana bildirilir."
+    },
+    "currencyNote": "Fiyatlar {currency} cinsinden. Her ülkenin kartı çalışır — dönüşümü kendi bankan kendi kuruyla yapar."
+  },
   "faq": {
     "eyebrow": "SSS",
     "title": "Önce sorulmaya değer sorular",

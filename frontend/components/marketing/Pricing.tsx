@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check, Sparkles, Github } from "lucide-react";
+import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import { SIGNUP_CREDITS } from "@/lib/signupCredits";
 import { getPublicPricing } from "@/lib/api";
@@ -24,11 +25,10 @@ const FALLBACK_PACKS: CreditPack[] = [
   { id: "studio", credits: 1200, price_cents: 7900, popular: false },
 ];
 
-const PACK_LABELS: Record<string, { name: string; blurb: string }> = {
-  starter: { name: "Starter", blurb: "Testing the water on a posting habit." },
-  creator: { name: "Creator", blurb: "A daily short with room to redo the ones that miss." },
-  studio: { name: "Studio", blurb: "Multiple accounts, or a client workload." },
-};
+/** Which pack ids have written copy. A deployment is free to define its
+ *  own — the card falls back to the id and no blurb, exactly as before,
+ *  rather than throwing on a missing message. */
+const LABELLED_PACKS = new Set(["starter", "creator", "studio"]);
 
 /** Cheapest real render (stock_media + short) costs 1 credit; the default
  *  fast_hybrid short costs 3. Quoting both keeps "how many videos" honest
@@ -46,6 +46,7 @@ function videosFor(credits: number, generatedStills: boolean) {
 }
 
 export function Pricing() {
+  const t = useTranslations("pricing");
   const [packs, setPacks] = useState<CreditPack[]>(FALLBACK_PACKS);
   // Currency and whether VAT is already in the price are deployment
   // settings, so they come from the server alongside the packs.
@@ -95,14 +96,11 @@ export function Pricing() {
   return (
     <section id="pricing" className="mx-auto max-w-6xl px-6 py-16">
       <div className="mb-8 flex flex-col gap-2">
-        <span className="font-mono text-xs uppercase tracking-widest text-accent">Pricing</span>
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Pay for videos, not for a month you didn&apos;t use
-        </h2>
-        <p className="max-w-xl text-sm text-white/50">
-          Credits are one-off and never expire. No plan renews, nothing charges you again unless you
-          buy again — and the whole thing is still MIT if you&apos;d rather run it yourself.
-        </p>
+        <span className="font-mono text-xs uppercase tracking-widest text-accent">
+          {t("eyebrow")}
+        </span>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t("title")}</h2>
+        <p className="max-w-xl text-sm text-white/50">{t("intro")}</p>
       </div>
 
       {/* Four across only when there are packs to put there; alone, the free
@@ -110,8 +108,8 @@ export function Pricing() {
       <div className={clsx("grid grid-cols-1 gap-4", sold ? "lg:grid-cols-4" : "max-w-sm")}>
         <Card className="flex flex-col gap-4 bg-surface-raised">
           <div className="flex flex-col gap-1">
-            <h3 className="text-sm font-semibold">Free</h3>
-            <p className="text-xs text-white/40">Every new account, no card.</p>
+            <h3 className="text-sm font-semibold">{t("free.name")}</h3>
+            <p className="text-xs text-white/40">{t("free.blurb")}</p>
           </div>
           <div className="flex items-baseline gap-1.5">
             {/* Formatted, not written: on a EUR deployment a hardcoded
@@ -137,17 +135,18 @@ export function Pricing() {
               like any other render, which is why the credit line stays
               first and the count below it is what remains after. */}
           <ul className="flex flex-col gap-2 text-xs text-white/50">
-            <Feature>{signupCredits} credits on sign-up</Feature>
-            {generatedStills && <Feature>Your first AI-stills video free</Feature>}
-            <Feature>
-              {generatedStills ? "Then stock" : "Stock"}-footage videos from 1 credit
-            </Feature>
-            <Feature>Every language</Feature>
-            <Feature>No watermark</Feature>
+            <Feature>{t("free.credits", { credits: signupCredits })}</Feature>
+            {generatedStills && <Feature>{t("free.firstAiFree")}</Feature>}
+            {/* Two whole sentences rather than a "Then" glued to the front
+                of one: the word that changes is not at the start in every
+                language, and in some it changes the rest of the line. */}
+            <Feature>{generatedStills ? t("free.thenStock") : t("free.stockOnly")}</Feature>
+            <Feature>{t("free.everyLanguage")}</Feature>
+            <Feature>{t("free.noWatermark")}</Feature>
           </ul>
           <a href="#sign-in" className="mt-auto pt-2">
             <Button variant="secondary" className="w-full">
-              Start free
+              {t("free.cta")}
             </Button>
           </a>
         </Card>
@@ -158,7 +157,9 @@ export function Pricing() {
             three cards with a call to action offers a purchase that
             `POST /api/credits/checkout` answers 503. */}
         {sold && packs.map((pack) => {
-          const label = PACK_LABELS[pack.id] ?? { name: pack.id, blurb: "" };
+          const labelled = LABELLED_PACKS.has(pack.id);
+          const name = labelled ? t(`packs.${pack.id}.name`) : pack.id;
+          const blurb = labelled ? t(`packs.${pack.id}.blurb`) : "";
           const { basic, standard } = videosFor(pack.credits, generatedStills);
           return (
             <Card
@@ -173,13 +174,13 @@ export function Pricing() {
               {pack.popular && (
                 <Badge tone="accent" className="absolute -top-2.5 right-4">
                   <Sparkles size={11} />
-                  Most picked
+                  {t("popular")}
                 </Badge>
               )}
 
               <div className="flex flex-col gap-1">
-                <h3 className="text-sm font-semibold">{label.name}</h3>
-                <p className="text-xs text-white/40">{label.blurb}</p>
+                <h3 className="text-sm font-semibold">{name}</h3>
+                <p className="text-xs text-white/40">{blurb}</p>
               </div>
 
               <div className="flex items-baseline gap-1.5">
@@ -187,25 +188,29 @@ export function Pricing() {
                   {formatPrice(pack.price_cents, currency)}
                   {taxIncluded && (
                     <span className="ml-1.5 align-middle text-[10px] font-normal text-white/30">
-                      incl. VAT
+                      {t("taxIncluded")}
                     </span>
                   )}
                 </span>
-                <span className="text-xs text-white/40">one-off</span>
+                <span className="text-xs text-white/40">{t("oneOff")}</span>
               </div>
 
               <ul className="flex flex-col gap-2 text-xs text-white/50">
                 <Feature>
-                  <span className="text-white/80">{pack.credits} credits</span>
+                  <span className="text-white/80">
+                    {t("packCredits", { credits: pack.credits })}
+                  </span>
                 </Feature>
-                {standard !== null && <Feature>~{standard} standard videos</Feature>}
-                <Feature>~{basic} with stock footage</Feature>
-                <Feature>Never expire</Feature>
+                {standard !== null && (
+                  <Feature>{t("standardVideos", { count: standard })}</Feature>
+                )}
+                <Feature>{t("stockVideos", { count: basic })}</Feature>
+                <Feature>{t("neverExpire")}</Feature>
               </ul>
 
               <a href="#sign-in" className="mt-auto pt-2">
                 <Button variant={pack.popular ? "gradient" : "secondary"} className="w-full">
-                  Get {pack.credits} credits
+                  {t("packCta", { credits: pack.credits })}
                 </Button>
               </a>
             </Card>
@@ -217,15 +222,12 @@ export function Pricing() {
         <div className="flex flex-col gap-1">
           <h3 className="flex items-center gap-2 text-sm font-semibold">
             <Github size={15} className="text-white/50" />
-            Or pay nothing at all
+            {t("selfHost.title")}
           </h3>
-          <p className="text-xs text-white/50">
-            Self-host it and the price is zero, forever — credits only exist because the hosted
-            instance runs renders on hardware someone has to pay for.
-          </p>
+          <p className="text-xs text-white/50">{t("selfHost.body")}</p>
         </div>
         <a href={REPO_URL} target="_blank" rel="noreferrer" className="shrink-0">
-          <Button variant="outline">Self-host it free</Button>
+          <Button variant="outline">{t("selfHost.cta")}</Button>
         </a>
       </Card>
 
@@ -234,11 +236,20 @@ export function Pricing() {
           self-hosting is offered on this same page and they all work
           there — but a price for a mode this deployment refuses to sell
           is an offer it cannot honour. */}
+      {/* Built by joining whole phrases with a separator, not by gluing
+          fragments onto a sentence: " · 3 = AI stills" concatenated mid-line
+          assumes an English word order that three of the four languages
+          here do not share. */}
       <p className="mt-4 font-mono text-[11px] text-white/30">
-        1 credit = stock footage
-        {generatedStills && " · 3 = AI stills"}
-        {localVideo && " · 10 = local text-to-video"}, each ×2 for medium and ×3 for long.
-        You&apos;re quoted the exact cost before a render starts.
+        {t("tariff.note", {
+          rates: [
+            t("tariff.stock"),
+            generatedStills ? t("tariff.aiStills") : null,
+            localVideo ? t("tariff.localVideo") : null,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+        })}
       </p>
 
       {/* For the visitor who arrived from somewhere these prices are not
@@ -256,8 +267,7 @@ export function Pricing() {
           to be in a currency at all. */}
       {sold && (
         <p className="mt-1 font-mono text-[11px] text-white/30">
-          Prices in {currency.toUpperCase()}. Cards from any country work — your bank
-          converts at its own rate.
+          {t("currencyNote", { currency: currency.toUpperCase() })}
         </p>
       )}
     </section>

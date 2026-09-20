@@ -173,6 +173,61 @@
       "privacy": "Privacy"
     }
   },
+  "examples": {
+    "eyebrow": "Real output",
+    "title": "Seventeen videos this pipeline actually made",
+    "intro": "Unedited output — AI-written script, Piper voiceover, word-synced captions, in all nine languages the product offers. Sixteen use real stock footage; the one marked AI stills was drawn by the paid mode. Hover any one to play it."
+  },
+  "pricing": {
+    "eyebrow": "Pricing",
+    "title": "Pay for videos, not for a month you didn't use",
+    "intro": "Credits are one-off and never expire. No plan renews, nothing charges you again unless you buy again — and the whole thing is still MIT if you'd rather run it yourself.",
+    "free": {
+      "name": "Free",
+      "blurb": "Every new account, no card.",
+      "credits": "{credits} credits on sign-up",
+      "firstAiFree": "Your first AI-stills video free",
+      "thenStock": "Then stock-footage videos from 1 credit",
+      "stockOnly": "Stock-footage videos from 1 credit",
+      "everyLanguage": "Every language",
+      "noWatermark": "No watermark",
+      "cta": "Start free"
+    },
+    "packs": {
+      "starter": {
+        "name": "Starter",
+        "blurb": "Testing the water on a posting habit."
+      },
+      "creator": {
+        "name": "Creator",
+        "blurb": "A daily short with room to redo the ones that miss."
+      },
+      "studio": {
+        "name": "Studio",
+        "blurb": "Multiple accounts, or a client workload."
+      }
+    },
+    "popular": "Most picked",
+    "taxIncluded": "incl. VAT",
+    "oneOff": "one-off",
+    "packCredits": "{credits} credits",
+    "standardVideos": "~{count} standard videos",
+    "stockVideos": "~{count} with stock footage",
+    "neverExpire": "Never expire",
+    "packCta": "Get {credits} credits",
+    "selfHost": {
+      "title": "Or pay nothing at all",
+      "body": "Self-host it and the price is zero, forever — credits only exist because the hosted instance runs renders on hardware someone has to pay for.",
+      "cta": "Self-host it free"
+    },
+    "tariff": {
+      "stock": "1 credit = stock footage",
+      "aiStills": "3 = AI stills",
+      "localVideo": "10 = local text-to-video",
+      "note": "{rates}, each ×2 for medium and ×3 for long. You're quoted the exact cost before a render starts."
+    },
+    "currencyNote": "Prices in {currency}. Cards from any country work — your bank converts at its own rate."
+  },
   "faq": {
     "eyebrow": "FAQ",
     "title": "The questions worth asking first",
