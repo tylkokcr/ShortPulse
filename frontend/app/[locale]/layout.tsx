@@ -5,7 +5,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Archivo, JetBrains_Mono } from "next/font/google";
 import "../globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
-import { ACCENT_BOOT_SCRIPT } from "@/components/ui/AccentSwitcher";
+import { ACCENT_BOOT_SCRIPT } from "@/components/ui/accentBoot";
 import { SESSION_BOOT_SCRIPT } from "@/components/auth/sessionBoot";
 import { routing } from "@/i18n/routing";
 import { siteUrl } from "@/lib/siteUrl";
@@ -81,6 +81,22 @@ export default async function LocaleLayout({
   // Opts the locale's pages back into static rendering, which they lose
   // by default once anything reads the request.
   setRequestLocale(locale);
+
+  // Both scripts must come from modules without "use client" on them.
+  // A client module does not export values to the server, it exports
+  // references, and interpolating one into a template literal yields the
+  // source of a stub that throws — which is what shipped for a while: a
+  // head script that was a syntax error, so neither the accent nor the
+  // session marker ever applied, with nothing in the build or the console
+  // to say so. Cheap to check, and it fails the build rather than the page.
+  for (const [name, script] of [
+    ["ACCENT_BOOT_SCRIPT", ACCENT_BOOT_SCRIPT],
+    ["SESSION_BOOT_SCRIPT", SESSION_BOOT_SCRIPT],
+  ] as const) {
+    if (typeof script !== "string") {
+      throw new Error(`${name} did not reach the server as a string — is its module a client module?`);
+    }
+  }
 
   return (
     // suppressHydrationWarning covers exactly one attribute: the boot

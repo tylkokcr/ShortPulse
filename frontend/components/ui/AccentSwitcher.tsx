@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLocale } from "next-intl";
+import { usePathname } from "@/i18n/navigation";
 import clsx from "clsx";
+import { ACCENT_STORAGE_KEY } from "./accentBoot";
 
 /**
  * Which colour plays the accent.
@@ -25,29 +28,34 @@ export const ACCENTS = [
 
 export type AccentId = (typeof ACCENTS)[number]["id"];
 
-export const ACCENT_STORAGE_KEY = "shortpulse.accent";
-
-/**
- * Runs before first paint, from a <script> in the document head.
- *
- * Without it the page renders in ember, then swaps once React mounts —
- * a colour flash on every single navigation, which is worse than not
- * offering the choice at all. Kept as a string so it can be inlined; it
- * must stay small, synchronous and unable to throw, because it runs
- * before anything else on the page.
- */
-export const ACCENT_BOOT_SCRIPT = `
-try {
-  var a = localStorage.getItem(${JSON.stringify(ACCENT_STORAGE_KEY)});
-  if (a && a !== "ember") document.documentElement.setAttribute("data-accent", a);
-} catch (e) {}
-`.trim();
+/** Writes the choice onto <html>, where the CSS variables hang off it.
+ *  "ember" is the default in :root, so it is an absence rather than a
+ *  value — setting data-accent="ember" would work too, but removing it
+ *  keeps the attribute meaning "something other than the default". */
+function applyAccent(id: AccentId) {
+  const root = document.documentElement;
+  if (id === "ember") root.removeAttribute("data-accent");
+  else root.setAttribute("data-accent", id);
+}
 
 export function AccentSwitcher({ className }: { className?: string }) {
   // Starts as null rather than "ember" so the first paint after hydration
   // doesn't mark the wrong dot as selected for a frame.
   const [accent, setAccent] = useState<AccentId | null>(null);
 
+  // Re-applied on every navigation, not just read.
+  //
+  // accentBoot's script covers full loads, before React exists. It does
+  // not run on a soft navigation, and that navigation re-renders <html>
+  // from the server, where the attribute does not exist — so this puts
+  // it back.
+  //
+  // Keyed on the locale as well as the path because next-intl's
+  // usePathname strips the prefix: going from / to /tr reports "/" both
+  // times, and an effect watching only the path would never re-run on
+  // the one navigation a language switch actually performs.
+  const pathname = usePathname();
+  const locale = useLocale();
   useEffect(() => {
     let stored: string | null = null;
     try {
@@ -56,14 +64,14 @@ export function AccentSwitcher({ className }: { className?: string }) {
       // Private windows and blocked site data both throw on read. The
       // page still works; it just doesn't remember.
     }
-    setAccent((ACCENTS.find((a) => a.id === stored)?.id ?? "ember") as AccentId);
-  }, []);
+    const id = (ACCENTS.find((a) => a.id === stored)?.id ?? "ember") as AccentId;
+    setAccent(id);
+    applyAccent(id);
+  }, [pathname, locale]);
 
   function choose(id: AccentId) {
     setAccent(id);
-    const root = document.documentElement;
-    if (id === "ember") root.removeAttribute("data-accent");
-    else root.setAttribute("data-accent", id);
+    applyAccent(id);
     try {
       localStorage.setItem(ACCENT_STORAGE_KEY, id);
     } catch {
