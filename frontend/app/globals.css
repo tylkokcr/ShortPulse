@@ -388,3 +388,73 @@ html[data-session="1"] [data-landing-boot] {
     rgb(255 255 255 / 0) 55%
   );
 }
+
+/* ---------------------------------------------------------------------
+ * Colour that moves.
+ *
+ * The three rules below relax two the design set for itself: no gradient
+ * fills, no coloured glow. Both were right about what they were rejecting
+ * — a three-stop headline fill and an ellipse behind it that existed to
+ * look expensive — and the cost of obeying them was a page that reads as
+ * correct and dead. These are the narrowest versions that answer that:
+ * one element each, all of them keyed off --accent so they follow the
+ * switcher rather than introducing a second colour, and all of them off
+ * entirely when the visitor asks for less motion.
+ * ------------------------------------------------------------------ */
+
+/* The one button that matters. Glow at rest is nearly nothing; hover
+   makes it read as lit from within rather than painted. -8px spread keeps
+   it behind the button instead of haloing past its edge, which is what
+   made the old version look like a template. */
+.accent-glow {
+  box-shadow: 0 4px 18px -10px rgb(var(--accent) / 0.5);
+  transition: box-shadow 300ms ease, background-color 260ms ease;
+}
+.accent-glow:hover {
+  box-shadow: 0 8px 30px -8px rgb(var(--accent) / 0.65);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The emphasised word drifts between the accent and its hover tone —
+     one colour family, not a spectrum. 7s so it is never caught moving;
+     it is different when you look back, which is the difference between
+     alive and animated. */
+  .text-accent-emphasis {
+    animation: accent-drift 7s ease-in-out infinite;
+  }
+
+  @keyframes accent-drift {
+    0%,
+    100% {
+      color: rgb(var(--accent));
+    }
+    50% {
+      color: rgb(var(--accent-hover));
+    }
+  }
+}
+
+/* A tint under the grid, drifting. Two soft ellipses of accent at 4-5%,
+   which is below the threshold where a colour reads as a colour — it
+   reads as the dark not being flat. 40s, so nothing about it is ever the
+   thing you are looking at. */
+.bg-accent-wash {
+  background-image:
+    radial-gradient(60% 50% at 20% 25%, rgb(var(--accent) / 0.05), transparent 70%),
+    radial-gradient(50% 45% at 82% 65%, rgb(var(--accent) / 0.035), transparent 70%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bg-accent-wash {
+    animation: accent-wash-drift 40s ease-in-out infinite alternate;
+  }
+
+  @keyframes accent-wash-drift {
+    from {
+      transform: translate3d(-2%, -1%, 0) scale(1.05);
+    }
+    to {
+      transform: translate3d(2%, 2%, 0) scale(1.12);
+    }
+  }
+}

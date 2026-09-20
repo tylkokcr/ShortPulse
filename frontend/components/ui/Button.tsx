@@ -20,7 +20,7 @@ const VARIANT_CLASSES: Record<Variant, string> = {
   primary: "bg-accent hover:bg-accent-hover text-black font-semibold",
   secondary: "bg-surface hover:bg-surface-hover text-white border border-border",
   ghost: "bg-transparent hover:bg-surface text-white/80",
-  gradient: "bg-accent hover:bg-accent-hover text-black font-semibold",
+  gradient: "accent-glow bg-accent hover:bg-accent-hover text-black font-semibold",
   outline: "bg-transparent border border-border-strong text-white hover:border-white/40 hover:bg-white/5",
 };
 

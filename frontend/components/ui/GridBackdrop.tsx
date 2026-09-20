@@ -24,6 +24,8 @@ import { PointerLight } from "@/components/ui/PointerLight";
 export function GridBackdrop() {
   return (
     <PointerLight className="grid-backdrop pointer-events-none fixed inset-0 -z-10">
+      {/* Under the grid, so the rule stays a drawing on top of it. */}
+      <div className="bg-accent-wash absolute inset-0" aria-hidden />
       <div className="bg-grid absolute inset-0" aria-hidden />
       <div className="bg-grid-lit absolute inset-0" aria-hidden />
       <div className="bg-grid-band absolute inset-0" aria-hidden />
