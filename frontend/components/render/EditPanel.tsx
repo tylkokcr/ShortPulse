@@ -6,7 +6,6 @@ import {
   Loader2,
   Plus,
   Rows2,
-  Square,
   Trash2,
   Type,
   TriangleAlert,
@@ -103,6 +102,96 @@ function blankLine(lines: Line[]): Line {
   };
 }
 
+const CLIP_TYPES = "video/mp4,video/quicktime,video/webm,video/x-matroska";
+
+/** A filled area inside a layout diagram. Grey until its tile is chosen,
+ *  then the accent — the diagram itself carries the selection, not just a
+ *  border around it. The seam between two stacked halves is a 2px gap
+ *  rather than a drawn line: without it the split frame filled edge to
+ *  edge and was indistinguishable from the full one. */
+const FRAME_BLOCK =
+  "bg-white/[0.14] transition-colors duration-200 group-data-[selected]:bg-accent/70";
+
+/**
+ * One layout option, drawn as the frame it produces.
+ *
+ * Renders as a <button> or, when given onFile, as a <label> around a
+ * hidden file input — same box either way, because the tile that means
+ * "split screen" and the tile that means "give me the clip that makes
+ * split screen possible" are the same choice at two stages, and drawing
+ * them differently would make it look like two features.
+ *
+ * The 9:16 mini-frame is deliberately plain: two flat blocks at 7% white.
+ * It is a diagram of where the picture goes, not a thumbnail, and any
+ * more detail in it would start to look like a preview of the render.
+ */
+function LayoutTile({
+  label,
+  selected,
+  busy,
+  onClick,
+  onFile,
+  accept,
+  children,
+}: {
+  label: string;
+  selected: boolean;
+  busy?: boolean;
+  onClick?: () => void;
+  onFile?: (file: File | null) => void;
+  accept?: string;
+  children: React.ReactNode;
+}) {
+  const body = (
+    <>
+      <span className="relative block aspect-[9/16] w-9 overflow-hidden rounded-[4px] border border-white/10 bg-black/50">
+        {busy ? (
+          <Loader2 size={12} className="absolute inset-0 m-auto animate-spin text-white/40" />
+        ) : (
+          children
+        )}
+      </span>
+      <span className="text-xs">{label}</span>
+    </>
+  );
+
+  const className = clsx(
+    "group flex cursor-pointer flex-col items-center gap-2 rounded-lg border px-3 py-3",
+    "transition-[border-color,background-color,color] duration-200",
+    selected
+      ? "border-accent/60 bg-accent/[0.08] text-white"
+      : "border-border text-white/50 hover:border-border-strong hover:text-white/70",
+    busy && "pointer-events-none opacity-60",
+    "focus-within:border-accent/60 focus-visible:border-accent/60 focus-visible:outline-none"
+  );
+
+  if (onFile) {
+    return (
+      <label className={className} data-selected={selected || undefined}>
+        {body}
+        <input
+          type="file"
+          accept={accept}
+          className="sr-only"
+          onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+        />
+      </label>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      data-selected={selected || undefined}
+      className={className}
+    >
+      {body}
+    </button>
+  );
+}
+
 function timecode(ms: number): string {
   const total = Math.max(Math.round(ms / 1000), 0);
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
@@ -155,6 +244,26 @@ export function EditPanel({
         text.
       </Card>
     );
+  }
+
+  // Attaching a clip is its own round trip, not part of Apply: the file
+  // has to reach the server before a split render can reference it, and
+  // picking one is itself the statement that you want the split layout.
+  async function attachClip(file: File | null) {
+    if (!file) return;
+    setUploadingClip(true);
+    setError(null);
+    try {
+      const updated = await uploadSecondaryClip(project.config.id, file);
+      setSecondary(updated.edit?.secondary_path ?? null);
+      setLayout("split_v");
+      onApplied(updated);
+      bumpVideoVersion();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not attach the clip");
+    } finally {
+      setUploadingClip(false);
+    }
   }
 
   async function apply() {
@@ -250,72 +359,69 @@ export function EditPanel({
           <h3 className="text-sm font-semibold text-white/80">Layout</h3>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          {([
-            { id: "full", label: "Full frame", icon: Square },
-            { id: "split_v", label: "Split screen", icon: Rows2 },
-          ] as const).map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => setLayout(option.id)}
-              disabled={option.id === "split_v" && !secondary}
+        {/* Two portrait frames rather than two labelled buttons. The
+            choice is about the shape of the picture, so the control shows
+            the shape — you can tell them apart before reading either
+            caption, which a row of text with a 14px icon on it never
+            allowed. */}
+        <div className="grid grid-cols-2 gap-2.5">
+          <LayoutTile
+            label="Full frame"
+            selected={layout === "full"}
+            onClick={() => setLayout("full")}
+          >
+            <span className={clsx("absolute inset-0 rounded-[3px]", FRAME_BLOCK)} />
+          </LayoutTile>
+
+          {/* With no clip attached this tile *is* the file picker, instead
+              of being disabled above a separate dashed strip that had to
+              be noticed. One control, and the thing it produces is the
+              thing it is drawn as. */}
+          <LayoutTile
+            label={secondary ? "Split screen" : uploadingClip ? "Uploading…" : "Add a clip"}
+            selected={layout === "split_v"}
+            busy={uploadingClip}
+            {...(secondary
+              ? { onClick: () => setLayout("split_v") }
+              : { onFile: attachClip, accept: CLIP_TYPES })}
+          >
+            <span
+              className={clsx("absolute inset-x-0 top-0 h-[calc(50%-1px)] rounded-t-[3px]", FRAME_BLOCK)}
+            />
+            <span
               className={clsx(
-                "flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors duration-200",
-                layout === option.id
-                  ? "border-accent/50 bg-accent/10 text-white"
-                  : "border-border text-white/50 hover:border-border-strong",
-                option.id === "split_v" && !secondary && "cursor-not-allowed opacity-40"
+                "absolute inset-x-0 bottom-0 flex h-[calc(50%-1px)] items-center justify-center rounded-b-[3px]",
+                secondary ? FRAME_BLOCK : "border-t border-dashed border-white/20"
               )}
             >
-              <option.icon size={14} />
-              {option.label}
-            </button>
-          ))}
+              {!secondary && !uploadingClip && <Upload size={11} className="text-white/35" />}
+            </span>
+          </LayoutTile>
         </div>
 
-        <label
-          className={clsx(
-            "flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-xs transition-colors hover:border-accent/40",
-            uploadingClip && "pointer-events-none opacity-60"
-          )}
-        >
-          <Upload size={13} className="shrink-0 text-white/40" />
-          <span className="min-w-0 flex-1 truncate text-white/50">
-            {uploadingClip
-              ? "Uploading..."
-              : secondary
-                ? "Bottom clip attached — click to replace"
-                : "Add a clip for the bottom half"}
-          </span>
-          <input
-            type="file"
-            accept="video/mp4,video/quicktime,video/webm,video/x-matroska"
-            className="hidden"
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              setUploadingClip(true);
-              setError(null);
-              try {
-                const updated = await uploadSecondaryClip(project.config.id, file);
-                setSecondary(updated.edit?.secondary_path ?? null);
-                setLayout("split_v");
-                onApplied(updated);
-                bumpVideoVersion();
-              } catch (err) {
-                setError(err instanceof Error ? err.message : "Could not attach the clip");
-              } finally {
-                setUploadingClip(false);
-              }
-            }}
-          />
-        </label>
-
-        <p className="text-[11px] leading-relaxed text-white/30">
-          The narration stays on top and keeps the soundtrack; the bottom clip is muted and
-          loops if it&apos;s shorter.
-        </p>
+        {secondary && (
+          <div className="flex items-center gap-2 text-[11px] text-white/35">
+            <span className="min-w-0 flex-1">
+              The narration stays on top and keeps the soundtrack; the bottom clip is muted
+              and loops if it&apos;s shorter.
+            </span>
+            <label
+              className={clsx(
+                "shrink-0 cursor-pointer rounded-md border border-border px-2 py-1 text-white/50",
+                "transition-colors hover:border-accent/50 hover:text-white",
+                uploadingClip && "pointer-events-none opacity-60"
+              )}
+            >
+              {uploadingClip ? "Uploading…" : "Replace"}
+              <input
+                type="file"
+                accept={CLIP_TYPES}
+                className="hidden"
+                onChange={(e) => attachClip(e.target.files?.[0] ?? null)}
+              />
+            </label>
+          </div>
+        )}
       </Card>
 
       <Card className="flex flex-col gap-3">
@@ -376,21 +482,12 @@ export function EditPanel({
                   </button>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-[10px] text-white/40">
-                  <select
+                  <PositionPicker
                     value={overlay.position}
-                    onChange={(e) =>
-                      setOverlays((c) =>
-                        c.map((o, j) =>
-                          j === i ? { ...o, position: e.target.value as TextOverlay["position"] } : o
-                        )
-                      )
+                    onChange={(position) =>
+                      setOverlays((c) => c.map((o, j) => (j === i ? { ...o, position } : o)))
                     }
-                    className="rounded border border-border bg-background px-1.5 py-1 text-white/70"
-                  >
-                    <option value="top">Top</option>
-                    <option value="middle">Middle</option>
-                    <option value="bottom">Bottom</option>
-                  </select>
+                  />
                   <TimeField
                     label="from"
                     ms={overlay.start_ms}
@@ -443,6 +540,65 @@ export function EditPanel({
   );
 }
 
+const POSITIONS = [
+  { id: "top", label: "Top", y: "top-[3px]" },
+  { id: "middle", label: "Middle", y: "top-1/2 -translate-y-1/2" },
+  { id: "bottom", label: "Bottom", y: "bottom-[3px]" },
+] as const;
+
+/**
+ * Where the overlay sits in the frame.
+ *
+ * Three frames with the text bar drawn in place, instead of a native
+ * <select> reading "Top". The choice is spatial and there are exactly
+ * three of them, so a dropdown was hiding two thirds of a decision that
+ * fits on one line — and a platform select is the one control on the page
+ * the design cannot reach, which is most of why this corner looked older
+ * than the rest of it.
+ */
+function PositionPicker({
+  value,
+  onChange,
+}: {
+  value: TextOverlay["position"];
+  onChange: (position: TextOverlay["position"]) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1" role="radiogroup" aria-label="Position">
+      {POSITIONS.map((option) => {
+        const selected = value === option.id;
+        return (
+          <button
+            key={option.id}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            aria-label={option.label}
+            title={option.label}
+            onClick={() => onChange(option.id)}
+            className={clsx(
+              "relative h-7 w-[19px] shrink-0 overflow-hidden rounded-[3px] border",
+              "transition-[border-color,background-color] duration-200",
+              "focus-visible:outline-none focus-visible:border-accent",
+              selected
+                ? "border-accent/60 bg-accent/10"
+                : "border-border bg-black/40 hover:border-border-strong"
+            )}
+          >
+            <span
+              className={clsx(
+                "absolute inset-x-[3px] h-[3px] rounded-[1px] transition-colors duration-200",
+                option.y,
+                selected ? "bg-accent" : "bg-white/25"
+              )}
+            />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function TimeField({
   label,
   ms,
@@ -453,7 +609,7 @@ function TimeField({
   onChange: (ms: number) => void;
 }) {
   return (
-    <label className="flex items-center gap-1">
+    <label className="flex items-center gap-1.5 rounded-md border border-border bg-black/30 py-1 pl-2 pr-1.5 transition-colors focus-within:border-accent/50">
       {label}
       <input
         type="number"
@@ -461,7 +617,10 @@ function TimeField({
         step={0.1}
         value={(ms / 1000).toFixed(1)}
         onChange={(e) => onChange(Math.max(Math.round(Number(e.target.value) * 1000), 0))}
-        className="w-14 rounded border border-border bg-background px-1.5 py-1 text-white/70"
+        // Borderless inside the labelled pill: the box around it is the
+        // field, so a second box around just the digits was one frame too
+        // many in a row that already carries three of them.
+        className="w-9 bg-transparent text-right text-[11px] text-white/80 focus:outline-none"
       />
       s
     </label>
