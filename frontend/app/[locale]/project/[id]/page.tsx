@@ -209,7 +209,12 @@ function Project({ id }: { id: string }) {
                 {script && <StockCredits script={script} />}
               </Card>
             ) : project ? (
-              <EditPanel project={project} onApplied={setProject} onSeek={handleSeek} />
+              <EditPanel
+                project={project}
+                onApplied={setProject}
+                onSeek={handleSeek}
+                currentTime={currentTime}
+              />
             ) : (
               <Card className="text-sm text-white/40">Loading...</Card>
             )}

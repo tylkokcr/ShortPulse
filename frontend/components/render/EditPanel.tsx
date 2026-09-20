@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Check,
   Loader2,
@@ -201,10 +201,15 @@ export function EditPanel({
   project,
   onApplied,
   onSeek,
+  currentTime = 0,
 }: {
   project: Project;
   onApplied: (project: Project) => void;
   onSeek?: (seconds: number) => void;
+  /** Where the player is, in seconds. Drawn on each overlay's timeline so
+   *  the span can be placed against what is actually on screen rather
+   *  than against a number. */
+  currentTime?: number;
 }) {
   const track = project.edit?.captions ?? project.captions ?? null;
 
@@ -226,6 +231,21 @@ export function EditPanel({
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // How long the timelines are.
+  //
+  // No single field is reliable on its own: an upload has no script, and
+  // a script's total_duration_s is what was asked for rather than what
+  // the audio came out as. The last word's end is the one measurement
+  // taken from the finished render, so it is the floor; overlays already
+  // stored past it widen the track rather than being drawn off the end
+  // of it, which is what an older project with a stale end time does.
+  const durationMs = useMemo(() => {
+    const lastWord = track?.words.at(-1)?.end_ms ?? 0;
+    const script = (project.script?.total_duration_s ?? 0) * 1000;
+    const overlayEnd = overlays.reduce((max, o) => Math.max(max, o.end_ms), 0);
+    return Math.max(lastWord, script, overlayEnd, 1000);
+  }, [track, project.script, overlays]);
 
   const original = useMemo(() => (track ? toLines(track) : []), [track]);
   const dirty =
@@ -481,26 +501,24 @@ export function EditPanel({
                     <Trash2 size={13} />
                   </button>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 text-[10px] text-white/40">
+                <div className="flex items-center gap-2.5">
                   <PositionPicker
                     value={overlay.position}
                     onChange={(position) =>
                       setOverlays((c) => c.map((o, j) => (j === i ? { ...o, position } : o)))
                     }
                   />
-                  <TimeField
-                    label="from"
-                    ms={overlay.start_ms}
-                    onChange={(ms) =>
-                      setOverlays((c) => c.map((o, j) => (j === i ? { ...o, start_ms: ms } : o)))
+                  <TimelineRange
+                    startMs={overlay.start_ms}
+                    endMs={overlay.end_ms}
+                    durationMs={durationMs}
+                    playheadMs={currentTime * 1000}
+                    onChange={(start_ms, end_ms) =>
+                      setOverlays((c) =>
+                        c.map((o, j) => (j === i ? { ...o, start_ms, end_ms } : o))
+                      )
                     }
-                  />
-                  <TimeField
-                    label="to"
-                    ms={overlay.end_ms}
-                    onChange={(ms) =>
-                      setOverlays((c) => c.map((o, j) => (j === i ? { ...o, end_ms: ms } : o)))
-                    }
+                    onSeek={onSeek}
                   />
                 </div>
               </div>
@@ -599,30 +617,199 @@ function PositionPicker({
   );
 }
 
-function TimeField({
-  label,
-  ms,
+/** mm:ss.d — tenths, because that is the precision the control edits in
+ *  and a burned-in title landing a tenth late is visible. */
+function stamp(ms: number): string {
+  const clamped = Math.max(ms, 0);
+  const total = Math.floor(clamped / 1000);
+  const tenths = Math.floor((clamped % 1000) / 100);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}.${tenths}`;
+}
+
+/** Nothing shorter than this is worth burning in, and it stops a handle
+ *  dragged past its partner from inverting the span. */
+const MIN_SPAN_MS = 200;
+const STEP_MS = 100;
+
+type Grab = { kind: "start" | "end" | "move"; grabMs: number };
+
+/**
+ * When the overlay is on screen, against the whole video.
+ *
+ * It replaces two number fields reading "from 0,0 s to 3,0 s". Those were
+ * accurate and told you nothing: the question anyone actually has is
+ * whether the title lands on the right moment, and a decimal cannot
+ * answer that without playing the video and counting. Here the span is
+ * drawn over the full duration with the playhead on the same track, so
+ * the answer is the picture.
+ *
+ * Dragging is the primary control and the keyboard is not an afterthought
+ * — each handle is a focusable slider that moves in tenths, a second with
+ * shift — because a burned-in caption is exactly the kind of thing
+ * somebody nudges frame by frame, and a drag alone cannot do that.
+ */
+function TimelineRange({
+  startMs,
+  endMs,
+  durationMs,
+  playheadMs,
   onChange,
+  onSeek,
 }: {
-  label: string;
-  ms: number;
-  onChange: (ms: number) => void;
+  startMs: number;
+  endMs: number;
+  durationMs: number;
+  playheadMs: number;
+  onChange: (startMs: number, endMs: number) => void;
+  onSeek?: (seconds: number) => void;
 }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [grab, setGrab] = useState<Grab | null>(null);
+
+  const pct = (ms: number) => Math.min(Math.max(ms / durationMs, 0), 1) * 100;
+
+  function msAt(clientX: number): number {
+    const rect = trackRef.current?.getBoundingClientRect();
+    if (!rect || rect.width === 0) return 0;
+    const ratio = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1);
+    return Math.round((ratio * durationMs) / STEP_MS) * STEP_MS;
+  }
+
+  function apply(kind: Grab["kind"], at: number, grabMs: number) {
+    // Clamped to the video here rather than where the position comes
+    // from: a drag is already bounded by the track it happens on, but
+    // arrow keys are not, and an end held past the last frame stored a
+    // span the render can never show.
+    const inVideo = Math.min(Math.max(at, 0), durationMs);
+    if (kind === "start") {
+      onChange(Math.min(inVideo, endMs - MIN_SPAN_MS), endMs);
+    } else if (kind === "end") {
+      onChange(startMs, Math.max(inVideo, startMs + MIN_SPAN_MS));
+    } else {
+      // The whole span follows the pointer by the offset it was grabbed
+      // at, so it does not jump its own width on the first movement, and
+      // it stops at each end instead of being clipped by it.
+      const span = endMs - startMs;
+      const next = Math.min(Math.max(at - grabMs, 0), Math.max(durationMs - span, 0));
+      onChange(next, next + span);
+    }
+  }
+
+  // Takes the event rather than returning a handler: a factory called
+  // during render puts the ref read inside a function the linter cannot
+  // prove is deferred, and it is right to object — the deferral was an
+  // accident of where the closure happened to be built.
+  function startGrab(kind: Grab["kind"], event: React.PointerEvent) {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setGrab({ kind, grabMs: kind === "move" ? msAt(event.clientX) - startMs : 0 });
+  }
+
+  function onPointerMove(event: React.PointerEvent) {
+    if (!grab) return;
+    apply(grab.kind, msAt(event.clientX), grab.grabMs);
+  }
+
+  function endGrab(event: React.PointerEvent) {
+    if (!grab) return;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    setGrab(null);
+  }
+
+  function nudge(kind: "start" | "end", event: React.KeyboardEvent) {
+    const step = event.shiftKey ? 1000 : STEP_MS;
+    const delta = event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0;
+    if (!delta) return;
+    event.preventDefault();
+    apply(kind, (kind === "start" ? startMs : endMs) + delta, 0);
+  }
+
+  const handle =
+    "absolute top-0 h-full w-4 -translate-x-1/2 cursor-ew-resize touch-none rounded-full " +
+    "after:absolute after:inset-y-1 after:left-1/2 after:w-[3px] after:-translate-x-1/2 " +
+    "after:rounded-full after:bg-accent after:transition-colors " +
+    "hover:after:bg-accent-hover focus-visible:outline-none focus-visible:after:bg-white";
+
   return (
-    <label className="flex items-center gap-1.5 rounded-md border border-border bg-black/30 py-1 pl-2 pr-1.5 transition-colors focus-within:border-accent/50">
-      {label}
-      <input
-        type="number"
-        min={0}
-        step={0.1}
-        value={(ms / 1000).toFixed(1)}
-        onChange={(e) => onChange(Math.max(Math.round(Number(e.target.value) * 1000), 0))}
-        // Borderless inside the labelled pill: the box around it is the
-        // field, so a second box around just the digits was one frame too
-        // many in a row that already carries three of them.
-        className="w-9 bg-transparent text-right text-[11px] text-white/80 focus:outline-none"
-      />
-      s
-    </label>
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <div
+        ref={trackRef}
+        className="relative h-7 w-full rounded-md border border-border bg-black/40"
+        onPointerMove={onPointerMove}
+        onPointerUp={endGrab}
+        onPointerCancel={endGrab}
+      >
+        {/* Drag anywhere on the span to move it. aria-hidden rather than a
+            button: there is no keyboard equivalent for moving both ends at
+            once, and the two sliders below already reach every value this
+            reaches — announcing a control that cannot be operated is worse
+            than announcing nothing. */}
+        <span
+          aria-hidden
+          onPointerDown={(event) => startGrab("move", event)}
+          className="absolute top-0 h-full cursor-grab touch-none rounded-[3px] border-y border-accent/50 bg-accent/20 active:cursor-grabbing"
+          style={{ left: `${pct(startMs)}%`, width: `${pct(endMs) - pct(startMs)}%` }}
+        />
+
+        {/* Where the video is, drawn over the span rather than under it.
+            Under looked tidier until you noticed it vanished exactly when
+            the playhead entered the span — which is the one moment it
+            answers something, because that is the text being on screen. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute top-0 h-full w-px bg-white/70"
+          style={{ left: `${pct(playheadMs)}%` }}
+        />
+
+        <span
+          role="slider"
+          tabIndex={0}
+          aria-label="Start"
+          aria-valuemin={0}
+          aria-valuemax={Math.round(durationMs / 1000)}
+          aria-valuenow={startMs / 1000}
+          aria-valuetext={stamp(startMs)}
+          onPointerDown={(event) => startGrab("start", event)}
+          onKeyDown={(event) => nudge("start", event)}
+          className={handle}
+          style={{ left: `${pct(startMs)}%` }}
+        />
+        <span
+          role="slider"
+          tabIndex={0}
+          aria-label="End"
+          aria-valuemin={0}
+          aria-valuemax={Math.round(durationMs / 1000)}
+          aria-valuenow={endMs / 1000}
+          aria-valuetext={stamp(endMs)}
+          onPointerDown={(event) => startGrab("end", event)}
+          onKeyDown={(event) => nudge("end", event)}
+          className={handle}
+          style={{ left: `${pct(endMs)}%` }}
+        />
+      </div>
+
+      <div className="flex items-center gap-1 font-mono text-[10px] tabular-nums text-white/35">
+        {/* Clicking a timecode seeks, the same as clicking one in the
+            breakdown above — so checking the placement is one click
+            rather than a scrub. */}
+        <button
+          type="button"
+          onClick={() => onSeek?.(startMs / 1000)}
+          className="rounded px-1 transition-colors hover:bg-surface-hover hover:text-white"
+        >
+          {stamp(startMs)}
+        </button>
+        <span className="text-white/20">→</span>
+        <button
+          type="button"
+          onClick={() => onSeek?.(endMs / 1000)}
+          className="rounded px-1 transition-colors hover:bg-surface-hover hover:text-white"
+        >
+          {stamp(endMs)}
+        </button>
+        <span className="ml-auto text-white/20">{stamp(durationMs)}</span>
+      </div>
+    </div>
   );
 }
