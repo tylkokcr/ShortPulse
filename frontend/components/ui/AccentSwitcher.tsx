@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useLocale } from "next-intl";
 import { usePathname } from "@/i18n/navigation";
 import clsx from "clsx";
@@ -81,7 +81,7 @@ export function AccentSwitcher({ className }: { className?: string }) {
 
   return (
     <div
-      className={clsx("flex items-center gap-1.5", className)}
+      className={clsx("flex items-center gap-2", className)}
       role="radiogroup"
       aria-label="Accent colour"
     >
@@ -97,15 +97,35 @@ export function AccentSwitcher({ className }: { className?: string }) {
             title={label}
             onClick={() => choose(id)}
             className={clsx(
-              "h-3.5 w-3.5 rounded-full transition-[transform,box-shadow] duration-150",
+              "h-3.5 w-3.5 rounded-full transition-[transform,box-shadow,opacity] duration-200",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-              // The ring, not a size change, marks the selection: growing
-              // the dot would shift the two beside it every time.
-              selected ? "ring-2 ring-white/70 ring-offset-2 ring-offset-background" : "hover:scale-110",
+              // Selection is a halo in the swatch's own colour and a small
+              // step up in size, not a grey ring with a gap in it — that
+              // read as a foreign object sitting on top of the colour, and
+              // it was the widest thing in the header. Both cues are drawn
+              // outside the layout box (a shadow and a transform), so the
+              // row stays put; the earlier comment's worry about growing
+              // the dot applied to width, not to scale.
+              //
+              // Size and opacity carry the state as well as hue does, so
+              // the marked dot is still findable without colour vision.
+              selected
+                ? "scale-[1.18] ring-[3px]"
+                : "opacity-80 hover:scale-110 hover:opacity-100",
               // Before hydration nothing is marked, so nothing lies.
-              accent === null && "opacity-60"
+              accent === null && "opacity-80"
             )}
-            style={{ backgroundColor: swatch }}
+            // The ring colour is the swatch's own, at a third strength and
+            // with no offset, so it hugs the dot as a halo. Set as the ring
+            // variable rather than a literal box-shadow because Tailwind
+            // composes focus-visible's ring through the same property — an
+            // inline box-shadow here would silently delete the focus ring.
+            style={
+              {
+                backgroundColor: swatch,
+                "--tw-ring-color": `${swatch}59`,
+              } as CSSProperties
+            }
           />
         );
       })}
