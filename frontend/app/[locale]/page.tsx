@@ -33,7 +33,7 @@ import { VoiceSelector } from "@/components/editor/VoiceSelector";
 import { RenderSummary } from "@/components/editor/RenderSummary";
 import { UploadPanel } from "@/components/editor/UploadPanel";
 import { StartFromExample } from "@/components/editor/StartFromExample";
-import { SettingsDrawer, DrawerGroup } from "@/components/editor/SettingsDrawer";
+import { SettingsDrawer } from "@/components/editor/SettingsDrawer";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 
 export default function HomePage() {
@@ -160,14 +160,15 @@ function CreateVideo() {
           <SettingsDrawer
             open={drawerGroup !== null}
             onClose={() => setDrawerGroup(null)}
-            title="Settings"
-            scrollTo={drawerGroup}
+            icon={GROUPS.find((g) => g.id === drawerGroup)?.icon}
+            title={GROUPS.find((g) => g.id === drawerGroup)?.title ?? ""}
           >
-            {GROUPS.map((group) => (
-              <DrawerGroup key={group.id} id={group.id} icon={group.icon} title={group.title}>
-                {GROUP_FIELDS[group.id]}
-              </DrawerGroup>
-            ))}
+            {/* One group, not all four stacked. The rows on the page are
+                the list — they stay visible and clickable beside the open
+                panel, so switching group is one click and the panel never
+                holds 1900px of scroll to get past two sections nobody
+                asked for. */}
+            {drawerGroup && GROUP_FIELDS[drawerGroup]}
           </SettingsDrawer>
         ) : undefined
       }
@@ -227,11 +228,12 @@ function CreateVideo() {
             ) : (
               <>
                 <h1 className="mt-1.5 text-3xl font-semibold tracking-tight">
-                  Caption a video you <span className="text-accent-emphasis">already have</span>.
+                  A video you <span className="text-accent-emphasis">already have</span>.
                 </h1>
                 <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/50">
                   Upload it and every spoken word gets timed and burned in — the same captions the
-                  generator produces, on your own footage.
+                  generator produces, on your own footage. Or pick another language and it is
+                  spoken again over your picture.
                 </p>
               </>
             )}
@@ -325,7 +327,10 @@ function CreateVideo() {
 function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
   const tabs: { id: Mode; label: string; icon: typeof FileText }[] = [
     { id: "generate", label: "Generate from a topic", icon: Wand2 },
-    { id: "upload", label: "Caption my video", icon: Upload },
+    // Names both things it does. Dubbing has been in here since it was
+    // written — a language field inside this tab — and a tab promising
+    // captions gave nobody a reason to open it and find out.
+    { id: "upload", label: "Caption or dub my video", icon: Upload },
   ];
 
   return (
