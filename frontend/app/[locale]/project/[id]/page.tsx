@@ -140,7 +140,7 @@ function Project({ id }: { id: string }) {
   }
 
   return (
-    <AppShell section="Project">
+    <AppShell section="project">
       {/* The column gap the page's own <main> used to carry. The shell
           owns padding and width; stacking is still this page's business. */}
       <div className="flex flex-col gap-6">

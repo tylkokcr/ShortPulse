@@ -121,7 +121,7 @@ function Credits() {
   const packs = credits?.packs ?? [];
 
   return (
-    <AppShell section="Credits">
+    <AppShell section="credits">
         <div className="animate-fade-up">
           <h1 className="text-3xl font-semibold tracking-tight">
             {credits?.balance ?? 0} credits

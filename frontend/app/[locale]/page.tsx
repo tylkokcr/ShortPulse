@@ -87,7 +87,7 @@ function CreateVideo() {
   const voiceLabel = draft.voiceId ? (draft.voiceId.split("/").at(-2) ?? "Voice") : "Default voice";
 
   return (
-    <AppShell section="Studio">
+    <AppShell section="studio">
         <div className="animate-fade-up flex flex-wrap items-end justify-between gap-4">
           <div>
             {mode === "generate" ? (

@@ -52,7 +52,7 @@ function Library() {
   }, []);
 
   return (
-    <AppShell section="Library" wide>
+    <AppShell section="library" wide>
         <div className="animate-fade-up flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight">Your videos</h1>

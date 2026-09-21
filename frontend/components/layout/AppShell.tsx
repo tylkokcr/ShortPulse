@@ -1,6 +1,7 @@
 "use client";
 
 import clsx from "clsx";
+import { useTranslations } from "next-intl";
 import { AppRail } from "@/components/layout/AppRail";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { AccountBar } from "@/components/auth/AccountBar";
@@ -31,11 +32,16 @@ export function AppShell({
   wide = false,
   actions,
 }: {
-  section: string;
+  /** A key under `nav`, not a label. The rail names these four screens
+   *  from the catalogue; passing a literal here printed "Library" next to
+   *  a rail reading "Kütüphane". */
+  section: "studio" | "library" | "connections" | "credits" | "project";
   children: React.ReactNode;
   wide?: boolean;
   actions?: React.ReactNode;
 }) {
+  const t = useTranslations("nav");
+
   return (
     <div className="relative lg:flex lg:h-dvh lg:overflow-hidden">
       <AppRail />
@@ -52,7 +58,7 @@ export function AppShell({
             owns the chrome; the page owns the sentence. */}
         <header className="hidden shrink-0 items-center gap-4 border-b border-border/60 px-8 py-3.5 lg:flex">
           <span className="font-mono text-xs uppercase tracking-widest text-white/40">
-            {section}
+            {t(section)}
           </span>
           <div className="ml-auto flex items-center gap-4">
             {actions}
