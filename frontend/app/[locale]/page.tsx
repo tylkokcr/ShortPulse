@@ -33,6 +33,7 @@ import { MusicSelector } from "@/components/editor/MusicSelector";
 import { VoiceSelector } from "@/components/editor/VoiceSelector";
 import { RenderSummary } from "@/components/editor/RenderSummary";
 import { UploadPanel } from "@/components/editor/UploadPanel";
+import { StartFromExample } from "@/components/editor/StartFromExample";
 import { AccountBar } from "@/components/auth/AccountBar";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 
@@ -129,6 +130,16 @@ function CreateVideo() {
           // squeezed against the form.
           <div className="animate-fade-up mt-8">
             <UploadPanel />
+          </div>
+        )}
+
+        {/* Only while the topic is empty, which is the only time it is an
+            answer to anything. Once something is typed the row would be
+            four videos sitting between the user and the button, offering
+            to overwrite what they just wrote. */}
+        {mode === "generate" && !draft.topic.trim() && (
+          <div className="animate-fade-up mt-8">
+            <StartFromExample />
           </div>
         )}
 
