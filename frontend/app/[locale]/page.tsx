@@ -9,7 +9,7 @@ import {
   Wand2,
   ArrowRight,
   Coins,
-  ChevronDown,
+  ChevronRight,
   Upload,
 } from "lucide-react";
 import clsx from "clsx";
@@ -33,6 +33,7 @@ import { VoiceSelector } from "@/components/editor/VoiceSelector";
 import { RenderSummary } from "@/components/editor/RenderSummary";
 import { UploadPanel } from "@/components/editor/UploadPanel";
 import { StartFromExample } from "@/components/editor/StartFromExample";
+import { SettingsDrawer, DrawerGroup } from "@/components/editor/SettingsDrawer";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 
 export default function HomePage() {
@@ -45,12 +46,29 @@ export default function HomePage() {
 
 type Mode = "generate" | "upload";
 
+/** The four groups the drawer holds, in the order it stacks them. The
+ *  rows on the page and the sections inside the panel are drawn from
+ *  this one list, so a group cannot exist in the summary and not in the
+ *  panel it claims to open. */
+const GROUPS = [
+  { id: "look", icon: Palette, title: "Look & language" },
+  { id: "length", icon: Clock, title: "Length" },
+  { id: "audio", icon: MusicIcon, title: "Audio" },
+  { id: "finishing", icon: Wand2, title: "Finishing touches" },
+] as const;
+
+type GroupId = (typeof GROUPS)[number]["id"];
+
 function CreateVideo() {
   const router = useRouter();
   const { draft, toProjectConfig, credits } = useShortPulseStore();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("generate");
+  // Which group the panel is scrolled to, and null for closed. One piece
+  // of state rather than an open flag beside a selection: "open at
+  // nothing" is not a state this can be in.
+  const [drawerGroup, setDrawerGroup] = useState<GroupId | null>(null);
 
   const canSubmit =
     draft.topic.trim().length > 0 &&
@@ -86,8 +104,114 @@ function CreateVideo() {
   // The id is a repo path; its second-to-last segment is the speaker name.
   const voiceLabel = draft.voiceId ? (draft.voiceId.split("/").at(-2) ?? "Voice") : "Default voice";
 
+  // The fields themselves. Plain JSX rather than components per group:
+  // every selector already reads the draft from the store, so there is
+  // no state to thread and nothing here to re-render around.
+  const GROUP_FIELDS: Record<GroupId, React.ReactNode> = {
+    look: (
+      <>
+        <Field label="Aspect ratio">
+          <AspectRatioSelector />
+        </Field>
+        <Field label="Language">
+          <LanguageSelector />
+        </Field>
+        <Field label="Visual style">
+          <VisualSelector />
+        </Field>
+        <Field label="Art style">
+          <ArtStyleSelector />
+        </Field>
+        <Field label="Keep out of frame">
+          <NegativePrompt />
+        </Field>
+        <Field label="Caption style">
+          <CaptionStyleSelector />
+        </Field>
+      </>
+    ),
+    length: <DurationSelector />,
+    audio: (
+      <>
+        <Field label="Narrator voice">
+          <VoiceSelector />
+        </Field>
+        <Field label="Background music">
+          <MusicSelector />
+        </Field>
+      </>
+    ),
+    finishing: <OutroToggle />,
+  };
+
+  const summaries: Record<GroupId, string> = {
+    look: `${draft.aspectRatio} · ${draft.language.toUpperCase()} · ${draft.artStyle} · ${draft.captionPreset}`,
+    length: lengthLabel,
+    audio: `${voiceLabel} · music: ${musicLabel}`,
+    finishing: draft.outroEnabled ? "Outro card on" : "Outro card off",
+  };
+
   return (
-    <AppShell section="studio">
+    <AppShell
+      section="studio"
+      asideOpen={mode === "generate" && drawerGroup !== null}
+      aside={
+        mode === "generate" ? (
+          <SettingsDrawer
+            open={drawerGroup !== null}
+            onClose={() => setDrawerGroup(null)}
+            title="Settings"
+            scrollTo={drawerGroup}
+          >
+            {GROUPS.map((group) => (
+              <DrawerGroup key={group.id} id={group.id} icon={group.icon} title={group.title}>
+                {GROUP_FIELDS[group.id]}
+              </DrawerGroup>
+            ))}
+          </SettingsDrawer>
+        ) : undefined
+      }
+      footer={
+        // Only the generate flow has one. The upload panel carries its own
+        // button, because its cost and its enabled state depend on a file
+        // rather than on the draft.
+        // Two rows on a phone, one on a desktop. The price used to be
+        // `hidden sm:flex`, which put the button that spends credits on
+        // the one screen size that never showed what it costs.
+        mode === "generate" ? (
+          <div className="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-4">
+          <p className="flex items-center gap-1.5 text-xs text-white/40">
+            {price !== undefined ? (
+              <>
+                <Coins size={13} />
+                <span className="text-white/70">
+                  {price} credit{price === 1 ? "" : "s"}
+                </span>
+                · {credits?.balance ?? 0} remaining
+              </>
+            ) : (
+              "Free · runs on this machine"
+            )}
+          </p>
+          <Button
+            onClick={handleGenerate}
+            disabled={!canSubmit}
+            variant="gradient"
+            className="ml-auto w-full sm:w-auto"
+          >
+            {submitting ? (
+              "Starting render..."
+            ) : (
+              <>
+                Generate video
+                <ArrowRight size={16} />
+              </>
+            )}
+          </Button>
+        </div>
+        ) : undefined
+      }
+    >
         <div className="animate-fade-up flex flex-wrap items-end justify-between gap-4">
           <div>
             {mode === "generate" ? (
@@ -139,83 +263,30 @@ function CreateVideo() {
 
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px] lg:items-start">
           <div className="flex flex-col gap-4">
-            <Section
-              icon={FileText}
-              step={1}
-              title="The idea"
-              summary={draft.topic.trim() || "No topic yet"}
-              defaultOpen
-              delay={0}
-            >
+            <Card className="animate-fade-up flex flex-col gap-4 border-border-strong bg-surface-raised">
+              <div className="flex items-center gap-2">
+                <FileText size={14} className="text-accent" />
+                <h2 className="text-sm font-semibold text-white/80">The idea</h2>
+              </div>
               <ScriptEditor />
-            </Section>
+            </Card>
 
-            <Section
-              icon={Palette}
-              step={2}
-              title="Look & language"
-              summary={`${draft.aspectRatio} · ${draft.language.toUpperCase()} · ${draft.artStyle} · ${draft.captionPreset}`}
-              defaultOpen
-              delay={60}
-            >
-              <div className="flex flex-col gap-5">
-                <Field label="Aspect ratio">
-                  <AspectRatioSelector />
-                </Field>
-                <Field label="Language">
-                  <LanguageSelector />
-                </Field>
-                <Field label="Visual style">
-                  <VisualSelector />
-                </Field>
-                <Field label="Art style">
-                  <ArtStyleSelector />
-                </Field>
-                <Field label="Keep out of frame">
-                  <NegativePrompt />
-                </Field>
-                <Field label="Caption style">
-                  <CaptionStyleSelector />
-                </Field>
-              </div>
-            </Section>
-
-            <Section
-              icon={Clock}
-              step={3}
-              title="Length"
-              summary={lengthLabel}
-              delay={120}
-            >
-              <DurationSelector />
-            </Section>
-
-            <Section
-              icon={MusicIcon}
-              step={4}
-              title="Audio"
-              summary={`${voiceLabel} · music: ${musicLabel}`}
-              delay={180}
-            >
-              <div className="flex flex-col gap-5">
-                <Field label="Narrator voice">
-                  <VoiceSelector />
-                </Field>
-                <Field label="Background music">
-                  <MusicSelector />
-                </Field>
-              </div>
-            </Section>
-
-            <Section
-              icon={Wand2}
-              step={5}
-              title="Finishing touches"
-              summary={draft.outroEnabled ? "Outro card on" : "Outro card off"}
-              delay={240}
-            >
-              <OutroToggle />
-            </Section>
+            {/* Steps two to five used to be four more accordions in this
+                column and the page was 2900px tall. They are refinements
+                with working defaults, so the row states what it is set to
+                and the panel is where you change it. */}
+            <div className="animate-fade-up flex flex-col gap-2" style={{ animationDelay: "60ms" }}>
+              {GROUPS.map((group) => (
+                <SettingRow
+                  key={group.id}
+                  icon={group.icon}
+                  title={group.title}
+                  summary={summaries[group.id]}
+                  open={drawerGroup === group.id}
+                  onClick={() => setDrawerGroup(group.id)}
+                />
+              ))}
+            </div>
 
             {error && (
               <div className="flex flex-wrap items-center gap-3 rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
@@ -241,51 +312,6 @@ function CreateVideo() {
         </div>
         )}
 
-      {/* Only the generate flow has a sticky action bar. The upload panel
-          carries its own button, because its cost and its enabled state
-          depend on a file rather than on the draft.
-
-          lg:left-52 clears the rail. Still fixed to the viewport rather
-          than sticky inside the scrolling pane, which is what it was
-          before the shell existed and what keeps the price on screen
-          while the choices that change it are being made. */}
-      {mode === "generate" && (
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/60 bg-background/85 backdrop-blur-md lg:left-52">
-        {/* Two rows on a phone, one on a desktop. The price used to be
-            `hidden sm:flex`, which put the button that spends credits on
-            the one screen size that never showed what it costs. */}
-        <div className="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-4">
-          <p className="flex items-center gap-1.5 text-xs text-white/40">
-            {price !== undefined ? (
-              <>
-                <Coins size={13} />
-                <span className="text-white/70">
-                  {price} credit{price === 1 ? "" : "s"}
-                </span>
-                · {credits?.balance ?? 0} remaining
-              </>
-            ) : (
-              "Free · runs on this machine"
-            )}
-          </p>
-          <Button
-            onClick={handleGenerate}
-            disabled={!canSubmit}
-            variant="gradient"
-            className="ml-auto w-full sm:w-auto"
-          >
-            {submitting ? (
-              "Starting render..."
-            ) : (
-              <>
-                Generate video
-                <ArrowRight size={16} />
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-      )}
     </AppShell>
   );
 }
@@ -343,86 +369,52 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
  * until you actually want to change something — the alternative is five
  * expanded panels of controls that mostly keep their defaults.
  */
-function Section({
+/**
+ * A setting group, as a line rather than a panel.
+ *
+ * Says what it is currently set to and opens the drawer at it. The
+ * summary is the point: four of these stack into the height one closed
+ * accordion used to take, and you can read the whole configuration
+ * without opening anything.
+ */
+function SettingRow({
   icon: Icon,
-  step,
   title,
   summary,
-  children,
-  defaultOpen = false,
-  delay = 0,
+  open,
+  onClick,
 }: {
-  icon: typeof FileText;
-  step: number;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
   title: string;
   summary: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-  delay?: number;
+  open: boolean;
+  onClick: () => void;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
-
   return (
-    <Card
+    <button
+      type="button"
+      onClick={onClick}
+      aria-expanded={open}
       className={clsx(
-        "animate-fade-up relative overflow-hidden p-0 transition-all duration-300",
+        "group flex items-center gap-3 rounded-lg border px-4 py-3 text-left",
+        "transition-[border-color,background-color] duration-200",
         open
-          ? "border-border-strong bg-surface-raised shadow-lg shadow-black/20"
-          : "hover:border-border-strong"
+          ? "border-accent/50 bg-accent/[0.06]"
+          : "border-border hover:border-border-strong hover:bg-surface-hover"
       )}
-      style={{ animationDelay: `${delay}ms` }}
     >
-      {/* Lit rail marks the section you're editing without shouting. */}
-      <span
-        aria-hidden
+      <Icon size={14} className={clsx("shrink-0", open ? "text-accent" : "text-white/40")} />
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-medium">{title}</span>
+        <span className="mt-0.5 block truncate text-xs text-white/40">{summary}</span>
+      </span>
+      <ChevronRight
+        size={15}
         className={clsx(
-          "absolute inset-y-0 left-0 w-[2px] transition-opacity duration-300",
-          open ? "bg-accent opacity-100" : "opacity-0"
+          "shrink-0 transition-colors",
+          open ? "text-accent" : "text-white/25 group-hover:text-white/50"
         )}
       />
-
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-        className="group flex w-full items-center gap-3 px-5 py-4 text-left"
-      >
-        <span
-          className={clsx(
-            "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border font-mono text-[11px] transition-colors duration-200",
-            open
-              ? "border-accent/40 bg-accent/15 text-accent"
-              : "border-border bg-background text-white/40 group-hover:text-white/70"
-          )}
-        >
-          {step}
-        </span>
-        <Icon
-          size={15}
-          className={clsx(
-            "shrink-0 transition-colors duration-200",
-            open ? "text-accent" : "text-white/40 group-hover:text-white/70"
-          )}
-        />
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold">{title}</span>
-          {/* The closed row is the one people actually read — four of the
-              five sections are closed at any moment — so the value it
-              carries can't be fainter than the label above it. */}
-          {!open && (
-            <span className="mt-0.5 block truncate text-xs text-white/55">{summary}</span>
-          )}
-        </span>
-        <ChevronDown
-          size={16}
-          className={clsx(
-            "shrink-0 text-white/40 transition-transform duration-300",
-            open && "rotate-180 text-accent"
-          )}
-        />
-      </button>
-
-      {open && <div className="animate-fade-in px-5 pb-5">{children}</div>}
-    </Card>
+    </button>
   );
 }

@@ -31,6 +31,9 @@ export function AppShell({
    *  one width, which is the point. */
   wide = false,
   actions,
+  aside,
+  asideOpen = false,
+  footer,
 }: {
   /** A key under `nav`, not a label. The rail names these four screens
    *  from the catalogue; passing a literal here printed "Library" next to
@@ -39,6 +42,28 @@ export function AppShell({
   children: React.ReactNode;
   wide?: boolean;
   actions?: React.ReactNode;
+  /** A panel beside the content rather than over it, because the
+   *  studio's settings sit next to a live preview of the caption style
+   *  and the aspect ratio — the two things most of those settings
+   *  change, so a drawer that covered it would hide the answer to the
+   *  question it was opened to ask.
+   *
+   *  It positions itself; what the shell does is get out of its way. */
+  aside?: React.ReactNode;
+  /** Whether that panel is showing, so the content can make room for it.
+   *
+   *  A margin rather than sizing the panel as a flex sibling. The flex
+   *  version read better in the source and would not lay out: the item
+   *  computed to zero width beside a `flex-1` column that had taken the
+   *  whole row, and stayed at zero through an inline `width: 400px
+   *  !important`. A margin is not a negotiation. */
+  asideOpen?: boolean;
+  /** A bar pinned under the content. Fixed to the window below `lg` as it
+   *  always was, and in flow at `lg` — where the pane no longer spans the
+   *  window, so a fixed bar ran under the rail on one side and under the
+   *  settings panel on the other, putting the button that spends credits
+   *  behind a panel. */
+  footer?: React.ReactNode;
 }) {
   const t = useTranslations("nav");
 
@@ -52,7 +77,13 @@ export function AppShell({
         <SiteHeader right={<AccountBar />} showLibrary />
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div
+        className={clsx(
+          "flex min-w-0 flex-1 flex-col",
+          "lg:transition-[margin] lg:duration-300",
+          asideOpen && "lg:mr-[400px]"
+        )}
+      >
         {/* The section name lives here rather than in each page's body,
             where it used to be an eyebrow above the heading. The frame
             owns the chrome; the page owns the sentence. */}
@@ -76,7 +107,15 @@ export function AppShell({
             {children}
           </div>
         </main>
+
+        {footer && (
+          <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/60 bg-background/85 backdrop-blur-md lg:static lg:z-auto lg:shrink-0">
+            {footer}
+          </div>
+        )}
       </div>
+
+      {aside}
     </div>
   );
 }
