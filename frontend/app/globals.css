@@ -465,3 +465,46 @@ html[data-session="1"] [data-landing-boot] {
     }
   }
 }
+
+/* The rail, and the two widths it has.
+   ------------------------------------------------------------------
+   Driven by an attribute on <html> rather than React state, for the
+   reason the accent is: the choice is in localStorage, the server
+   cannot know it, and applying it after mount opens every navigation
+   at the wrong width and snaps to the right one. The boot script in
+   the head sets the attribute before anything paints.
+
+   Collapsing exists because the settings panel takes 400px off the
+   right, and on a laptop the column between a 208px rail and that
+   panel is not wide enough for the form and its preview. */
+.app-rail {
+  width: 13rem;
+}
+
+html[data-rail="collapsed"] .app-rail {
+  width: 4rem;
+}
+
+html[data-rail="collapsed"] .rail-label {
+  display: none;
+}
+
+/* Icons centre themselves once there is no label beside them. */
+html[data-rail="collapsed"] .rail-item {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Preferences and identity are hidden rather than squeezed: five accent
+   dots and a language name do not fit in 64px, and half a control is
+   worse than one click to get it back. */
+html[data-rail="collapsed"] .rail-foot {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .app-rail {
+    transition: width 200ms ease;
+  }
+}

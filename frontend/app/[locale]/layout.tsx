@@ -7,6 +7,7 @@ import "../globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ACCENT_BOOT_SCRIPT } from "@/components/ui/accentBoot";
 import { SESSION_BOOT_SCRIPT } from "@/components/auth/sessionBoot";
+import { RAIL_BOOT_SCRIPT } from "@/components/layout/railBoot";
 import { routing } from "@/i18n/routing";
 import { siteUrl } from "@/lib/siteUrl";
 
@@ -92,6 +93,7 @@ export default async function LocaleLayout({
   for (const [name, script] of [
     ["ACCENT_BOOT_SCRIPT", ACCENT_BOOT_SCRIPT],
     ["SESSION_BOOT_SCRIPT", SESSION_BOOT_SCRIPT],
+    ["RAIL_BOOT_SCRIPT", RAIL_BOOT_SCRIPT],
   ] as const) {
     if (typeof script !== "string") {
       throw new Error(`${name} did not reach the server as a string — is its module a client module?`);
@@ -115,7 +117,7 @@ export default async function LocaleLayout({
         {/* Applies the stored accent before the first paint. Inline and
             synchronous on purpose: anything deferred shows one frame of
             the default colour on every navigation. */}
-        <script dangerouslySetInnerHTML={{ __html: `${ACCENT_BOOT_SCRIPT}\n${SESSION_BOOT_SCRIPT}` }} />
+        <script dangerouslySetInnerHTML={{ __html: `${ACCENT_BOOT_SCRIPT}\n${SESSION_BOOT_SCRIPT}\n${RAIL_BOOT_SCRIPT}` }} />
       </head>
       <body className="font-sans">
         <NextIntlClientProvider>

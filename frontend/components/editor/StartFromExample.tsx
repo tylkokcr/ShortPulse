@@ -65,7 +65,7 @@ export function StartFromExample({ className }: { className?: string }) {
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2.5">
+      <div className="flex flex-wrap gap-3">
         {shown.map((example) => (
           <ExampleTile
             key={example.slug}
@@ -130,7 +130,7 @@ function ExampleTile({
         video.currentTime = 0;
       }}
       className={clsx(
-        "group flex w-[104px] flex-col gap-1.5 rounded-lg border p-1.5 text-left",
+        "group flex w-[148px] flex-col gap-2 rounded-lg border p-2 text-left",
         "transition-[border-color,background-color] duration-200",
         "focus-visible:border-accent focus-visible:outline-none",
         loaded
@@ -155,8 +155,8 @@ function ExampleTile({
         />
         {!playing && (
           <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 backdrop-blur">
-              <Play size={12} className="translate-x-px fill-white text-white" />
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/60 backdrop-blur">
+              <Play size={13} className="translate-x-px fill-white text-white" />
             </span>
           </span>
         )}
@@ -170,10 +170,10 @@ function ExampleTile({
         )}
       </span>
 
-      <span className="line-clamp-2 min-h-[1.9rem] px-0.5 text-[11px] leading-snug text-white/70 group-hover:text-white">
+      <span className="line-clamp-2 min-h-[2.4rem] px-0.5 text-xs leading-snug text-white/75 group-hover:text-white">
         {example.title}
       </span>
-      <span dir="ltr" className="px-0.5 font-mono text-[10px] text-white/30">
+      <span dir="ltr" className="px-0.5 font-mono text-[10px] text-white/35">
         <bdi>{example.language}</bdi> · {example.seconds}s
       </span>
     </button>

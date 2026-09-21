@@ -14,6 +14,8 @@
     "signOut": "Wyloguj się",
     "openMenu": "Otwórz menu",
     "closeMenu": "Zamknij menu",
+    "collapseRail": "Zwiń panel boczny",
+    "expandRail": "Rozwiń panel boczny",
     "accent": "Kolor akcentu",
     "language": "Język",
     "creditsRemaining": "Pozostałe kredyty — kliknij, by doładować"

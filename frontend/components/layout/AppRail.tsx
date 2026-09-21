@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Coins, Github, Library, LogOut, Share2, Wand2 } from "lucide-react";
+import { Coins, Github, Library, LogOut, PanelLeftClose, PanelLeftOpen, Share2, Wand2 } from "lucide-react";
 import clsx from "clsx";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -9,6 +9,7 @@ import { Logo } from "@/components/ui/Logo";
 import { AccentSwitcher } from "@/components/ui/AccentSwitcher";
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { getSocialPlatforms } from "@/lib/api";
+import { RAIL_STORAGE_KEY } from "@/components/layout/railBoot";
 import { useShortPulseStore } from "@/lib/store";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -38,6 +39,26 @@ export function AppRail() {
   // Same rule the header's link follows: a deployment that publishes
   // nowhere does not advertise a page that leads to an empty list.
   const [publishes, setPublishes] = useState(false);
+
+  // Mirrors the attribute the boot script wrote, so the button can say
+  // which way it goes. The attribute is the truth; this is a label.
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    setCollapsed(document.documentElement.getAttribute("data-rail") === "collapsed");
+  }, []);
+
+  function toggle() {
+    const next = !collapsed;
+    setCollapsed(next);
+    const root = document.documentElement;
+    if (next) root.setAttribute("data-rail", "collapsed");
+    else root.removeAttribute("data-rail");
+    try {
+      localStorage.setItem(RAIL_STORAGE_KEY, next ? "collapsed" : "open");
+    } catch {
+      // Private windows throw. The rail still collapses for this page.
+    }
+  }
   useEffect(() => {
     let live = true;
     getSocialPlatforms()
@@ -56,12 +77,35 @@ export function AppRail() {
   ];
 
   return (
-    <nav className="hidden w-52 shrink-0 flex-col border-r border-border/60 bg-surface/30 lg:flex">
-      <div className="px-4 py-4">
-        <Link href="/" className="inline-flex transition-opacity hover:opacity-80">
+    <nav className="app-rail hidden shrink-0 flex-col overflow-hidden border-r border-border/60 bg-surface/30 lg:flex">
+      <div className="flex items-center gap-2 px-4 py-4">
+        <Link href="/" className="inline-flex shrink-0 transition-opacity hover:opacity-80">
           <Logo />
         </Link>
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={collapsed ? t("expandRail") : t("collapseRail")}
+          title={collapsed ? t("expandRail") : t("collapseRail")}
+          className="rail-label ml-auto shrink-0 rounded-md p-1 text-white/30 transition-colors hover:bg-surface-hover hover:text-white/70"
+        >
+          <PanelLeftClose size={15} />
+        </button>
       </div>
+
+      {/* Its own row when collapsed: there is no logo beside it to sit
+          next to, and a 64px column has no "ml-auto" worth having. */}
+      {collapsed && (
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={t("expandRail")}
+          title={t("expandRail")}
+          className="mx-auto mb-1 rounded-md p-1.5 text-white/30 transition-colors hover:bg-surface-hover hover:text-white/70"
+        >
+          <PanelLeftOpen size={15} />
+        </button>
+      )}
 
       <div className="flex flex-col gap-0.5 px-2">
         {items.map((item) => {
@@ -75,8 +119,9 @@ export function AppRail() {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
+              title={item.label}
               className={clsx(
-                "relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm",
+                "rail-item relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm",
                 "transition-[color,background-color] duration-200",
                 active
                   ? "bg-accent/[0.08] text-white"
@@ -92,8 +137,8 @@ export function AppRail() {
                   active ? "bg-accent" : "bg-transparent"
                 )}
               />
-              <item.icon size={15} className={active ? "text-accent" : undefined} />
-              {item.label}
+              <item.icon size={15} className={clsx("shrink-0", active && "text-accent")} />
+              <span className="rail-label">{item.label}</span>
             </Link>
           );
         })}
@@ -102,11 +147,12 @@ export function AppRail() {
       {/* Pushed to the bottom: preferences and identity are things you
           reach for occasionally, and putting them under the destinations
           would give them the same weight as the four screens. */}
-      <div className="mt-auto flex flex-col gap-3 border-t border-border/60 px-4 py-4">
-        <div className="flex items-center justify-between gap-2">
-          <LanguageSwitcher />
-          <AccentSwitcher />
-        </div>
+      <div className="rail-foot mt-auto flex flex-col gap-3 border-t border-border/60 px-4 py-4">
+        {/* Stacked, not side by side. A language name and five accent
+            dots come to 192px of controls in 176px of rail, and the last
+            dot was cut off by the border. */}
+        <LanguageSwitcher className="-ml-2" />
+        <AccentSwitcher />
 
         <a
           href={REPO_URL}

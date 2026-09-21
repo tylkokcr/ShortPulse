@@ -14,6 +14,8 @@
     "signOut": "Abmelden",
     "openMenu": "Menü öffnen",
     "closeMenu": "Menü schließen",
+    "collapseRail": "Seitenleiste einklappen",
+    "expandRail": "Seitenleiste ausklappen",
     "accent": "Akzentfarbe",
     "language": "Sprache",
     "creditsRemaining": "Verbleibende Credits — zum Aufladen klicken"

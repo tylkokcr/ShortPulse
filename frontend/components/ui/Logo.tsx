@@ -27,7 +27,10 @@ export function Logo({ className }: { className?: string }) {
   return (
     <span className={clsx("inline-flex items-center gap-2 font-semibold tracking-[-0.01em]", className)}>
       <LogoMark className="h-7 w-7" />
-      ShortPulse
+      {/* Carries the same class the rail's other labels do, so a
+          collapsed rail keeps the mark and drops the word without this
+          component needing to know a rail exists. */}
+      <span className="rail-label">ShortPulse</span>
     </span>
   );
 }
