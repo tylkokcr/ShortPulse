@@ -15,8 +15,14 @@ import { useAuth } from "./AuthProvider";
  * self-hosted install has no accounts and no billing, and showing a
  * balance of zero there would read as "you're out of credits" rather than
  * "this is free".
+ *
+ * `compact` drops the address and the sign-out button, for the app shell,
+ * where the rail already carries both. It still mounts: the effect below
+ * is what puts the balance in the store, and the rail's own Credits entry
+ * is drawn from it — hiding this component instead of narrowing it would
+ * take that link with it.
  */
-export function AccountBar() {
+export function AccountBar({ compact = false }: { compact?: boolean }) {
   const { session, enabled, signOut } = useAuth();
   const { credits, setCredits } = useShortPulseStore();
   const t = useTranslations("nav");
@@ -34,7 +40,9 @@ export function AccountBar() {
           the sign-out button overflow the header by 25px and the whole
           page scrolls sideways. The balance is the useful part; who you
           are signed in as is not worth a horizontal scrollbar. */}
-      <span className="hidden truncate text-white/40 sm:block">{session.user.email}</span>
+      {!compact && (
+        <span className="hidden truncate text-white/40 sm:block">{session.user.email}</span>
+      )}
       <div className="flex items-center gap-3">
         {/* The balance is also the way to top it up — otherwise there is
             nowhere in the app to buy credits, only the landing page's
@@ -47,13 +55,15 @@ export function AccountBar() {
           <Coins size={13} />
           {credits.balance}
         </Link>
-        <button
-          onClick={signOut}
-          className="flex items-center gap-1 text-white/40 hover:text-white/80"
-        >
-          <LogOut size={13} />
-          {t("signOut")}
-        </button>
+        {!compact && (
+          <button
+            onClick={signOut}
+            className="flex items-center gap-1 text-white/40 hover:text-white/80"
+          >
+            <LogOut size={13} />
+            {t("signOut")}
+          </button>
+        )}
       </div>
     </div>
   );

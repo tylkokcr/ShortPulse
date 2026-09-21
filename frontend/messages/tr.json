@@ -4,8 +4,10 @@
     "description": "Bir konuyu ya da metni, paylaşmaya hazır dikey videoya çevir. Senaryo, seslendirme, altyazı, görsel ve müzik — kendi makinende birleştirilir, abonelik yok."
   },
   "nav": {
+    "studio": "Stüdyo",
     "library": "Kütüphane",
     "connections": "Bağlantılar",
+    "credits": "Krediler",
     "source": "Kaynak kod",
     "signIn": "Giriş yap",
     "signOut": "Çıkış yap",

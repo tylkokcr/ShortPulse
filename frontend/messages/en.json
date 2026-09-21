@@ -4,8 +4,10 @@
     "description": "Turn a topic or script into a ready-to-post vertical video. Script, voiceover, captions, visuals and music, assembled on your own machine — no subscription."
   },
   "nav": {
+    "studio": "Studio",
     "library": "Library",
     "connections": "Connections",
+    "credits": "Credits",
     "source": "Source",
     "signIn": "Sign in",
     "signOut": "Sign out",

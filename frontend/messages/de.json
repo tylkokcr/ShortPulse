@@ -4,8 +4,10 @@
     "description": "Aus einem Thema oder Skript wird ein fertiges Hochformat-Video. Skript, Voiceover, Untertitel, Bilder und Musik — auf dem eigenen Rechner zusammengesetzt, ganz ohne Abo."
   },
   "nav": {
+    "studio": "Studio",
     "library": "Bibliothek",
     "connections": "Verbindungen",
+    "credits": "Credits",
     "source": "Quellcode",
     "signIn": "Anmelden",
     "signOut": "Abmelden",

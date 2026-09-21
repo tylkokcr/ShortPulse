@@ -18,8 +18,7 @@ import { createProject, InsufficientCreditsError } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { SiteHeader } from "@/components/layout/SiteHeader";
-import { GridBackdrop } from "@/components/ui/GridBackdrop";
+import { AppShell } from "@/components/layout/AppShell";
 import { ScriptEditor } from "@/components/editor/ScriptEditor";
 import { DurationSelector } from "@/components/editor/DurationSelector";
 import { LanguageSelector } from "@/components/editor/LanguageSelector";
@@ -34,7 +33,6 @@ import { VoiceSelector } from "@/components/editor/VoiceSelector";
 import { RenderSummary } from "@/components/editor/RenderSummary";
 import { UploadPanel } from "@/components/editor/UploadPanel";
 import { StartFromExample } from "@/components/editor/StartFromExample";
-import { AccountBar } from "@/components/auth/AccountBar";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 
 export default function HomePage() {
@@ -89,18 +87,12 @@ function CreateVideo() {
   const voiceLabel = draft.voiceId ? (draft.voiceId.split("/").at(-2) ?? "Voice") : "Default voice";
 
   return (
-    <div className="relative min-h-screen">
-      <GridBackdrop />
-
-      <SiteHeader right={<AccountBar />} showLibrary />
-
-      <main className="mx-auto max-w-5xl px-6 pb-32 pt-10">
+    <AppShell section="Studio">
         <div className="animate-fade-up flex flex-wrap items-end justify-between gap-4">
           <div>
-            <span className="font-mono text-xs uppercase tracking-widest text-accent">Studio</span>
             {mode === "generate" ? (
               <>
-                <h1 className="mt-1.5 text-3xl font-semibold tracking-tight">
+                <h1 className="text-3xl font-semibold tracking-tight">
                   What&apos;s this <span className="text-accent-emphasis">video</span> about?
                 </h1>
                 <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/50">
@@ -243,18 +235,22 @@ function CreateVideo() {
 
           {/* Sticky so the cost and time estimate stay visible while the
               choices that change them are being made. */}
-          <div className="animate-fade-up lg:sticky lg:top-24" style={{ animationDelay: "300ms" }}>
+          <div className="animate-fade-up lg:sticky lg:top-6" style={{ animationDelay: "300ms" }}>
             <RenderSummary />
           </div>
         </div>
         )}
-      </main>
 
       {/* Only the generate flow has a sticky action bar. The upload panel
           carries its own button, because its cost and its enabled state
-          depend on a file rather than on the draft. */}
+          depend on a file rather than on the draft.
+
+          lg:left-52 clears the rail. Still fixed to the viewport rather
+          than sticky inside the scrolling pane, which is what it was
+          before the shell existed and what keeps the price on screen
+          while the choices that change it are being made. */}
       {mode === "generate" && (
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/60 bg-background/85 backdrop-blur-md">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/60 bg-background/85 backdrop-blur-md lg:left-52">
         {/* Two rows on a phone, one on a desktop. The price used to be
             `hidden sm:flex`, which put the button that spends credits on
             the one screen size that never showed what it costs. */}
@@ -290,7 +286,7 @@ function CreateVideo() {
         </div>
       </div>
       )}
-    </div>
+    </AppShell>
   );
 }
 

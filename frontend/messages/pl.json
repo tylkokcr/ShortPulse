@@ -4,8 +4,10 @@
     "description": "Zamień temat lub scenariusz w gotowy do publikacji film pionowy. Scenariusz, lektor, napisy, obrazy i muzyka — złożone na twoim własnym komputerze, bez abonamentu."
   },
   "nav": {
+    "studio": "Studio",
     "library": "Biblioteka",
     "connections": "Połączenia",
+    "credits": "Kredyty",
     "source": "Kod źródłowy",
     "signIn": "Zaloguj się",
     "signOut": "Wyloguj się",

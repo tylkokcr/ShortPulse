@@ -6,8 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { deleteProject, listProjects } from "@/lib/api";
 import type { Project } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
-import { SiteHeader } from "@/components/layout/SiteHeader";
-import { AccountBar } from "@/components/auth/AccountBar";
+import { AppShell } from "@/components/layout/AppShell";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { ProjectCard } from "@/components/library/ProjectCard";
 import { Reveal } from "@/components/ui/Reveal";
@@ -53,14 +52,10 @@ function Library() {
   }, []);
 
   return (
-    <div className="relative min-h-screen">
-      <SiteHeader right={<AccountBar />} showLibrary />
-
-      <main className="mx-auto max-w-6xl px-6 pb-24 pt-10">
+    <AppShell section="Library" wide>
         <div className="animate-fade-up flex flex-wrap items-end justify-between gap-4">
           <div>
-            <span className="font-mono text-xs uppercase tracking-widest text-accent">Library</span>
-            <h1 className="mt-1.5 text-3xl font-semibold tracking-tight">Your videos</h1>
+            <h1 className="text-3xl font-semibold tracking-tight">Your videos</h1>
             <p className="mt-2 text-sm text-white/50">
               {projects === null
                 ? "Loading..."
@@ -121,7 +116,6 @@ function Library() {
             ))}
           </div>
         )}
-      </main>
-    </div>
+    </AppShell>
   );
 }

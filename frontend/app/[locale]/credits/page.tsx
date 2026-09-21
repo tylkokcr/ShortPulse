@@ -12,8 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { formatPrice } from "@/lib/money";
 import { Badge } from "@/components/ui/Badge";
-import { SiteHeader } from "@/components/layout/SiteHeader";
-import { AccountBar } from "@/components/auth/AccountBar";
+import { AppShell } from "@/components/layout/AppShell";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 
 /**
@@ -122,13 +121,9 @@ function Credits() {
   const packs = credits?.packs ?? [];
 
   return (
-    <div className="relative min-h-screen">
-      <SiteHeader right={<AccountBar />} showLibrary />
-
-      <main className="mx-auto max-w-4xl px-6 pb-24 pt-10">
+    <AppShell section="Credits">
         <div className="animate-fade-up">
-          <span className="label">Credits</span>
-          <h1 className="mt-1.5 text-3xl font-semibold tracking-tight">
+          <h1 className="text-3xl font-semibold tracking-tight">
             {credits?.balance ?? 0} credits
           </h1>
           <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/50">
@@ -241,7 +236,6 @@ function Credits() {
           {sold && "Payment is handled by Stripe — this app never sees your card details. "}
           Self-hosting costs nothing and needs no account at all.
         </p>
-      </main>
-    </div>
+    </AppShell>
   );
 }

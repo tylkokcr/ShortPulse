@@ -34,7 +34,7 @@ export function UploadPreview({ file }: { file: File | null }) {
   }, [file]);
 
   return (
-    <div className="lg:sticky lg:top-24">
+    <div className="lg:sticky lg:top-6">
       <div className="relative mx-auto aspect-[9/16] w-full max-w-[260px] overflow-hidden rounded-xl border border-border bg-surface">
         {url ? (
           <video

@@ -6,8 +6,7 @@ import clsx from "clsx";
 import { Link } from "@/i18n/navigation";
 import { useShortPulseStore } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
-import { SiteHeader } from "@/components/layout/SiteHeader";
-import { AccountBar } from "@/components/auth/AccountBar";
+import { AppShell } from "@/components/layout/AppShell";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { RenderPreview } from "@/components/render/RenderPreview";
 import { TranscriptPanel } from "@/components/render/TranscriptPanel";
@@ -141,10 +140,10 @@ function Project({ id }: { id: string }) {
   }
 
   return (
-    <div className="min-h-screen">
-      <SiteHeader right={<AccountBar />} showLibrary />
-
-      <main className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-10">
+    <AppShell section="Project">
+      {/* The column gap the page's own <main> used to carry. The shell
+          owns padding and width; stacking is still this page's business. */}
+      <div className="flex flex-col gap-6">
         <Link
           href="/"
           className="flex w-fit items-center gap-1.5 text-sm text-white/50 transition-colors hover:text-white"
@@ -237,7 +236,7 @@ function Project({ id }: { id: string }) {
             {project?.status === "complete" && <PublishPanel project={project} />}
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }
