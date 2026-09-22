@@ -86,14 +86,14 @@ class PostgresProjectStore:
     # Columns that live in their own SQL column rather than inside `config`.
     _COLUMNS = {
         "status", "script", "output_path", "error", "credits_cost",
-        "source_path", "captions", "edit",
+        "source_path", "captions", "edit", "clip_project_ids",
     }
 
     # Named once because it appeared verbatim in four queries, and a column
     # added to only three of them fails at read time rather than at write.
     _SELECT = (
         "config, status, script, output_path, error, credits_cost, source_path, "
-        "captions, edit"
+        "captions, edit, clip_project_ids"
     )
 
     # Listing deliberately omits `script`, `captions` and `edit`. They are
@@ -101,7 +101,13 @@ class PostgresProjectStore:
     # scenes and per-word timings — and the only screen that lists projects
     # shows a title, a status and a thumbnail. Measured before this split:
     # 22 projects came to 296KB, 61% of it script nobody read.
-    _SELECT_SUMMARY = "config, status, output_path, error, credits_cost, source_path"
+    # clip_project_ids is here and the three above are not, for the reason
+    # the comment gives: it is at most five short ids, and without it the
+    # library cannot tell an extraction from a video and offers to play
+    # something that does not exist.
+    _SELECT_SUMMARY = (
+        "config, status, output_path, error, credits_cost, source_path, clip_project_ids"
+    )
 
     def __init__(self, pool: asyncpg.Pool) -> None:
         self._pool = pool
@@ -118,6 +124,10 @@ class PostgresProjectStore:
             source_path=row["source_path"],
             captions=json.loads(row["captions"]) if row["captions"] else None,
             edit=json.loads(row["edit"]) if row["edit"] else None,
+            # asyncpg hands a text[] back as a list already. The `or []`
+            # covers a row read through a connection that predates the
+            # column rather than a null — the column itself cannot be one.
+            clip_project_ids=list(row["clip_project_ids"] or []),
         )
 
     async def create_project(self, config: ProjectConfig, user_id: str | None = None) -> Project:
@@ -155,6 +165,7 @@ class PostgresProjectStore:
             error=row["error"],
             credits_cost=row["credits_cost"],
             source_path=row["source_path"],
+            clip_project_ids=list(row["clip_project_ids"] or []),
         )
 
     async def list_projects(self, user_id: str | None = None) -> list[Project]:

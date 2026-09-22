@@ -11,6 +11,7 @@ import logging
 import shutil
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -453,7 +454,11 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
         )
 
 
-async def run_upload_pipeline(project: Project, settings: Settings) -> None:
+async def run_upload_pipeline(
+    project: Project,
+    settings: Settings,
+    submit: "Callable[[Project], Awaitable[None]] | None" = None,
+) -> None:
     """Caption a video the user already has.
 
     Everything the generate path does before the burn-in — writing a
@@ -529,7 +534,7 @@ async def run_upload_pipeline(project: Project, settings: Settings) -> None:
         # render. It cuts, hands each cut to this same function as an
         # ordinary upload, and finishes holding nothing but their ids.
         if config.clip_count:
-            await _extract_clips(project, segments, settings, timings)
+            await _extract_clips(project, segments, settings, timings, submit)
             return
 
         # 1b. Dub -------------------------------------------------------------
@@ -662,15 +667,23 @@ async def _extract_clips(
     segments: list,
     settings: Settings,
     timings: "StageTimings",
+    submit: "Callable[[Project], Awaitable[None]] | None" = None,
 ) -> None:
     """Cut the moments worth keeping out of a long upload.
 
-    Each cut becomes an ordinary upload project, queued through the same
-    pipeline this function is called from. That is the whole reason the
-    feature is small: a clip is not a new kind of thing, it is a short
-    video somebody uploaded, and everything downstream — captions,
-    editing, publishing, the library card — already knows what to do with
-    one.
+    Each cut becomes an ordinary upload project and goes back on the
+    render queue. That is the whole reason the feature is small: a clip is
+    not a new kind of thing, it is a short video somebody uploaded, and
+    everything downstream — captions, editing, publishing, the library
+    card — already knows what to do with one.
+
+    Back on the queue rather than rendered here. This runs inside a worker
+    slot, and doing the children inline would hold that slot for five
+    Whisper passes and five encodes — on a box configured for two
+    concurrent renders, one extraction would be most of the machine for as
+    long as it took. Queued, the cutting finishes in seconds, the clips
+    appear immediately with their own progress, and they compete for the
+    machine on the same terms as everything else.
 
     The parent keeps only their ids. It is the record of the extraction,
     not a video, and the project page reads `clip_project_ids` to know to
@@ -738,10 +751,13 @@ async def _extract_clips(
         )
         child_ids.append(child_config.id)
 
-        # Sequentially, not gathered. Each one is a Whisper pass and an
-        # encode; three at once on the box that just transcribed an hour of
-        # audio is how the API stops answering.
-        await run_upload_pipeline(child, settings)
+        if submit is not None:
+            await submit(child)
+        else:
+            # No queue to put it on: a self-hosted script or a test calling
+            # the pipeline directly. Sequential rather than gathered, for
+            # the reason the queue exists.
+            await run_upload_pipeline(child, settings)
 
     await project_store.update_project(
         project_id,
@@ -752,7 +768,9 @@ async def _extract_clips(
         project_id,
         stage=RenderStage.DONE,
         progress_pct=100,
-        message=f"{len(child_ids)} clips ready.",
+        # "Cut", not "ready": the clips are queued behind whatever else is
+        # rendering, and each carries its own progress from here.
+        message=f"{len(child_ids)} clips cut — each is rendering on its own now.",
     )
 
 
@@ -991,7 +1009,10 @@ class RenderTaskQueue:
                 # compete for the same machine and should respect the same
                 # concurrency limit.
                 if project.config.source == ProjectSource.UPLOAD:
-                    await run_upload_pipeline(project, self._settings)
+                    # The queue passes itself in so an extraction can put
+                    # its clips back on it rather than rendering them
+                    # inside this worker's slot.
+                    await run_upload_pipeline(project, self._settings, self.submit)
                 else:
                     await run_pipeline(project, self._settings)
             finally:

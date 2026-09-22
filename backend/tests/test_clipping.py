@@ -222,3 +222,38 @@ def test_a_plain_upload_is_unchanged():
 
     assert credits.cost_for(_upload_config()) == credits.AUTOCAPTION_COST
     assert credits.cost_for(_upload_config(dub_language="tr")) == credits.DUB_COST
+
+
+# --------------------------------------------------------------------------
+# Persistence
+#
+# The in-memory store takes any field (`model_copy(update=...)`); the
+# Postgres one only takes what is in its whitelist. A field added to the
+# model and not to the column list therefore works when self-hosted and
+# raises in production, at whatever point the pipeline first writes it —
+# which for an extraction is after every clip has already been cut.
+# --------------------------------------------------------------------------
+
+
+def test_every_field_the_pipeline_persists_is_a_real_column():
+    from app.services.project_store import PostgresProjectStore
+    from app.schemas.project import Project
+
+    assert PostgresProjectStore._COLUMNS <= set(Project.model_fields)
+
+
+def test_clip_ids_can_be_written_and_read_back():
+    """The two lists are maintained separately, and a column in one and
+    not the other fails at read time rather than at write."""
+    from app.services.project_store import PostgresProjectStore
+
+    assert "clip_project_ids" in PostgresProjectStore._COLUMNS
+    assert "clip_project_ids" in PostgresProjectStore._SELECT
+
+
+def test_the_column_exists_in_a_migration():
+    from pathlib import Path
+
+    migrations = Path(__file__).resolve().parents[1] / "migrations"
+    sql = "\n".join(p.read_text() for p in migrations.glob("*.sql"))
+    assert "clip_project_ids" in sql

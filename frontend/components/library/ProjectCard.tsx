@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Play, Trash2, TriangleAlert, Upload, Wand2 } from "lucide-react";
+import { Loader2, Play, Scissors, Trash2, TriangleAlert, Upload, Wand2 } from "lucide-react";
 import clsx from "clsx";
 import { Link } from "@/i18n/navigation";
 import { getMediaUrl } from "@/lib/api";
@@ -28,9 +28,16 @@ export function ProjectCard({
   const [confirming, setConfirming] = useState(false);
   const id = project.config.id;
   const complete = project.status === "complete";
+  // An extraction has no video of its own. Without this the card offered
+  // a play triangle and called it "Captioned", both of which describe the
+  // clips rather than the thing being clicked.
+  const clipCount = project.clip_project_ids?.length ?? 0;
 
   useEffect(() => {
-    if (!complete) return;
+    // An extraction has no media to ask for; the request would 404 and
+    // the catch below would swallow it, which is a round trip to learn
+    // something already known.
+    if (!complete || clipCount > 0) return;
     let cancelled = false;
     getMediaUrl(id)
       .then((media) => {
@@ -42,7 +49,7 @@ export function ProjectCard({
     return () => {
       cancelled = true;
     };
-  }, [id, complete]);
+  }, [id, complete, clipCount]);
 
   const isUpload = project.config.source === "upload";
 
@@ -66,6 +73,8 @@ export function ProjectCard({
               <Loader2 size={20} className="animate-spin text-accent" />
             ) : project.status === "failed" ? (
               <TriangleAlert size={20} className="text-red-400/70" />
+            ) : clipCount ? (
+              <Scissors size={20} className="text-white/20" />
             ) : (
               <Play size={20} className="text-white/20" />
             )}
@@ -76,8 +85,18 @@ export function ProjectCard({
           tone="neutral"
           className="absolute left-2 top-2 flex items-center gap-1 border-white/10 bg-black/60 px-2 py-0.5 text-[10px] text-white/70 backdrop-blur"
         >
-          {isUpload ? <Upload size={9} /> : <Wand2 size={9} />}
-          {isUpload ? "Captioned" : "Generated"}
+          {clipCount ? (
+            <Scissors size={9} />
+          ) : isUpload ? (
+            <Upload size={9} />
+          ) : (
+            <Wand2 size={9} />
+          )}
+          {clipCount
+            ? `${clipCount} clip${clipCount === 1 ? "" : "s"}`
+            : isUpload
+              ? "Captioned"
+              : "Generated"}
         </Badge>
 
         {project.status !== "complete" && (
