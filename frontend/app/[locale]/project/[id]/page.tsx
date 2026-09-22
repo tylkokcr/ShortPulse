@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useRef, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, ListTree, Pencil, Scissors } from "lucide-react";
 import clsx from "clsx";
 import { Link } from "@/i18n/navigation";
@@ -257,7 +257,22 @@ function Project({ id }: { id: string }) {
  * view of the same thing here would make the real one look like a detour.
  */
 function ClipList({ project }: { project: Project }) {
-  const ids = project.clip_project_ids ?? [];
+  const ids = useMemo(() => project.clip_project_ids ?? [], [project.clip_project_ids]);
+
+  // The ids are all the parent stores, and a row reading "Clip 1" throws
+  // away the thing that makes the list worth reading: the model named
+  // each moment, and that name is the child's topic. Fetched rather than
+  // denormalised onto the parent so a clip renamed later says so here.
+  const [clips, setClips] = useState<Project[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all(ids.map((id) => getProject(id).catch(() => null))).then((found) => {
+      if (!cancelled) setClips(found.filter((p): p is Project => p !== null));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [ids]);
 
   return (
     <Card className="animate-fade-up flex flex-col gap-4">
@@ -272,19 +287,29 @@ function ClipList({ project }: { project: Project }) {
         the record of the cut; the clips are in your library.
       </p>
       <div className="flex flex-col gap-2">
-        {ids.map((id, index) => (
-          <Link
-            key={id}
-            href={`/project/${id}`}
-            className="group flex items-center gap-3 rounded-lg border border-border px-4 py-3 transition-colors hover:border-accent/50 hover:bg-surface-hover"
-          >
-            <span className="font-mono text-[11px] text-white/25">{index + 1}</span>
-            <span className="min-w-0 flex-1 truncate text-sm text-white/70 group-hover:text-white">
-              Clip {index + 1}
-            </span>
-            <ArrowRight size={14} className="shrink-0 text-white/25 group-hover:text-accent" />
-          </Link>
-        ))}
+        {ids.map((id, index) => {
+          const clip = clips?.find((c) => c.config.id === id);
+          return (
+            <Link
+              key={id}
+              href={`/project/${id}`}
+              className="group flex items-center gap-3 rounded-lg border border-border px-4 py-3 transition-colors hover:border-accent/50 hover:bg-surface-hover"
+            >
+              <span className="font-mono text-[11px] text-white/25">{index + 1}</span>
+              <span className="min-w-0 flex-1 truncate text-sm text-white/70 group-hover:text-white">
+                {clip?.config.topic ?? `Clip ${index + 1}`}
+              </span>
+              {/* Each clip queues separately, so this page is reachable
+                  while some are still rendering. */}
+              {clip && clip.status !== "complete" && (
+                <span className="shrink-0 font-mono text-[10px] uppercase tracking-wide text-white/30">
+                  {clip.status}
+                </span>
+              )}
+              <ArrowRight size={14} className="shrink-0 text-white/25 group-hover:text-accent" />
+            </Link>
+          );
+        })}
       </div>
     </Card>
   );
