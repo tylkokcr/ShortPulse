@@ -556,3 +556,52 @@ async def probe_dimensions(path: Path, ffprobe_binary: str = "ffprobe") -> tuple
         raise RenderError(f"ffprobe failed ({' '.join(cmd)}):\n{stderr.decode(errors='ignore')}")
     width, _, height = stdout.decode().strip().partition("x")
     return int(width), int(height)
+
+
+async def cut_clip(
+    source: Path,
+    destination: Path,
+    start_s: float,
+    end_s: float,
+    ffmpeg_binary: str = "ffmpeg",
+) -> Path:
+    """Copy one stretch of a video out into a file of its own.
+
+    Re-encodes rather than stream-copying. A copy can only cut on a
+    keyframe, so it silently moves the start of the clip to wherever the
+    last one happened to be — up to several seconds early on a normal
+    upload, which puts the end of the previous sentence at the front of
+    every clip. The extraction path has already decided where the thought
+    begins; landing somewhere else to save CPU would throw that away.
+
+    `-ss` before `-i` so the decoder seeks rather than decoding and
+    discarding everything up to the start, which on an hour-long source is
+    the difference between seconds and minutes.
+
+    Nothing is reframed or captioned here. The cut is handed to the normal
+    upload pipeline as its own source, and that scales, crops, transcribes
+    and burns exactly as it does for a file somebody uploaded.
+    """
+    await _run_ffmpeg(
+        [
+            "-ss",
+            f"{start_s:.3f}",
+            "-i",
+            str(source),
+            "-t",
+            f"{max(end_s - start_s, 0):.3f}",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "20",
+            "-c:a",
+            "aac",
+            "-movflags",
+            "+faststart",
+            str(destination),
+        ],
+        ffmpeg_binary,
+    )
+    return destination

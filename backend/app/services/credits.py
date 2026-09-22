@@ -72,6 +72,24 @@ AUTOCAPTION_COST = 1
 DUB_COST = 2
 
 
+# Pulling clips out of a long upload.
+#
+# Per clip, because that is where the work is: one Whisper pass over the
+# source is shared by all of them, and then each cut is re-encoded,
+# transcribed again and burned — which is exactly an autocaption job, and
+# priced as one. The shared pass is not billed separately; it is the part
+# that gets cheaper the more clips you take, and charging for it would
+# make two clips cost more than two captions for no reason the user can
+# see.
+#
+# What this deliberately does not do is charge by source length. It would
+# be more accurate — the transcription is the dominant cost and it scales
+# with the source — and it would also be the first price in the product
+# that cannot be quoted before the file is uploaded. The duration cap on
+# the route is what keeps the bound honest instead.
+CLIP_COST = AUTOCAPTION_COST
+
+
 # Re-rolling one scene's visual on a finished video.
 #
 # Not derived from the render's price, because the work isn't a fraction
@@ -88,6 +106,8 @@ def cost_for(config: ProjectConfig) -> int:
     """Credits a render of this shape costs. Deterministic: the caller is
     quoted this before the render starts and charged exactly this."""
     if config.source == ProjectSource.UPLOAD:
+        if config.clip_count:
+            return CLIP_COST * config.clip_count
         return DUB_COST if config.dub_language else AUTOCAPTION_COST
     mode = VisualMode(config.visual_mode)
     length = VideoLength(config.video_length)

@@ -422,6 +422,20 @@ class ProjectConfig(BaseModel):
         pattern=r"^[a-z]{2}$",
         description="Target language for dubbing an uploaded video. None means no dub.",
     )
+    # Set only on uploads, and only when the caller asked for clips: how
+    # many stretches to look for in a long video.
+    #
+    # A project with this set renders nothing itself. It transcribes, asks
+    # which moments stand up alone, cuts them, and creates one ordinary
+    # upload project per cut — which is why every clip arrives in the
+    # library already editable and publishable, with no second pipeline to
+    # keep in step with the first.
+    clip_count: int | None = Field(
+        default=None,
+        ge=1,
+        le=5,
+        description="How many clips to extract from a long upload. None means caption it whole.",
+    )
     language: str = Field(
         default="en",
         description="BCP-47-ish language code for the spoken script (hook/voiceover/CTA). "
@@ -463,6 +477,10 @@ class Project(BaseModel):
     # never a client-supplied one, which would hand ffmpeg an arbitrary
     # file to open (same reasoning as MusicConfig.track_path).
     source_path: str | None = None
+    # The projects a clip extraction produced, in the order they appear in
+    # the source. Set only on the parent, and the only thing it has to
+    # show for itself: an extraction has no video of its own.
+    clip_project_ids: list[str] = Field(default_factory=list)
     # Materialised after the first render so captions can be corrected and
     # reburned without re-running the pipeline. Absent until then.
     captions: CaptionTrack | None = None

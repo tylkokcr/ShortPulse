@@ -30,7 +30,20 @@ from app.schemas.project import (
     ProjectSource,
     SubtitleStyle,
 )
-from app.services import credits, project_store, uploads
+from app.services import clipping, credits, project_store, uploads
+
+# Mirrors the schema's own bound. Duplicated so the refusal names the
+# limit instead of arriving as a pydantic field error about `le`.
+MAX_CLIPS = 5
+
+# How long a source an extraction will read.
+#
+# Not a storage limit — the 200MB upload cap already bounds that — but a
+# time one. Transcription is the dominant cost of an extraction and the
+# only part that scales with the source, and the price is quoted per clip
+# before the file is seen. This is what keeps that quote honest: past
+# this, the work behind a fixed price stops being bounded.
+MAX_CLIP_SOURCE_S = 60 * 60
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +62,7 @@ async def upload_video(
     language: str = Form("en"),
     title: str = Form(""),
     dub_language: str = Form(""),
+    clip_count: int = Form(0),
     # JSON in a form field: the file forces multipart, and this is a
     # nested object. Empty keeps the schema's defaults, which is what an
     # older client sends and what a self-hosted script that posts a file
@@ -68,6 +82,11 @@ async def upload_video(
     re-spoken in that language over the original picture. `language` still
     describes what the video is in, because that is what the transcription
     pass is told.
+
+    `clip_count` turns it into an extraction instead: the transcript is
+    read for the moments that stand up on their own, each is cut out, and
+    each becomes a project of its own. This one keeps their ids and no
+    video.
     """
     settings = get_settings()
 
@@ -103,11 +122,31 @@ async def upload_video(
                 },
             )
 
+    clips = max(clip_count, 0)
+    if clips:
+        if dub:
+            # Both would mean dubbing each clip, which is a reasonable
+            # thing to want and not what either code path does today.
+            # Refused rather than silently doing one of them.
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error": "dub_and_clips",
+                    "reason": "Take the clips first, then dub the ones you keep.",
+                },
+            )
+        if clips > MAX_CLIPS:
+            raise HTTPException(
+                status_code=422,
+                detail={"error": "too_many_clips", "max": MAX_CLIPS},
+            )
+
     config = ProjectConfig(
         topic=title.strip() or (file.filename or "Uploaded video"),
         source=ProjectSource.UPLOAD,
         language=language,
         dub_language=dub or None,
+        clip_count=clips or None,
     )
 
     if subtitles.strip():
@@ -167,6 +206,36 @@ async def upload_video(
             status_code=422,
             detail="That video has no audio track, so there is no speech to caption.",
         )
+
+    if clips:
+        # Both bounds are checked here, after the probe and before the
+        # charge, because until the file is on disk its real duration is
+        # whatever the client claimed.
+        if probed.duration_s < clipping.MIN_SOURCE_S:
+            await project_store.delete_project(config.id)
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error": "source_too_short",
+                    "reason": (
+                        f"Clips come out of videos over "
+                        f"{int(clipping.MIN_SOURCE_S / 60)} minutes. This one is "
+                        f"{int(probed.duration_s)}s — caption it whole instead."
+                    ),
+                },
+            )
+        if probed.duration_s > MAX_CLIP_SOURCE_S:
+            await project_store.delete_project(config.id)
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error": "source_too_long",
+                    "reason": (
+                        f"Clips come out of videos up to "
+                        f"{MAX_CLIP_SOURCE_S // 60} minutes long."
+                    ),
+                },
+            )
 
     pool = db_pool(request)
     if billing_enabled(pool, user_id):

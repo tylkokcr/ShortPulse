@@ -8,7 +8,9 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import shutil
 import time
+import uuid
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -38,6 +40,7 @@ from app.schemas.project import (
 )
 from app.services import (
     art_styles,
+    clipping,
     credits,
     db,
     dubbing,
@@ -491,7 +494,11 @@ async def run_upload_pipeline(project: Project, settings: Settings) -> None:
             # what gets translated, and its start and end are the slot the
             # replacement speech has to land in. Same model, same single
             # pass either way.
-            if dubbing_to:
+            # Sentences, not just words. A dub translates one at a time and
+            # an extraction cuts on their boundaries; captions alone are
+            # chunked by word count and never need them. Same model and the
+            # same single pass in either branch.
+            if dubbing_to or config.clip_count:
                 segments = await asyncio.to_thread(
                     audio_engine.transcribe_segments,
                     source,
@@ -515,6 +522,15 @@ async def run_upload_pipeline(project: Project, settings: Settings) -> None:
             raise RuntimeError(
                 "No speech was found in that video, so there is nothing to caption."
             )
+
+        # 1a. Clips ------------------------------------------------------------
+        #
+        # An extraction never gets past here: it has no video of its own to
+        # render. It cuts, hands each cut to this same function as an
+        # ordinary upload, and finishes holding nothing but their ids.
+        if config.clip_count:
+            await _extract_clips(project, segments, settings, timings)
+            return
 
         # 1b. Dub -------------------------------------------------------------
         voice_track: Path | None = None
@@ -639,6 +655,105 @@ async def run_upload_pipeline(project: Project, settings: Settings) -> None:
             message="Captioning failed.",
             error=str(exc),
         )
+
+
+async def _extract_clips(
+    project: Project,
+    segments: list,
+    settings: Settings,
+    timings: "StageTimings",
+) -> None:
+    """Cut the moments worth keeping out of a long upload.
+
+    Each cut becomes an ordinary upload project, queued through the same
+    pipeline this function is called from. That is the whole reason the
+    feature is small: a clip is not a new kind of thing, it is a short
+    video somebody uploaded, and everything downstream — captions,
+    editing, publishing, the library card — already knows what to do with
+    one.
+
+    The parent keeps only their ids. It is the record of the extraction,
+    not a video, and the project page reads `clip_project_ids` to know to
+    show a list instead of a player.
+    """
+    config = project.config
+    project_id = config.id
+    source = Path(project.source_path or "")
+
+    await _emit(
+        project_id,
+        stage=RenderStage.SCRIPT,
+        progress_pct=25,
+        message="Reading the transcript for the moments worth posting...",
+    )
+
+    with timings.stage("clip_selection"):
+        moments = await clipping.pick_moments(segments, config.llm, config.clip_count or 3)
+
+    if not moments:
+        # Not an error. The transcript was read and nothing in it stood up
+        # on its own, which is a finding about the video rather than a
+        # failure of the run — and it is refunded, because the user asked
+        # for clips and got none.
+        await _refund_failed_render(project_id, reason="no_clips_found")
+        raise RuntimeError(
+            "Nothing in that video held together as a clip on its own. "
+            "Your credits have been returned."
+        )
+
+    paths = project_dir(project_id)
+    child_ids: list[str] = []
+
+    for index, moment in enumerate(moments):
+        await _emit(
+            project_id,
+            stage=RenderStage.RENDER,
+            progress_pct=30 + (index / len(moments)) * 60,
+            message=f"Cutting clip {index + 1} of {len(moments)}...",
+        )
+
+        cut = paths / f"clip_{index}.mp4"
+        with timings.stage(f"clip_{index}_cut"):
+            await render_engine.cut_clip(
+                source, cut, moment.start_s, moment.end_s, settings.ffmpeg_binary
+            )
+
+        # A copy of the parent's settings with the clip's own identity: same
+        # caption style, same language, same aspect ratio, and none of the
+        # extraction — a child that inherited clip_count would try to cut
+        # itself apart again.
+        child_config = config.model_copy(
+            update={
+                "id": str(uuid.uuid4()),
+                "clip_count": None,
+                "topic": moment.title,
+            }
+        )
+        child = await project_store.create_project(child_config, user_id=project.user_id)
+        child_source = project_dir(child_config.id) / "source.mp4"
+        child_source.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(cut, child_source)
+        child = await project_store.update_project(
+            child_config.id, source_path=str(child_source)
+        )
+        child_ids.append(child_config.id)
+
+        # Sequentially, not gathered. Each one is a Whisper pass and an
+        # encode; three at once on the box that just transcribed an hour of
+        # audio is how the API stops answering.
+        await run_upload_pipeline(child, settings)
+
+    await project_store.update_project(
+        project_id,
+        status=ProjectStatus.COMPLETE,
+        clip_project_ids=child_ids,
+    )
+    await _emit(
+        project_id,
+        stage=RenderStage.DONE,
+        progress_pct=100,
+        message=f"{len(child_ids)} clips ready.",
+    )
 
 
 async def _refund_failed_render(project_id: str, *, reason: str) -> None:
