@@ -695,7 +695,7 @@ async def _extract_clips(
 
     await _emit(
         project_id,
-        stage=RenderStage.SCRIPT,
+        stage=RenderStage.SCRIPT_GENERATION,
         progress_pct=25,
         message="Reading the transcript for the moments worth posting...",
     )
@@ -720,7 +720,7 @@ async def _extract_clips(
     for index, moment in enumerate(moments):
         await _emit(
             project_id,
-            stage=RenderStage.RENDER,
+            stage=RenderStage.ASSEMBLY,
             progress_pct=30 + (index / len(moments)) * 60,
             message=f"Cutting clip {index + 1} of {len(moments)}...",
         )

@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from app.api.deps import billing_enabled, current_user_id, db_pool
 from app.core.config import get_settings
 from app.engines import visual_engine
-from app.schemas.project import ProjectConfig, VideoLength, VisualMode
+from app.schemas.project import ProjectConfig, ProjectSource, VideoLength, VisualMode
 from app.services import credits, payments
 
 logger = logging.getLogger(__name__)
@@ -61,13 +61,32 @@ class CreditSummary(BaseModel):
 
 
 def _pricing_table() -> dict[str, int]:
-    return {
+    quotes = {
         f"{mode.value}:{length.value}": credits.cost_for(
             ProjectConfig(topic="quote", visual_mode=mode, video_length=length)
         )
         for mode in VisualMode
         for length in VideoLength
     }
+    # The three upload prices, quoted the same way and for the same
+    # reason: the panel that offers them hardcoded "1 credit" and was
+    # wrong about a dub and about every clip count. `upload:clip` is the
+    # price of one clip; the caller multiplies by how many it asks for,
+    # which is exactly what cost_for does.
+    quotes.update(
+        {
+            "upload:caption": credits.cost_for(
+                ProjectConfig(topic="quote", source=ProjectSource.UPLOAD)
+            ),
+            "upload:dub": credits.cost_for(
+                ProjectConfig(topic="quote", source=ProjectSource.UPLOAD, dub_language="tr")
+            ),
+            "upload:clip": credits.cost_for(
+                ProjectConfig(topic="quote", source=ProjectSource.UPLOAD, clip_count=1)
+            ),
+        }
+    )
+    return quotes
 
 
 def _packs() -> list[CreditPackOut]:

@@ -50,6 +50,12 @@ export function UploadPanel() {
   // after the file has been uploaded.
   const [clipCount, setClipCount] = useState(0);
 
+  // Quoted from the table the API serves, which is the one the backend
+  // charges from — the panel used to print "1 credit" whatever was
+  // chosen, which was wrong about a dub and about every clip count.
+  const unit = clipCount ? "upload:clip" : dubLanguage ? "upload:dub" : "upload:caption";
+  const price = (credits?.pricing?.[unit] ?? 1) * (clipCount || 1);
+
   function choose(next: File | null) {
     setError(null);
     if (!next) return;
@@ -256,7 +262,7 @@ export function UploadPanel() {
         <p className="flex items-center gap-1.5 text-xs text-white/40">
           <Captions size={13} />
           {credits?.enabled
-            ? `1 credit · ${credits.balance} remaining`
+            ? `${price} credit${price === 1 ? "" : "s"} · ${credits.balance} remaining`
             : "Free · runs on this machine"}
         </p>
         <Button onClick={handleUpload} disabled={!file || uploading} variant="gradient">
@@ -264,7 +270,7 @@ export function UploadPanel() {
             "Working..."
           ) : (
             <>
-              Add captions
+              {clipCount ? `Take ${clipCount} clips` : dubLanguage ? "Dub it" : "Add captions"}
               <ArrowRight size={16} />
             </>
           )}

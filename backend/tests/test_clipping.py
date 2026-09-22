@@ -257,3 +257,20 @@ def test_the_column_exists_in_a_migration():
     migrations = Path(__file__).resolve().parents[1] / "migrations"
     sql = "\n".join(p.read_text() for p in migrations.glob("*.sql"))
     assert "clip_project_ids" in sql
+
+
+def test_every_render_stage_named_in_the_pipeline_exists():
+    """Caught the hard way: `_extract_clips` reported progress against
+    RenderStage.SCRIPT and RenderStage.RENDER, neither of which is a
+    member. Nothing fails until that line runs, so the first real
+    extraction died after transcribing — and the enum is only ever
+    touched by attribute access, which no type check sees."""
+    import re
+    from pathlib import Path
+
+    from app.schemas.project import RenderStage
+
+    source = (Path(__file__).resolve().parents[1] / "app" / "services" / "render_manager.py").read_text()
+    named = set(re.findall(r"RenderStage\.([A-Z_]+)", source))
+
+    assert named <= set(RenderStage.__members__), sorted(named - set(RenderStage.__members__))
