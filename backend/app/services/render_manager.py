@@ -457,7 +457,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
 async def run_upload_pipeline(
     project: Project,
     settings: Settings,
-    submit: "Callable[[Project], Awaitable[None]] | None" = None,
+    submit: Callable[[Project], Awaitable[None]] | None = None,
 ) -> None:
     """Caption a video the user already has.
 
@@ -666,8 +666,8 @@ async def _extract_clips(
     project: Project,
     segments: list,
     settings: Settings,
-    timings: "StageTimings",
-    submit: "Callable[[Project], Awaitable[None]] | None" = None,
+    timings: StageTimings,
+    submit: Callable[[Project], Awaitable[None]] | None = None,
 ) -> None:
     """Cut the moments worth keeping out of a long upload.
 
@@ -717,6 +717,12 @@ async def _extract_clips(
     paths = project_dir(project_id)
     child_ids: list[str] = []
 
+    # Asked for rather than read off the project: the owner is a column,
+    # not a field on the model, and it is not optional here — list_projects
+    # filters by it, so a clip created without one would exist, render,
+    # and never appear in the library that asked for it.
+    owner = await project_store.owner_of(project_id)
+
     for index, moment in enumerate(moments):
         await _emit(
             project_id,
@@ -742,7 +748,7 @@ async def _extract_clips(
                 "topic": moment.title,
             }
         )
-        child = await project_store.create_project(child_config, user_id=project.user_id)
+        child = await project_store.create_project(child_config, user_id=owner)
         child_source = project_dir(child_config.id) / "source.mp4"
         child_source.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(cut, child_source)

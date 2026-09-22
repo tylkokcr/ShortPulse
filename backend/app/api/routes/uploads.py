@@ -16,7 +16,6 @@ import logging
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
-
 from pydantic import ValidationError
 
 from app.api.deps import billing_enabled, current_user_id, db_pool
