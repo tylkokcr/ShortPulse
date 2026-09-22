@@ -563,6 +563,7 @@ async def cut_clip(
     destination: Path,
     start_s: float,
     end_s: float,
+    target: tuple[int, int] | None = None,
     ffmpeg_binary: str = "ffmpeg",
 ) -> Path:
     """Copy one stretch of a video out into a file of its own.
@@ -578,10 +579,31 @@ async def cut_clip(
     discarding everything up to the start, which on an hour-long source is
     the difference between seconds and minutes.
 
-    Nothing is reframed or captioned here. The cut is handed to the normal
-    upload pipeline as its own source, and that scales, crops, transcribes
-    and burns exactly as it does for a file somebody uploaded.
+    Reframed here, when `target` says to, and nowhere else. The cut is
+    handed on to the upload pipeline, and that pipeline deliberately does
+    not touch the picture — someone captioning a video they shot gets
+    their own framing back. An extraction is the opposite case: the whole
+    point is a landscape recording becoming a vertical clip, and there is
+    no second re-encode to do it in. This one is already re-encoding.
+
+    Centre-crop, not subject tracking. A speaker who sits off to one side
+    will be cropped off-centre, and fixing that properly means detecting
+    them frame by frame — a real piece of work, and not one to fake by
+    guessing. Cropping to the middle is what the rest of the product does
+    with stock footage, and it is honest about what it is.
     """
+    # scale-to-fill then crop, the same pair `_prepare_video_clip` uses:
+    # `increase` makes the short edge reach the target and lets the long
+    # one overhang, and the crop takes the middle of what overhangs.
+    reframe = (
+        [
+            "-vf",
+            f"scale={target[0]}:{target[1]}:force_original_aspect_ratio=increase,"
+            f"crop={target[0]}:{target[1]}",
+        ]
+        if target
+        else []
+    )
     await _run_ffmpeg(
         [
             "-ss",
@@ -590,6 +612,7 @@ async def cut_clip(
             str(source),
             "-t",
             f"{max(end_s - start_s, 0):.3f}",
+            *reframe,
             "-c:v",
             "libx264",
             "-preset",

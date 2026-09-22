@@ -236,8 +236,8 @@ def test_a_plain_upload_is_unchanged():
 
 
 def test_every_field_the_pipeline_persists_is_a_real_column():
-    from app.services.project_store import PostgresProjectStore
     from app.schemas.project import Project
+    from app.services.project_store import PostgresProjectStore
 
     assert PostgresProjectStore._COLUMNS <= set(Project.model_fields)
 
@@ -274,3 +274,50 @@ def test_every_render_stage_named_in_the_pipeline_exists():
     named = set(re.findall(r"RenderStage\.([A-Z_]+)", source))
 
     assert named <= set(RenderStage.__members__), sorted(named - set(RenderStage.__members__))
+
+
+# --------------------------------------------------------------------------
+# Reframing
+#
+# Found by running it: the clips came back 1280x720. The upload pipeline
+# that renders a cut leaves the picture alone on purpose — someone
+# captioning their own video gets their own framing back — so an
+# extraction that did not reframe in the cut produced landscape shorts.
+# --------------------------------------------------------------------------
+
+
+async def test_a_cut_is_reframed_to_the_target(monkeypatch):
+    from pathlib import Path
+
+    from app.engines import render_engine
+
+    seen: list[list[str]] = []
+
+    async def fake_ffmpeg(args, ffmpeg_binary="ffmpeg"):
+        seen.append(args)
+
+    monkeypatch.setattr(render_engine, "_run_ffmpeg", fake_ffmpeg)
+    await render_engine.cut_clip(Path("in.mp4"), Path("out.mp4"), 1.0, 5.0, (1080, 1920))
+
+    [args] = seen
+    filters = args[args.index("-vf") + 1]
+    assert "scale=1080:1920:force_original_aspect_ratio=increase" in filters
+    assert "crop=1080:1920" in filters
+
+
+async def test_a_cut_with_no_target_keeps_its_frame(monkeypatch):
+    """Nothing but an extraction passes a target, and a filter that
+    re-encodes the picture is not something to apply by default."""
+    from pathlib import Path
+
+    from app.engines import render_engine
+
+    seen: list[list[str]] = []
+
+    async def fake_ffmpeg(args, ffmpeg_binary="ffmpeg"):
+        seen.append(args)
+
+    monkeypatch.setattr(render_engine, "_run_ffmpeg", fake_ffmpeg)
+    await render_engine.cut_clip(Path("in.mp4"), Path("out.mp4"), 1.0, 5.0)
+
+    assert "-vf" not in seen[0]

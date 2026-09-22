@@ -122,7 +122,7 @@ def test_an_ordinary_style_still_asks_for_an_outline():
 def test_a_boxed_active_word_recolours_the_box_not_the_letters():
     """\\3c is the box under BorderStyle 3. Recolouring the text there
     would put the highlight against a filled background and lose it."""
-    from app.engines.subtitle_engine import _render_line_text, SubtitleLine
+    from app.engines.subtitle_engine import SubtitleLine, _render_line_text
     from app.schemas.project import SubtitleStyle, Word
 
     line = SubtitleLine(
@@ -141,7 +141,7 @@ def test_a_boxed_active_word_recolours_the_box_not_the_letters():
 
 
 def test_an_outlined_active_word_still_grows_and_recolours_the_text():
-    from app.engines.subtitle_engine import _render_line_text, SubtitleLine
+    from app.engines.subtitle_engine import SubtitleLine, _render_line_text
     from app.schemas.project import SubtitleStyle, Word
 
     line = SubtitleLine(words=[Word(text="a", start_ms=0, end_ms=100)], start_ms=0, end_ms=100)

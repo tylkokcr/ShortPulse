@@ -734,7 +734,15 @@ async def _extract_clips(
         cut = paths / f"clip_{index}.mp4"
         with timings.stage(f"clip_{index}_cut"):
             await render_engine.cut_clip(
-                source, cut, moment.start_s, moment.end_s, settings.ffmpeg_binary
+                source,
+                cut,
+                moment.start_s,
+                moment.end_s,
+                # The frame the project asked for — 9:16 unless it said
+                # otherwise. Done here because the upload pipeline that
+                # renders the cut leaves the picture alone by design.
+                resolution_for(config.aspect_ratio, settings.default_resolution),
+                settings.ffmpeg_binary,
             )
 
         # A copy of the parent's settings with the clip's own identity: same
