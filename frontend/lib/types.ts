@@ -292,6 +292,10 @@ export interface Project {
   error?: string | null;
   /** The uploaded video this project started from, if it wasn't generated. */
   source_path?: string | null;
+  /** The projects a clip extraction produced, in the order they appear in
+   *  the source. Empty on every other kind of project — an extraction is
+   *  the only one that finishes holding ids instead of a video. */
+  clip_project_ids?: string[];
   /** Whether one of this project's scenes can be re-drawn, and the
    *  sentence to show when it can't. Computed server-side from what is
    *  still on disk — every video rendered before re-rolling existed is a

@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useEffect, useRef, useState } from "react";
-import { ArrowLeft, ListTree, Pencil } from "lucide-react";
+import { ArrowLeft, ArrowRight, ListTree, Pencil, Scissors } from "lucide-react";
 import clsx from "clsx";
 import { Link } from "@/i18n/navigation";
 import { useShortPulseStore } from "@/lib/store";
@@ -152,6 +152,12 @@ function Project({ id }: { id: string }) {
           New video
         </Link>
 
+        {/* An extraction has no video of its own — it has children. The
+            whole page below assumes a player and a scene list, neither of
+            which exists here, so it is answered before any of it. */}
+        {project?.clip_project_ids?.length ? (
+          <ClipList project={project} />
+        ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
           <div className="animate-fade-up flex flex-col gap-4">
             <div className="inline-flex w-fit rounded-md border border-border bg-surface p-1">
@@ -236,7 +242,50 @@ function Project({ id }: { id: string }) {
             {project?.status === "complete" && <PublishPanel project={project} />}
           </div>
         </div>
+        )}
       </div>
     </AppShell>
+  );
+}
+
+/**
+ * What an extraction produced.
+ *
+ * Deliberately a list of links rather than a gallery with players in it.
+ * Each clip is a full project — it has its own page with the breakdown,
+ * the editor and the publish panel on it — and putting a second, lesser
+ * view of the same thing here would make the real one look like a detour.
+ */
+function ClipList({ project }: { project: Project }) {
+  const ids = project.clip_project_ids ?? [];
+
+  return (
+    <Card className="animate-fade-up flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <Scissors size={15} className="text-accent" />
+        <h2 className="text-sm font-semibold">
+          {ids.length} clip{ids.length === 1 ? "" : "s"} from this video
+        </h2>
+      </div>
+      <p className="text-xs leading-relaxed text-white/40">
+        Each one is its own project — captioned, editable, and ready to publish. This page is
+        the record of the cut; the clips are in your library.
+      </p>
+      <div className="flex flex-col gap-2">
+        {ids.map((id, index) => (
+          <Link
+            key={id}
+            href={`/project/${id}`}
+            className="group flex items-center gap-3 rounded-lg border border-border px-4 py-3 transition-colors hover:border-accent/50 hover:bg-surface-hover"
+          >
+            <span className="font-mono text-[11px] text-white/25">{index + 1}</span>
+            <span className="min-w-0 flex-1 truncate text-sm text-white/70 group-hover:text-white">
+              Clip {index + 1}
+            </span>
+            <ArrowRight size={14} className="shrink-0 text-white/25 group-hover:text-accent" />
+          </Link>
+        ))}
+      </div>
+    </Card>
   );
 }

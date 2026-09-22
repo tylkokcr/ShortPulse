@@ -44,6 +44,11 @@ export function UploadPanel() {
   // Local rather than in the draft store: the target language is a
   // property of this one action, not of a project that outlives it.
   const [dubLanguage, setDubLanguage] = useState("");
+  // Zero means "caption it whole". The two are mutually exclusive — the
+  // API refuses both together rather than quietly doing one — so choosing
+  // either clears the other here instead of letting the server say no
+  // after the file has been uploaded.
+  const [clipCount, setClipCount] = useState(0);
 
   function choose(next: File | null) {
     setError(null);
@@ -68,6 +73,7 @@ export function UploadPanel() {
           language: draft.language,
           title: file.name.replace(/\.[^.]+$/, ""),
           dubLanguage,
+          clipCount,
           // The picker below has been on this panel from the start; what
           // was missing was this line, so every upload came back Classic
           // whatever was chosen.
@@ -79,7 +85,7 @@ export function UploadPanel() {
     } catch (err) {
       setError(
         err instanceof InsufficientCreditsError
-          ? `${dubLanguage ? "Dubbing" : "Captioning"} costs ${err.required} credit${err.required === 1 ? "" : "s"} and you have ${err.balance}.`
+          ? `${clipCount ? "Taking clips" : dubLanguage ? "Dubbing" : "Captioning"} costs ${err.required} credit${err.required === 1 ? "" : "s"} and you have ${err.balance}.`
           : err instanceof Error
             ? err.message
             : "Upload failed"
@@ -157,6 +163,37 @@ export function UploadPanel() {
         </div>
 
         <div>
+          <label className="mb-1.5 block text-sm font-medium text-white/70">
+            Cut it into clips
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {[0, 2, 3, 4, 5].map((count) => (
+              <button
+                key={count}
+                type="button"
+                onClick={() => {
+                  setClipCount(count);
+                  if (count) setDubLanguage("");
+                }}
+                className={clsx(
+                  "rounded-lg border px-3 py-1.5 text-xs transition-colors duration-200",
+                  clipCount === count
+                    ? "border-accent/60 bg-accent/[0.08] text-white"
+                    : "border-border text-white/50 hover:border-border-strong hover:text-white/80"
+                )}
+              >
+                {count === 0 ? "Don't — keep it whole" : `${count} clips`}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs text-white/40">
+            {clipCount
+              ? "The transcript is read for the moments that stand up on their own. Each one is cut out and lands in your library as its own video, captioned and ready to edit. Videos from 2 to 60 minutes."
+              : "Leave this alone to caption the whole video as it is."}
+          </p>
+        </div>
+
+        <div className={clsx(clipCount && "pointer-events-none opacity-40")}>
           <label
             htmlFor="dub-language"
             className="mb-1.5 block text-sm font-medium text-white/70"
@@ -179,7 +216,9 @@ export function UploadPanel() {
             )}
           </select>
           <p className="mt-1.5 text-xs text-white/40">
-            {dubLanguage
+            {clipCount
+              ? "Take the clips first, then dub the ones you keep."
+              : dubLanguage
               ? "The speech is translated and spoken again over your original picture. Nothing about the video changes, so if you are on camera your lips won't match the new language — dubbed video normally looks like this."
               : "Leave this alone to keep the original audio and only burn in captions."}
           </p>
