@@ -62,8 +62,13 @@ async def create_checkout_session(
 
     automatic_tax = bool(getattr(settings, "stripe_automatic_tax", False))
 
+    # stripe types `params` as a TypedDict, which can only be satisfied by a
+    # dict literal. The conditional spreads below — tax fields that exist
+    # only when Stripe Tax is on — make this one a plain dict as far as the
+    # checker is concerned. Narrow ignore so a stripe release that relaxes
+    # the annotation shows up as an unused one rather than staying hidden.
     session = _client(settings).checkout.sessions.create(
-        params={
+        params={  # type: ignore[arg-type]
             "mode": "payment",
             "success_url": settings.checkout_success_url,
             "cancel_url": settings.checkout_cancel_url,

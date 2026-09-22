@@ -105,6 +105,20 @@ uvicorn app.main:app --port 8000
 Set `DIFFUSION_DEVICE` in `.env` to `cuda` (NVIDIA), `mps` (Apple Silicon), or
 `cpu`.
 
+The three checks CI runs, in the order it runs them:
+
+```bash
+ruff check .   # style and the obvious mistakes
+mypy           # configured in pyproject.toml; takes no arguments
+pytest -q      # database tests skip themselves without a database
+```
+
+`mypy` is the newest of the three and worth one sentence: it is on default
+strictness rather than `--strict`, because what it is there to catch is an
+attribute or enum member that does not exist and a `None` reaching a
+parameter that cannot take one. Both have cost deploys here. Missing
+annotations, which is most of what `--strict` reports, have not.
+
 ### Frontend
 
 ```bash

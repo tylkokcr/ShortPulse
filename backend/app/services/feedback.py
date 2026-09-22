@@ -19,6 +19,7 @@ Self-hosted installs have no user and no pool, so nothing here runs there
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import asyncpg
 from pydantic import BaseModel, Field
@@ -66,8 +67,8 @@ async def record(
             do update set rating = excluded.rating, reason = excluded.reason,
                           note = excluded.note, updated_at = now()
         """
-        args = (project_id, user_id, entry.rating, entry.reason, entry.note,
-                visual_mode, art_style)
+        args: tuple[Any, ...] = (project_id, user_id, entry.rating, entry.reason, entry.note,
+                                 visual_mode, art_style)
     else:
         sql = """
             insert into feedback (project_id, user_id, scene_index, rating, reason, note,

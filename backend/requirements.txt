@@ -49,3 +49,8 @@ ffmpeg-python>=0.2.0     # thin wrapper kept for future use; core pipeline shell
 pytest>=8.2
 pytest-asyncio>=0.23
 ruff>=0.5
+# Config and rationale in pyproject.toml. asyncpg ships no annotations of
+# its own, and the stubs are what let the checker see the database layer —
+# where an argument in the wrong position is otherwise a runtime discovery.
+mypy>=1.11
+asyncpg-stubs>=0.29

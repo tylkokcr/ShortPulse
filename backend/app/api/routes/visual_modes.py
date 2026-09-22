@@ -23,7 +23,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 
-from app.api.deps import billing_enabled, current_user_id, db_pool
+from app.api.deps import billing_for, current_user_id, db_pool
 from app.core.config import get_settings
 from app.engines import visual_engine
 from app.schemas.project import VisualMode
@@ -50,9 +50,9 @@ async def list_visual_modes(
     # Asked once, not once per mode: the answer is about the account, not
     # about any particular mode. On a self-hosted install there is no
     # ledger and no user, so nothing is gated and this never runs.
-    pool = db_pool(request)
-    gated = billing_enabled(pool, user_id) and not await credits.may_render_paid_mode(
-        pool, user_id
+    billing = billing_for(db_pool(request), user_id)
+    gated = billing is not None and not await credits.may_render_paid_mode(
+        billing.pool, billing.user_id
     )
 
     out: list[VisualModeOut] = []

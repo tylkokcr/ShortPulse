@@ -32,6 +32,7 @@ import time
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
+from typing import Any
 
 import httpx
 
@@ -414,7 +415,9 @@ def _get_sdxl_pipeline(model_id: str, device: str, variant: str | None = None):
         from diffusers import AutoPipelineForText2Image
 
         logger.info("Loading diffusion pipeline %s on %s", model_id, device)
-        kwargs = {"torch_dtype": torch.float16 if device in ("cuda", "mps") else torch.float32}
+        kwargs: dict[str, Any] = {
+            "torch_dtype": torch.float16 if device in ("cuda", "mps") else torch.float32
+        }
         if variant:
             # Full SDXL fine-tunes ship both fp32 and fp16 weight sets;
             # asking for the fp16 variant halves the download and the

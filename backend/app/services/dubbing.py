@@ -105,8 +105,11 @@ async def translate_segments(
     for entry in lines:
         if not isinstance(entry, dict):
             continue
+        raw_index = entry.get("i")
+        if raw_index is None:
+            continue
         try:
-            index = int(entry.get("i"))
+            index = int(raw_index)
         except (TypeError, ValueError):
             continue
         text = str(entry.get("text") or "").strip()

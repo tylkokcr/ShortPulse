@@ -6,12 +6,13 @@ import json
 import logging
 from typing import Literal
 
+import asyncpg
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi import Path as PathParam
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from app.api.deps import billing_enabled, current_user_id, db_pool
+from app.api.deps import billing_for, current_user_id, db_pool
 from app.api.routes import music
 from app.core.config import get_settings, project_dir
 from app.core.storage import discard_project_files
@@ -93,7 +94,7 @@ async def create_project(
         temperature=config.llm.temperature,
     )
 
-    pool = db_pool(request)
+    billing = billing_for(db_pool(request), user_id)
 
     # Refuse to spend the signup grant on a mode that bills a third party.
     #
@@ -107,9 +108,9 @@ async def create_project(
     # reasoning as the insufficient-credits path below, which has to
     # delete one because it cannot know early enough.
     if (
-        billing_enabled(pool, user_id)
+        billing is not None
         and mode not in credits.FREE_TIER_MODES
-        and not await credits.may_render_paid_mode(pool, user_id)
+        and not await credits.may_render_paid_mode(billing.pool, billing.user_id)
     ):
         raise HTTPException(
             status_code=402,
@@ -130,12 +131,12 @@ async def create_project(
 
     project = await project_store.create_project(config, user_id)
 
-    if billing_enabled(pool, user_id):
+    if billing is not None:
         cost = credits.cost_for(config)
         try:
             await credits.spend(
-                pool,
-                user_id,
+                billing.pool,
+                billing.user_id,
                 cost,
                 project_id=config.id,
                 # Keyed on the project, so a retried request for the same
@@ -422,9 +423,8 @@ async def regenerate_scene(
             detail={"error": "no_such_scene", "scenes": len(scenes)},
         )
 
-    pool = db_pool(request)
-    charging = billing_enabled(pool, user_id)
-    if charging:
+    billing = billing_for(db_pool(request), user_id)
+    if billing is not None:
         # Same gate as creating the project: a mode the free grant does
         # not cover cannot be bought with it afterwards either.
         mode = VisualMode(project.config.visual_mode)
@@ -432,7 +432,9 @@ async def regenerate_scene(
         # finished video, and a re-roll is a second generation on top of
         # it. Asking for a pack here lands when someone has just decided
         # they want a scene fixed, which is the best moment there is.
-        if mode not in credits.FREE_TIER_MODES and not await credits.has_purchased(pool, user_id):
+        if mode not in credits.FREE_TIER_MODES and not await credits.has_purchased(
+            billing.pool, billing.user_id
+        ):
             raise HTTPException(
                 status_code=402,
                 detail={
@@ -448,11 +450,11 @@ async def regenerate_scene(
     try:
         with project_lock.hold(project_id):
             revision = scenes[scene_index].visual.revision + 1
-            if charging:
+            if billing is not None:
                 try:
                     await credits.spend(
-                        pool,
-                        user_id,
+                        billing.pool,
+                        billing.user_id,
                         credits.REGENERATE_SCENE_COST,
                         project_id=project_id,
                         # Not correction:{id} or render:{id} — both are
@@ -484,8 +486,10 @@ async def regenerate_scene(
                     negative_prompt=body.negative_prompt,
                 )
             except Exception as exc:
-                if charging:
-                    await _refund_regeneration(pool, user_id, project_id, scene_index, revision)
+                if billing is not None:
+                    await _refund_regeneration(
+                        billing.pool, billing.user_id, project_id, scene_index, revision
+                    )
                     # The counter has to move even though nothing was
                     # produced. Leaving it where it was would make the
                     # retry reuse this attempt's idempotency key, and a
@@ -516,12 +520,16 @@ async def regenerate_scene(
         # Feedback too: a scene flagged, then re-rolled, must not come
         # back unflagged — that is the complaint disappearing at the
         # exact moment it was acted on.
-        return await _with_feedback(_with_regeneration_state(saved), pool, user_id)
+        return await _with_feedback(
+            _with_regeneration_state(saved), db_pool(request), user_id
+        )
     except KeyError as exc:
         # Deleted while the re-roll was running. The files are already
         # gone or will be; the charge is not, so give it back.
-        if charging:
-            await _refund_regeneration(pool, user_id, project_id, scene_index, revision)
+        if billing is not None:
+            await _refund_regeneration(
+                billing.pool, billing.user_id, project_id, scene_index, revision
+            )
         raise HTTPException(status_code=404, detail="Project not found") from exc
 
 
@@ -542,7 +550,7 @@ async def _persist_revision(
 
 
 async def _refund_regeneration(
-    pool, user_id: str, project_id: str, scene_index: int, revision: int
+    pool: asyncpg.Pool, user_id: str, project_id: str, scene_index: int, revision: int
 ) -> None:
     """Give back a re-roll that didn't produce anything.
 
@@ -633,7 +641,9 @@ async def submit_feedback(
     return await _with_feedback(_with_regeneration_state(project), pool, user_id)
 
 
-async def _with_feedback(project: Project, pool, user_id: str | None) -> Project:
+async def _with_feedback(
+    project: Project, pool: asyncpg.Pool | None, user_id: str | None
+) -> Project:
     """Attach this viewer's own verdicts, so the UI doesn't ask twice."""
     if pool is None or user_id is None:
         return project

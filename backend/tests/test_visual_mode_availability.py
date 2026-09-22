@@ -14,6 +14,8 @@ if it still happens — re-prices the render.
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from app.engines import visual_engine
@@ -276,7 +278,9 @@ async def _corrections_for(scenes, requested=VisualMode.FAST_HYBRID) -> list[int
 
     original_pool = render_manager.db.optional_pool
     original_correct = render_manager.credits.correct_charge
-    render_manager.db.optional_pool = lambda: Pool()
+    # A stand-in with no methods: _refund_mode_downgrade only passes it
+    # through to the patched correct_charge, so nothing is ever called on it.
+    render_manager.db.optional_pool = lambda: cast(Any, Pool())
     render_manager.credits.correct_charge = fake_correct
     try:
         await render_manager._refund_mode_downgrade(

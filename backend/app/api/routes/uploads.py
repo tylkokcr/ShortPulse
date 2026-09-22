@@ -18,7 +18,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from pydantic import ValidationError
 
-from app.api.deps import billing_enabled, current_user_id, db_pool
+from app.api.deps import billing_for, current_user_id, db_pool
 from app.core.config import get_settings, project_dir
 from app.schemas.project import (
     EditSpec,
@@ -236,13 +236,13 @@ async def upload_video(
                 },
             )
 
-    pool = db_pool(request)
-    if billing_enabled(pool, user_id):
+    billing = billing_for(db_pool(request), user_id)
+    if billing is not None:
         cost = credits.cost_for(config)
         try:
             await credits.spend(
-                pool,
-                user_id,
+                billing.pool,
+                billing.user_id,
                 cost,
                 project_id=config.id,
                 idempotency_key=f"render:{config.id}",

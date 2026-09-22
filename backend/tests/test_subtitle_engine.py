@@ -102,7 +102,7 @@ def test_a_boxed_style_asks_libass_for_a_filled_box():
     from app.schemas.project import SubtitleStyle
 
     header = _header_for(SubtitleStyle(box=True), (1080, 1920))
-    style_line = next(l for l in header.splitlines() if l.startswith("Style:"))
+    style_line = next(line for line in header.splitlines() if line.startswith("Style:"))
 
     # Name,Fontname,Fontsize,Primary,Secondary,Outline,Back,Bold,Italic,
     # Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,...
@@ -114,7 +114,7 @@ def test_an_ordinary_style_still_asks_for_an_outline():
     from app.schemas.project import SubtitleStyle
 
     header = _header_for(SubtitleStyle(), (1080, 1920))
-    style_line = next(l for l in header.splitlines() if l.startswith("Style:"))
+    style_line = next(line for line in header.splitlines() if line.startswith("Style:"))
 
     assert style_line.split(",")[15] == "1"
 

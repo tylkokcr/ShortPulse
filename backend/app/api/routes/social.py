@@ -21,6 +21,7 @@ import secrets
 import time
 from dataclasses import dataclass
 
+import asyncpg
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
@@ -97,7 +98,7 @@ def _queue(request: Request):
     return getattr(request.app.state, "publish_queue", None)
 
 
-def _require_pool(request: Request):
+def _require_pool(request: Request) -> asyncpg.Pool:
     pool = db_pool(request)
     if pool is None:
         raise HTTPException(status_code=503, detail="Publishing needs a database.")
@@ -295,6 +296,19 @@ def _to_out(post: social_store.Post) -> PostOut:
     )
 
 
+async def _reload_out(pool: asyncpg.Pool, post_id: str) -> PostOut:
+    """Read a post back after writing it.
+
+    The row existed a moment ago, so None here means it was deleted in
+    between. 404 is the truthful answer; without the check the caller
+    gets an AttributeError dressed up as a 500.
+    """
+    post = await social_store.get_post(pool, post_id)
+    if post is None:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return _to_out(post)
+
+
 @router.get("/posts/{project_id}", response_model=list[PostOut])
 async def list_posts(
     project_id: str, request: Request, user_id: str = Depends(require_user_id)
@@ -366,8 +380,7 @@ async def publish_now(
         )
 
     await queue.submit(post_id)
-    post = await social_store.get_post(pool, post_id)
-    return _to_out(post)
+    return await _reload_out(pool, post_id)
 
 
 @router.post("/posts/{post_id}/approve", response_model=PostOut)
@@ -389,5 +402,4 @@ async def approve(
         raise HTTPException(status_code=404, detail="Nothing to approve")
 
     await queue.submit(post_id)
-    post = await social_store.get_post(pool, post_id)
-    return _to_out(post)
+    return await _reload_out(pool, post_id)

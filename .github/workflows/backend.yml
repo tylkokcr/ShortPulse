@@ -1,0 +1,43 @@
+# There was no CI here, and Dependabot opens a grouped backend pull request
+# every week. A bump that breaks an import or changes a signature had
+# nothing standing between it and `git pull` on the server — this is that
+# something, and it is why the checks run on pull requests too.
+name: Backend
+
+on:
+  push:
+    branches: [master, studio-editor]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # The version the Dockerfile runs, so a failure here is a failure
+          # that would have happened in the container.
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: ruff
+        run: ruff check .
+
+      - name: mypy
+        run: mypy
+
+      # No Postgres service: the database tests skip themselves when they
+      # cannot reach one, and standing up a container here would only run
+      # them against an empty schema. They run locally against the dev
+      # database, which is where they mean something.
+      - name: pytest
+        run: pytest -q

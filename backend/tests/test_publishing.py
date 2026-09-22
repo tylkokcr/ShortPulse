@@ -231,3 +231,28 @@ async def test_the_rest_of_publishing_still_needs_a_token():
     response = await _get(_callback_app(), "/api/social/connections")
 
     assert response.status_code == 401
+
+
+# --- reading a post back after writing it --------------------------------
+#
+# Both publish and approve write a row, queue it, then read it back to
+# answer with. The read returns `Post | None`, and the None branch went
+# straight into the response builder — so a row deleted in that window
+# came back as an AttributeError on a 500 rather than the 404 it is.
+# Found by the type checker, not by a failure in production.
+
+
+async def test_a_post_that_vanished_between_write_and_read_is_a_404(monkeypatch):
+    from fastapi import HTTPException
+
+    from app.api.routes import social as social_route
+
+    async def gone(pool, post_id):
+        return None
+
+    monkeypatch.setattr(social_route.social_store, "get_post", gone)
+
+    with pytest.raises(HTTPException) as exc:
+        await social_route._reload_out(pool=None, post_id="post-1")
+
+    assert exc.value.status_code == 404

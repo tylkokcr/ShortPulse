@@ -29,6 +29,41 @@ extend-immutable-calls = [
 # libass can't parse.
 "app/engines/subtitle_engine.py" = ["E501"]
 
+[tool.mypy]
+# What the Dockerfile actually runs, not the interpreter a contributor
+# happens to have. It cannot be lowered to the 3.11 floor in
+# requires-python: numpy's bundled stubs use `type` statements, which are
+# 3.12 syntax, so checking at 3.11 fails before it reaches our code.
+python_version = "3.12"
+files = ["app", "tests"]
+# Default strictness on purpose. What has actually cost us deploys is
+# attributes and enum members that do not exist (RenderStage.SCRIPT,
+# project.user_id) and None reaching a parameter that cannot take it —
+# all caught here. --strict adds 100+ findings about missing annotations,
+# which is a different and much less urgent problem.
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+# Test doubles are the point of a test double: a _CountingConn or a
+# StubWebSocket implements the three methods under test and nothing else,
+# and a None passed on purpose is how a default gets exercised. Checking
+# those bodies produces ~55 findings, none of them bugs. Annotated
+# helpers here are still checked, and so is every import.
+module = ["tests.*"]
+check_untyped_defs = false
+# The "we did not check this body" note, which is the whole point above.
+disable_error_code = ["annotation-unchecked"]
+
+[[tool.mypy.overrides]]
+# Optional extras. TTS is not installed at all (see requirements.txt) and
+# the other two ship no annotations; every import of them in this codebase
+# is inside the function that needs it.
+module = ["TTS.*", "faster_whisper.*", "fontTools.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]

@@ -102,6 +102,11 @@ async def upsert_connection(
         tokens.expires_at,
         tokens.scopes,
     )
+    # `on conflict do update` always returns a row, so this is a guard
+    # against the statement being edited into a `do nothing` later, not
+    # against today's query.
+    if row is None:
+        raise RuntimeError("Upserting the connection returned no row")
     return str(row["id"])
 
 

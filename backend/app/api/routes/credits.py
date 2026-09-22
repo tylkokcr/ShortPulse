@@ -13,7 +13,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
-from app.api.deps import billing_enabled, current_user_id, db_pool
+from app.api.deps import billing_for, current_user_id, db_pool
 from app.core.config import get_settings
 from app.engines import visual_engine
 from app.schemas.project import ProjectConfig, ProjectSource, VideoLength, VisualMode
@@ -146,17 +146,18 @@ async def get_credits(
     request: Request, user_id: str | None = Depends(current_user_id)
 ) -> CreditSummary:
     settings = get_settings()
-    pool = db_pool(request)
-    if not billing_enabled(pool, user_id):
+    billing = billing_for(db_pool(request), user_id)
+    if billing is None:
         return CreditSummary(enabled=False, packs=_packs())
 
     return CreditSummary(
         enabled=True,
         currency=settings.stripe_currency,
         tax_included=settings.stripe_automatic_tax,
-        balance=await credits.balance(pool, user_id),
+        balance=await credits.balance(billing.pool, billing.user_id),
         entries=[
-            LedgerEntryOut(**vars(entry)) for entry in await credits.history(pool, user_id)
+            LedgerEntryOut(**vars(entry))
+            for entry in await credits.history(billing.pool, billing.user_id)
         ],
         pricing=_pricing_table(),
         packs=_packs(),

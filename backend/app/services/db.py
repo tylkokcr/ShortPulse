@@ -62,7 +62,10 @@ async def apply_migrations(target: asyncpg.Pool | asyncpg.Connection | None = No
     files = sorted(MIGRATIONS_DIR.glob("*.sql"))
     applied: list[str] = []
 
-    async def _run(conn: asyncpg.Connection) -> None:
+    # A connection handed out by a pool is a proxy that forwards to a
+    # Connection rather than being one, so the union is what `acquire()`
+    # actually yields.
+    async def _run(conn: asyncpg.Connection | asyncpg.pool.PoolConnectionProxy) -> None:
         for path in files:
             logger.info("Applying migration %s", path.name)
             await conn.execute(path.read_text(encoding="utf-8"))

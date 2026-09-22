@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import uuid
+from typing import Any
 
 import asyncpg
 import httpx
@@ -35,7 +36,7 @@ TEST_DSN = os.environ.get(
 
 class FakeQueue:
     def __init__(self) -> None:
-        self.submitted = []
+        self.submitted: list[Any] = []
 
     async def submit(self, project) -> None:
         self.submitted.append(project)

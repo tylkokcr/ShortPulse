@@ -15,6 +15,8 @@ None, which every caller already reads as "self-hosted, nothing to bill".
 
 from __future__ import annotations
 
+from typing import NamedTuple
+
 import asyncpg
 from fastapi import HTTPException, Request
 
@@ -41,8 +43,26 @@ def db_pool(request: Request) -> asyncpg.Pool | None:
     return getattr(request.app.state, "db_pool", None)
 
 
-def billing_enabled(pool: asyncpg.Pool | None, user_id: str | None) -> bool:
-    """Credits only apply when there is both somewhere to record them and
+class Billing(NamedTuple):
+    """Somewhere to record a charge, and someone to charge."""
+
+    pool: asyncpg.Pool
+    user_id: str
+
+
+def billing_for(pool: asyncpg.Pool | None, user_id: str | None) -> Billing | None:
+    """The pair needed to charge, or None when this install cannot.
+
+    Credits only apply when there is both somewhere to record them and
     someone to charge. Either one missing means this is a self-hosted
-    install and renders are free."""
-    return pool is not None and user_id is not None
+    install and renders are free.
+
+    It returns the pair rather than a bool so that the question and its
+    answer travel together: every caller that passes the check needs both
+    values immediately afterwards, and handing them back already narrowed
+    is what stops a `None` from reaching `credits.spend` — the shape of
+    mistake that has cost us deploys.
+    """
+    if pool is None or user_id is None:
+        return None
+    return Billing(pool, user_id)
