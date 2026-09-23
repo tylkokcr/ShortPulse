@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, Play, Scissors, Trash2, TriangleAlert, Upload, Wand2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import { Link } from "@/i18n/navigation";
 import { getMediaUrl } from "@/lib/api";
@@ -24,6 +25,7 @@ export function ProjectCard({
   project: Project;
   onDelete: (id: string) => void;
 }) {
+  const t = useTranslations("app.library");
   const [poster, setPoster] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const id = project.config.id;
@@ -93,10 +95,10 @@ export function ProjectCard({
             <Wand2 size={9} />
           )}
           {clipCount
-            ? `${clipCount} clip${clipCount === 1 ? "" : "s"}`
+            ? t("badge.clips", { count: clipCount })
             : isUpload
-              ? "Captioned"
-              : "Generated"}
+              ? t("badge.captioned")
+              : t("badge.generated")}
         </Badge>
 
         {project.status !== "complete" && (
@@ -109,7 +111,7 @@ export function ProjectCard({
                 : "border-white/10 bg-black/60 text-white/70"
             )}
           >
-            {project.status}
+            {t(`status.${project.status}`)}
           </Badge>
         )}
       </Link>
@@ -119,7 +121,7 @@ export function ProjectCard({
           <p className="truncate text-xs font-medium">{project.config.topic}</p>
           <p className="mt-0.5 font-mono text-[10px] text-white/35">
             {project.config.language.toUpperCase()} · {project.config.aspect_ratio}
-            {project.credits_cost > 0 && ` · ${project.credits_cost} cr`}
+            {project.credits_cost > 0 && ` · ${t("credits", { count: project.credits_cost })}`}
           </p>
         </div>
 
@@ -127,7 +129,7 @@ export function ProjectCard({
           type="button"
           onClick={() => (confirming ? onDelete(id) : setConfirming(true))}
           onBlur={() => setConfirming(false)}
-          aria-label={confirming ? "Confirm delete" : "Delete project"}
+          aria-label={confirming ? t("confirmDelete") : t("delete")}
           className={clsx(
             // Revealed on hover on a pointer device, always visible on a
             // touch one — there is no hover on a phone, so hiding it there
@@ -145,7 +147,7 @@ export function ProjectCard({
 
       {confirming && (
         <p className="text-[10px] leading-tight text-red-400/80">
-          Click again to delete. The video and its files are removed for good.
+          {t("deleteWarning")}
         </p>
       )}
     </div>

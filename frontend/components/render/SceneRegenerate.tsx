@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { Scene } from "@/lib/types";
 
 /**
@@ -33,6 +34,7 @@ export function SceneRegenerate({
   disabled: boolean;
   onRegenerate: (index: number, prompt: string, negativePrompt: string) => Promise<void>;
 }) {
+  const t = useTranslations("app.regenerate");
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState(scene.visual.prompt);
   const [negative, setNegative] = useState(scene.visual.negative_prompt ?? "");
@@ -50,7 +52,7 @@ export function SceneRegenerate({
         ) : (
           <RefreshCw size={11} />
         )}
-        {busy ? "redrawing" : "re-roll"}
+        {busy ? t("redrawing") : t("reroll")}
         {(scene.visual.revision ?? 0) > 0 && !busy && (
           <span className="text-white/25">·{scene.visual.revision}</span>
         )}
@@ -62,7 +64,7 @@ export function SceneRegenerate({
     <div className="flex w-full flex-col gap-2 rounded-lg border border-border bg-background p-3">
       <label className="flex flex-col gap-1">
         <span className="font-mono text-[10px] uppercase tracking-widest text-white/30">
-          what to draw
+          {t("whatToDraw")}
         </span>
         <textarea
           value={prompt}
@@ -78,12 +80,13 @@ export function SceneRegenerate({
           falls back to the art style's own negative prompt. */}
       <label className="flex flex-col gap-1">
         <span className="font-mono text-[10px] uppercase tracking-widest text-white/30">
-          what to avoid
+          {t("whatToAvoid")}
         </span>
         <input
           value={negative}
           onChange={(e) => setNegative(e.target.value)}
           maxLength={400}
+          // Prompt tokens, not UI: they go to the image model in English.
           placeholder="hands, crowd, text"
           className="rounded-md border border-border bg-surface px-2 py-1.5 text-xs outline-none focus:border-border-strong"
         />
@@ -100,7 +103,7 @@ export function SceneRegenerate({
           className="flex items-center gap-1.5 rounded-md bg-accent px-2.5 py-1.5 text-xs font-medium text-black transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {busy && <Loader2 size={12} className="animate-spin" />}
-          {busy ? "Drawing…" : "Regenerate — 1 credit"}
+          {busy ? t("drawing") : t("submit", { count: 1 })}
         </button>
         <button
           type="button"
@@ -108,7 +111,7 @@ export function SceneRegenerate({
           onClick={() => setOpen(false)}
           className="rounded-md px-2 py-1.5 text-xs text-white/40 transition-colors hover:text-white/70"
         >
-          Cancel
+          {t("cancel")}
         </button>
       </div>
 
@@ -116,7 +119,7 @@ export function SceneRegenerate({
         // Two phases and about twenty seconds, so the wait is named rather
         // than left as a spinner over a video that hasn't changed yet.
         <p className="text-[11px] text-white/30">
-          Drawing a new picture, then re-encoding the video — about 20 seconds.
+          {t("wait")}
         </p>
       )}
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Copy } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { ScriptOutput, StockAttribution } from "@/lib/types";
 
@@ -19,6 +20,7 @@ import type { ScriptOutput, StockAttribution } from "@/lib/types";
 export function StockCredits({ script }: { script: ScriptOutput }) {
   const [copied, setCopied] = useState(false);
 
+  const t = useTranslations("app.stockCredits");
   const credits = dedupe(
     script.scenes
       .map((scene) => scene.visual.attribution)
@@ -40,12 +42,12 @@ export function StockCredits({ script }: { script: ScriptOutput }) {
     <div className="flex flex-col gap-2 rounded-lg border border-white/10 bg-white/[0.02] p-3">
       <div className="flex items-center justify-between gap-2">
         <h4 className="text-xs font-medium text-white/60">
-          Footage from{" "}
+          {t("footageFrom")}
           {providers.map((provider, i) => {
             const url = credits.find((c) => c.provider === provider)!.provider_url;
             return (
               <span key={provider}>
-                {i > 0 && " and "}
+                {i > 0 && t("and")}
                 <a
                   href={url}
                   target="_blank"
@@ -61,10 +63,10 @@ export function StockCredits({ script }: { script: ScriptOutput }) {
         <button
           onClick={copy}
           className="flex shrink-0 items-center gap-1 text-xs text-white/40 hover:text-white/80"
-          title="Copy the credits to paste into your post description"
+          title={t("copyTitle")}
         >
           {copied ? <Check size={12} /> : <Copy size={12} />}
-          {copied ? "Copied" : "Copy"}
+          {copied ? t("copied") : t("copy")}
         </button>
       </div>
 
@@ -72,15 +74,18 @@ export function StockCredits({ script }: { script: ScriptOutput }) {
         {credits.map((credit) => (
           <li key={creditLine(credit)} className="text-xs text-white/40">
             {credit.author ? (
-              <>
-                Video by{" "}
-                <Linked href={credit.author_url}>{credit.author}</Linked> on{" "}
-                <Linked href={credit.source_url ?? credit.provider_url}>{credit.provider}</Linked>
-              </>
+              t.rich("videoBy", {
+                author: () => <Linked href={credit.author_url}>{credit.author}</Linked>,
+                provider: () => (
+                  <Linked href={credit.source_url ?? credit.provider_url}>
+                    {credit.provider}
+                  </Linked>
+                ),
+              })
             ) : (
-              <>
-                Video from <Linked href={credit.provider_url}>{credit.provider}</Linked>
-              </>
+              t.rich("videoFrom", {
+                provider: () => <Linked href={credit.provider_url}>{credit.provider}</Linked>,
+              })
             )}
           </li>
         ))}

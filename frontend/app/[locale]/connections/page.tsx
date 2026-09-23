@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Plus, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import {
   disconnectSocial,
@@ -26,12 +27,7 @@ import { RequireAuth } from "@/components/auth/RequireAuth";
  * URL. "Cancelled" is deliberately not phrased as a failure: pressing
  * Cancel worked exactly as intended.
  */
-const CONNECT_ERRORS: Record<string, string> = {
-  cancelled: "Connecting was cancelled. Nothing changed.",
-  expired: "That took too long and the connection attempt expired. Try again.",
-  unavailable: "Publishing isn't set up on this deployment yet.",
-  failed: "Couldn't finish connecting that account. Try again.",
-};
+const CONNECT_ERRORS = ["cancelled", "expired", "unavailable", "failed"] as const;
 
 export default function ConnectionsPage() {
   return (
@@ -42,6 +38,7 @@ export default function ConnectionsPage() {
 }
 
 function Connections() {
+  const t = useTranslations("app.connections");
   const [platforms, setPlatforms] = useState<SocialPlatform[] | null>(null);
   const [connections, setConnections] = useState<SocialConnection[] | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -63,13 +60,15 @@ function Connections() {
     const params = new URLSearchParams(window.location.search);
     const error = params.get("error");
     if (error) {
-      setNotice(CONNECT_ERRORS[error] ?? CONNECT_ERRORS.failed);
+      setNotice(
+        t(`errors.${(CONNECT_ERRORS as readonly string[]).includes(error) ? error : "failed"}`)
+      );
       window.history.replaceState(null, "", window.location.pathname);
     }
     load().catch((err) =>
-      setNotice(err instanceof Error ? err.message : "Couldn't load your connections")
+      setNotice(err instanceof Error ? err.message : t("errors.loadFailed"))
     );
-  }, [load]);
+  }, [load, t]);
 
   async function connect(platform: SocialPlatform) {
     setBusy(platform);
@@ -81,7 +80,7 @@ function Connections() {
       // eslint-disable-next-line react-hooks/immutability
       window.location.href = url;
     } catch (err) {
-      setNotice(err instanceof Error ? err.message : "Couldn't start connecting");
+      setNotice(err instanceof Error ? err.message : t("errors.start"));
       setBusy(null);
     }
   }
@@ -101,7 +100,7 @@ function Connections() {
           c.id === connection.id ? { ...c, auto_publish: connection.auto_publish } : c
         ) ?? null
       );
-      setNotice("Couldn't save that. Try again.");
+      setNotice(t("errors.saveFailed"));
     }
   }
 
@@ -111,7 +110,7 @@ function Connections() {
       await disconnectSocial(connection.id);
       setConnections((current) => current?.filter((c) => c.id !== connection.id) ?? null);
     } catch {
-      setNotice("Couldn't disconnect that account.");
+      setNotice(t("errors.disconnectFailed"));
     } finally {
       setBusy(null);
     }
@@ -123,12 +122,10 @@ function Connections() {
 
   return (
     <AppShell section="connections">
-        <span className="font-mono text-xs uppercase tracking-widest text-accent">Publishing</span>
-        <h1 className="mt-1.5 text-3xl font-semibold tracking-tight">Connected accounts</h1>
+        <span className="font-mono text-xs uppercase tracking-widest text-accent">{t("eyebrow")}</span>
+        <h1 className="mt-1.5 text-3xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/50">
-          Publish a finished video straight to the places it was made for. Connecting an account
-          lets you post with one click — turning on automatic posting sends each finished render
-          without asking.
+          {t("intro")}
         </p>
 
         {notice && (
@@ -140,12 +137,11 @@ function Connections() {
         {platforms === null ? (
           <div className="mt-10 flex items-center gap-2 text-sm text-white/40">
             <Loader2 size={15} className="animate-spin" />
-            Loading...
+            {t("loading")}
           </div>
         ) : platforms.length === 0 ? (
           <Card className="mt-8 text-sm text-white/50">
-            Publishing isn&apos;t configured on this install. Self-hosted copies can set up their
-            own platform credentials — see the README.
+            {t("notConfigured")}
           </Card>
         ) : (
           <div className="mt-8 flex flex-col gap-3">
@@ -176,7 +172,7 @@ function Connections() {
                     ) : (
                       <Plus size={14} />
                     )}
-                    Connect
+                    {t("connect")}
                   </Button>
                 </Card>
               );
@@ -198,6 +194,7 @@ function ConnectionRow({
   onToggle: () => void;
   onRemove: () => void;
 }) {
+  const t = useTranslations("app.connections");
   const Icon = PLATFORM_ICONS[connection.platform];
 
   return (
@@ -214,7 +211,7 @@ function ConnectionRow({
           type="button"
           onClick={onRemove}
           disabled={busy}
-          aria-label="Disconnect"
+          aria-label={t("disconnect")}
           className="rounded p-1.5 text-white/30 transition-colors hover:bg-white/5 hover:text-red-400 disabled:opacity-40"
         >
           {busy ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
@@ -247,13 +244,13 @@ function ConnectionRow({
           />
         </button>
         <span className="text-sm">
-          <span className="font-medium text-white/80">Post finished videos automatically</span>
+          <span className="font-medium text-white/80">{t("autoTitle")}</span>
           <span className="mt-0.5 block text-xs leading-relaxed text-white/40">
             {connection.auto_publish
               ? connection.has_published
-                ? "Every render will be posted here as soon as it finishes."
-                : "Your first post here still needs one click — it goes to the project page for you to approve, so you can see how it looks before handing over the keys."
-              : "Off — you'll be asked each time. You can still post any video by hand."}
+                ? t("autoOn")
+                : t("autoFirst")
+              : t("autoOff")}
           </span>
         </span>
       </label>

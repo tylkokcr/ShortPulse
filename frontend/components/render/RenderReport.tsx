@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { getRenderTimings } from "@/lib/api";
 import type { RenderTimings } from "@/lib/types";
 
@@ -17,14 +18,16 @@ import type { RenderTimings } from "@/lib/types";
  * glance: on a fast_hybrid render the image stage dwarfs everything else,
  * which is exactly what the pricing is based on.
  */
-const STAGE_LABELS: Record<string, string> = {
-  script: "Script",
-  audio_and_transcription: "Voice + timing",
-  transcription: "Transcription",
-  visuals: "Visuals",
-  subtitles: "Subtitles",
-  ffmpeg_assembly: "Render",
-};
+/** A stage the backend reports but this list doesn't name keeps its own
+ *  key, which is still more use than a translated guess. */
+const STAGE_KEYS = [
+  "script",
+  "audio_and_transcription",
+  "transcription",
+  "visuals",
+  "subtitles",
+  "ffmpeg_assembly",
+] as const;
 
 function seconds(value: number): string {
   if (value >= 60) return `${Math.floor(value / 60)}m ${Math.round(value % 60)}s`;
@@ -47,6 +50,7 @@ export function RenderReport({ projectId }: { projectId: string }) {
     };
   }, [projectId]);
 
+  const t = useTranslations("app.report");
   const stages = timings?.stages_s ? Object.entries(timings.stages_s) : [];
   if (!timings?.total_s || stages.length === 0) return null;
 
@@ -55,15 +59,17 @@ export function RenderReport({ projectId }: { projectId: string }) {
   return (
     <div className="flex flex-col gap-3 border-t border-border pt-4">
       <div className="flex items-baseline justify-between">
-        <span className="label">Render report</span>
-        <span className="font-mono text-xs text-white/70">{seconds(timings.total_s)} total</span>
+        <span className="label">{t("title")}</span>
+        <span className="font-mono text-xs text-white/70">
+          {t("total", { time: seconds(timings.total_s) })}
+        </span>
       </div>
 
       <div className="flex flex-col gap-1.5">
         {stages.map(([key, value]) => (
           <div key={key} className="flex items-center gap-2.5">
             <span className="w-[86px] shrink-0 truncate text-[11px] text-white/50">
-              {STAGE_LABELS[key] ?? key}
+              {(STAGE_KEYS as readonly string[]).includes(key) ? t(`stages.${key}`) : key}
             </span>
             <div className="h-1 flex-1 bg-border">
               <div
@@ -83,16 +89,16 @@ export function RenderReport({ projectId }: { projectId: string }) {
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 pt-1 font-mono text-[10px]">
         {timings.video_duration_s !== undefined && (
-          <Fact label="Video" value={`${timings.video_duration_s.toFixed(1)}s`} />
+          <Fact label={t("video")} value={`${timings.video_duration_s.toFixed(1)}s`} />
         )}
         {timings.scene_count !== undefined && (
-          <Fact label="Scenes" value={String(timings.scene_count)} />
+          <Fact label={t("scenes")} value={String(timings.scene_count)} />
         )}
         {timings.word_count !== undefined && (
-          <Fact label="Words" value={String(timings.word_count)} />
+          <Fact label={t("words")} value={String(timings.word_count)} />
         )}
-        {timings.visual_mode && <Fact label="Mode" value={timings.visual_mode} />}
-        {timings.diffusion_device && <Fact label="Device" value={timings.diffusion_device} />}
+        {timings.visual_mode && <Fact label={t("mode")} value={timings.visual_mode} />}
+        {timings.diffusion_device && <Fact label={t("device")} value={timings.diffusion_device} />}
       </dl>
     </div>
   );

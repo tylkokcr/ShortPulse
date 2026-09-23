@@ -1,6 +1,7 @@
 "use client";
 
 import { Megaphone } from "lucide-react";
+import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import type { ScriptOutput } from "@/lib/types";
 import { SceneRegenerate } from "./SceneRegenerate";
@@ -71,6 +72,7 @@ export function TranscriptPanel({
   projectId?: string;
   thumbToken?: string | null;
 }) {
+  const t = useTranslations("app.transcript");
   const ranges = computeSceneRanges(script);
 
   return (
@@ -232,8 +234,7 @@ export function TranscriptPanel({
           <div className="flex min-w-0 flex-col gap-1">
             <p className="text-sm leading-relaxed text-white/60">{script.call_to_action}</p>
             <p className="text-[11px] leading-relaxed text-white/30">
-              Not in the video — the outro card is off. It fills in the post description if
-              you publish without writing one.
+              {t("outroOff")}
             </p>
           </div>
         </div>

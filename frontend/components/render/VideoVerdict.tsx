@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
+import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import type { SceneFeedback as Verdict } from "@/lib/types";
 
@@ -25,6 +26,7 @@ export function VideoVerdict({
   verdict?: Verdict;
   onSubmit: (rating: "up" | "down") => Promise<void>;
 }) {
+  const t = useTranslations("app.feedback");
   const [saving, setSaving] = useState<"up" | "down" | null>(null);
   const answered = verdict?.rating;
 
@@ -40,9 +42,7 @@ export function VideoVerdict({
   return (
     <div className="flex items-center gap-3 border-t border-border pt-3">
       <span className="text-[11px] text-white/35">
-        {answered
-          ? "Thanks — that helps more than you'd think."
-          : "How did this one come out?"}
+        {answered ? t("videoThanks") : t("videoAsk")}
       </span>
 
       <div className="ml-auto flex items-center gap-1.5">
@@ -55,7 +55,7 @@ export function VideoVerdict({
               type="button"
               disabled={saving !== null}
               onClick={() => send(rating)}
-              aria-label={rating === "up" ? "Came out well" : "Came out badly"}
+              aria-label={rating === "up" ? t("videoUp") : t("videoDown")}
               aria-pressed={on}
               className={clsx(
                 "flex h-7 w-7 items-center justify-center rounded-md border transition-colors disabled:opacity-40",

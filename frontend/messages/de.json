@@ -558,5 +558,235 @@
       "empty": "Dein Video erscheint hier, sobald du eines auswählst.",
       "caption": "9:16 · Untertitel eingebrannt"
     }
+  },
+  "app": {
+    "library": {
+      "title": "Deine Videos",
+      "loading": "Wird geladen...",
+      "none": "Hier ist noch nichts.",
+      "count": "{count, plural, one {# Projekt} other {# Projekte}}",
+      "newVideo": "Neues Video",
+      "loadFailed": "Projekte konnten nicht geladen werden",
+      "emptyTitle": "Noch keine Projekte",
+      "emptyBody": "Erzeuge eines aus einem Thema, oder lade ein vorhandenes Video hoch und lass die Untertitel schreiben.",
+      "startOne": "Eines anfangen",
+      "badge": {
+        "clips": "{count, plural, one {# Clip} other {# Clips}}",
+        "captioned": "Untertitelt",
+        "generated": "Erzeugt"
+      },
+      "status": {
+        "draft": "Entwurf",
+        "rendering": "rendert",
+        "complete": "fertig",
+        "failed": "fehlgeschlagen"
+      },
+      "credits": "{count} Cr.",
+      "delete": "Projekt löschen",
+      "confirmDelete": "Löschen bestätigen",
+      "deleteWarning": "Noch einmal klicken zum Löschen. Das Video und seine Dateien sind dann endgültig weg."
+    },
+    "connections": {
+      "eyebrow": "Veröffentlichen",
+      "title": "Verbundene Konten",
+      "intro": "Veröffentliche ein fertiges Video direkt dort, wofür es gemacht wurde. Ein verbundenes Konto lässt dich mit einem Klick posten — mit automatischem Posten geht jeder fertige Render ohne Rückfrage raus.",
+      "loading": "Wird geladen...",
+      "notConfigured": "Auf dieser Installation ist das Veröffentlichen nicht eingerichtet. Selbst gehostete Kopien können eigene Plattform-Zugangsdaten hinterlegen — siehe README.",
+      "connect": "Verbinden",
+      "disconnect": "Trennen",
+      "autoTitle": "Fertige Videos automatisch posten",
+      "autoOn": "Jeder Render wird hier gepostet, sobald er fertig ist.",
+      "autoFirst": "Dein erster Post hier braucht noch einen Klick — er landet zur Freigabe auf der Projektseite, damit du siehst, wie er aussieht, bevor du die Schlüssel übergibst.",
+      "autoOff": "Aus — du wirst jedes Mal gefragt. Von Hand posten kannst du trotzdem jedes Video.",
+      "errors": {
+        "cancelled": "Das Verbinden wurde abgebrochen. Es hat sich nichts geändert.",
+        "expired": "Das hat zu lange gedauert, der Verbindungsversuch ist abgelaufen. Versuch es erneut.",
+        "unavailable": "Auf diesem Deployment ist das Veröffentlichen noch nicht eingerichtet.",
+        "failed": "Das Konto ließ sich nicht fertig verbinden. Versuch es erneut.",
+        "saveFailed": "Das ließ sich nicht speichern. Versuch es erneut.",
+        "disconnectFailed": "Das Konto ließ sich nicht trennen.",
+        "loadFailed": "Deine Verbindungen ließen sich nicht laden",
+        "start": "Das Verbinden konnte nicht gestartet werden"
+      }
+    },
+    "credits": {
+      "balance": "{count, plural, one {# Credit} other {# Credits}}",
+      "introSold": "Einmalige Pakete. Nichts verlängert sich, nichts verfällt, und ungenutzte Credits bleiben dir.",
+      "vat": " Preise inklusive der bei dir geltenden Mehrwertsteuer.",
+      "introUnsold": "Diese Installation verkauft keine Credits. Was du hast, verfällt nicht, und Renders ziehen davon ab wie gewohnt.",
+      "purchased": "Zahlung erhalten. Dein Guthaben aktualisiert sich, sobald die Bestätigung bei uns ankommt.",
+      "withdrawal": "Ich möchte meine Credits sofort verfügbar haben und verstehe, dass ich mit ihrer Nutzung auf das 14-tägige Widerrufsrecht für diesen Kauf verzichte. Ungenutzte Credits können weiterhin innerhalb von 14 Tagen erstattet werden — siehe die <terms>Bedingungen</terms>.",
+      "popular": "Am häufigsten gewählt",
+      "packCredits": "{count, plural, one {# Credit} other {# Credits}}",
+      "packShorts": "{count} Shorts mit Stockmaterial",
+      "packStills": ", oder {count} mit KI-generierten Standbildern",
+      "opening": "Kasse wird geöffnet",
+      "buy": "{count} kaufen",
+      "stripe": "Die Zahlung läuft über Stripe — diese App sieht deine Kartendaten nie. ",
+      "selfHost": "Selbst hosten kostet nichts und braucht überhaupt kein Konto.",
+      "errors": {
+        "unavailable": "Diese Installation verkauft keine Credits.",
+        "failed": "Kasse konnte nicht geöffnet werden"
+      }
+    },
+    "feedback": {
+      "videoAsk": "Wie ist das geworden?",
+      "videoThanks": "Danke — das hilft mehr, als du denkst.",
+      "videoUp": "Gut geworden",
+      "videoDown": "Schlecht geworden",
+      "flagged": "markiert",
+      "wrong": "falsch?",
+      "sceneAsk": "was stimmt hier nicht?",
+      "reasons": {
+        "visual": "Das Bild",
+        "match": "Passt nicht zum Satz",
+        "voice": "Stimme",
+        "captions": "Untertitel",
+        "pacing": "Zu schnell / langsam",
+        "other": "Etwas anderes"
+      },
+      "notePlaceholder": "Noch etwas? (optional)",
+      "saving": "Wird gespeichert…",
+      "send": "Senden",
+      "cancel": "Abbrechen",
+      "thenReroll": "Dann unten neu würfeln"
+    },
+    "regenerate": {
+      "redrawing": "wird neu gezeichnet",
+      "reroll": "neu würfeln",
+      "whatToDraw": "was gezeichnet wird",
+      "whatToAvoid": "was vermieden wird",
+      "drawing": "Wird gezeichnet…",
+      "submit": "Neu erzeugen — {count, plural, one {# Credit} other {# Credits}}",
+      "cancel": "Abbrechen",
+      "wait": "Ein neues Bild wird gezeichnet, dann wird das Video neu kodiert — etwa 20 Sekunden."
+    },
+    "stockCredits": {
+      "footageFrom": "Material von ",
+      "and": " und ",
+      "copyTitle": "Credits kopieren, um sie in deine Beitragsbeschreibung einzufügen",
+      "copied": "Kopiert",
+      "copy": "Kopieren",
+      "videoBy": "Video von <author></author> auf <provider></provider>",
+      "videoFrom": "Video von <provider></provider>"
+    },
+    "report": {
+      "title": "Render-Bericht",
+      "total": "{time} gesamt",
+      "stages": {
+        "script": "Skript",
+        "audio_and_transcription": "Stimme + Timing",
+        "transcription": "Transkription",
+        "visuals": "Bilder",
+        "subtitles": "Untertitel",
+        "ffmpeg_assembly": "Render"
+      },
+      "video": "Video",
+      "scenes": "Szenen",
+      "words": "Wörter",
+      "mode": "Modus",
+      "device": "Gerät"
+    },
+    "preview": {
+      "output": "Ausgabe",
+      "failed": "Fehlgeschlagen",
+      "rendering": "Rendert",
+      "ready": "fertig",
+      "renderFailed": "Render fehlgeschlagen.",
+      "loadingVideo": "Video wird geladen...",
+      "starting": "Wird gestartet...",
+      "download": ".mp4 herunterladen",
+      "queue": {
+        "waiting": "In der Warteschlange — warte auf einen freien Worker...",
+        "next": "Als Nächstes dran{when}.",
+        "ahead": "{count, plural, one {# Render} other {# Renders}} vor dir{when}.",
+        "underMinute": ", unter einer Minute",
+        "aboutMinute": ", etwa eine Minute",
+        "aboutMinutes": ", etwa {count} Minuten"
+      }
+    },
+    "timeline": {
+      "script_generation": "Skript",
+      "audio_synthesis": "Sprecher",
+      "transcription": "Timing",
+      "visual_generation": "Bilder",
+      "subtitle_generation": "Untertitel",
+      "assembly": "Render",
+      "done": "Fertig"
+    },
+    "transcript": {
+      "outroOff": "Nicht im Video — die Abspannkarte ist aus. Sie füllt die Beitragsbeschreibung, wenn du ohne eigenen Text veröffentlichst."
+    },
+    "publish": {
+      "title": "Dieses Video veröffentlichen",
+      "noneIntro": "Verbinde ein YouTube-, Instagram- oder TikTok-Konto, dann kannst du einen fertigen Render direkt von hier posten.",
+      "connectAccount": "Konto verbinden",
+      "fieldTitle": "Titel",
+      "titlePlaceholder": "Wie dieses Video heißt",
+      "fieldDescription": "Beschreibung",
+      "stockNotice": "Die Credits für das Stockmaterial werden automatisch zur Beschreibung hinzugefügt — die Lizenz verlangt sie.",
+      "hashtags": "Hashtags: {tags}",
+      "post": "Posten",
+      "approve": "Freigeben",
+      "queued": "In der Warteschlange",
+      "uploading": "Wird hochgeladen",
+      "failed": "Fehlgeschlagen",
+      "tiktokInbox": "wartet in deinem TikTok-Posteingang",
+      "view": "Ansehen",
+      "errors": {
+        "start": "Veröffentlichen konnte nicht gestartet werden",
+        "approve": "Der Beitrag ließ sich nicht freigeben."
+      }
+    },
+    "edit": {
+      "notEditable": "Dieses Video wurde gerendert, bevor Untertitel bearbeitbar waren. Rendere es neu, um den Text zu korrigieren.",
+      "captions": "Untertitel",
+      "lineCount": "{count} Zeilen",
+      "addLine": "Zeile hinzufügen",
+      "newLine": "Neue Zeile",
+      "deleteLine": "Zeile bei {time} löschen",
+      "layout": "Layout",
+      "full": "Vollbild",
+      "split": "Geteilter Bildschirm",
+      "addClip": "Clip hinzufügen",
+      "uploadingClip": "Wird hochgeladen…",
+      "replaceClip": "Ersetzen",
+      "splitNote": "Die Erzählung bleibt oben und behält den Ton; der untere Clip ist stumm und wird geloopt, wenn er kürzer ist.",
+      "overlays": "Text im Bild",
+      "addText": "Text hinzufügen",
+      "newText": "Neuer Text",
+      "removeText": "Entfernen",
+      "overlaysEmpty": "Titel, Labels, eine Pointe — von derselben Engine gezeichnet wie die Untertitel, also passt es zusammen.",
+      "position": "Position",
+      "top": "Oben",
+      "middle": "Mitte",
+      "bottom": "Unten",
+      "start": "Start",
+      "end": "Ende",
+      "freeNote": "Kostenlos · ein paar Sekunden",
+      "appliedNote": "Übernommen — das Video oben ist das neue.",
+      "rerendering": "Wird neu gerendert",
+      "applied": "Übernommen",
+      "apply": "Übernehmen und neu rendern",
+      "errors": {
+        "clip": "Der Clip konnte nicht angehängt werden",
+        "apply": "Die Änderung konnte nicht übernommen werden"
+      }
+    },
+    "project": {
+      "newVideo": "Neues Video",
+      "tabScenes": "Aufschlüsselung",
+      "tabEdit": "Bearbeiten",
+      "loading": "Wird geladen...",
+      "uploadedNoScenes": "Dieses Video wurde hochgeladen, hat also keine erzeugten Szenen — die Untertitel findest du im Tab „Bearbeiten“.",
+      "scriptWorking": "Der KI-Autor arbeitet daran — Szenen erscheinen hier, sobald sie erzeugt sind.",
+      "clipsTitle": "{count, plural, one {# Clip} other {# Clips}} aus diesem Video",
+      "clipsIntro": "Jeder ist ein eigenes Projekt — untertitelt, bearbeitbar und bereit zum Veröffentlichen. Diese Seite ist das Protokoll des Schnitts; die Clips liegen in deiner Bibliothek.",
+      "clipFallback": "Clip {n}",
+      "errors": {
+        "insufficient": "Nicht genug Credits — du hast {balance}, das kostet {required}.",
+        "regenerate": "Das hat nicht geklappt. Es wurde nichts berechnet; versuch es erneut."
+      }
+    }
   }
 }

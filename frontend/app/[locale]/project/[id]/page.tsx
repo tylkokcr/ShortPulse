@@ -2,6 +2,7 @@
 
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, ListTree, Pencil, Scissors } from "lucide-react";
+import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import { Link } from "@/i18n/navigation";
 import { useShortPulseStore } from "@/lib/store";
@@ -30,6 +31,7 @@ export default function ProjectPage(props: { params: Promise<{ id: string }> }) 
 }
 
 function Project({ id }: { id: string }) {
+  const t = useTranslations("app.project");
   const activeProject = useShortPulseStore((s) => s.activeProject);
   const bumpVideoVersion = useShortPulseStore((s) => s.bumpVideoVersion);
   const setCredits = useShortPulseStore((s) => s.setCredits);
@@ -124,8 +126,8 @@ function Project({ id }: { id: string }) {
     } catch (err) {
       setRegenerateError(
         err instanceof InsufficientCreditsError
-          ? `Not enough credits — you have ${err.balance} and this costs ${err.required}.`
-          : "That didn't work. Nothing was charged; try again."
+          ? t("errors.insufficient", { balance: err.balance, required: err.required })
+          : t("errors.regenerate")
       );
     } finally {
       setRegeneratingIndex(null);
@@ -149,7 +151,7 @@ function Project({ id }: { id: string }) {
           className="flex w-fit items-center gap-1.5 text-sm text-white/50 transition-colors hover:text-white"
         >
           <ArrowLeft size={14} />
-          New video
+          {t("newVideo")}
         </Link>
 
         {/* An extraction has no video of its own — it has children. The
@@ -162,23 +164,23 @@ function Project({ id }: { id: string }) {
           <div className="animate-fade-up flex flex-col gap-4">
             <div className="inline-flex w-fit rounded-md border border-border bg-surface p-1">
               {([
-                { id: "scenes", label: "Breakdown", icon: ListTree },
-                { id: "edit", label: "Edit", icon: Pencil },
-              ] as const).map((t) => (
+                { id: "scenes", label: t("tabScenes"), icon: ListTree },
+                { id: "edit", label: t("tabEdit"), icon: Pencil },
+              ] as const).map((entry) => (
                 <button
-                  key={t.id}
+                  key={entry.id}
                   type="button"
-                  onClick={() => setTab(t.id)}
-                  aria-pressed={tab === t.id}
+                  onClick={() => setTab(entry.id)}
+                  aria-pressed={tab === entry.id}
                   className={clsx(
                     "flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all duration-200",
-                    tab === t.id
+                    tab === entry.id
                       ? "bg-surface-raised text-white shadow-sm"
                       : "text-white/50 hover:text-white/80"
                   )}
                 >
-                  <t.icon size={14} />
-                  {t.label}
+                  <entry.icon size={14} />
+                  {entry.label}
                 </button>
               ))}
             </div>
@@ -188,8 +190,8 @@ function Project({ id }: { id: string }) {
                 {!script ? (
                   <p className="text-sm text-white/40">
                     {project?.config.source === "upload"
-                      ? "This video was uploaded, so it has no generated scenes — see the Edit tab for its captions."
-                      : "The AI scriptwriter is working on this — scenes will appear here once generated."}
+                      ? t("uploadedNoScenes")
+                      : t("scriptWorking")}
                   </p>
                 ) : (
                   <>
@@ -225,7 +227,7 @@ function Project({ id }: { id: string }) {
                 videoDurationS={videoDurationS}
               />
             ) : (
-              <Card className="text-sm text-white/40">Loading...</Card>
+              <Card className="text-sm text-white/40">{t("loading")}</Card>
             )}
           </div>
 
@@ -257,6 +259,10 @@ function Project({ id }: { id: string }) {
  * view of the same thing here would make the real one look like a detour.
  */
 function ClipList({ project }: { project: Project }) {
+  const t = useTranslations("app.project");
+  // Status words are the library's, so a clip mid-render reads the
+  // same here as it does on its card there.
+  const tl = useTranslations("app.library");
   const ids = useMemo(() => project.clip_project_ids ?? [], [project.clip_project_ids]);
 
   // The ids are all the parent stores, and a row reading "Clip 1" throws
@@ -279,12 +285,11 @@ function ClipList({ project }: { project: Project }) {
       <div className="flex items-center gap-2">
         <Scissors size={15} className="text-accent" />
         <h2 className="text-sm font-semibold">
-          {ids.length} clip{ids.length === 1 ? "" : "s"} from this video
+          {t("clipsTitle", { count: ids.length })}
         </h2>
       </div>
       <p className="text-xs leading-relaxed text-white/40">
-        Each one is its own project — captioned, editable, and ready to publish. This page is
-        the record of the cut; the clips are in your library.
+        {t("clipsIntro")}
       </p>
       <div className="flex flex-col gap-2">
         {ids.map((id, index) => {
@@ -297,13 +302,13 @@ function ClipList({ project }: { project: Project }) {
             >
               <span className="font-mono text-[11px] text-white/25">{index + 1}</span>
               <span className="min-w-0 flex-1 truncate text-sm text-white/70 group-hover:text-white">
-                {clip?.config.topic ?? `Clip ${index + 1}`}
+                {clip?.config.topic ?? t("clipFallback", { n: index + 1 })}
               </span>
               {/* Each clip queues separately, so this page is reachable
                   while some are still rendering. */}
               {clip && clip.status !== "complete" && (
                 <span className="shrink-0 font-mono text-[10px] uppercase tracking-wide text-white/30">
-                  {clip.status}
+                  {tl(`status.${clip.status}`)}
                 </span>
               )}
               <ArrowRight size={14} className="shrink-0 text-white/25 group-hover:text-accent" />

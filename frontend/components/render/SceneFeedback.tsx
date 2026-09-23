@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, ThumbsDown } from "lucide-react";
+import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import type { SceneFeedback as Verdict } from "@/lib/types";
 
@@ -23,14 +24,7 @@ import type { SceneFeedback as Verdict } from "@/lib/types";
  * countable. The free-text box is there for the case the list didn't
  * anticipate, which is also the case worth reading.
  */
-const REASONS: { id: string; label: string }[] = [
-  { id: "visual", label: "The picture" },
-  { id: "match", label: "Doesn't match the line" },
-  { id: "voice", label: "Voice" },
-  { id: "captions", label: "Captions" },
-  { id: "pacing", label: "Too fast / slow" },
-  { id: "other", label: "Something else" },
-];
+const REASONS = ["visual", "match", "voice", "captions", "pacing", "other"] as const;
 
 export function SceneFeedback({
   index,
@@ -47,6 +41,7 @@ export function SceneFeedback({
   canReRoll: boolean;
   onSubmit: (index: number, reason: string, note: string) => Promise<void>;
 }) {
+  const t = useTranslations("app.feedback");
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState(verdict?.reason ?? "");
   const [note, setNote] = useState(verdict?.note ?? "");
@@ -67,7 +62,7 @@ export function SceneFeedback({
         )}
       >
         <ThumbsDown size={11} />
-        {flagged ? "flagged" : "wrong?"}
+        {flagged ? t("flagged") : t("wrong")}
       </button>
     );
   }
@@ -75,23 +70,23 @@ export function SceneFeedback({
   return (
     <div className="flex w-full flex-col gap-2 rounded-lg border border-border bg-background p-3">
       <span className="font-mono text-[10px] uppercase tracking-widest text-white/30">
-        what&apos;s wrong with this one?
+        {t("sceneAsk")}
       </span>
 
       <div className="flex flex-wrap gap-1.5">
         {REASONS.map((r) => (
           <button
-            key={r.id}
+            key={r}
             type="button"
-            onClick={() => setReason(r.id)}
+            onClick={() => setReason(r)}
             className={clsx(
               "rounded-md border px-2 py-1 text-[11px] transition-colors",
-              reason === r.id
+              reason === r
                 ? "border-accent/50 bg-accent/10 text-accent"
                 : "border-border text-white/50 hover:border-border-strong hover:text-white/80"
             )}
           >
-            {r.label}
+            {t(`reasons.${r}`)}
           </button>
         ))}
       </div>
@@ -101,7 +96,7 @@ export function SceneFeedback({
         onChange={(e) => setNote(e.target.value)}
         rows={2}
         maxLength={1000}
-        placeholder="Anything else? (optional)"
+        placeholder={t("notePlaceholder")}
         className="resize-none rounded-md border border-border bg-surface px-2 py-1.5 text-xs leading-relaxed outline-none focus:border-border-strong"
       />
 
@@ -121,14 +116,14 @@ export function SceneFeedback({
           className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs text-white/80 transition-colors hover:border-border-strong disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Check size={12} />
-          {saving ? "Saving…" : "Send"}
+          {saving ? t("saving") : t("send")}
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
           className="rounded-md px-2 py-1.5 text-xs text-white/40 transition-colors hover:text-white/70"
         >
-          Cancel
+          {t("cancel")}
         </button>
         {/* Said here rather than after sending, because it is the reason
             to bother: the fix is the control immediately below this one.
@@ -137,7 +132,7 @@ export function SceneFeedback({
             there is worse than staying quiet. */}
         {canReRoll && (
           <span className="ml-auto text-[11px] text-white/25">
-            Then re-roll it below
+            {t("thenReroll")}
           </span>
         )}
       </div>

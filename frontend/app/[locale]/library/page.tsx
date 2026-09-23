@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { FolderOpen, Loader2, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { deleteProject, listProjects } from "@/lib/api";
 import type { Project } from "@/lib/types";
@@ -29,14 +30,15 @@ export default function LibraryPage() {
 }
 
 function Library() {
+  const t = useTranslations("app.library");
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     listProjects()
       .then(setProjects)
-      .catch((err) => setError(err instanceof Error ? err.message : "Could not load projects"));
-  }, []);
+      .catch((err) => setError(err instanceof Error ? err.message : t("loadFailed")));
+  }, [t]);
 
   const handleDelete = useCallback(async (id: string) => {
     // Removed from the list first: the request is authoritative, but
@@ -55,19 +57,19 @@ function Library() {
     <AppShell section="library" wide>
         <div className="animate-fade-up flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Your videos</h1>
+            <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
             <p className="mt-2 text-sm text-white/50">
               {projects === null
-                ? "Loading..."
+                ? t("loading")
                 : projects.length === 0
-                  ? "Nothing here yet."
-                  : `${projects.length} project${projects.length === 1 ? "" : "s"}`}
+                  ? t("none")
+                  : t("count", { count: projects.length })}
             </p>
           </div>
           <Link href="/">
             <Button variant="gradient">
               <Plus size={16} />
-              New video
+              {t("newVideo")}
             </Button>
           </Link>
         </div>
@@ -88,15 +90,14 @@ function Library() {
           <div className="animate-fade-up mt-20 flex flex-col items-center gap-4 text-center">
             <FolderOpen size={32} className="text-white/20" />
             <div>
-              <p className="text-sm font-medium">No projects yet</p>
+              <p className="text-sm font-medium">{t("emptyTitle")}</p>
               <p className="mt-1 max-w-sm text-sm text-white/40">
-                Generate one from a topic, or upload a video you already have and let it write the
-                captions.
+                {t("emptyBody")}
               </p>
             </div>
             <Link href="/">
               <Button variant="gradient">
-                Start one
+                {t("startOne")}
                 <Plus size={16} />
               </Button>
             </Link>

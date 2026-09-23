@@ -1,6 +1,7 @@
 "use client";
 
 import { Download, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import { getMediaUrl, getProject, subscribeToRenderProgress } from "@/lib/api";
@@ -45,25 +46,30 @@ interface RenderPreviewProps {
  * A precise-looking number that slipped would be worse than a rough one
  * that holds.
  */
-function formatWait(seconds: number): string {
+// Plain functions, not components, so they take the translator rather
+// than reaching for a hook. The leading comma lives in the message: a
+// language that puts the clause first cannot be served by gluing one on.
+type Translator = (key: string, values?: Record<string, string | number>) => string;
+
+function formatWait(seconds: number, t: Translator): string {
   const minutes = Math.round(seconds / 60);
-  if (minutes < 1) return "under a minute";
-  if (minutes === 1) return "about a minute";
-  return `about ${minutes} minutes`;
+  if (minutes < 1) return t("queue.underMinute");
+  if (minutes === 1) return t("queue.aboutMinute");
+  return t("queue.aboutMinutes", { count: minutes });
 }
 
-function queueMessage(project?: Project | null): string {
+function queueMessage(project: Project | null | undefined, t: Translator): string {
   const ahead = project?.queue_ahead;
   // Undefined means an older API or a self-hosted install with no queue
   // to ask; null means the project isn't waiting. Neither should invent
   // a position, so both fall back to what this said before.
   if (ahead === undefined || ahead === null) {
-    return "Queued — waiting for a free worker...";
+    return t("queue.waiting");
   }
   const wait = project?.queue_wait_s;
-  const when = wait ? `, ${formatWait(wait)}` : "";
-  if (ahead === 0) return `Next in line${when}.`;
-  return `${ahead} render${ahead === 1 ? "" : "s"} ahead of you${when}.`;
+  const when = wait ? formatWait(wait, t) : "";
+  if (ahead === 0) return t("queue.next", { when });
+  return t("queue.ahead", { count: ahead, when });
 }
 
 export function RenderPreview({
@@ -73,6 +79,7 @@ export function RenderPreview({
   onDuration,
   verdict,
 }: RenderPreviewProps) {
+  const t = useTranslations("app.preview");
   const { activeProject, setActiveProject, renderProgress, setRenderProgress, videoVersion } =
     useShortPulseStore();
   const internalVideoRef = useRef<HTMLVideoElement>(null);
@@ -161,11 +168,13 @@ export function RenderPreview({
   return (
     <Card className="flex flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
-        <span className="label">{isDone ? "Output" : isFailed ? "Failed" : "Rendering"}</span>
+        <span className="label">
+          {isDone ? t("output") : isFailed ? t("failed") : t("rendering")}
+        </span>
         {isDone ? (
           <span className="flex items-center gap-1.5 font-mono text-[10px] text-live">
             <span className="h-1.5 w-1.5 bg-live" />
-            ready
+            {t("ready")}
           </span>
         ) : !isFailed && renderProgress ? (
           <span className="flex items-center gap-1.5 font-mono text-[10px] text-white/50">
@@ -198,19 +207,19 @@ export function RenderPreview({
           />
         ) : isFailed ? (
           <p className="p-4 text-center text-xs text-red-400">
-            {renderProgress?.error ?? activeProject?.error ?? "Render failed."}
+            {renderProgress?.error ?? activeProject?.error ?? t("renderFailed")}
           </p>
         ) : (
           <p className="p-4 text-center text-xs text-white/40">
             {isDone
               ? // Render finished, but the signed URL is still being fetched.
                 // "Waiting to start" here would say the opposite of the truth.
-                "Loading video..."
+                t("loadingVideo")
               : (renderProgress?.message ??
                 // "draft" means accepted but not yet picked up by a
                 // worker, which is a queue, not a stall — worth saying so
                 // when renders run two at a time.
-                (status === "draft" ? queueMessage(activeProject) : "Starting..."))}
+                (status === "draft" ? queueMessage(activeProject, t) : t("starting")))}
           </p>
         )}
       </div>
@@ -225,7 +234,7 @@ export function RenderPreview({
         <>
           <Button variant="secondary" onClick={download}>
             <Download size={16} />
-            Download .mp4
+            {t("download")}
           </Button>
           <RenderReport projectId={projectId} />
           {/* Under the report, not above the download: the video is what

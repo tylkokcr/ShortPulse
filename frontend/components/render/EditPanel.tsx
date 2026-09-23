@@ -12,6 +12,7 @@ import {
   Upload,
 } from "lucide-react";
 import clsx from "clsx";
+import { useTranslations } from "next-intl";
 import { editProject, uploadSecondaryClip } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
 import type { CaptionTrack, Layout, Project, TextOverlay, Word } from "@/lib/types";
@@ -92,13 +93,13 @@ function toWords(line: Line, text: string): Word[] {
  * and letting the chunker redistribute them, but nothing on screen said
  * so, which is indistinguishable from it being impossible.
  */
-function blankLine(lines: Line[]): Line {
+function blankLine(lines: Line[], placeholder: string): Line {
   const last = lines[lines.length - 1]?.words.at(-1);
   const start = last ? last.end_ms + 200 : 0;
   return {
-    words: [{ text: "New line", start_ms: start, end_ms: start + 1500, confidence: null }],
+    words: [{ text: placeholder, start_ms: start, end_ms: start + 1500, confidence: null }],
     startMs: start,
-    text: "New line",
+    text: placeholder,
   };
 }
 
@@ -215,6 +216,7 @@ export function EditPanel({
    *  has loaded. */
   videoDurationS?: number;
 }) {
+  const t = useTranslations("app.edit");
   const track = project.edit?.captions ?? project.captions ?? null;
 
   // An edit replays the burn-in and overwrites final.mp4 in place, leaving
@@ -268,8 +270,7 @@ export function EditPanel({
   if (!track) {
     return (
       <Card className="text-sm text-white/40">
-        This video was rendered before captions became editable. Re-render it to correct the
-        text.
+        {t("notEditable")}
       </Card>
     );
   }
@@ -288,7 +289,7 @@ export function EditPanel({
       onApplied(updated);
       bumpVideoVersion();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not attach the clip");
+      setError(err instanceof Error ? err.message : t("errors.clip"));
     } finally {
       setUploadingClip(false);
     }
@@ -316,7 +317,7 @@ export function EditPanel({
       if (applied) setLines(toLines(applied));
       setApplied(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not apply the edit");
+      setError(err instanceof Error ? err.message : t("errors.apply"));
     } finally {
       setApplying(false);
     }
@@ -327,17 +328,17 @@ export function EditPanel({
       <Card className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <span className="h-3 w-px bg-accent" />
-          <h3 className="text-sm font-semibold text-white/80">Captions</h3>
+          <h3 className="text-sm font-semibold text-white/80">{t("captions")}</h3>
           <span className="ml-auto font-mono text-[10px] text-white/30">
-            {lines.length} lines
+            {t("lineCount", { count: lines.length })}
           </span>
           <button
             type="button"
-            onClick={() => setLines((current) => [...current, blankLine(current)])}
+            onClick={() => setLines((current) => [...current, blankLine(current, t("newLine"))])}
             className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-white/60 transition-colors hover:border-accent/50 hover:text-white"
           >
             <Plus size={11} />
-            Add line
+            {t("addLine")}
           </button>
         </div>
 
@@ -370,7 +371,7 @@ export function EditPanel({
                   know rather than see. */}
               <button
                 type="button"
-                aria-label={`Delete line at ${timecode(line.startMs)}`}
+                aria-label={t("deleteLine", { time: timecode(line.startMs) })}
                 onClick={() => setLines((current) => current.filter((_, j) => j !== i))}
                 className="shrink-0 rounded p-1 text-white/20 transition-colors hover:bg-white/5 hover:text-red-400"
               >
@@ -384,7 +385,7 @@ export function EditPanel({
       <Card className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <Rows2 size={13} className="text-white/40" />
-          <h3 className="text-sm font-semibold text-white/80">Layout</h3>
+          <h3 className="text-sm font-semibold text-white/80">{t("layout")}</h3>
         </div>
 
         {/* Two portrait frames rather than two labelled buttons. The
@@ -394,7 +395,7 @@ export function EditPanel({
             allowed. */}
         <div className="grid grid-cols-2 gap-2.5">
           <LayoutTile
-            label="Full frame"
+            label={t("full")}
             selected={layout === "full"}
             onClick={() => setLayout("full")}
           >
@@ -406,7 +407,7 @@ export function EditPanel({
               be noticed. One control, and the thing it produces is the
               thing it is drawn as. */}
           <LayoutTile
-            label={secondary ? "Split screen" : uploadingClip ? "Uploading…" : "Add a clip"}
+            label={secondary ? t("split") : uploadingClip ? t("uploadingClip") : t("addClip")}
             selected={layout === "split_v"}
             busy={uploadingClip}
             {...(secondary
@@ -430,8 +431,7 @@ export function EditPanel({
         {secondary && (
           <div className="flex items-center gap-2 text-[11px] text-white/35">
             <span className="min-w-0 flex-1">
-              The narration stays on top and keeps the soundtrack; the bottom clip is muted
-              and loops if it&apos;s shorter.
+              {t("splitNote")}
             </span>
             <label
               className={clsx(
@@ -440,7 +440,7 @@ export function EditPanel({
                 uploadingClip && "pointer-events-none opacity-60"
               )}
             >
-              {uploadingClip ? "Uploading…" : "Replace"}
+              {uploadingClip ? t("uploadingClip") : t("replaceClip")}
               <input
                 type="file"
                 accept={CLIP_TYPES}
@@ -455,14 +455,14 @@ export function EditPanel({
       <Card className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <Type size={13} className="text-white/40" />
-          <h3 className="text-sm font-semibold text-white/80">Text on screen</h3>
+          <h3 className="text-sm font-semibold text-white/80">{t("overlays")}</h3>
           <button
             type="button"
             onClick={() =>
               setOverlays((current) => [
                 ...current,
                 {
-                  text: "New text",
+                  text: t("newText"),
                   start_ms: 0,
                   end_ms: 3000,
                   position: "top",
@@ -474,14 +474,13 @@ export function EditPanel({
             className="ml-auto flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-white/60 transition-colors hover:border-accent/50 hover:text-white"
           >
             <Plus size={11} />
-            Add
+            {t("addText")}
           </button>
         </div>
 
         {overlays.length === 0 ? (
           <p className="text-xs text-white/35">
-            Titles, labels, a punchline — drawn by the same engine as the captions, so it
-            matches.
+            {t("overlaysEmpty")}
           </p>
         ) : (
           <div className="flex flex-col gap-2.5">
@@ -501,7 +500,7 @@ export function EditPanel({
                   <button
                     type="button"
                     onClick={() => setOverlays((c) => c.filter((_, j) => j !== i))}
-                    aria-label="Remove"
+                    aria-label={t("removeText")}
                     // p-2.5 rather than p-1: a 13px icon in 8px of padding
                     // is a 21px tap target, well under what a thumb hits.
                     className="shrink-0 rounded p-2.5 text-white/40 transition-colors hover:text-red-400"
@@ -544,21 +543,21 @@ export function EditPanel({
 
       <div className="flex items-center justify-between gap-3">
         <p className="text-[11px] text-white/35">
-          {applied && !dirty ? "Applied — the video above is the new one." : "Free · a few seconds"}
+          {applied && !dirty ? t("appliedNote") : t("freeNote")}
         </p>
         <Button onClick={apply} disabled={!dirty || applying} variant="gradient">
           {applying ? (
             <>
               <Loader2 size={15} className="animate-spin" />
-              Re-rendering
+              {t("rerendering")}
             </>
           ) : applied && !dirty ? (
             <>
               <Check size={15} />
-              Applied
+              {t("applied")}
             </>
           ) : (
-            "Apply and re-render"
+            t("apply")
           )}
         </Button>
       </div>
@@ -567,9 +566,9 @@ export function EditPanel({
 }
 
 const POSITIONS = [
-  { id: "top", label: "Top", y: "top-[3px]" },
-  { id: "middle", label: "Middle", y: "top-1/2 -translate-y-1/2" },
-  { id: "bottom", label: "Bottom", y: "bottom-[3px]" },
+  { id: "top", y: "top-[3px]" },
+  { id: "middle", y: "top-1/2 -translate-y-1/2" },
+  { id: "bottom", y: "bottom-[3px]" },
 ] as const;
 
 /**
@@ -589,8 +588,10 @@ function PositionPicker({
   value: TextOverlay["position"];
   onChange: (position: TextOverlay["position"]) => void;
 }) {
+  const t = useTranslations("app.edit");
+
   return (
-    <div className="flex items-center gap-1" role="radiogroup" aria-label="Position">
+    <div className="flex items-center gap-1" role="radiogroup" aria-label={t("position")}>
       {POSITIONS.map((option) => {
         const selected = value === option.id;
         return (
@@ -599,8 +600,8 @@ function PositionPicker({
             type="button"
             role="radio"
             aria-checked={selected}
-            aria-label={option.label}
-            title={option.label}
+            aria-label={t(option.id)}
+            title={t(option.id)}
             onClick={() => onChange(option.id)}
             className={clsx(
               "relative h-7 w-[19px] shrink-0 overflow-hidden rounded-[3px] border",
@@ -671,6 +672,7 @@ function TimelineRange({
   onChange: (startMs: number, endMs: number) => void;
   onSeek?: (seconds: number) => void;
 }) {
+  const t = useTranslations("app.edit");
   const trackRef = useRef<HTMLDivElement>(null);
   const [grab, setGrab] = useState<Grab | null>(null);
 
@@ -772,7 +774,7 @@ function TimelineRange({
         <span
           role="slider"
           tabIndex={0}
-          aria-label="Start"
+          aria-label={t("start")}
           aria-valuemin={0}
           aria-valuemax={Math.round(durationMs / 1000)}
           aria-valuenow={startMs / 1000}
@@ -785,7 +787,7 @@ function TimelineRange({
         <span
           role="slider"
           tabIndex={0}
-          aria-label="End"
+          aria-label={t("end")}
           aria-valuemin={0}
           aria-valuemax={Math.round(durationMs / 1000)}
           aria-valuenow={endMs / 1000}

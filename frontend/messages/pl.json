@@ -558,5 +558,235 @@
       "empty": "Twój film pojawi się tutaj, gdy tylko go wybierzesz.",
       "caption": "9:16 · napisy wypalone w obrazie"
     }
+  },
+  "app": {
+    "library": {
+      "title": "Twoje filmy",
+      "loading": "Wczytywanie...",
+      "none": "Jeszcze nic tu nie ma.",
+      "count": "{count, plural, one {# projekt} few {# projekty} many {# projektów} other {# projektów}}",
+      "newVideo": "Nowy film",
+      "loadFailed": "Nie udało się wczytać projektów",
+      "emptyTitle": "Nie ma jeszcze projektów",
+      "emptyBody": "Wygeneruj film z tematu albo wgraj taki, który już masz, i pozwól mu napisać napisy.",
+      "startOne": "Zacznij pierwszy",
+      "badge": {
+        "clips": "{count, plural, one {# klip} few {# klipy} many {# klipów} other {# klipów}}",
+        "captioned": "Z napisami",
+        "generated": "Wygenerowany"
+      },
+      "status": {
+        "draft": "szkic",
+        "rendering": "renderowanie",
+        "complete": "gotowe",
+        "failed": "błąd"
+      },
+      "credits": "{count} kr.",
+      "delete": "Usuń projekt",
+      "confirmDelete": "Potwierdź usunięcie",
+      "deleteWarning": "Kliknij ponownie, aby usunąć. Film i jego pliki znikną na dobre."
+    },
+    "connections": {
+      "eyebrow": "Publikowanie",
+      "title": "Połączone konta",
+      "intro": "Opublikuj gotowy film prosto tam, dla czego powstał. Połączone konto pozwala wrzucić go jednym kliknięciem — po włączeniu automatycznego publikowania każdy gotowy render idzie bez pytania.",
+      "loading": "Wczytywanie...",
+      "notConfigured": "Na tej instalacji publikowanie nie jest skonfigurowane. Kopie hostowane samodzielnie mogą ustawić własne dane platform — zobacz README.",
+      "connect": "Połącz",
+      "disconnect": "Odłącz",
+      "autoTitle": "Publikuj gotowe filmy automatycznie",
+      "autoOn": "Każdy render trafi tutaj, gdy tylko się skończy.",
+      "autoFirst": "Pierwsza publikacja tutaj wciąż wymaga jednego kliknięcia — trafia na stronę projektu do zatwierdzenia, żebyś zobaczył, jak wygląda, zanim oddasz klucze.",
+      "autoOff": "Wyłączone — zapytamy za każdym razem. Każdy film nadal możesz opublikować ręcznie.",
+      "errors": {
+        "cancelled": "Łączenie zostało anulowane. Nic się nie zmieniło.",
+        "expired": "To trwało zbyt długo i próba połączenia wygasła. Spróbuj ponownie.",
+        "unavailable": "Publikowanie nie jest jeszcze ustawione na tym wdrożeniu.",
+        "failed": "Nie udało się dokończyć łączenia tego konta. Spróbuj ponownie.",
+        "saveFailed": "Nie udało się tego zapisać. Spróbuj ponownie.",
+        "disconnectFailed": "Nie udało się odłączyć tego konta.",
+        "loadFailed": "Nie udało się wczytać twoich połączeń",
+        "start": "Nie udało się rozpocząć łączenia"
+      }
+    },
+    "credits": {
+      "balance": "{count, plural, one {# kredyt} few {# kredyty} many {# kredytów} other {# kredytów}}",
+      "introSold": "Pakiety jednorazowe. Nic się nie odnawia, nic nie traci ważności, a niewykorzystane kredyty zostają twoje.",
+      "vat": " Ceny zawierają VAT według twojej lokalnej stawki.",
+      "introUnsold": "Ta instalacja nie sprzedaje kredytów. To, co masz, nie traci ważności, a rendery pobierają z tego jak zwykle.",
+      "purchased": "Płatność otrzymana. Saldo zaktualizuje się, gdy tylko dotrze do nas potwierdzenie.",
+      "withdrawal": "Chcę, aby moje kredyty były dostępne od razu, i rozumiem, że zaczynając ich używać, rezygnuję z 14-dniowego prawa odstąpienia od tego zakupu. Niewykorzystane kredyty nadal można zwrócić w ciągu 14 dni — zobacz <terms>regulamin</terms>.",
+      "popular": "Najczęściej wybierany",
+      "packCredits": "{count, plural, one {# kredyt} few {# kredyty} many {# kredytów} other {# kredytów}}",
+      "packShorts": "{count} krótkich filmów z materiałem stockowym",
+      "packStills": ", albo {count} z kadrami generowanymi przez AI",
+      "opening": "Otwieranie płatności",
+      "buy": "Kup {count}",
+      "stripe": "Płatność obsługuje Stripe — ta aplikacja nigdy nie widzi danych twojej karty. ",
+      "selfHost": "Hosting u siebie nic nie kosztuje i nie wymaga żadnego konta.",
+      "errors": {
+        "unavailable": "Ta instalacja nie sprzedaje kredytów.",
+        "failed": "Nie udało się otworzyć płatności"
+      }
+    },
+    "feedback": {
+      "videoAsk": "Jak wyszedł ten film?",
+      "videoThanks": "Dzięki — to pomaga bardziej, niż myślisz.",
+      "videoUp": "Wyszedł dobrze",
+      "videoDown": "Wyszedł źle",
+      "flagged": "zgłoszone",
+      "wrong": "coś nie tak?",
+      "sceneAsk": "co jest nie tak z tą sceną?",
+      "reasons": {
+        "visual": "Obraz",
+        "match": "Nie pasuje do zdania",
+        "voice": "Głos",
+        "captions": "Napisy",
+        "pacing": "Za szybko / za wolno",
+        "other": "Coś innego"
+      },
+      "notePlaceholder": "Coś jeszcze? (opcjonalnie)",
+      "saving": "Zapisywanie…",
+      "send": "Wyślij",
+      "cancel": "Anuluj",
+      "thenReroll": "Potem wygeneruj ją ponownie poniżej"
+    },
+    "regenerate": {
+      "redrawing": "rysowanie",
+      "reroll": "wygeneruj ponownie",
+      "whatToDraw": "co narysować",
+      "whatToAvoid": "czego unikać",
+      "drawing": "Rysowanie…",
+      "submit": "Wygeneruj ponownie — {count, plural, one {# kredyt} few {# kredyty} many {# kredytów} other {# kredytów}}",
+      "cancel": "Anuluj",
+      "wait": "Rysowanie nowego obrazu, potem ponowne kodowanie filmu — około 20 sekund."
+    },
+    "stockCredits": {
+      "footageFrom": "Materiały z ",
+      "and": " i ",
+      "copyTitle": "Skopiuj podpisy, aby wkleić je do opisu posta",
+      "copied": "Skopiowano",
+      "copy": "Kopiuj",
+      "videoBy": "Wideo: <author></author> w serwisie <provider></provider>",
+      "videoFrom": "Wideo z <provider></provider>"
+    },
+    "report": {
+      "title": "Raport renderu",
+      "total": "łącznie {time}",
+      "stages": {
+        "script": "Scenariusz",
+        "audio_and_transcription": "Głos + synchronizacja",
+        "transcription": "Transkrypcja",
+        "visuals": "Obrazy",
+        "subtitles": "Napisy",
+        "ffmpeg_assembly": "Render"
+      },
+      "video": "Wideo",
+      "scenes": "Sceny",
+      "words": "Słowa",
+      "mode": "Tryb",
+      "device": "Urządzenie"
+    },
+    "preview": {
+      "output": "Wynik",
+      "failed": "Błąd",
+      "rendering": "Renderowanie",
+      "ready": "gotowe",
+      "renderFailed": "Render nie powiódł się.",
+      "loadingVideo": "Wczytywanie filmu...",
+      "starting": "Uruchamianie...",
+      "download": "Pobierz .mp4",
+      "queue": {
+        "waiting": "W kolejce — czekam na wolnego workera...",
+        "next": "Następny w kolejce{when}.",
+        "ahead": "Przed tobą {count, plural, one {# render} few {# rendery} many {# renderów} other {# renderów}}{when}.",
+        "underMinute": ", poniżej minuty",
+        "aboutMinute": ", około minuty",
+        "aboutMinutes": ", około {count} min"
+      }
+    },
+    "timeline": {
+      "script_generation": "Scenariusz",
+      "audio_synthesis": "Lektor",
+      "transcription": "Synchronizacja",
+      "visual_generation": "Obrazy",
+      "subtitle_generation": "Napisy",
+      "assembly": "Render",
+      "done": "Gotowe"
+    },
+    "transcript": {
+      "outroOff": "Nie ma tego w filmie — plansza końcowa jest wyłączona. Uzupełnia opis posta, jeśli opublikujesz bez własnego tekstu."
+    },
+    "publish": {
+      "title": "Opublikuj ten film",
+      "noneIntro": "Połącz konto YouTube, Instagram lub TikTok, a gotowy render opublikujesz prosto stąd.",
+      "connectAccount": "Połącz konto",
+      "fieldTitle": "Tytuł",
+      "titlePlaceholder": "Jak nazywa się ten film",
+      "fieldDescription": "Opis",
+      "stockNotice": "Podpisy materiałów stockowych są dodawane do opisu automatycznie — wymaga tego licencja.",
+      "hashtags": "Hashtagi: {tags}",
+      "post": "Opublikuj",
+      "approve": "Zatwierdź",
+      "queued": "W kolejce",
+      "uploading": "Wysyłanie",
+      "failed": "Błąd",
+      "tiktokInbox": "czeka w twojej skrzynce TikTok",
+      "view": "Zobacz",
+      "errors": {
+        "start": "Nie udało się rozpocząć publikowania",
+        "approve": "Nie udało się zatwierdzić tego posta."
+      }
+    },
+    "edit": {
+      "notEditable": "Ten film wyrenderowano, zanim napisy stały się edytowalne. Wyrenderuj go ponownie, aby poprawić tekst.",
+      "captions": "Napisy",
+      "lineCount": "{count, plural, one {# linia} few {# linie} many {# linii} other {# linii}}",
+      "addLine": "Dodaj linię",
+      "newLine": "Nowa linia",
+      "deleteLine": "Usuń linię o {time}",
+      "layout": "Układ",
+      "full": "Pełny kadr",
+      "split": "Podzielony ekran",
+      "addClip": "Dodaj klip",
+      "uploadingClip": "Wysyłanie…",
+      "replaceClip": "Zamień",
+      "splitNote": "Narracja zostaje na górze i zachowuje dźwięk; dolny klip jest wyciszony i zapętla się, jeśli jest krótszy.",
+      "overlays": "Tekst na ekranie",
+      "addText": "Dodaj tekst",
+      "newText": "Nowy tekst",
+      "removeText": "Usuń",
+      "overlaysEmpty": "Tytuły, etykiety, puenta — rysowane tym samym silnikiem co napisy, więc wszystko do siebie pasuje.",
+      "position": "Pozycja",
+      "top": "Góra",
+      "middle": "Środek",
+      "bottom": "Dół",
+      "start": "Początek",
+      "end": "Koniec",
+      "freeNote": "Za darmo · kilka sekund",
+      "appliedNote": "Zastosowano — film powyżej to już nowa wersja.",
+      "rerendering": "Renderowanie ponowne",
+      "applied": "Zastosowano",
+      "apply": "Zastosuj i wyrenderuj ponownie",
+      "errors": {
+        "clip": "Nie udało się dołączyć klipu",
+        "apply": "Nie udało się zastosować zmiany"
+      }
+    },
+    "project": {
+      "newVideo": "Nowy film",
+      "tabScenes": "Rozpisanie",
+      "tabEdit": "Edycja",
+      "loading": "Wczytywanie...",
+      "uploadedNoScenes": "Ten film został wgrany, więc nie ma wygenerowanych scen — jego napisy znajdziesz w zakładce Edycja.",
+      "scriptWorking": "Scenarzysta AI nad tym pracuje — sceny pojawią się tutaj, gdy powstaną.",
+      "clipsTitle": "{count, plural, one {# klip} few {# klipy} many {# klipów} other {# klipów}} z tego filmu",
+      "clipsIntro": "Każdy jest osobnym projektem — z napisami, edytowalny i gotowy do publikacji. Ta strona to zapis cięcia; klipy są w twojej bibliotece.",
+      "clipFallback": "Klip {n}",
+      "errors": {
+        "insufficient": "Za mało kredytów — masz {balance}, a to kosztuje {required}.",
+        "regenerate": "Nie udało się. Nic nie zostało pobrane; spróbuj ponownie."
+      }
+    }
   }
 }

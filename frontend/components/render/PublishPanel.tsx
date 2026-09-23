@@ -10,6 +10,7 @@ import {
   Send,
 } from "lucide-react";
 import clsx from "clsx";
+import { useTranslations } from "next-intl";
 import {
   approvePost,
   getProjectPosts,
@@ -36,6 +37,7 @@ import { Card } from "@/components/ui/Card";
  */
 export function PublishPanel({ project }: { project: Project }) {
   const [connections, setConnections] = useState<SocialConnection[] | null>(null);
+  const t = useTranslations("app.publish");
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [available, setAvailable] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -81,14 +83,11 @@ export function PublishPanel({ project }: { project: Project }) {
   if (connections.length === 0) {
     return (
       <Card className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold">Publish this video</h3>
-        <p className="text-xs leading-relaxed text-white/40">
-          Connect a YouTube, Instagram or TikTok account and you can post a finished render
-          straight from here.
-        </p>
+        <h3 className="text-sm font-semibold">{t("title")}</h3>
+        <p className="text-xs leading-relaxed text-white/40">{t("noneIntro")}</p>
         <Link href="/connections" className="mt-1">
           <Button size="sm" variant="secondary">
-            Connect an account
+            {t("connectAccount")}
           </Button>
         </Link>
       </Card>
@@ -108,7 +107,7 @@ export function PublishPanel({ project }: { project: Project }) {
       });
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't start publishing");
+      setError(err instanceof Error ? err.message : t("errors.start"));
     } finally {
       setBusy(null);
     }
@@ -120,7 +119,7 @@ export function PublishPanel({ project }: { project: Project }) {
       await approvePost(post.id);
       await refresh();
     } catch {
-      setError("Couldn't approve that post.");
+      setError(t("errors.approve"));
     } finally {
       setBusy(null);
     }
@@ -128,22 +127,22 @@ export function PublishPanel({ project }: { project: Project }) {
 
   return (
     <Card className="flex flex-col gap-4">
-      <h3 className="text-sm font-semibold">Publish this video</h3>
+      <h3 className="text-sm font-semibold">{t("title")}</h3>
 
       <div className="flex flex-col gap-2">
         <label className="text-xs font-medium text-white/50" htmlFor="post-title">
-          Title
+          {t("fieldTitle")}
         </label>
         <input
           id="post-title"
           value={title}
           maxLength={100}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="What this video is called"
+          placeholder={t("titlePlaceholder")}
           className="rounded-lg border border-border bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-accent focus:outline-none"
         />
         <label className="mt-1 text-xs font-medium text-white/50" htmlFor="post-description">
-          Description
+          {t("fieldDescription")}
         </label>
         <textarea
           id="post-description"
@@ -159,13 +158,12 @@ export function PublishPanel({ project }: { project: Project }) {
           // typed above — saying so is better than a user wondering where
           // the extra lines came from.
           <p className="text-xs text-white/30">
-            The stock footage credits are added to the description automatically — the licence
-            requires them.
+            {t("stockNotice")}
           </p>
         )}
         {copy?.hashtags?.length ? (
           <p className="text-xs text-white/30">
-            Hashtags: {copy.hashtags.map((h) => `#${h}`).join(" ")}
+            {t("hashtags", { tags: copy.hashtags.map((h) => `#${h}`).join(" ") })}
           </p>
         ) : null}
       </div>
@@ -200,7 +198,7 @@ export function PublishPanel({ project }: { project: Project }) {
                   ) : (
                     <Send size={13} />
                   )}
-                  Post
+                  {t("post")}
                 </Button>
               )}
             </div>
@@ -220,11 +218,13 @@ function PostState({
   busy: boolean;
   onApprove: () => void;
 }) {
+  const t = useTranslations("app.publish");
+
   if (post.status === "awaiting_review") {
     return (
       <Button size="sm" variant="gradient" disabled={busy} onClick={onApprove}>
         {busy ? <Loader2 size={13} className="animate-spin" /> : <Eye size={13} />}
-        Approve
+        {t("approve")}
       </Button>
     );
   }
@@ -233,7 +233,7 @@ function PostState({
     return (
       <span className="flex items-center gap-1.5 text-xs text-white/40">
         <Loader2 size={13} className="animate-spin" />
-        {post.status === "queued" ? "Queued" : "Uploading"}
+        {post.status === "queued" ? t("queued") : t("uploading")}
       </span>
     );
   }
@@ -245,7 +245,7 @@ function PostState({
         className="flex max-w-[55%] items-center gap-1.5 text-xs text-red-400"
       >
         <AlertCircle size={13} className="shrink-0" />
-        <span className="truncate">{post.error ?? "Failed"}</span>
+        <span className="truncate">{post.error ?? t("failed")}</span>
       </span>
     );
   }
@@ -261,7 +261,7 @@ function PostState({
         // for the user to caption and publish themselves. Saying "draft"
         // alone reads as something went half-done, and there is no link
         // to offer — the inbox exists only inside the phone app.
-        <span className="text-white/40">waiting in your TikTok inbox</span>
+        <span className="text-white/40">{t("tiktokInbox")}</span>
       ) : (
         post.privacy !== "public" && <span className="text-white/40">{post.privacy}</span>
       )}
@@ -275,7 +275,7 @@ function PostState({
             "hover:text-white"
           )}
         >
-          View
+          {t("view")}
           <ExternalLink size={11} />
         </a>
       )}

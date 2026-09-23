@@ -558,5 +558,235 @@
       "empty": "Your video appears here as soon as you pick it.",
       "caption": "9:16 · captions burned in"
     }
+  },
+  "app": {
+    "library": {
+      "title": "Your videos",
+      "loading": "Loading...",
+      "none": "Nothing here yet.",
+      "count": "{count, plural, one {# project} other {# projects}}",
+      "newVideo": "New video",
+      "loadFailed": "Could not load projects",
+      "emptyTitle": "No projects yet",
+      "emptyBody": "Generate one from a topic, or upload a video you already have and let it write the captions.",
+      "startOne": "Start one",
+      "badge": {
+        "clips": "{count, plural, one {# clip} other {# clips}}",
+        "captioned": "Captioned",
+        "generated": "Generated"
+      },
+      "status": {
+        "draft": "draft",
+        "rendering": "rendering",
+        "complete": "complete",
+        "failed": "failed"
+      },
+      "credits": "{count} cr",
+      "delete": "Delete project",
+      "confirmDelete": "Confirm delete",
+      "deleteWarning": "Click again to delete. The video and its files are removed for good."
+    },
+    "connections": {
+      "eyebrow": "Publishing",
+      "title": "Connected accounts",
+      "intro": "Publish a finished video straight to the places it was made for. Connecting an account lets you post with one click — turning on automatic posting sends each finished render without asking.",
+      "loading": "Loading...",
+      "notConfigured": "Publishing isn't configured on this install. Self-hosted copies can set up their own platform credentials — see the README.",
+      "connect": "Connect",
+      "disconnect": "Disconnect",
+      "autoTitle": "Post finished videos automatically",
+      "autoOn": "Every render will be posted here as soon as it finishes.",
+      "autoFirst": "Your first post here still needs one click — it goes to the project page for you to approve, so you can see how it looks before handing over the keys.",
+      "autoOff": "Off — you'll be asked each time. You can still post any video by hand.",
+      "errors": {
+        "cancelled": "Connecting was cancelled. Nothing changed.",
+        "expired": "That took too long and the connection attempt expired. Try again.",
+        "unavailable": "Publishing isn't set up on this deployment yet.",
+        "failed": "Couldn't finish connecting that account. Try again.",
+        "saveFailed": "Couldn't save that. Try again.",
+        "disconnectFailed": "Couldn't disconnect that account.",
+        "loadFailed": "Couldn't load your connections",
+        "start": "Couldn't start connecting"
+      }
+    },
+    "credits": {
+      "balance": "{count, plural, one {# credit} other {# credits}}",
+      "introSold": "One-off packs. Nothing renews, nothing expires, and unused credits stay yours.",
+      "vat": " Prices include VAT at your local rate.",
+      "introUnsold": "This install isn't set up to sell credits. What you have doesn't expire, and renders draw from it as usual.",
+      "purchased": "Payment received. Your balance updates as soon as the confirmation reaches us.",
+      "withdrawal": "I want my credits available immediately, and I understand that by starting to use them I give up the 14-day right to withdraw from this purchase. Unused credits can still be refunded within 14 days — see the <terms>terms</terms>.",
+      "popular": "Most picked",
+      "packCredits": "{count, plural, one {# credit} other {# credits}}",
+      "packShorts": "{count} stock-footage shorts",
+      "packStills": ", or {count} with AI-generated stills",
+      "opening": "Opening checkout",
+      "buy": "Buy {count}",
+      "stripe": "Payment is handled by Stripe — this app never sees your card details. ",
+      "selfHost": "Self-hosting costs nothing and needs no account at all.",
+      "errors": {
+        "unavailable": "This install isn't set up to sell credits.",
+        "failed": "Could not start checkout"
+      }
+    },
+    "feedback": {
+      "videoAsk": "How did this one come out?",
+      "videoThanks": "Thanks — that helps more than you'd think.",
+      "videoUp": "Came out well",
+      "videoDown": "Came out badly",
+      "flagged": "flagged",
+      "wrong": "wrong?",
+      "sceneAsk": "what's wrong with this one?",
+      "reasons": {
+        "visual": "The picture",
+        "match": "Doesn't match the line",
+        "voice": "Voice",
+        "captions": "Captions",
+        "pacing": "Too fast / slow",
+        "other": "Something else"
+      },
+      "notePlaceholder": "Anything else? (optional)",
+      "saving": "Saving…",
+      "send": "Send",
+      "cancel": "Cancel",
+      "thenReroll": "Then re-roll it below"
+    },
+    "regenerate": {
+      "redrawing": "redrawing",
+      "reroll": "re-roll",
+      "whatToDraw": "what to draw",
+      "whatToAvoid": "what to avoid",
+      "drawing": "Drawing…",
+      "submit": "Regenerate — {count, plural, one {# credit} other {# credits}}",
+      "cancel": "Cancel",
+      "wait": "Drawing a new picture, then re-encoding the video — about 20 seconds."
+    },
+    "stockCredits": {
+      "footageFrom": "Footage from ",
+      "and": " and ",
+      "copyTitle": "Copy the credits to paste into your post description",
+      "copied": "Copied",
+      "copy": "Copy",
+      "videoBy": "Video by <author></author> on <provider></provider>",
+      "videoFrom": "Video from <provider></provider>"
+    },
+    "report": {
+      "title": "Render report",
+      "total": "{time} total",
+      "stages": {
+        "script": "Script",
+        "audio_and_transcription": "Voice + timing",
+        "transcription": "Transcription",
+        "visuals": "Visuals",
+        "subtitles": "Subtitles",
+        "ffmpeg_assembly": "Render"
+      },
+      "video": "Video",
+      "scenes": "Scenes",
+      "words": "Words",
+      "mode": "Mode",
+      "device": "Device"
+    },
+    "preview": {
+      "output": "Output",
+      "failed": "Failed",
+      "rendering": "Rendering",
+      "ready": "ready",
+      "renderFailed": "Render failed.",
+      "loadingVideo": "Loading video...",
+      "starting": "Starting...",
+      "download": "Download .mp4",
+      "queue": {
+        "waiting": "Queued — waiting for a free worker...",
+        "next": "Next in line{when}.",
+        "ahead": "{count, plural, one {# render} other {# renders}} ahead of you{when}.",
+        "underMinute": ", under a minute",
+        "aboutMinute": ", about a minute",
+        "aboutMinutes": ", about {count} minutes"
+      }
+    },
+    "timeline": {
+      "script_generation": "Script",
+      "audio_synthesis": "Voiceover",
+      "transcription": "Timing",
+      "visual_generation": "Visuals",
+      "subtitle_generation": "Subtitles",
+      "assembly": "Render",
+      "done": "Done"
+    },
+    "transcript": {
+      "outroOff": "Not in the video — the outro card is off. It fills in the post description if you publish without writing one."
+    },
+    "publish": {
+      "title": "Publish this video",
+      "noneIntro": "Connect a YouTube, Instagram or TikTok account and you can post a finished render straight from here.",
+      "connectAccount": "Connect an account",
+      "fieldTitle": "Title",
+      "titlePlaceholder": "What this video is called",
+      "fieldDescription": "Description",
+      "stockNotice": "The stock footage credits are added to the description automatically — the licence requires them.",
+      "hashtags": "Hashtags: {tags}",
+      "post": "Post",
+      "approve": "Approve",
+      "queued": "Queued",
+      "uploading": "Uploading",
+      "failed": "Failed",
+      "tiktokInbox": "waiting in your TikTok inbox",
+      "view": "View",
+      "errors": {
+        "start": "Couldn't start publishing",
+        "approve": "Couldn't approve that post."
+      }
+    },
+    "edit": {
+      "notEditable": "This video was rendered before captions became editable. Re-render it to correct the text.",
+      "captions": "Captions",
+      "lineCount": "{count} lines",
+      "addLine": "Add line",
+      "newLine": "New line",
+      "deleteLine": "Delete line at {time}",
+      "layout": "Layout",
+      "full": "Full frame",
+      "split": "Split screen",
+      "addClip": "Add a clip",
+      "uploadingClip": "Uploading…",
+      "replaceClip": "Replace",
+      "splitNote": "The narration stays on top and keeps the soundtrack; the bottom clip is muted and loops if it's shorter.",
+      "overlays": "Text on screen",
+      "addText": "Add text",
+      "newText": "New text",
+      "removeText": "Remove",
+      "overlaysEmpty": "Titles, labels, a punchline — drawn by the same engine as the captions, so it matches.",
+      "position": "Position",
+      "top": "Top",
+      "middle": "Middle",
+      "bottom": "Bottom",
+      "start": "Start",
+      "end": "End",
+      "freeNote": "Free · a few seconds",
+      "appliedNote": "Applied — the video above is the new one.",
+      "rerendering": "Re-rendering",
+      "applied": "Applied",
+      "apply": "Apply and re-render",
+      "errors": {
+        "clip": "Could not attach the clip",
+        "apply": "Could not apply the edit"
+      }
+    },
+    "project": {
+      "newVideo": "New video",
+      "tabScenes": "Breakdown",
+      "tabEdit": "Edit",
+      "loading": "Loading...",
+      "uploadedNoScenes": "This video was uploaded, so it has no generated scenes — see the Edit tab for its captions.",
+      "scriptWorking": "The AI scriptwriter is working on this — scenes will appear here once generated.",
+      "clipsTitle": "{count, plural, one {# clip} other {# clips}} from this video",
+      "clipsIntro": "Each one is its own project — captioned, editable, and ready to publish. This page is the record of the cut; the clips are in your library.",
+      "clipFallback": "Clip {n}",
+      "errors": {
+        "insufficient": "Not enough credits — you have {balance} and this costs {required}.",
+        "regenerate": "That didn't work. Nothing was charged; try again."
+      }
+    }
   }
 }

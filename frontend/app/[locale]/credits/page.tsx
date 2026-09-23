@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Check, Coins, Loader2, TriangleAlert } from "lucide-react";
+import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import { Link } from "@/i18n/navigation";
 import { getCredits, getPublicPricing, startCheckout } from "@/lib/api";
@@ -46,6 +47,7 @@ export default function CreditsPage() {
 }
 
 function Credits() {
+  const t = useTranslations("app.credits");
   const { credits, setCredits } = useShortPulseStore();
   const params = useSearchParams();
   const justPurchased = params.get("purchase") === "ok";
@@ -109,10 +111,10 @@ function Credits() {
     } catch (err) {
       setError(
         err instanceof Error && err.message.includes("503")
-          ? "This install isn't set up to sell credits."
+          ? t("errors.unavailable")
           : err instanceof Error
             ? err.message
-            : "Could not start checkout"
+            : t("errors.failed")
       );
       setPending(null);
     }
@@ -124,21 +126,18 @@ function Credits() {
     <AppShell section="credits">
         <div className="animate-fade-up">
           <h1 className="text-3xl font-semibold tracking-tight">
-            {credits?.balance ?? 0} credits
+            {t("balance", { count: credits?.balance ?? 0 })}
           </h1>
           <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/50">
             {sold ? (
               <>
-                One-off packs. Nothing renews, nothing expires, and unused credits stay yours.
-                {credits?.tax_included && " Prices include VAT at your local rate."}
+                {t("introSold")}
+                {credits?.tax_included && t("vat")}
               </>
             ) : (
               // Same sentence the checkout endpoint answers with, said before
               // the click rather than after it.
-              <>
-                This install isn&apos;t set up to sell credits. What you have doesn&apos;t
-                expire, and renders draw from it as usual.
-              </>
+              <>{t("introUnsold")}</>
             )}
           </p>
         </div>
@@ -146,7 +145,7 @@ function Credits() {
         {justPurchased && (
           <p className="animate-fade-up mt-6 flex items-center gap-2 rounded-md border border-live/40 bg-live/10 px-4 py-3 text-sm text-live">
             <Check size={15} />
-            Payment received. Your balance updates as soon as the confirmation reaches us.
+            {t("purchased")}
           </p>
         )}
 
@@ -170,13 +169,13 @@ function Credits() {
               className="mt-0.5 h-4 w-4 shrink-0 accent-accent"
             />
             <span>
-              I want my credits available immediately, and I understand that by starting to use
-              them I give up the 14-day right to withdraw from this purchase. Unused credits can
-              still be refunded within 14 days — see the{" "}
-              <Link href="/terms" className="underline underline-offset-2 hover:text-white">
-                terms
-              </Link>
-              .
+              {t.rich("withdrawal", {
+                terms: (chunks) => (
+                  <Link href="/terms" className="underline underline-offset-2 hover:text-white">
+                    {chunks}
+                  </Link>
+                ),
+              })}
             </span>
           </label>
 
@@ -193,12 +192,12 @@ function Credits() {
                   <span className="font-mono text-3xl font-semibold">
                     {formatPrice(pack.price_cents, credits?.currency)}
                   </span>
-                  {pack.popular && <Badge tone="accent">Most picked</Badge>}
+                  {pack.popular && <Badge tone="accent">{t("popular")}</Badge>}
                 </div>
 
                 <p className="flex items-center gap-1.5 text-sm text-white/70">
                   <Coins size={14} className="text-accent" />
-                  {pack.credits} credits
+                  {t("packCredits", { count: pack.credits })}
                 </p>
                 <p className="text-xs leading-relaxed text-white/40">
                   {/* Quoted from the same table the backend charges from, and
@@ -206,8 +205,8 @@ function Credits() {
                       container has no diffusion stack, and offering the
                       generated-stills number there quotes a price for
                       something the API refuses to sell. */}
-                  {pack.credits} stock-footage shorts
-                  {generatedStills && `, or ${Math.floor(pack.credits / 3)} with AI-generated stills`}
+                  {t("packShorts", { count: pack.credits })}
+                  {generatedStills && t("packStills", { count: Math.floor(pack.credits / 3) })}
                   .
                 </p>
 
@@ -220,10 +219,10 @@ function Credits() {
                   {pending === pack.id ? (
                     <>
                       <Loader2 size={15} className="animate-spin" />
-                      Opening checkout
+                      {t("opening")}
                     </>
                   ) : (
-                    `Buy ${pack.credits}`
+                    t("buy", { count: pack.credits })
                   )}
                 </Button>
               </Card>
@@ -233,8 +232,8 @@ function Credits() {
         )}
 
         <p className="mt-4 text-xs leading-relaxed text-white/30">
-          {sold && "Payment is handled by Stripe — this app never sees your card details. "}
-          Self-hosting costs nothing and needs no account at all.
+          {sold && t("stripe")}
+          {t("selfHost")}
         </p>
     </AppShell>
   );

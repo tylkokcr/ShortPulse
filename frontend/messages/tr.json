@@ -558,5 +558,235 @@
       "empty": "Videonu seçer seçmez burada görünür.",
       "caption": "9:16 · altyazılar gömülü"
     }
+  },
+  "app": {
+    "library": {
+      "title": "Videoların",
+      "loading": "Yükleniyor...",
+      "none": "Burada henüz bir şey yok.",
+      "count": "{count, plural, other {# proje}}",
+      "newVideo": "Yeni video",
+      "loadFailed": "Projeler yüklenemedi",
+      "emptyTitle": "Henüz proje yok",
+      "emptyBody": "Bir konudan üret ya da elindeki videoyu yükle, altyazısını o yazsın.",
+      "startOne": "Bir tane başlat",
+      "badge": {
+        "clips": "{count, plural, other {# kesit}}",
+        "captioned": "Altyazılı",
+        "generated": "Üretildi"
+      },
+      "status": {
+        "draft": "taslak",
+        "rendering": "render alınıyor",
+        "complete": "tamamlandı",
+        "failed": "başarısız"
+      },
+      "credits": "{count} kr",
+      "delete": "Projeyi sil",
+      "confirmDelete": "Silmeyi onayla",
+      "deleteWarning": "Silmek için tekrar tıkla. Video ve dosyaları kalıcı olarak kaldırılır."
+    },
+    "connections": {
+      "eyebrow": "Yayınlama",
+      "title": "Bağlı hesaplar",
+      "intro": "Biten videoyu doğrudan yapıldığı yere yayınla. Bir hesabı bağlamak tek tıkla paylaşmanı sağlar — otomatik paylaşımı açarsan biten her render sormadan gider.",
+      "loading": "Yükleniyor...",
+      "notConfigured": "Bu kurulumda yayınlama yapılandırılmamış. Kendi sunucusunda çalıştıranlar kendi platform kimliklerini tanımlayabilir — README'ye bak.",
+      "connect": "Bağla",
+      "disconnect": "Bağlantıyı kes",
+      "autoTitle": "Biten videoları otomatik paylaş",
+      "autoOn": "Her render biter bitmez buraya gönderilecek.",
+      "autoFirst": "Buradaki ilk paylaşım yine tek tık istiyor — onayın için proje sayfasına düşer, böylece anahtarları devretmeden önce nasıl göründüğünü görürsün.",
+      "autoOff": "Kapalı — her seferinde sorulacak. İstediğin videoyu yine elle paylaşabilirsin.",
+      "errors": {
+        "cancelled": "Bağlama iptal edildi. Hiçbir şey değişmedi.",
+        "expired": "Bu çok uzun sürdü ve bağlantı denemesinin süresi doldu. Tekrar dene.",
+        "unavailable": "Bu kurulumda yayınlama henüz ayarlanmamış.",
+        "failed": "O hesabın bağlanması tamamlanamadı. Tekrar dene.",
+        "saveFailed": "Bu kaydedilemedi. Tekrar dene.",
+        "disconnectFailed": "O hesabın bağlantısı kesilemedi.",
+        "loadFailed": "Bağlantıların yüklenemedi",
+        "start": "Bağlama başlatılamadı"
+      }
+    },
+    "credits": {
+      "balance": "{count, plural, other {# kredi}}",
+      "introSold": "Tek seferlik paketler. Hiçbir şey yenilenmez, süresi dolmaz ve kullanılmayan krediler sende kalır.",
+      "vat": " Fiyatlara ülkendeki KDV dahildir.",
+      "introUnsold": "Bu kurulum kredi satacak şekilde ayarlanmamış. Elindekinin süresi dolmaz ve renderlar ondan düşer.",
+      "purchased": "Ödeme alındı. Onay bize ulaşır ulaşmaz bakiyen güncellenir.",
+      "withdrawal": "Kredilerimin hemen kullanılabilir olmasını istiyorum ve bunları kullanmaya başlayınca bu alışverişten 14 gün içinde cayma hakkımdan vazgeçtiğimi anlıyorum. Kullanılmayan krediler yine 14 gün içinde iade edilebilir — <terms>koşullara</terms> bak.",
+      "popular": "En çok seçilen",
+      "packCredits": "{count, plural, other {# kredi}}",
+      "packShorts": "{count} stok görüntülü kısa video",
+      "packStills": ", ya da yapay zekâ kareleriyle {count} tane",
+      "opening": "Ödeme açılıyor",
+      "buy": "{count} al",
+      "stripe": "Ödeme Stripe üzerinden yapılır — bu uygulama kart bilgilerini hiç görmez. ",
+      "selfHost": "Kendi sunucunda çalıştırmak hiçbir şeye mal olmaz ve hesap bile gerektirmez.",
+      "errors": {
+        "unavailable": "Bu kurulum kredi satacak şekilde ayarlanmamış.",
+        "failed": "Ödeme başlatılamadı"
+      }
+    },
+    "feedback": {
+      "videoAsk": "Bu nasıl çıktı?",
+      "videoThanks": "Teşekkürler — sandığından çok işe yarıyor.",
+      "videoUp": "İyi çıktı",
+      "videoDown": "Kötü çıktı",
+      "flagged": "işaretlendi",
+      "wrong": "yanlış mı?",
+      "sceneAsk": "bunun nesi yanlış?",
+      "reasons": {
+        "visual": "Görüntü",
+        "match": "Cümleyle uyuşmuyor",
+        "voice": "Ses",
+        "captions": "Altyazı",
+        "pacing": "Çok hızlı / yavaş",
+        "other": "Başka bir şey"
+      },
+      "notePlaceholder": "Başka bir şey? (isteğe bağlı)",
+      "saving": "Kaydediliyor…",
+      "send": "Gönder",
+      "cancel": "Vazgeç",
+      "thenReroll": "Sonra aşağıdan yeniden üret"
+    },
+    "regenerate": {
+      "redrawing": "çiziliyor",
+      "reroll": "yeniden üret",
+      "whatToDraw": "ne çizilsin",
+      "whatToAvoid": "neden kaçınılsın",
+      "drawing": "Çiziliyor…",
+      "submit": "Yeniden üret — {count, plural, other {# kredi}}",
+      "cancel": "Vazgeç",
+      "wait": "Yeni bir görüntü çiziliyor, ardından video yeniden kodlanıyor — yaklaşık 20 saniye."
+    },
+    "stockCredits": {
+      "footageFrom": "Görüntüler ",
+      "and": " ve ",
+      "copyTitle": "Künyeyi kopyala, gönderi açıklamana yapıştır",
+      "copied": "Kopyalandı",
+      "copy": "Kopyala",
+      "videoBy": "Video <author></author> tarafından, <provider></provider> üzerinde",
+      "videoFrom": "Video <provider></provider> kaynağından"
+    },
+    "report": {
+      "title": "Render raporu",
+      "total": "toplam {time}",
+      "stages": {
+        "script": "Metin",
+        "audio_and_transcription": "Ses + zamanlama",
+        "transcription": "Deşifre",
+        "visuals": "Görseller",
+        "subtitles": "Altyazı",
+        "ffmpeg_assembly": "Render"
+      },
+      "video": "Video",
+      "scenes": "Sahne",
+      "words": "Kelime",
+      "mode": "Mod",
+      "device": "Cihaz"
+    },
+    "preview": {
+      "output": "Çıktı",
+      "failed": "Başarısız",
+      "rendering": "Render alınıyor",
+      "ready": "hazır",
+      "renderFailed": "Render başarısız oldu.",
+      "loadingVideo": "Video yükleniyor...",
+      "starting": "Başlatılıyor...",
+      "download": ".mp4 indir",
+      "queue": {
+        "waiting": "Sırada — boş bir işçi bekleniyor...",
+        "next": "Sıradaki sensin{when}.",
+        "ahead": "Önünde {count, plural, other {# render}} var{when}.",
+        "underMinute": ", bir dakikadan az",
+        "aboutMinute": ", yaklaşık bir dakika",
+        "aboutMinutes": ", yaklaşık {count} dakika"
+      }
+    },
+    "timeline": {
+      "script_generation": "Metin",
+      "audio_synthesis": "Seslendirme",
+      "transcription": "Zamanlama",
+      "visual_generation": "Görseller",
+      "subtitle_generation": "Altyazı",
+      "assembly": "Render",
+      "done": "Bitti"
+    },
+    "transcript": {
+      "outroOff": "Videoda yok — kapanış kartı kapalı. Açıklama yazmadan paylaşırsan gönderi açıklamasını o dolduruyor."
+    },
+    "publish": {
+      "title": "Bu videoyu yayınla",
+      "noneIntro": "Bir YouTube, Instagram veya TikTok hesabı bağla, biten renderı doğrudan buradan paylaşabilirsin.",
+      "connectAccount": "Hesap bağla",
+      "fieldTitle": "Başlık",
+      "titlePlaceholder": "Bu videonun adı",
+      "fieldDescription": "Açıklama",
+      "stockNotice": "Stok görüntü künyeleri açıklamaya otomatik eklenir — lisans bunu gerektiriyor.",
+      "hashtags": "Etiketler: {tags}",
+      "post": "Paylaş",
+      "approve": "Onayla",
+      "queued": "Sırada",
+      "uploading": "Yükleniyor",
+      "failed": "Başarısız",
+      "tiktokInbox": "TikTok gelen kutunda bekliyor",
+      "view": "Görüntüle",
+      "errors": {
+        "start": "Yayınlama başlatılamadı",
+        "approve": "O gönderi onaylanamadı."
+      }
+    },
+    "edit": {
+      "notEditable": "Bu video, altyazılar düzenlenebilir olmadan önce render edildi. Metni düzeltmek için yeniden render al.",
+      "captions": "Altyazılar",
+      "lineCount": "{count} satır",
+      "addLine": "Satır ekle",
+      "newLine": "Yeni satır",
+      "deleteLine": "{time} konumundaki satırı sil",
+      "layout": "Yerleşim",
+      "full": "Tam kare",
+      "split": "Bölünmüş ekran",
+      "addClip": "Klip ekle",
+      "uploadingClip": "Yükleniyor…",
+      "replaceClip": "Değiştir",
+      "splitNote": "Anlatım üstte kalır ve sesi korur; alttaki klip sessizdir ve daha kısaysa döner.",
+      "overlays": "Ekrandaki yazı",
+      "addText": "Yazı ekle",
+      "newText": "Yeni yazı",
+      "removeText": "Kaldır",
+      "overlaysEmpty": "Başlıklar, etiketler, bir espri — altyazılarla aynı motorla çizilir, o yüzden uyumlu görünür.",
+      "position": "Konum",
+      "top": "Üst",
+      "middle": "Orta",
+      "bottom": "Alt",
+      "start": "Başlangıç",
+      "end": "Bitiş",
+      "freeNote": "Ücretsiz · birkaç saniye",
+      "appliedNote": "Uygulandı — yukarıdaki video yenisi.",
+      "rerendering": "Yeniden render alınıyor",
+      "applied": "Uygulandı",
+      "apply": "Uygula ve yeniden render al",
+      "errors": {
+        "clip": "Klip eklenemedi",
+        "apply": "Düzenleme uygulanamadı"
+      }
+    },
+    "project": {
+      "newVideo": "Yeni video",
+      "tabScenes": "Döküm",
+      "tabEdit": "Düzenle",
+      "loading": "Yükleniyor...",
+      "uploadedNoScenes": "Bu video yüklendi, o yüzden üretilmiş sahnesi yok — altyazıları için Düzenle sekmesine bak.",
+      "scriptWorking": "Yapay zekâ metin yazarı bunun üstünde çalışıyor — sahneler üretildikçe burada görünecek.",
+      "clipsTitle": "Bu videodan {count, plural, other {# kesit}}",
+      "clipsIntro": "Her biri kendi projesi — altyazılı, düzenlenebilir ve paylaşmaya hazır. Bu sayfa kesimin kaydı; kesitler kütüphanende.",
+      "clipFallback": "Kesit {n}",
+      "errors": {
+        "insufficient": "Kredi yetmiyor — sende {balance} var, bu {required} tutuyor.",
+        "regenerate": "Bu işe yaramadı. Hiçbir ücret alınmadı; tekrar dene."
+      }
+    }
   }
 }
