@@ -25,9 +25,12 @@ jobs:
           # that would have happened in the container.
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: backend/requirements.txt
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
 
-      - run: pip install -r requirements.txt
+      # The dev file pulls in requirements.txt itself, so this is both.
+      - run: pip install -r requirements-dev.txt
 
       - name: ruff
         run: ruff check .

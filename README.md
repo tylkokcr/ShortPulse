@@ -97,13 +97,17 @@ frontend/                 Next.js 14 App Router UI
 ```bash
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt   # runtime + the checks below
 cp .env.example .env   # then edit: ffmpeg paths, DIFFUSION_DEVICE, API keys
 uvicorn app.main:app --port 8000
 ```
 
 Set `DIFFUSION_DEVICE` in `.env` to `cuda` (NVIDIA), `mps` (Apple Silicon), or
 `cpu`.
+
+`requirements.txt` alone is enough to *run* the backend, and is what the
+Docker image installs. The three checks below live in
+`requirements-dev.txt`, which pulls the runtime in with it.
 
 The three checks CI runs, in the order it runs them:
 
