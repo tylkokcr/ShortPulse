@@ -39,6 +39,12 @@ def api(monkeypatch):
     monkeypatch.setattr(settings, "llm_model", "llama3")
     monkeypatch.setattr(settings, "ollama_base_url", "http://ollama.internal:11434")
     monkeypatch.setattr(settings, "openai_api_key", None)
+    # These requests carry no visual_mode, so they take the default —
+    # fast_hybrid, which the route refuses with a 422 on an install that
+    # can't render it. Pinned here rather than inherited from whatever
+    # .env the machine has, so what these tests measure is the LLM
+    # boundary and not the developer's Replicate token.
+    monkeypatch.setattr(settings, "replicate_api_token", "r8_test")
     project_store.configure(None)
 
     app = FastAPI()

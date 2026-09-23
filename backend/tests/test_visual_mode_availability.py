@@ -85,6 +85,19 @@ def test_available_modes_is_what_is_left(monkeypatch):
     assert visual_engine.available_modes(Settings()) == [VisualMode.STOCK_MEDIA]
 
 
+def _has_stock_media(monkeypatch):
+    """Put a stock key on the real settings for one test.
+
+    The mirror of _no_hosted_images, and the same trap the other way up:
+    anything asserting stock_media is *available* is otherwise asserting
+    that the developer has a Pexels key in their .env. CI has none, which
+    is how this was found.
+    """
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "pexels_api_key", "test-key")
+
+
 def _no_local_diffusion(monkeypatch):
     monkeypatch.setattr(
         visual_engine.importlib.util,
@@ -174,6 +187,7 @@ async def test_creating_a_project_in_an_unavailable_mode_is_refused(monkeypatch)
     # this route reads get_settings(), which loads the developer's own .env,
     # and the test passed only until someone put a token in theirs.
     _no_hosted_images(monkeypatch)
+    _has_stock_media(monkeypatch)
 
     app = FastAPI()
     app.include_router(projects_route.router)
@@ -210,6 +224,8 @@ async def test_an_available_mode_still_goes_through(monkeypatch):
     from fastapi import FastAPI
 
     from app.api.routes import projects as projects_route
+
+    _has_stock_media(monkeypatch)
 
     app = FastAPI()
     app.include_router(projects_route.router)

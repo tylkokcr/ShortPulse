@@ -102,6 +102,20 @@ async def _post_project(app, mode: str):
         return await client.post("/api/projects", json={"topic": "honey", "visual_mode": mode})
 
 
+@pytest.fixture(autouse=True)
+def stock_media_works(monkeypatch):
+    """The free mode is free only if the install can actually run it.
+
+    Every test here rests on stock_media being the thing an unpaid account
+    falls back to. That takes a Pexels or Pixabay key, and the routes read
+    get_settings() — so without this the file asserts that the developer
+    has one in their .env. CI has none, which is how this was found.
+    """
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "pexels_api_key", "test-key")
+
+
 @pytest.fixture
 def hosted_images(monkeypatch):
     """A deployment that *can* run fast_hybrid.
