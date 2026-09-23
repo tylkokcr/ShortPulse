@@ -54,3 +54,8 @@ ruff>=0.5
 # where an argument in the wrong position is otherwise a runtime discovery.
 mypy>=1.11
 asyncpg-stubs>=0.29
+# test_subtitle_engine opens the bundled fonts to check that the coverage
+# map matches what the files actually contain. It arrived here as somebody's
+# transitive dependency, so those two tests passed locally and would have
+# failed on a clean checkout.
+fonttools>=4.50

@@ -58,10 +58,18 @@ check_untyped_defs = false
 disable_error_code = ["annotation-unchecked"]
 
 [[tool.mypy.overrides]]
-# Optional extras. TTS is not installed at all (see requirements.txt) and
-# the other two ship no annotations; every import of them in this codebase
-# is inside the function that needs it.
-module = ["TTS.*", "faster_whisper.*", "fontTools.*"]
+# Optional extras, none of them installed by requirements.txt alone: the
+# diffusion stack is its own ~3GB file and TTS is commented out entirely.
+# Every import of these lives inside the function that needs it, which is
+# what lets the app start without them — and what lets the checker run in
+# CI without installing three gigabytes to find that out.
+module = [
+    "TTS.*",
+    "diffusers.*",
+    "faster_whisper.*",
+    "fontTools.*",
+    "torch.*",
+]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
