@@ -374,5 +374,189 @@
       "stale": "That sign-in link is no longer valid. Send yourself a fresh one.",
       "generic": "That sign-in link didn't work. Send yourself a fresh one."
     }
+  },
+  "studio": {
+    "tabs": {
+      "generate": "Generate from a topic",
+      "upload": "Caption or dub my video"
+    },
+    "generate": {
+      "title": "What's this <accent>video</accent> about?",
+      "intro": "Give it a topic — everything below already has a sensible default, so you can hit generate now and come back to fine-tune later."
+    },
+    "upload": {
+      "title": "A video you <accent>already have</accent>.",
+      "intro": "Upload it and every spoken word gets timed and burned in — the same captions the generator produces, on your own footage. Or pick another language and it is spoken again over your picture.",
+      "dropTitle": "Drop a video here",
+      "dropHint": "MP4, MOV, WebM or MKV · up to 200MB · needs an audio track",
+      "pickAnother": "Click to pick a different file",
+      "spokenLanguage": "Spoken language",
+      "spokenLanguageHint": "Telling it the language up front stops short clips getting mis-detected.",
+      "clips": "Cut it into clips",
+      "clipsNone": "Don't — keep it whole",
+      "clipsCount": "{count} clips",
+      "clipsOnHint": "The transcript is read for the moments that stand up on their own. Each one is cut out and lands in your library as its own video, captioned and ready to edit. Videos from 2 to 60 minutes.",
+      "clipsOffHint": "Leave this alone to caption the whole video as it is.",
+      "dub": "Speak it in another language",
+      "dubNone": "Don't — just add captions",
+      "dubWithClipsHint": "Take the clips first, then dub the ones you keep.",
+      "dubOnHint": "The speech is translated and spoken again over your original picture. Nothing about the video changes, so if you are on camera your lips won't match the new language — dubbed video normally looks like this.",
+      "dubOffHint": "Leave this alone to keep the original audio and only burn in captions.",
+      "captionStyle": "Caption style",
+      "uploading": "Uploading...",
+      "processing": "Processing...",
+      "working": "Working...",
+      "ctaClips": "Take {count} clips",
+      "ctaDub": "Dub it",
+      "ctaCaption": "Add captions",
+      "costLine": "{credits} · {balance} remaining",
+      "errors": {
+        "clips": "Taking clips",
+        "dub": "Dubbing",
+        "caption": "Captioning",
+        "insufficient": "{what} costs {required} credits and you have {balance}.",
+        "failed": "Upload failed"
+      }
+    },
+    "idea": "The idea",
+    "groups": {
+      "look": "Look & language",
+      "length": "Length",
+      "audio": "Audio",
+      "finishing": "Finishing touches"
+    },
+    "fields": {
+      "aspectRatio": "Aspect ratio",
+      "language": "Language",
+      "visualStyle": "Visual style",
+      "artStyle": "Art style",
+      "negativePrompt": "Keep out of frame",
+      "captionStyle": "Caption style",
+      "voice": "Narrator voice",
+      "music": "Background music"
+    },
+    "length": {
+      "short": "Short",
+      "medium": "Medium",
+      "long": "Long"
+    },
+    "summary": {
+      "defaultTrack": "default track",
+      "musicOff": "off",
+      "defaultVoice": "Default voice",
+      "voiceFallback": "Voice",
+      "audio": "{voice} · music: {music}",
+      "outroOn": "Outro card on",
+      "outroOff": "Outro card off"
+    },
+    "cost": {
+      "credits": "{count, plural, one {# credit} other {# credits}}",
+      "remaining": "· {balance} remaining",
+      "free": "Free · runs on this machine"
+    },
+    "cta": {
+      "generate": "Generate video",
+      "generating": "Starting render...",
+      "topUp": "Top up"
+    },
+    "errors": {
+      "insufficient": "This render costs {required} credits and you have {balance}.",
+      "createFailed": "Failed to create project"
+    },
+    "script": {
+      "topic": "Topic",
+      "topicPlaceholder": "e.g. 3 psychology tricks that make people trust you instantly",
+      "try": "Try",
+      "rawScript": "Raw script",
+      "rawScriptHint": "(optional — skips AI scriptwriting)",
+      "rawScriptPlaceholder": "Paste your own voiceover script here if you already have one...",
+      "suggestions": {
+        "honey": "Why honey never spoils",
+        "ocean": "Why the ocean is salty",
+        "cats": "Why cats love cardboard boxes",
+        "sleep": "A simple trick for better sleep"
+      }
+    },
+    "outro": {
+      "toggle": "Add a branded outro card",
+      "placeholder": "e.g. Follow for more open-source AI content!"
+    },
+    "examples": {
+      "title": "Start from an example",
+      "sub": "Real renders. Picking one fills the form in — the script is still written fresh.",
+      "credit": "Footage from <pexels>Pexels</pexels>, filmed by {count} videographers.",
+      "creditNames": "{names}. The AI-stills clip has no footage to credit — every frame of it was generated."
+    },
+    "renderSummary": {
+      "title": "This render",
+      "format": "Format",
+      "length": "Length",
+      "scenes": "Scenes",
+      "renderTime": "Render time",
+      "cost": "Cost",
+      "balanceAfter": "Balance after",
+      "minutesPerScene": "minutes per scene",
+      "seconds": "~{n}s",
+      "minutes": "~{n} min",
+      "shortfall": "You have {balance}. Pick a cheaper visual style or a shorter length, or <link>top up</link>.",
+      "timings": "Timings measured on an Apple Silicon M-series, 32GB. Yours will differ — a dedicated GPU is considerably faster."
+    },
+    "aspect": {
+      "9:16": "TikTok, Reels, Shorts",
+      "1:1": "Feed posts",
+      "16:9": "YouTube, landscape"
+    },
+    "duration": {
+      "short": "~15-25s, 5-6 scenes",
+      "medium": "~30-45s, 8-10 scenes",
+      "long": "~60s+, 12-15 scenes"
+    },
+    "visual": {
+      "fast_hybrid": "AI stills + Ken Burns pan/zoom. Recommended — fast on modest hardware.",
+      "ai_video": "Local text-to-video diffusion. Slowest, needs a real GPU.",
+      "stock_media": "Free Pexels/Pixabay footage. Zero GPU required.",
+      "aiWarning": "AI Video downloads a large model (tens of GB) the first time you use it on a machine — this can take hours on a slow connection, and generation itself is slow without a real GPU. It's a one-time download; later renders won't repeat it.",
+      "aiAck": "I understand this may take a long time on first use"
+    },
+    "music": {
+      "moods": {
+        "lofi": "Lo-fi & chill",
+        "upbeat": "Upbeat & motivational",
+        "atmospheric": "Atmospheric & dark",
+        "suspense": "Suspense",
+        "bundled": "Bundled"
+      },
+      "none": "No music",
+      "failed": "Couldn't reach the music library — the render will fall back to the bundled track.",
+      "hint": "Music ducks automatically under the voiceover and loops to fit. Drop more files into backend/app/assets/music — a subfolder becomes a mood.",
+      "play": "Play {name}",
+      "stop": "Stop {name}"
+    },
+    "voice": {
+      "default": " · default",
+      "failed": "That preview couldn't be generated — the voice model may still be downloading. Try again in a moment.",
+      "hint": "The first preview of a voice downloads it on the server, so it can take a few seconds.",
+      "loading": "Loading voices...",
+      "listFailed": "Couldn't load the voice list — the render will use the default voice for this language."
+    },
+    "artStyle": {
+      "loading": "Loading styles...",
+      "stockNotice": "Stock footage is filmed, not generated, so there's no art style to pick. Switch to Fast Hybrid or AI Video to choose one."
+    },
+    "negative": {
+      "stockNotice": "Stock footage is whatever was filmed, so there is nothing to steer here. Switch to Fast Hybrid to exclude things from the generated frames.",
+      "hint": "Added to what the art style already excludes — deformed anatomy, crowds and on-screen text are ruled out whether or not you type anything.",
+      "englishNote": "These terms go to the image model, which reads English — so they stay in English here."
+    },
+    "drawer": {
+      "close": "Close"
+    },
+    "preview": {
+      "note": "Preview — caption style and frame are live, the footage is a style sample."
+    },
+    "uploadPreview": {
+      "empty": "Your video appears here as soon as you pick it.",
+      "caption": "9:16 · captions burned in"
+    }
   }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useShortPulseStore } from "@/lib/store";
 
 /**
@@ -8,6 +9,7 @@ import { useShortPulseStore } from "@/lib/store";
  * the call-to-action.
  */
 export function OutroToggle() {
+  const t = useTranslations("studio.outro");
   const { draft, setDraft } = useShortPulseStore();
 
   return (
@@ -19,14 +21,14 @@ export function OutroToggle() {
           onChange={(e) => setDraft({ outroEnabled: e.target.checked })}
           className="h-4 w-4 rounded border-border accent-accent"
         />
-        Add a branded outro card
+        {t("toggle")}
       </label>
 
       {draft.outroEnabled && (
         <input
           value={draft.outroText}
           onChange={(e) => setDraft({ outroText: e.target.value })}
-          placeholder="e.g. Follow for more open-source AI content!"
+          placeholder={t("placeholder")}
           className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent animate-fade-in"
         />
       )}

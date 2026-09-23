@@ -1,21 +1,19 @@
 "use client";
 
 import clsx from "clsx";
+import { useTranslations } from "next-intl";
 import { useShortPulseStore } from "@/lib/store";
 import type { VideoLength } from "@/lib/types";
 
-const OPTIONS: { length: VideoLength; label: string; description: string }[] = [
-  { length: "short", label: "Short", description: "~15-25s, 5-6 scenes" },
-  { length: "medium", label: "Medium", description: "~30-45s, 8-10 scenes" },
-  { length: "long", label: "Long", description: "~60s+, 12-15 scenes" },
-];
+const OPTIONS: VideoLength[] = ["short", "medium", "long"];
 
 export function DurationSelector() {
+  const t = useTranslations("studio");
   const { draft, setDraft } = useShortPulseStore();
 
   return (
     <div className="grid grid-cols-3 gap-3">
-      {OPTIONS.map(({ length, label, description }) => {
+      {OPTIONS.map((length) => {
         const selected = draft.videoLength === length;
         return (
           <button
@@ -29,8 +27,8 @@ export function DurationSelector() {
                 : "border-border bg-background hover:border-border-strong hover:bg-surface-hover"
             )}
           >
-            <span className="text-sm font-medium">{label}</span>
-            <span className="text-xs text-white/50">{description}</span>
+            <span className="text-sm font-medium">{t(`length.${length}`)}</span>
+            <span className="text-xs text-white/50">{t(`duration.${length}`)}</span>
           </button>
         );
       })}

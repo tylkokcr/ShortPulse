@@ -374,5 +374,189 @@
       "stale": "Ten link do logowania nie jest już ważny. Wyślij sobie nowy.",
       "generic": "Ten link do logowania nie zadziałał. Wyślij sobie nowy."
     }
+  },
+  "studio": {
+    "tabs": {
+      "generate": "Wygeneruj z tematu",
+      "upload": "Dodaj napisy lub dubbing"
+    },
+    "generate": {
+      "title": "O czym jest ten <accent>film</accent>?",
+      "intro": "Podaj temat — wszystko poniżej ma już sensowne ustawienie domyślne, więc możesz od razu wygenerować i dopracować później."
+    },
+    "upload": {
+      "title": "Film, który <accent>już masz</accent>.",
+      "intro": "Wgraj go, a każde wypowiedziane słowo zostanie zsynchronizowane i wypalone w obrazie — te same napisy, które tworzy generator, na twoim własnym materiale. Albo wybierz inny język, a lektor przeczyta tekst na nowo.",
+      "dropTitle": "Upuść tutaj film",
+      "dropHint": "MP4, MOV, WebM lub MKV · do 200 MB · wymaga ścieżki dźwiękowej",
+      "pickAnother": "Kliknij, aby wybrać inny plik",
+      "spokenLanguage": "Język mówiony",
+      "spokenLanguageHint": "Podanie języka z góry zapobiega błędnemu rozpoznaniu krótkich klipów.",
+      "clips": "Potnij na klipy",
+      "clipsNone": "Nie tnij — zostaw w całości",
+      "clipsCount": "{count, plural, few {# klipy} many {# klipów} other {# klipów}}",
+      "clipsOnHint": "Transkrypcja jest czytana pod kątem momentów, które bronią się same. Każdy zostaje wycięty i trafia do twojej biblioteki jako osobny film — z napisami i gotowy do edycji. Filmy od 2 do 60 minut.",
+      "clipsOffHint": "Zostaw to bez zmian, aby dodać napisy do całego filmu.",
+      "dub": "Przeczytaj w innym języku",
+      "dubNone": "Nie — tylko napisy",
+      "dubWithClipsHint": "Najpierw wytnij klipy, potem zdubbinguj te, które zostawisz.",
+      "dubOnHint": "Mowa zostaje przetłumaczona i przeczytana na nowo na tle twojego obrazu. W samym filmie nic się nie zmienia, więc jeśli jesteś w kadrze, twoje usta nie będą pasować do nowego języka — tak zwykle wygląda dubbingowany film.",
+      "dubOffHint": "Zostaw to bez zmian, aby zachować oryginalny dźwięk i tylko wypalić napisy.",
+      "captionStyle": "Styl napisów",
+      "uploading": "Wysyłanie...",
+      "processing": "Przetwarzanie...",
+      "working": "Pracuję...",
+      "ctaClips": "Wytnij {count, plural, few {# klipy} many {# klipów} other {# klipów}}",
+      "ctaDub": "Zdubbinguj",
+      "ctaCaption": "Dodaj napisy",
+      "costLine": "{credits} · pozostało {balance}",
+      "errors": {
+        "clips": "Wycinanie klipów",
+        "dub": "Dubbing",
+        "caption": "Dodawanie napisów",
+        "insufficient": "{what} kosztuje {required} kredytów, a masz {balance}.",
+        "failed": "Wysyłanie nie powiodło się"
+      }
+    },
+    "idea": "Pomysł",
+    "groups": {
+      "look": "Wygląd i język",
+      "length": "Długość",
+      "audio": "Dźwięk",
+      "finishing": "Wykończenie"
+    },
+    "fields": {
+      "aspectRatio": "Proporcje obrazu",
+      "language": "Język",
+      "visualStyle": "Styl wizualny",
+      "artStyle": "Styl grafiki",
+      "negativePrompt": "Czego nie chcesz w kadrze",
+      "captionStyle": "Styl napisów",
+      "voice": "Głos lektora",
+      "music": "Muzyka w tle"
+    },
+    "length": {
+      "short": "Krótki",
+      "medium": "Średni",
+      "long": "Długi"
+    },
+    "summary": {
+      "defaultTrack": "utwór domyślny",
+      "musicOff": "wyłączona",
+      "defaultVoice": "Głos domyślny",
+      "voiceFallback": "Głos",
+      "audio": "{voice} · muzyka: {music}",
+      "outroOn": "Plansza końcowa włączona",
+      "outroOff": "Plansza końcowa wyłączona"
+    },
+    "cost": {
+      "credits": "{count, plural, one {# kredyt} few {# kredyty} many {# kredytów} other {# kredytów}}",
+      "remaining": "· pozostało {balance}",
+      "free": "Za darmo · działa na tej maszynie"
+    },
+    "cta": {
+      "generate": "Wygeneruj film",
+      "generating": "Uruchamianie renderu...",
+      "topUp": "Doładuj"
+    },
+    "errors": {
+      "insufficient": "Ten render kosztuje {required} kredytów, a masz {balance}.",
+      "createFailed": "Nie udało się utworzyć projektu"
+    },
+    "script": {
+      "topic": "Temat",
+      "topicPlaceholder": "np. 3 psychologiczne triki, dzięki którym ludzie od razu ci ufają",
+      "try": "Spróbuj",
+      "rawScript": "Gotowy scenariusz",
+      "rawScriptHint": "(opcjonalnie — pomija pisanie przez AI)",
+      "rawScriptPlaceholder": "Wklej tutaj własny tekst lektorski, jeśli już go masz...",
+      "suggestions": {
+        "honey": "Dlaczego miód nigdy się nie psuje",
+        "ocean": "Dlaczego ocean jest słony",
+        "cats": "Dlaczego koty kochają kartony",
+        "sleep": "Prosty sposób na lepszy sen"
+      }
+    },
+    "outro": {
+      "toggle": "Dodaj planszę końcową z logo",
+      "placeholder": "np. Obserwuj po więcej treści o AI open source!"
+    },
+    "examples": {
+      "title": "Zacznij od przykładu",
+      "sub": "Prawdziwe rendery. Wybranie jednego wypełnia formularz — scenariusz i tak powstaje od nowa.",
+      "credit": "Materiały z <pexels>Pexels</pexels>, nakręcone przez {count} operatorów.",
+      "creditNames": "{names}. Klip z kadrami AI nie ma materiału do podpisania — każda jego klatka została wygenerowana."
+    },
+    "renderSummary": {
+      "title": "Ten render",
+      "format": "Format",
+      "length": "Długość",
+      "scenes": "Sceny",
+      "renderTime": "Czas renderu",
+      "cost": "Koszt",
+      "balanceAfter": "Saldo po renderze",
+      "minutesPerScene": "minuty na scenę",
+      "seconds": "~{n}s",
+      "minutes": "~{n} min",
+      "shortfall": "Masz {balance}. Wybierz tańszy styl wizualny albo krótszą długość, albo <link>doładuj</link>.",
+      "timings": "Czasy zmierzone na Apple Silicon serii M, 32 GB. Twoje będą inne — dedykowane GPU jest znacznie szybsze."
+    },
+    "aspect": {
+      "9:16": "TikTok, Reels, Shorts",
+      "1:1": "Posty w aktualnościach",
+      "16:9": "YouTube, poziomo"
+    },
+    "duration": {
+      "short": "~15-25 s, 5-6 scen",
+      "medium": "~30-45 s, 8-10 scen",
+      "long": "~60 s+, 12-15 scen"
+    },
+    "visual": {
+      "fast_hybrid": "Kadry z AI + najazd/zbliżenie Kena Burnsa. Zalecane — szybkie na skromnym sprzęcie.",
+      "ai_video": "Lokalna dyfuzja tekst-na-wideo. Najwolniejsza, wymaga prawdziwego GPU.",
+      "stock_media": "Darmowe materiały z Pexels/Pixabay. Bez GPU.",
+      "aiWarning": "AI Video przy pierwszym użyciu na danej maszynie pobiera duży model (dziesiątki GB) — przy wolnym łączu może to potrwać godziny, a samo generowanie bez prawdziwego GPU też jest powolne. To jednorazowe pobranie; kolejne rendery go nie powtarzają.",
+      "aiAck": "Rozumiem, że przy pierwszym użyciu może to długo potrwać"
+    },
+    "music": {
+      "moods": {
+        "lofi": "Lo-fi i spokojnie",
+        "upbeat": "Energetycznie i motywująco",
+        "atmospheric": "Atmosferycznie i mrocznie",
+        "suspense": "Napięcie",
+        "bundled": "W zestawie"
+      },
+      "none": "Bez muzyki",
+      "failed": "Nie udało się połączyć z biblioteką muzyki — render użyje utworu dołączonego do programu.",
+      "hint": "Muzyka jest automatycznie ściszana pod lektorem i zapętlana do długości. Wrzuć więcej plików do backend/app/assets/music — podfolder staje się nastrojem.",
+      "play": "Odtwórz {name}",
+      "stop": "Zatrzymaj {name}"
+    },
+    "voice": {
+      "default": " · domyślny",
+      "failed": "Nie udało się wygenerować tej zapowiedzi — model głosu może się jeszcze pobierać. Spróbuj za chwilę.",
+      "hint": "Pierwsza zapowiedź danego głosu pobiera go na serwerze, więc może potrwać kilka sekund.",
+      "loading": "Wczytywanie głosów...",
+      "listFailed": "Nie udało się wczytać listy głosów — render użyje głosu domyślnego dla tego języka."
+    },
+    "artStyle": {
+      "loading": "Wczytywanie stylów...",
+      "stockNotice": "Materiał stockowy jest nakręcony, a nie wygenerowany, więc nie ma tu stylu do wyboru. Przełącz się na Fast Hybrid lub AI Video, aby go wybrać."
+    },
+    "negative": {
+      "stockNotice": "Materiał stockowy jest taki, jaki nakręcono — nie ma tu czym sterować. Przełącz się na Fast Hybrid, aby wykluczać rzeczy z generowanych kadrów.",
+      "hint": "Dodawane do tego, co styl grafiki i tak wyklucza — zdeformowana anatomia, tłum i tekst na ekranie są wykluczone niezależnie od tego, czy coś wpiszesz.",
+      "englishNote": "Te terminy trafiają do modelu obrazu, który czyta po angielsku — dlatego zostają tu po angielsku."
+    },
+    "drawer": {
+      "close": "Zamknij"
+    },
+    "preview": {
+      "note": "Podgląd — styl napisów i kadr są prawdziwe, materiał jest próbką stylu."
+    },
+    "uploadPreview": {
+      "empty": "Twój film pojawi się tutaj, gdy tylko go wybierzesz.",
+      "caption": "9:16 · napisy wypalone w obrazie"
+    }
   }
 }

@@ -374,5 +374,189 @@
       "stale": "Bu giriş bağlantısı artık geçerli değil. Kendine yenisini gönder.",
       "generic": "Bu giriş bağlantısı çalışmadı. Kendine yenisini gönder."
     }
+  },
+  "studio": {
+    "tabs": {
+      "generate": "Konudan üret",
+      "upload": "Videomu altyazıla veya seslendir"
+    },
+    "generate": {
+      "title": "Bu <accent>video</accent> ne hakkında?",
+      "intro": "Bir konu yaz — aşağıdaki her şeyin zaten makul bir varsayılanı var, yani hemen üret deyip ince ayarı sonra yapabilirsin."
+    },
+    "upload": {
+      "title": "<accent>Elinde olan</accent> bir video.",
+      "intro": "Yükle, konuşulan her kelime zamanlanıp görüntüye gömülsün — üretecin çıkardığı altyazıların aynısı, kendi çekimin üstünde. Ya da başka bir dil seç, görüntünün üstünde yeniden seslendirilsin.",
+      "dropTitle": "Videoyu buraya bırak",
+      "dropHint": "MP4, MOV, WebM veya MKV · en fazla 200MB · ses kanalı gerekir",
+      "pickAnother": "Başka bir dosya seçmek için tıkla",
+      "spokenLanguage": "Konuşulan dil",
+      "spokenLanguageHint": "Dili baştan söylemek, kısa kliplerin yanlış algılanmasını önler.",
+      "clips": "Kesitlere böl",
+      "clipsNone": "Bölme — bütün kalsın",
+      "clipsCount": "{count} kesit",
+      "clipsOnHint": "Metin, kendi başına ayakta duran anlar için okunur. Her biri kesilip kütüphanene ayrı bir video olarak düşer; altyazılı ve düzenlemeye hazır. 2 ile 60 dakika arası videolar.",
+      "clipsOffHint": "Videonun tamamını olduğu gibi altyazılamak için buna dokunma.",
+      "dub": "Başka bir dilde seslendir",
+      "dubNone": "Seslendirme — sadece altyazı ekle",
+      "dubWithClipsHint": "Önce kesitleri al, sonra tuttuklarını seslendir.",
+      "dubOnHint": "Konuşma çevrilip kendi görüntünün üstünde yeniden seslendirilir. Videoda başka hiçbir şey değişmez, yani kameradaysan dudakların yeni dile uymaz — seslendirilmiş video normalde böyle görünür.",
+      "dubOffHint": "Orijinal sesi koruyup yalnızca altyazı gömmek için buna dokunma.",
+      "captionStyle": "Altyazı stili",
+      "uploading": "Yükleniyor...",
+      "processing": "İşleniyor...",
+      "working": "Çalışıyor...",
+      "ctaClips": "{count} kesit al",
+      "ctaDub": "Seslendir",
+      "ctaCaption": "Altyazı ekle",
+      "costLine": "{credits} · {balance} kaldı",
+      "errors": {
+        "clips": "Kesit almak",
+        "dub": "Seslendirme",
+        "caption": "Altyazılama",
+        "insufficient": "{what} {required} krediye mal oluyor, sendeyse {balance} var.",
+        "failed": "Yükleme başarısız"
+      }
+    },
+    "idea": "Fikir",
+    "groups": {
+      "look": "Görünüm ve dil",
+      "length": "Uzunluk",
+      "audio": "Ses",
+      "finishing": "Son dokunuşlar"
+    },
+    "fields": {
+      "aspectRatio": "En boy oranı",
+      "language": "Dil",
+      "visualStyle": "Görsel stil",
+      "artStyle": "Çizim stili",
+      "negativePrompt": "Kadrda istemediklerin",
+      "captionStyle": "Altyazı stili",
+      "voice": "Anlatıcı sesi",
+      "music": "Arka plan müziği"
+    },
+    "length": {
+      "short": "Kısa",
+      "medium": "Orta",
+      "long": "Uzun"
+    },
+    "summary": {
+      "defaultTrack": "varsayılan parça",
+      "musicOff": "kapalı",
+      "defaultVoice": "Varsayılan ses",
+      "voiceFallback": "Ses",
+      "audio": "{voice} · müzik: {music}",
+      "outroOn": "Kapanış kartı açık",
+      "outroOff": "Kapanış kartı kapalı"
+    },
+    "cost": {
+      "credits": "{count, plural, other {# kredi}}",
+      "remaining": "· {balance} kaldı",
+      "free": "Ücretsiz · bu makinede çalışır"
+    },
+    "cta": {
+      "generate": "Video üret",
+      "generating": "Render başlatılıyor...",
+      "topUp": "Kredi yükle"
+    },
+    "errors": {
+      "insufficient": "Bu render {required} krediye mal oluyor, sendeyse {balance} var.",
+      "createFailed": "Proje oluşturulamadı"
+    },
+    "script": {
+      "topic": "Konu",
+      "topicPlaceholder": "örn. insanların sana anında güvenmesini sağlayan 3 psikoloji taktiği",
+      "try": "Dene",
+      "rawScript": "Hazır metin",
+      "rawScriptHint": "(isteğe bağlı — yapay zekâya yazdırmayı atlar)",
+      "rawScriptPlaceholder": "Kendi dış ses metnin varsa buraya yapıştır...",
+      "suggestions": {
+        "honey": "Bal neden hiç bozulmaz",
+        "ocean": "Okyanus neden tuzlu",
+        "cats": "Kediler neden karton kutulara bayılır",
+        "sleep": "Daha iyi uyumak için basit bir taktik"
+      }
+    },
+    "outro": {
+      "toggle": "Markalı kapanış kartı ekle",
+      "placeholder": "örn. Daha fazla açık kaynak yapay zekâ içeriği için takip et!"
+    },
+    "examples": {
+      "title": "Bir örnekten başla",
+      "sub": "Gerçek renderlar. Birini seçmek formu doldurur — metin yine sıfırdan yazılır.",
+      "credit": "Görüntüler <pexels>Pexels</pexels>'ten, {count} videografın çekimi.",
+      "creditNames": "{names}. Yapay zekâ kareli klibin künyelenecek çekimi yok — her karesi üretildi."
+    },
+    "renderSummary": {
+      "title": "Bu render",
+      "format": "Format",
+      "length": "Uzunluk",
+      "scenes": "Sahne",
+      "renderTime": "Render süresi",
+      "cost": "Maliyet",
+      "balanceAfter": "Sonraki bakiye",
+      "minutesPerScene": "sahne başına dakikalar",
+      "seconds": "~{n}sn",
+      "minutes": "~{n} dk",
+      "shortfall": "{balance} kredin var. Daha ucuz bir görsel stil ya da daha kısa bir uzunluk seç, veya <link>kredi yükle</link>.",
+      "timings": "Süreler Apple Silicon M serisi, 32GB üzerinde ölçüldü. Seninki farklı olacaktır — ayrı bir GPU belirgin şekilde hızlıdır."
+    },
+    "aspect": {
+      "9:16": "TikTok, Reels, Shorts",
+      "1:1": "Akış gönderileri",
+      "16:9": "YouTube, yatay"
+    },
+    "duration": {
+      "short": "~15-25sn, 5-6 sahne",
+      "medium": "~30-45sn, 8-10 sahne",
+      "long": "~60sn+, 12-15 sahne"
+    },
+    "visual": {
+      "fast_hybrid": "Yapay zekâ kareleri + Ken Burns kaydırma/yakınlaştırma. Önerilen — mütevazı donanımda hızlı.",
+      "ai_video": "Yerel metinden videoya difüzyon. En yavaşı, gerçek bir GPU ister.",
+      "stock_media": "Ücretsiz Pexels/Pixabay görüntüleri. GPU gerekmez.",
+      "aiWarning": "AI Video, bir makinede ilk kullanımda büyük bir model indirir (onlarca GB) — yavaş bağlantıda saatler sürebilir ve gerçek bir GPU olmadan üretimin kendisi de yavaştır. İndirme tek seferliktir; sonraki renderlar tekrarlamaz.",
+      "aiAck": "İlk kullanımda uzun sürebileceğini anlıyorum"
+    },
+    "music": {
+      "moods": {
+        "lofi": "Lo-fi ve sakin",
+        "upbeat": "Hareketli ve motive edici",
+        "atmospheric": "Atmosferik ve karanlık",
+        "suspense": "Gerilim",
+        "bundled": "Gömülü"
+      },
+      "none": "Müzik yok",
+      "failed": "Müzik kitaplığına ulaşılamadı — render gömülü parçaya düşecek.",
+      "hint": "Müzik dış sesin altında otomatik kısılır ve süreye göre döner. backend/app/assets/music içine dosya bırak — alt klasör bir ruh hali olur.",
+      "play": "{name} çal",
+      "stop": "{name} durdur"
+    },
+    "voice": {
+      "default": " · varsayılan",
+      "failed": "Bu önizleme üretilemedi — ses modeli hâlâ iniyor olabilir. Birazdan tekrar dene.",
+      "hint": "Bir sesin ilk önizlemesi onu sunucuya indirir, bu yüzden birkaç saniye sürebilir.",
+      "loading": "Sesler yükleniyor...",
+      "listFailed": "Ses listesi yüklenemedi — render bu dil için varsayılan sesi kullanacak."
+    },
+    "artStyle": {
+      "loading": "Stiller yükleniyor...",
+      "stockNotice": "Stok görüntü çekilmiştir, üretilmez; o yüzden seçilecek bir çizim stili yok. Birini seçmek için Fast Hybrid veya AI Video moduna geç."
+    },
+    "negative": {
+      "stockNotice": "Stok görüntü ne çekildiyse odur, burada yönlendirilecek bir şey yok. Üretilen karelerden bir şey çıkarmak için Fast Hybrid moduna geç.",
+      "hint": "Çizim stilinin zaten dışladıklarına eklenir — bozuk anatomi, kalabalık ve ekrandaki yazı sen bir şey yazmasan da elenir.",
+      "englishNote": "Bu terimler İngilizce okuyan görüntü modeline gider, o yüzden burada İngilizce kalır."
+    },
+    "drawer": {
+      "close": "Kapat"
+    },
+    "preview": {
+      "note": "Önizleme — altyazı stili ve kadr canlı, görüntü ise stil örneği."
+    },
+    "uploadPreview": {
+      "empty": "Videonu seçer seçmez burada görünür.",
+      "caption": "9:16 · altyazılar gömülü"
+    }
   }
 }

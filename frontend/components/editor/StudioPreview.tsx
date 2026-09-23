@@ -1,6 +1,7 @@
 "use client";
 
 import clsx from "clsx";
+import { useTranslations } from "next-intl";
 import { useShortPulseStore } from "@/lib/store";
 import { presetById } from "@/lib/captionStyles";
 import type { AspectRatio, LanguageCode } from "@/lib/types";
@@ -62,6 +63,7 @@ const PREVIEW_CAPTION: Record<LanguageCode, string[]> = {
 const RTL_LANGUAGES: ReadonlySet<LanguageCode> = new Set<LanguageCode>(["ar"]);
 
 export function StudioPreview() {
+  const t = useTranslations("studio.preview");
   const { draft } = useShortPulseStore();
   const preset = presetById(draft.captionPreset);
   const perLine = preset.style.max_words_per_line;
@@ -143,7 +145,7 @@ export function StudioPreview() {
       </div>
 
       <p className="text-center font-mono text-[10px] leading-relaxed text-white/30">
-        Preview — caption style and frame are live, the footage is a style sample.
+        {t("note")}
       </p>
     </div>
   );

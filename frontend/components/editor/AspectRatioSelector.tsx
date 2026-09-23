@@ -1,6 +1,7 @@
 "use client";
 
 import clsx from "clsx";
+import { useTranslations } from "next-intl";
 import { useShortPulseStore } from "@/lib/store";
 import type { AspectRatio } from "@/lib/types";
 
@@ -9,18 +10,19 @@ import type { AspectRatio } from "@/lib/types";
  * shape the render will actually produce, since `aspect_ratio` now drives
  * the render target rather than being ignored.
  */
-const OPTIONS: { ratio: AspectRatio; label: string; where: string; box: string }[] = [
-  { ratio: "9:16", label: "9:16", where: "TikTok, Reels, Shorts", box: "h-9 w-[20px]" },
-  { ratio: "1:1", label: "1:1", where: "Feed posts", box: "h-7 w-7" },
-  { ratio: "16:9", label: "16:9", where: "YouTube, landscape", box: "h-[20px] w-9" },
+const OPTIONS: { ratio: AspectRatio; label: string; box: string }[] = [
+  { ratio: "9:16", label: "9:16", box: "h-9 w-[20px]" },
+  { ratio: "1:1", label: "1:1", box: "h-7 w-7" },
+  { ratio: "16:9", label: "16:9", box: "h-[20px] w-9" },
 ];
 
 export function AspectRatioSelector() {
+  const t = useTranslations("studio.aspect");
   const { draft, setDraft } = useShortPulseStore();
 
   return (
     <div className="grid grid-cols-3 gap-3">
-      {OPTIONS.map(({ ratio, label, where, box }) => {
+      {OPTIONS.map(({ ratio, label, box }) => {
         const selected = draft.aspectRatio === ratio;
         return (
           <button
@@ -44,7 +46,7 @@ export function AspectRatioSelector() {
               />
             </span>
             <span className="text-sm font-medium">{label}</span>
-            <span className="text-center text-[11px] leading-tight text-white/40">{where}</span>
+            <span className="text-center text-[11px] leading-tight text-white/40">{t(ratio)}</span>
           </button>
         );
       })}

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Music, Pause, Play, VolumeX } from "lucide-react";
+import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import { listMusic, musicPreviewUrl } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
@@ -21,19 +22,23 @@ import type { MusicTrack } from "@/lib/types";
  * all. A list of filenames is not a choice, which is also why adding more
  * of them was only worth doing alongside a way to hear them.
  */
-/** Folder names are ids; these are what a person should read. Anything
- *  not listed falls back to the folder name, so adding a mood needs no
- *  code change — only a nicer label if you want one. */
-const CATEGORY_LABELS: Record<string, string> = {
-  lofi: "Lo-fi & chill",
-  upbeat: "Upbeat & motivational",
-  atmospheric: "Atmospheric & dark",
-  suspense: "Suspense",
-  "": "Bundled",
-};
+/** Folder names are ids; the translations are what a person reads.
+ *  Anything not listed falls back to the folder name, so adding a mood
+ *  needs no code change — only a message key if you want a nicer label. */
+const CATEGORY_KEYS = ["lofi", "upbeat", "atmospheric", "suspense"] as const;
 
 export function MusicSelector() {
+  const t = useTranslations("studio.music");
   const { draft, setDraft } = useShortPulseStore();
+
+  // "" is the bundled folder, and an unrecognised folder keeps its own
+  // name rather than being labelled "Other" in the wrong language.
+  const moodLabel = (category: string) => {
+    if (category === "") return t("moods.bundled");
+    return (CATEGORY_KEYS as readonly string[]).includes(category)
+      ? t(`moods.${category}`)
+      : category;
+  };
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
   const [failed, setFailed] = useState(false);
   const [playing, setPlaying] = useState<string | null>(null);
@@ -93,14 +98,14 @@ export function MusicSelector() {
           )}
         >
           <VolumeX size={14} className={noneSelected ? "text-accent" : "text-white/40"} />
-          <span className="text-xs font-medium">No music</span>
+          <span className="text-xs font-medium">{t("none")}</span>
         </button>
       </div>
 
       {ordered.map(([category, inGroup]) => (
         <div key={category || "other"} className="flex flex-col gap-2">
           <span className="font-mono text-[10px] uppercase tracking-widest text-white/25">
-            {CATEGORY_LABELS[category] ?? category ?? "Other"}
+            {moodLabel(category)}
           </span>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {inGroup.map((track) => {
@@ -130,7 +135,11 @@ export function MusicSelector() {
               <button
                 type="button"
                 onClick={() => audition(track.id)}
-                aria-label={playing === track.id ? `Stop ${track.name}` : `Play ${track.name}`}
+                aria-label={
+                  playing === track.id
+                    ? t("stop", { name: track.name })
+                    : t("play", { name: track.name })
+                }
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white/40 transition-colors hover:bg-surface-hover hover:text-white/80"
               >
                 {playing === track.id ? <Pause size={12} /> : <Play size={12} />}
@@ -144,9 +153,8 @@ export function MusicSelector() {
 
       <p className="text-[11px] leading-relaxed text-white/30">
         {failed
-          ? "Couldn't reach the music library — the render will fall back to the bundled track."
-          : "Music ducks automatically under the voiceover and loops to fit. Drop more " +
-            "files into backend/app/assets/music — a subfolder becomes a mood."}
+          ? t("failed")
+          : t("hint")}
       </p>
     </div>
   );

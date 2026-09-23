@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Play, Pause, Loader2, Check } from "lucide-react";
+import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import { listVoices, voicePreviewUrl } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
@@ -17,6 +18,7 @@ import type { Voice } from "@/lib/types";
  * one says so instead of looking broken.
  */
 export function VoiceSelector() {
+  const t = useTranslations("studio.voice");
   const { draft, setDraft } = useShortPulseStore();
   const [voices, setVoices] = useState<Voice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +88,7 @@ export function VoiceSelector() {
     return (
       <p className="flex items-center gap-2 text-xs text-white/40">
         <Loader2 size={13} className="animate-spin" />
-        Loading voices...
+        {t("loading")}
       </p>
     );
   }
@@ -94,8 +96,7 @@ export function VoiceSelector() {
   if (voices.length === 0) {
     return (
       <p className="text-xs text-white/40">
-        Couldn&apos;t load the voice list — the render will use the default voice for this
-        language.
+        {t("listFailed")}
       </p>
     );
   }
@@ -143,7 +144,7 @@ export function VoiceSelector() {
                 </span>
                 <span className="block truncate text-[11px] text-white/40">
                   {voice.region} · {voice.quality}
-                  {voice.is_default ? " · default" : ""}
+                  {voice.is_default ? t("default") : ""}
                 </span>
               </button>
             </div>
@@ -153,8 +154,8 @@ export function VoiceSelector() {
 
       <p className="text-[11px] leading-relaxed text-white/30">
         {failed
-          ? "That preview couldn't be generated — the voice model may still be downloading. Try again in a moment."
-          : "The first preview of a voice downloads it on the server, so it can take a few seconds."}
+          ? t("failed")
+          : t("hint")}
       </p>
     </div>
   );

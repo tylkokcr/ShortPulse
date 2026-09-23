@@ -1,6 +1,7 @@
 "use client";
 
 import { useShortPulseStore } from "@/lib/store";
+import { useTranslations } from "next-intl";
 
 /**
  * What to keep out of every generated frame.
@@ -15,9 +16,13 @@ import { useShortPulseStore } from "@/lib/store";
  * a one-word entry here must not silently switch off. See
  * visual_engine.negative_for.
  */
+// Not translated, and they must not be: these are prompt tokens, joined
+// onto the art style's own English negative prompt and handed to the
+// image model (see visual_engine.negative_for). "eller" excludes nothing.
 const SUGGESTIONS = ["hands", "crowd", "text", "logos", "children"];
 
 export function NegativePrompt() {
+  const t = useTranslations("studio.negative");
   const { draft, setDraft } = useShortPulseStore();
 
   // Nothing to exclude from footage somebody else filmed — same reason
@@ -25,8 +30,7 @@ export function NegativePrompt() {
   if (draft.visualMode === "stock_media") {
     return (
       <p className="text-xs leading-relaxed text-white/30">
-        Stock footage is whatever was filmed, so there is nothing to steer here. Switch to Fast
-        Hybrid to exclude things from the generated frames.
+        {t("stockNotice")}
       </p>
     );
   }
@@ -73,8 +77,7 @@ export function NegativePrompt() {
       </div>
 
       <p className="text-[11px] leading-relaxed text-white/30">
-        Added to what the art style already excludes — deformed anatomy, crowds and on-screen text
-        are ruled out whether or not you type anything.
+        {t("hint")} {t("englishNote")}
       </p>
     </div>
   );

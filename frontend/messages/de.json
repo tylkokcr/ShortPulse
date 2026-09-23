@@ -374,5 +374,189 @@
       "stale": "Dieser Anmeldelink ist nicht mehr gültig. Schick dir einen neuen.",
       "generic": "Dieser Anmeldelink hat nicht funktioniert. Schick dir einen neuen."
     }
+  },
+  "studio": {
+    "tabs": {
+      "generate": "Aus einem Thema erzeugen",
+      "upload": "Mein Video untertiteln oder synchronisieren"
+    },
+    "generate": {
+      "title": "Worum geht es in diesem <accent>Video</accent>?",
+      "intro": "Gib ein Thema an — alles darunter hat bereits eine sinnvolle Voreinstellung, du kannst also sofort erzeugen und später nachjustieren."
+    },
+    "upload": {
+      "title": "Ein Video, das du <accent>schon hast</accent>.",
+      "intro": "Lade es hoch, und jedes gesprochene Wort wird getimt und eingebrannt — dieselben Untertitel, die der Generator erzeugt, auf deinem eigenen Material. Oder wähle eine andere Sprache, dann wird es über dein Bild neu gesprochen.",
+      "dropTitle": "Video hier ablegen",
+      "dropHint": "MP4, MOV, WebM oder MKV · bis 200 MB · braucht eine Tonspur",
+      "pickAnother": "Klicken, um eine andere Datei zu wählen",
+      "spokenLanguage": "Gesprochene Sprache",
+      "spokenLanguageHint": "Die Sprache vorab anzugeben verhindert, dass kurze Clips falsch erkannt werden.",
+      "clips": "In Clips schneiden",
+      "clipsNone": "Nicht — am Stück lassen",
+      "clipsCount": "{count} Clips",
+      "clipsOnHint": "Das Transkript wird nach Momenten durchsucht, die für sich stehen. Jeder wird herausgeschnitten und landet als eigenes Video in deiner Bibliothek — untertitelt und bereit zum Bearbeiten. Videos von 2 bis 60 Minuten.",
+      "clipsOffHint": "Lass das so, um das ganze Video unverändert zu untertiteln.",
+      "dub": "In einer anderen Sprache sprechen",
+      "dubNone": "Nicht — nur Untertitel",
+      "dubWithClipsHint": "Erst die Clips schneiden, dann die behaltenen synchronisieren.",
+      "dubOnHint": "Die Sprache wird übersetzt und über dein Originalbild neu gesprochen. Am Video selbst ändert sich nichts — stehst du vor der Kamera, passen deine Lippen nicht zur neuen Sprache; so sieht synchronisiertes Video normalerweise aus.",
+      "dubOffHint": "Lass das so, um den Originalton zu behalten und nur Untertitel einzubrennen.",
+      "captionStyle": "Untertitelstil",
+      "uploading": "Wird hochgeladen...",
+      "processing": "Wird verarbeitet...",
+      "working": "Läuft...",
+      "ctaClips": "{count} Clips schneiden",
+      "ctaDub": "Synchronisieren",
+      "ctaCaption": "Untertitel hinzufügen",
+      "costLine": "{credits} · {balance} übrig",
+      "errors": {
+        "clips": "Clips schneiden",
+        "dub": "Synchronisieren",
+        "caption": "Untertiteln",
+        "insufficient": "{what} kostet {required} Credits, du hast {balance}.",
+        "failed": "Upload fehlgeschlagen"
+      }
+    },
+    "idea": "Die Idee",
+    "groups": {
+      "look": "Aussehen & Sprache",
+      "length": "Länge",
+      "audio": "Audio",
+      "finishing": "Letzter Schliff"
+    },
+    "fields": {
+      "aspectRatio": "Seitenverhältnis",
+      "language": "Sprache",
+      "visualStyle": "Visueller Stil",
+      "artStyle": "Bildstil",
+      "negativePrompt": "Nicht im Bild",
+      "captionStyle": "Untertitelstil",
+      "voice": "Erzählerstimme",
+      "music": "Hintergrundmusik"
+    },
+    "length": {
+      "short": "Kurz",
+      "medium": "Mittel",
+      "long": "Lang"
+    },
+    "summary": {
+      "defaultTrack": "Standardtitel",
+      "musicOff": "aus",
+      "defaultVoice": "Standardstimme",
+      "voiceFallback": "Stimme",
+      "audio": "{voice} · Musik: {music}",
+      "outroOn": "Abspannkarte an",
+      "outroOff": "Abspannkarte aus"
+    },
+    "cost": {
+      "credits": "{count, plural, one {# Credit} other {# Credits}}",
+      "remaining": "· {balance} übrig",
+      "free": "Kostenlos · läuft auf diesem Rechner"
+    },
+    "cta": {
+      "generate": "Video erzeugen",
+      "generating": "Render wird gestartet...",
+      "topUp": "Aufladen"
+    },
+    "errors": {
+      "insufficient": "Dieser Render kostet {required} Credits, du hast {balance}.",
+      "createFailed": "Projekt konnte nicht erstellt werden"
+    },
+    "script": {
+      "topic": "Thema",
+      "topicPlaceholder": "z. B. 3 Psychologie-Tricks, mit denen dir Menschen sofort vertrauen",
+      "try": "Probier",
+      "rawScript": "Fertiges Skript",
+      "rawScriptHint": "(optional — überspringt das KI-Skript)",
+      "rawScriptPlaceholder": "Füge hier dein eigenes Sprechertext ein, falls du schon einen hast...",
+      "suggestions": {
+        "honey": "Warum Honig niemals verdirbt",
+        "ocean": "Warum das Meer salzig ist",
+        "cats": "Warum Katzen Kartons lieben",
+        "sleep": "Ein einfacher Trick für besseren Schlaf"
+      }
+    },
+    "outro": {
+      "toggle": "Gebrandete Abspannkarte hinzufügen",
+      "placeholder": "z. B. Folge für mehr Open-Source-KI-Inhalte!"
+    },
+    "examples": {
+      "title": "Mit einem Beispiel anfangen",
+      "sub": "Echte Renders. Eines auszuwählen füllt das Formular — das Skript wird trotzdem neu geschrieben.",
+      "credit": "Material von <pexels>Pexels</pexels>, gefilmt von {count} Videografen.",
+      "creditNames": "{names}. Der Clip mit KI-Standbildern hat kein Material zu nennen — jedes Bild davon wurde generiert."
+    },
+    "renderSummary": {
+      "title": "Dieser Render",
+      "format": "Format",
+      "length": "Länge",
+      "scenes": "Szenen",
+      "renderTime": "Renderzeit",
+      "cost": "Kosten",
+      "balanceAfter": "Guthaben danach",
+      "minutesPerScene": "Minuten pro Szene",
+      "seconds": "~{n}s",
+      "minutes": "~{n} Min.",
+      "shortfall": "Du hast {balance}. Wähle einen günstigeren visuellen Stil oder eine kürzere Länge, oder <link>lade auf</link>.",
+      "timings": "Zeiten gemessen auf einem Apple Silicon der M-Reihe, 32 GB. Deine werden abweichen — eine dedizierte GPU ist deutlich schneller."
+    },
+    "aspect": {
+      "9:16": "TikTok, Reels, Shorts",
+      "1:1": "Feed-Beiträge",
+      "16:9": "YouTube, Querformat"
+    },
+    "duration": {
+      "short": "~15-25 s, 5-6 Szenen",
+      "medium": "~30-45 s, 8-10 Szenen",
+      "long": "~60 s+, 12-15 Szenen"
+    },
+    "visual": {
+      "fast_hybrid": "KI-Standbilder + Ken-Burns-Schwenk/Zoom. Empfohlen — schnell auf bescheidener Hardware.",
+      "ai_video": "Lokale Text-zu-Video-Diffusion. Am langsamsten, braucht eine echte GPU.",
+      "stock_media": "Kostenloses Pexels-/Pixabay-Material. Keine GPU nötig.",
+      "aiWarning": "AI Video lädt beim ersten Einsatz auf einem Rechner ein großes Modell herunter (zig GB) — bei langsamer Verbindung kann das Stunden dauern, und ohne echte GPU ist auch die Generierung langsam. Der Download fällt nur einmal an; spätere Renders wiederholen ihn nicht.",
+      "aiAck": "Mir ist klar, dass das beim ersten Mal lange dauern kann"
+    },
+    "music": {
+      "moods": {
+        "lofi": "Lo-Fi & entspannt",
+        "upbeat": "Treibend & motivierend",
+        "atmospheric": "Atmosphärisch & dunkel",
+        "suspense": "Spannung",
+        "bundled": "Mitgeliefert"
+      },
+      "none": "Keine Musik",
+      "failed": "Die Musikbibliothek war nicht erreichbar — der Render greift auf den mitgelieferten Titel zurück.",
+      "hint": "Die Musik wird unter dem Sprecher automatisch abgesenkt und passend geloopt. Lege weitere Dateien in backend/app/assets/music — ein Unterordner wird zur Stimmung.",
+      "play": "{name} abspielen",
+      "stop": "{name} stoppen"
+    },
+    "voice": {
+      "default": " · Standard",
+      "failed": "Diese Vorschau ließ sich nicht erzeugen — das Stimmmodell lädt möglicherweise noch. Versuch es gleich noch einmal.",
+      "hint": "Die erste Vorschau einer Stimme lädt sie auf dem Server herunter, das kann ein paar Sekunden dauern.",
+      "loading": "Stimmen werden geladen...",
+      "listFailed": "Die Stimmliste ließ sich nicht laden — der Render nutzt die Standardstimme für diese Sprache."
+    },
+    "artStyle": {
+      "loading": "Stile werden geladen...",
+      "stockNotice": "Stockmaterial wird gefilmt, nicht generiert — es gibt also keinen Bildstil zu wählen. Wechsle zu Fast Hybrid oder AI Video, um einen zu wählen."
+    },
+    "negative": {
+      "stockNotice": "Stockmaterial ist, was gefilmt wurde — hier gibt es nichts zu steuern. Wechsle zu Fast Hybrid, um Dinge aus den generierten Bildern auszuschließen.",
+      "hint": "Kommt zu dem hinzu, was der Bildstil ohnehin ausschließt — verformte Anatomie, Menschenmengen und Text im Bild sind auch ohne deine Eingabe ausgeschlossen.",
+      "englishNote": "Diese Begriffe gehen an das Bildmodell, das Englisch liest — deshalb bleiben sie hier englisch."
+    },
+    "drawer": {
+      "close": "Schließen"
+    },
+    "preview": {
+      "note": "Vorschau — Untertitelstil und Bildausschnitt sind echt, das Material ist eine Stilprobe."
+    },
+    "uploadPreview": {
+      "empty": "Dein Video erscheint hier, sobald du eines auswählst.",
+      "caption": "9:16 · Untertitel eingebrannt"
+    }
   }
 }

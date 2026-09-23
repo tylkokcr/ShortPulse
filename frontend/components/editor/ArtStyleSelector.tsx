@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Check } from "lucide-react";
 import clsx from "clsx";
 import { listArtStyles } from "@/lib/api";
@@ -18,6 +19,7 @@ import type { ArtStyle } from "@/lib/types";
  * whatever the videographer filmed.
  */
 export function ArtStyleSelector() {
+  const t = useTranslations("studio.artStyle");
   const { draft, setDraft } = useShortPulseStore();
   const [styles, setStyles] = useState<ArtStyle[]>([]);
 
@@ -30,14 +32,13 @@ export function ArtStyleSelector() {
   if (draft.visualMode === "stock_media") {
     return (
       <p className="text-[11px] leading-relaxed text-white/30">
-        Stock footage is filmed, not generated, so there&apos;s no art style to pick. Switch to Fast
-        Hybrid or AI Video to choose one.
+        {t("stockNotice")}
       </p>
     );
   }
 
   if (styles.length === 0) {
-    return <p className="text-xs text-white/40">Loading styles...</p>;
+    return <p className="text-xs text-white/40">{t("loading")}</p>;
   }
 
   return (

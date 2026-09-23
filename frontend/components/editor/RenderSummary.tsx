@@ -1,6 +1,7 @@
 "use client";
 
 import { Clock, Coins, Film, Layers, Ratio, TriangleAlert } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useShortPulseStore } from "@/lib/store";
 import type { AspectRatio, VideoLength, VisualMode } from "@/lib/types";
@@ -45,12 +46,18 @@ const SECONDS_PER_SCENE: Record<VisualMode, number | null> = {
   ai_video: null,
 };
 
-function formatDuration(seconds: number): string {
-  if (seconds < 90) return `~${Math.round(seconds / 5) * 5}s`;
-  return `~${Math.round(seconds / 60)} min`;
+// Takes the translator rather than reading one itself: it is a plain
+// function, not a component, and "s" and "min" are not the same two
+// letters in every language.
+function formatDuration(seconds: number, t: (k: "seconds" | "minutes", v: { n: number }) => string): string {
+  if (seconds < 90) return t("seconds", { n: Math.round(seconds / 5) * 5 });
+  return t("minutes", { n: Math.round(seconds / 60) });
 }
 
 export function RenderSummary() {
+  const t = useTranslations("studio.renderSummary");
+  // The credit plural is one string for the whole studio, not one per panel.
+  const tc = useTranslations("studio");
   const { draft, credits } = useShortPulseStore();
 
   const scenes = SCENES[draft.videoLength];
@@ -74,30 +81,30 @@ export function RenderSummary() {
 
       <div className="relative flex items-center gap-2 border-t border-border pt-4">
         <span className="h-3 w-px bg-accent" />
-        <h2 className="text-sm font-semibold text-white/80">This render</h2>
+        <h2 className="text-sm font-semibold text-white/80">{t("title")}</h2>
       </div>
 
       <dl className="relative flex flex-col gap-3 text-sm">
-        <Row icon={Ratio} label="Format">
+        <Row icon={Ratio} label={t("format")}>
           {draft.aspectRatio} · {RESOLUTIONS[draft.aspectRatio]}
         </Row>
-        <Row icon={Film} label="Length">
+        <Row icon={Film} label={t("length")}>
           {SECONDS[draft.videoLength]}
         </Row>
-        <Row icon={Layers} label="Scenes">
+        <Row icon={Layers} label={t("scenes")}>
           ~{scenes}
         </Row>
-        <Row icon={Clock} label="Render time">
+        <Row icon={Clock} label={t("renderTime")}>
           {perScene === null ? (
-            <span className="text-amber-300/90">minutes per scene</span>
+            <span className="text-amber-300/90">{t("minutesPerScene")}</span>
           ) : (
-            formatDuration(perScene * scenes)
+            formatDuration(perScene * scenes, t)
           )}
         </Row>
         {cost !== undefined && (
-          <Row icon={Coins} label="Cost">
+          <Row icon={Coins} label={t("cost")}>
             <span className={shortfall ? "text-red-400" : "text-white"}>
-              {cost} credit{cost === 1 ? "" : "s"}
+              {tc("cost.credits", { count: cost })}
             </span>
           </Row>
         )}
@@ -105,9 +112,9 @@ export function RenderSummary() {
 
       {cost !== undefined && (
         <div className="relative flex items-center justify-between border-t border-border pt-3 text-xs">
-          <span className="text-white/40">Balance after</span>
+          <span className="text-white/40">{t("balanceAfter")}</span>
           <span className={shortfall ? "font-medium text-red-400" : "font-medium text-white/70"}>
-            {balance - cost} credit{balance - cost === 1 ? "" : "s"}
+            {tc("cost.credits", { count: balance - cost })}
           </span>
         </div>
       )}
@@ -115,18 +122,22 @@ export function RenderSummary() {
       {shortfall && (
         <p className="relative flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-300">
           <TriangleAlert size={13} className="mt-0.5 shrink-0" />
-          You have {balance}. Pick a cheaper visual style or a shorter length, or{" "}
-          <Link href="/credits" className="underline underline-offset-2 hover:text-red-200">
-            top up
-          </Link>
-          .
+          <span>
+            {t.rich("shortfall", {
+              balance,
+              link: (chunks) => (
+                <Link href="/credits" className="underline underline-offset-2 hover:text-red-200">
+                  {chunks}
+                </Link>
+              ),
+            })}
+          </span>
         </p>
       )}
 
       {perScene !== null && (
         <p className="relative text-[11px] leading-relaxed text-white/30">
-          Timings measured on an Apple Silicon M-series, 32GB. Yours will differ — a dedicated GPU
-          is considerably faster.
+          {t("timings")}
         </p>
       )}
     </Card>

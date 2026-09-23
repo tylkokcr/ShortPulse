@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Film } from "lucide-react";
 
 /**
@@ -21,6 +22,7 @@ import { Film } from "lucide-react";
  * document, which for a 200MB video is not a rounding error.
  */
 export function UploadPreview({ file }: { file: File | null }) {
+  const t = useTranslations("studio.uploadPreview");
   const [url, setUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export function UploadPreview({ file }: { file: File | null }) {
           <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
             <Film size={22} className="text-white/25" />
             <p className="text-xs leading-relaxed text-white/35">
-              Your video appears here as soon as you pick it.
+              {t("empty")}
             </p>
           </div>
         )}
@@ -68,7 +70,7 @@ export function UploadPreview({ file }: { file: File | null }) {
       </div>
 
       <p className="mt-3 text-center font-mono text-[10px] uppercase tracking-[0.18em] text-white/25">
-        9:16 · captions burned in
+        {t("caption")}
       </p>
     </div>
   );

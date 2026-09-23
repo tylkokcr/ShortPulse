@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Play, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import { EXAMPLES, FOOTAGE_CREDITS, type Example } from "@/lib/examples";
 import { useShortPulseStore } from "@/lib/store";
@@ -42,6 +43,7 @@ import { useShortPulseStore } from "@/lib/store";
 const PICKED = ["ocean", "quiet-observers", "dreams-tr", "cats-ar"] as const;
 
 export function StartFromExample({ className }: { className?: string }) {
+  const t = useTranslations("studio.examples");
   const setDraft = useShortPulseStore((s) => s.setDraft);
   const topic = useShortPulseStore((s) => s.draft.topic);
 
@@ -59,10 +61,8 @@ export function StartFromExample({ className }: { className?: string }) {
   return (
     <div className={clsx("flex flex-col gap-3", className)}>
       <div className="flex items-baseline gap-2">
-        <h2 className="text-sm font-semibold text-white/80">Start from an example</h2>
-        <p className="text-xs text-white/35">
-          Real renders. Picking one fills the form in — the script is still written fresh.
-        </p>
+        <h2 className="text-sm font-semibold text-white/80">{t("title")}</h2>
+        <p className="text-xs text-white/35">{t("sub")}</p>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -85,21 +85,23 @@ export function StartFromExample({ className }: { className?: string }) {
           standing between the examples and the form. */}
       <details className="text-[11px] leading-relaxed text-white/25">
         <summary className="cursor-pointer list-none marker:hidden hover:text-white/40">
-          Footage from{" "}
-          <a
-            href="https://www.pexels.com"
-            target="_blank"
-            rel="noreferrer"
-            onClick={(event) => event.stopPropagation()}
-            className="underline underline-offset-2 hover:text-white/50"
-          >
-            Pexels
-          </a>
-          , filmed by {FOOTAGE_CREDITS.length} videographers.
+          {t.rich("credit", {
+            count: FOOTAGE_CREDITS.length,
+            pexels: (chunks) => (
+              <a
+                href="https://www.pexels.com"
+                target="_blank"
+                rel="noreferrer"
+                onClick={(event) => event.stopPropagation()}
+                className="underline underline-offset-2 hover:text-white/50"
+              >
+                {chunks}
+              </a>
+            ),
+          })}
         </summary>
         <p className="mt-1.5">
-          {FOOTAGE_CREDITS.join(", ")}. The AI-stills clip has no footage to credit — every
-          frame of it was generated.
+          {t("creditNames", { names: FOOTAGE_CREDITS.join(", ") })}
         </p>
       </details>
     </div>

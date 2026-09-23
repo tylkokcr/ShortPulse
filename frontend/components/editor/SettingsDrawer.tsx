@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
 import clsx from "clsx";
 
@@ -33,6 +34,7 @@ export function SettingsDrawer({
   title: string;
   children: React.ReactNode;
 }) {
+  const t = useTranslations("studio.drawer");
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
@@ -79,7 +81,7 @@ export function SettingsDrawer({
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close"
+              aria-label={t("close")}
               className="ml-auto rounded-lg p-1.5 text-white/40 transition-colors hover:bg-surface-hover hover:text-white"
             >
               <X size={15} />

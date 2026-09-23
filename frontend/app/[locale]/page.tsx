@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   FileText,
   Palette,
@@ -46,20 +47,29 @@ export default function HomePage() {
 
 type Mode = "generate" | "upload";
 
+/** The emphasised span inside a heading. `t.rich` hands the tag's contents
+ *  back as chunks, which keeps the accented word *inside* the sentence —
+ *  the alternative is splitting each heading into three keys and asking a
+ *  translator to keep the word order the English happened to have. */
+const accent = (chunks: React.ReactNode) => (
+  <span className="text-accent-emphasis">{chunks}</span>
+);
+
 /** The four groups the drawer holds, in the order it stacks them. The
  *  rows on the page and the sections inside the panel are drawn from
  *  this one list, so a group cannot exist in the summary and not in the
  *  panel it claims to open. */
 const GROUPS = [
-  { id: "look", icon: Palette, title: "Look & language" },
-  { id: "length", icon: Clock, title: "Length" },
-  { id: "audio", icon: MusicIcon, title: "Audio" },
-  { id: "finishing", icon: Wand2, title: "Finishing touches" },
+  { id: "look", icon: Palette },
+  { id: "length", icon: Clock },
+  { id: "audio", icon: MusicIcon },
+  { id: "finishing", icon: Wand2 },
 ] as const;
 
 type GroupId = (typeof GROUPS)[number]["id"];
 
 function CreateVideo() {
+  const t = useTranslations("studio");
   const router = useRouter();
   const { draft, toProjectConfig, credits } = useShortPulseStore();
   const [submitting, setSubmitting] = useState(false);
@@ -84,10 +94,10 @@ function CreateVideo() {
     } catch (err) {
       setError(
         err instanceof InsufficientCreditsError
-          ? `This render costs ${err.required} credits and you have ${err.balance}.`
+          ? t("errors.insufficient", { required: err.required, balance: err.balance })
           : err instanceof Error
             ? err.message
-            : "Failed to create project"
+            : t("errors.createFailed")
       );
       setSubmitting(false);
     }
@@ -99,10 +109,14 @@ function CreateVideo() {
     ? credits.pricing[`${draft.visualMode}:${draft.videoLength}`]
     : undefined;
 
-  const lengthLabel = { short: "Short", medium: "Medium", long: "Long" }[draft.videoLength];
-  const musicLabel = draft.musicEnabled ? (draft.musicTrackId ?? "default track") : "off";
+  const lengthLabel = t(`length.${draft.videoLength}`);
+  const musicLabel = draft.musicEnabled
+    ? (draft.musicTrackId ?? t("summary.defaultTrack"))
+    : t("summary.musicOff");
   // The id is a repo path; its second-to-last segment is the speaker name.
-  const voiceLabel = draft.voiceId ? (draft.voiceId.split("/").at(-2) ?? "Voice") : "Default voice";
+  const voiceLabel = draft.voiceId
+    ? (draft.voiceId.split("/").at(-2) ?? t("summary.voiceFallback"))
+    : t("summary.defaultVoice");
 
   // The fields themselves. Plain JSX rather than components per group:
   // every selector already reads the draft from the store, so there is
@@ -110,22 +124,22 @@ function CreateVideo() {
   const GROUP_FIELDS: Record<GroupId, React.ReactNode> = {
     look: (
       <>
-        <Field label="Aspect ratio">
+        <Field label={t("fields.aspectRatio")}>
           <AspectRatioSelector />
         </Field>
-        <Field label="Language">
+        <Field label={t("fields.language")}>
           <LanguageSelector />
         </Field>
-        <Field label="Visual style">
+        <Field label={t("fields.visualStyle")}>
           <VisualSelector />
         </Field>
-        <Field label="Art style">
+        <Field label={t("fields.artStyle")}>
           <ArtStyleSelector />
         </Field>
-        <Field label="Keep out of frame">
+        <Field label={t("fields.negativePrompt")}>
           <NegativePrompt />
         </Field>
-        <Field label="Caption style">
+        <Field label={t("fields.captionStyle")}>
           <CaptionStyleSelector />
         </Field>
       </>
@@ -133,10 +147,10 @@ function CreateVideo() {
     length: <DurationSelector />,
     audio: (
       <>
-        <Field label="Narrator voice">
+        <Field label={t("fields.voice")}>
           <VoiceSelector />
         </Field>
-        <Field label="Background music">
+        <Field label={t("fields.music")}>
           <MusicSelector />
         </Field>
       </>
@@ -147,8 +161,8 @@ function CreateVideo() {
   const summaries: Record<GroupId, string> = {
     look: `${draft.aspectRatio} · ${draft.language.toUpperCase()} · ${draft.artStyle} · ${draft.captionPreset}`,
     length: lengthLabel,
-    audio: `${voiceLabel} · music: ${musicLabel}`,
-    finishing: draft.outroEnabled ? "Outro card on" : "Outro card off",
+    audio: t("summary.audio", { voice: voiceLabel, music: musicLabel }),
+    finishing: draft.outroEnabled ? t("summary.outroOn") : t("summary.outroOff"),
   };
 
   return (
@@ -161,7 +175,7 @@ function CreateVideo() {
             open={drawerGroup !== null}
             onClose={() => setDrawerGroup(null)}
             icon={GROUPS.find((g) => g.id === drawerGroup)?.icon}
-            title={GROUPS.find((g) => g.id === drawerGroup)?.title ?? ""}
+            title={drawerGroup ? t(`groups.${drawerGroup}`) : ""}
           >
             {/* One group, not all four stacked. The rows on the page are
                 the list — they stay visible and clickable beside the open
@@ -185,13 +199,11 @@ function CreateVideo() {
             {price !== undefined ? (
               <>
                 <Coins size={13} />
-                <span className="text-white/70">
-                  {price} credit{price === 1 ? "" : "s"}
-                </span>
-                · {credits?.balance ?? 0} remaining
+                <span className="text-white/70">{t("cost.credits", { count: price })}</span>
+                {t("cost.remaining", { balance: credits?.balance ?? 0 })}
               </>
             ) : (
-              "Free · runs on this machine"
+              t("cost.free")
             )}
           </p>
           <Button
@@ -201,10 +213,10 @@ function CreateVideo() {
             className="ml-auto w-full sm:w-auto"
           >
             {submitting ? (
-              "Starting render..."
+              t("cta.generating")
             ) : (
               <>
-                Generate video
+                {t("cta.generate")}
                 <ArrowRight size={16} />
               </>
             )}
@@ -218,22 +230,19 @@ function CreateVideo() {
             {mode === "generate" ? (
               <>
                 <h1 className="text-3xl font-semibold tracking-tight">
-                  What&apos;s this <span className="text-accent-emphasis">video</span> about?
+                  {t.rich("generate.title", { accent })}
                 </h1>
                 <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/50">
-                  Give it a topic — everything below already has a sensible default, so you can hit
-                  generate now and come back to fine-tune later.
+                  {t("generate.intro")}
                 </p>
               </>
             ) : (
               <>
                 <h1 className="mt-1.5 text-3xl font-semibold tracking-tight">
-                  A video you <span className="text-accent-emphasis">already have</span>.
+                  {t.rich("upload.title", { accent })}
                 </h1>
                 <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/50">
-                  Upload it and every spoken word gets timed and burned in — the same captions the
-                  generator produces, on your own footage. Or pick another language and it is
-                  spoken again over your picture.
+                  {t("upload.intro")}
                 </p>
               </>
             )}
@@ -268,7 +277,7 @@ function CreateVideo() {
             <Card className="animate-fade-up flex flex-col gap-4 border-border-strong bg-surface-raised">
               <div className="flex items-center gap-2">
                 <FileText size={14} className="text-accent" />
-                <h2 className="text-sm font-semibold text-white/80">The idea</h2>
+                <h2 className="text-sm font-semibold text-white/80">{t("idea")}</h2>
               </div>
               <ScriptEditor />
             </Card>
@@ -282,7 +291,7 @@ function CreateVideo() {
                 <SettingRow
                   key={group.id}
                   icon={group.icon}
-                  title={group.title}
+                  title={t(`groups.${group.id}`)}
                   summary={summaries[group.id]}
                   open={drawerGroup === group.id}
                   onClick={() => setDrawerGroup(group.id)}
@@ -298,7 +307,7 @@ function CreateVideo() {
                 {error.includes("credit") && (
                   <Link href="/credits" className="ml-auto">
                     <Button size="sm" variant="secondary">
-                      Top up
+                      {t("cta.topUp")}
                     </Button>
                   </Link>
                 )}
@@ -325,12 +334,13 @@ function CreateVideo() {
  * link hides the half that needs no setup at all.
  */
 function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
+  const t = useTranslations("studio");
   const tabs: { id: Mode; label: string; icon: typeof FileText }[] = [
-    { id: "generate", label: "Generate from a topic", icon: Wand2 },
+    { id: "generate", label: t("tabs.generate"), icon: Wand2 },
     // Names both things it does. Dubbing has been in here since it was
     // written — a language field inside this tab — and a tab promising
     // captions gave nobody a reason to open it and find out.
-    { id: "upload", label: "Caption or dub my video", icon: Upload },
+    { id: "upload", label: t("tabs.upload"), icon: Upload },
   ];
 
   return (

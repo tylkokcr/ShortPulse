@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { ArrowRight, Captions, FileVideo, TriangleAlert, Upload } from "lucide-react";
+import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import { useRouter } from "@/i18n/navigation";
 import { InsufficientCreditsError, uploadVideo } from "@/lib/api";
@@ -33,6 +34,10 @@ function formatSize(bytes: number): string {
 }
 
 export function UploadPanel() {
+  const t = useTranslations("studio.upload");
+  // The credit line and the free-install line are shared with the
+  // generate tab, so they live one level up rather than twice.
+  const ts = useTranslations("studio");
   const router = useRouter();
   const { draft, credits } = useShortPulseStore();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -91,10 +96,14 @@ export function UploadPanel() {
     } catch (err) {
       setError(
         err instanceof InsufficientCreditsError
-          ? `${clipCount ? "Taking clips" : dubLanguage ? "Dubbing" : "Captioning"} costs ${err.required} credit${err.required === 1 ? "" : "s"} and you have ${err.balance}.`
+          ? t("errors.insufficient", {
+              what: t(clipCount ? "errors.clips" : dubLanguage ? "errors.dub" : "errors.caption"),
+              required: err.required,
+              balance: err.balance,
+            })
           : err instanceof Error
             ? err.message
-            : "Upload failed"
+            : t("errors.failed")
       );
       setProgress(null);
     }
@@ -145,33 +154,27 @@ export function UploadPanel() {
                 <p className="text-sm font-medium">{file.name}</p>
                 <p className="mt-0.5 font-mono text-xs text-white/40">{formatSize(file.size)}</p>
               </div>
-              <p className="text-xs text-white/40">Click to pick a different file</p>
+              <p className="text-xs text-white/40">{t("pickAnother")}</p>
             </>
           ) : (
             <>
               <Upload size={28} className="text-white/40" />
               <div>
-                <p className="text-sm font-medium">Drop a video here</p>
-                <p className="mt-1 text-xs text-white/40">
-                  MP4, MOV, WebM or MKV · up to 200MB · needs an audio track
-                </p>
+                <p className="text-sm font-medium">{t("dropTitle")}</p>
+                <p className="mt-1 text-xs text-white/40">{t("dropHint")}</p>
               </div>
             </>
           )}
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-white/70">Spoken language</label>
+          <label className="mb-1.5 block text-sm font-medium text-white/70">{t("spokenLanguage")}</label>
           <LanguageSelector />
-          <p className="mt-1.5 text-xs text-white/40">
-            Telling it the language up front stops short clips getting mis-detected.
-          </p>
+          <p className="mt-1.5 text-xs text-white/40">{t("spokenLanguageHint")}</p>
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-white/70">
-            Cut it into clips
-          </label>
+          <label className="mb-1.5 block text-sm font-medium text-white/70">{t("clips")}</label>
           <div className="flex flex-wrap gap-2">
             {[0, 2, 3, 4, 5].map((count) => (
               <button
@@ -188,14 +191,12 @@ export function UploadPanel() {
                     : "border-border text-white/50 hover:border-border-strong hover:text-white/80"
                 )}
               >
-                {count === 0 ? "Don't — keep it whole" : `${count} clips`}
+                {count === 0 ? t("clipsNone") : t("clipsCount", { count })}
               </button>
             ))}
           </div>
           <p className="mt-1.5 text-xs text-white/40">
-            {clipCount
-              ? "The transcript is read for the moments that stand up on their own. Each one is cut out and lands in your library as its own video, captioned and ready to edit. Videos from 2 to 60 minutes."
-              : "Leave this alone to caption the whole video as it is."}
+            {clipCount ? t("clipsOnHint") : t("clipsOffHint")}
           </p>
         </div>
 
@@ -204,7 +205,7 @@ export function UploadPanel() {
             htmlFor="dub-language"
             className="mb-1.5 block text-sm font-medium text-white/70"
           >
-            Speak it in another language
+            {t("dub")}
           </label>
           <select
             id="dub-language"
@@ -212,7 +213,7 @@ export function UploadPanel() {
             onChange={(event) => setDubLanguage(event.target.value)}
             className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-white outline-none transition-colors hover:border-border-strong focus:border-accent"
           >
-            <option value="">Don&apos;t — just add captions</option>
+            <option value="">{t("dubNone")}</option>
             {LANGUAGE_OPTIONS.filter((option) => option.code !== draft.language).map(
               (option) => (
                 <option key={option.code} value={option.code}>
@@ -223,15 +224,15 @@ export function UploadPanel() {
           </select>
           <p className="mt-1.5 text-xs text-white/40">
             {clipCount
-              ? "Take the clips first, then dub the ones you keep."
+              ? t("dubWithClipsHint")
               : dubLanguage
-              ? "The speech is translated and spoken again over your original picture. Nothing about the video changes, so if you are on camera your lips won't match the new language — dubbed video normally looks like this."
-              : "Leave this alone to keep the original audio and only burn in captions."}
+              ? t("dubOnHint")
+              : t("dubOffHint")}
           </p>
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-white/70">Caption style</label>
+          <label className="mb-1.5 block text-sm font-medium text-white/70">{t("captionStyle")}</label>
           <CaptionStyleSelector />
         </div>
       </Card>
@@ -246,7 +247,7 @@ export function UploadPanel() {
       {uploading && (
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between text-xs text-white/50">
-            <span>{progress < 1 ? "Uploading..." : "Processing..."}</span>
+            <span>{progress < 1 ? t("uploading") : t("processing")}</span>
             <span className="font-mono">{Math.round(progress * 100)}%</span>
           </div>
           <div className="h-1 overflow-hidden bg-border">
@@ -262,15 +263,22 @@ export function UploadPanel() {
         <p className="flex items-center gap-1.5 text-xs text-white/40">
           <Captions size={13} />
           {credits?.enabled
-            ? `${price} credit${price === 1 ? "" : "s"} · ${credits.balance} remaining`
-            : "Free · runs on this machine"}
+            ? t("costLine", {
+                credits: ts("cost.credits", { count: price }),
+                balance: credits.balance,
+              })
+            : ts("cost.free")}
         </p>
         <Button onClick={handleUpload} disabled={!file || uploading} variant="gradient">
           {uploading ? (
-            "Working..."
+            t("working")
           ) : (
             <>
-              {clipCount ? `Take ${clipCount} clips` : dubLanguage ? "Dub it" : "Add captions"}
+              {clipCount
+                ? t("ctaClips", { count: clipCount })
+                : dubLanguage
+                  ? t("ctaDub")
+                  : t("ctaCaption")}
               <ArrowRight size={16} />
             </>
           )}
