@@ -216,7 +216,7 @@
     "taxIncluded": "z VAT",
     "oneOff": "jednorazowo",
     "packCredits": "{credits} kredytów",
-    "standardVideos": "~{count} filmów standard",
+    "standardVideos": "~{count, plural, one {# film standardowy} few {# filmy standardowe} many {# filmów standardowych} other {# filmów standardowych}}",
     "stockVideos": "~{count} z materiałem stockowym",
     "neverExpire": "Nie tracą ważności",
     "packCta": "Kup {credits} kredytów",
