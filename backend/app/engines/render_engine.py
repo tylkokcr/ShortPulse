@@ -28,6 +28,7 @@ from pathlib import Path
 from app.core.config import FONTS_DIR
 from app.engines.subtitle_engine import build_ass_subtitles
 from app.schemas.project import MusicConfig, Scene, SubtitleStyle
+from app.services import reframe
 
 logger = logging.getLogger(__name__)
 
@@ -558,6 +559,30 @@ async def probe_dimensions(path: Path, ffprobe_binary: str = "ffprobe") -> tuple
     return int(width), int(height)
 
 
+def scaled_size(source: tuple[int, int], target: tuple[int, int]) -> tuple[int, int]:
+    """What `force_original_aspect_ratio=increase` will produce.
+
+    Needed outside ffmpeg because the crop path is expressed as a fraction
+    of the width and has to become pixels in the *scaled* frame, not the
+    source one. Mirrors the filter rather than guessing at it: the factor
+    is whichever of the two ratios is larger, so both edges reach the
+    target and one overhangs.
+    """
+    factor = max(target[0] / source[0], target[1] / source[1])
+    return round(source[0] * factor), round(source[1] * factor)
+
+
+def _escape_filter_path(path: Path) -> str:
+    """A path, safe inside a filtergraph argument.
+
+    ffmpeg's parser treats `:` as an option separator and `\\` as an
+    escape, so a Windows drive letter or a directory with a colon in it
+    silently truncates the filename. Project directories are uuids today,
+    which is exactly the kind of fact that stops being true quietly.
+    """
+    return str(path).replace("\\", "/").replace(":", "\\:")
+
+
 async def cut_clip(
     source: Path,
     destination: Path,
@@ -565,6 +590,9 @@ async def cut_clip(
     end_s: float,
     target: tuple[int, int] | None = None,
     ffmpeg_binary: str = "ffmpeg",
+    *,
+    source_size: tuple[int, int] | None = None,
+    subject: list[reframe.Sample] | None = None,
 ) -> Path:
     """Copy one stretch of a video out into a file of its own.
 
@@ -586,24 +614,41 @@ async def cut_clip(
     point is a landscape recording becoming a vertical clip, and there is
     no second re-encode to do it in. This one is already re-encoding.
 
-    Centre-crop, not subject tracking. A speaker who sits off to one side
-    will be cropped off-centre, and fixing that properly means detecting
-    them frame by frame — a real piece of work, and not one to fake by
-    guessing. Cropping to the middle is what the rest of the product does
-    with stock footage, and it is honest about what it is.
+    Centre-crop unless `subject` says otherwise. A speaker who sits off to
+    one side is cropped off-centre by the middle of the frame — measurably
+    so: on a test pan the subject left the frame entirely for a third of
+    it. `services.reframe` finds where they are, and the path it returns
+    is driven into the crop here. Absent — no detector installed, or
+    nothing found in the footage — this is exactly what it always was.
     """
     # scale-to-fill then crop, the same pair `_prepare_video_clip` uses:
     # `increase` makes the short edge reach the target and lets the long
-    # one overhang, and the crop takes the middle of what overhangs.
-    reframe = (
-        [
-            "-vf",
+    # one overhang. The crop then takes the middle of what overhangs, or
+    # follows the subject across it when there is one to follow.
+    script_path: Path | None = None
+    if target and subject and source_size:
+        scaled = scaled_size(source_size, target)
+        script = reframe.sendcmd_script(subject, scaled[0], target[0])
+        # Beside the clip it belongs to, and removed once ffmpeg has read
+        # it — sendcmd takes a file, not a string, and a cut that fails
+        # should not leave a stray script behind to confuse the next one.
+        script_path = destination.with_suffix(".crop.txt")
+        script_path.parent.mkdir(parents=True, exist_ok=True)
+        script_path.write_text(script, encoding="utf-8")
+        chain = (
             f"scale={target[0]}:{target[1]}:force_original_aspect_ratio=increase,"
-            f"crop={target[0]}:{target[1]}",
-        ]
-        if target
-        else []
-    )
+            f"sendcmd=f={_escape_filter_path(script_path)},"
+            f"crop={target[0]}:{target[1]}:0:0"
+        )
+    elif target:
+        chain = (
+            f"scale={target[0]}:{target[1]}:force_original_aspect_ratio=increase,"
+            f"crop={target[0]}:{target[1]}"
+        )
+    else:
+        chain = ""
+
+    reframe_args = ["-vf", chain] if chain else []
     await _run_ffmpeg(
         [
             "-ss",
@@ -612,7 +657,7 @@ async def cut_clip(
             str(source),
             "-t",
             f"{max(end_s - start_s, 0):.3f}",
-            *reframe,
+            *reframe_args,
             "-c:v",
             "libx264",
             "-preset",
@@ -627,4 +672,6 @@ async def cut_clip(
         ],
         ffmpeg_binary,
     )
+    if script_path is not None:
+        script_path.unlink(missing_ok=True)
     return destination

@@ -47,6 +47,7 @@ from app.services import (
     dubbing,
     project_store,
     publish_manager,
+    reframe,
     uploads,
 )
 from app.services.connection_manager import connection_manager
@@ -717,6 +718,18 @@ async def _extract_clips(
     paths = project_dir(project_id)
     child_ids: list[str] = []
 
+    # Probed once for the whole extraction: every cut comes from the same
+    # file, and the tracker needs the frame size to know what its
+    # detections are a fraction of.
+    try:
+        probed_source = await uploads.probe(source, settings.ffprobe_binary)
+        source_size: tuple[int, int] | None = (probed_source.width, probed_source.height)
+    except Exception:  # noqa: BLE001
+        # Not fatal. Without a size there is no subject tracking, and the
+        # cut falls back to the centre — which is what it did before.
+        logger.warning("Could not probe %s; clips will be centre-cropped", source.name)
+        source_size = None
+
     # Asked for rather than read off the project: the owner is a column,
     # not a field on the model, and it is not optional here — list_projects
     # filters by it, so a clip created without one would exist, render,
@@ -732,6 +745,39 @@ async def _extract_clips(
         )
 
         cut = paths / f"clip_{index}.mp4"
+        target = resolution_for(config.aspect_ratio, settings.default_resolution)
+
+        # Where the speaker is through this stretch, so the crop can
+        # follow them instead of taking the middle and hoping. Per clip
+        # rather than once for the whole source: an hour of podcast is
+        # mostly footage no clip uses, and a moment is a minute at most.
+        subject: list[reframe.Sample] = []
+        if index == 0 and not reframe.is_available():
+            # Once per extraction, not per clip. An operator who wanted
+            # subject tracking and did not install the extra would
+            # otherwise get a centre-crop and no clue why — and the
+            # difference does not announce itself in the output.
+            logger.info(
+                "Subject tracking is unavailable (see requirements-vision.txt); "
+                "clips will be centre-cropped"
+            )
+        if source_size and reframe.is_available():
+            with timings.stage(f"clip_{index}_track"):
+                track = await reframe.track_subject(
+                    source,
+                    moment.start_s,
+                    max(moment.end_s - moment.start_s, 0),
+                    source_size[0],
+                    source_size[1],
+                    settings.ffmpeg_binary,
+                )
+            scaled = render_engine.scaled_size(source_size, target)
+            subject = reframe.crop_path(
+                track,
+                max(moment.end_s - moment.start_s, 0),
+                target[0] / scaled[0],
+            )
+
         with timings.stage(f"clip_{index}_cut"):
             await render_engine.cut_clip(
                 source,
@@ -741,8 +787,10 @@ async def _extract_clips(
                 # The frame the project asked for — 9:16 unless it said
                 # otherwise. Done here because the upload pipeline that
                 # renders the cut leaves the picture alone by design.
-                resolution_for(config.aspect_ratio, settings.default_resolution),
+                target,
                 settings.ffmpeg_binary,
+                source_size=source_size,
+                subject=subject or None,
             )
 
         # A copy of the parent's settings with the clip's own identity: same

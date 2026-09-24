@@ -42,8 +42,16 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 # Dependencies before source, so editing code doesn't reinstall them.
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+#
+# requirements-vision.txt is the subject tracker, and it is here rather
+# than optional because a hosted deployment is exactly the case it exists
+# for: long-to-shorts turns landscape recordings into vertical clips, and
+# without it they are centre-cropped and the speaker walks out of frame.
+# It costs about 80MB of image (measured, not estimated). Drop the second file to get that back —
+# nothing breaks, `reframe.is_available()` goes False and the crop
+# returns to the middle.
+COPY requirements.txt requirements-vision.txt ./
+RUN pip install --no-cache-dir -r requirements.txt -r requirements-vision.txt
 
 COPY app ./app
 COPY migrations ./migrations

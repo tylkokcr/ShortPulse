@@ -1,0 +1,16 @@
+# Subject tracking, for turning a landscape recording into a vertical clip
+# that follows the speaker instead of cropping to the middle.
+#
+# Split out because it is ~125MB installed and the feature degrades
+# honestly without it: `reframe.is_available()` is False, the extraction
+# centre-crops exactly as it did before, and the API says so rather than
+# pretending. The same reasoning as requirements-diffusion.txt, one order
+# of magnitude down.
+#
+# Install it alongside the runtime to turn the feature on:
+#
+#     pip install -r requirements.txt -r requirements-vision.txt
+#
+# headless, not the plain wheel: the full build links GUI toolkits that a
+# container has no use for and that pull in a dozen X11 libraries.
+opencv-python-headless>=4.9
