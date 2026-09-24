@@ -65,6 +65,11 @@ disable_error_code = ["annotation-unchecked"]
 # CI without installing three gigabytes to find that out.
 module = [
     "TTS.*",
+    # cv2 is requirements-vision.txt. The container installs it, the
+    # checks do not — the same arrangement as the diffusion stack above,
+    # and for the same reason: the import is inside the function that
+    # needs it and the code path is reachable without it.
+    "cv2.*",
     "diffusers.*",
     "faster_whisper.*",
     "fontTools.*",
