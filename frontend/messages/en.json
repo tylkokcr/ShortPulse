@@ -557,6 +557,20 @@
     "uploadPreview": {
       "empty": "Your video appears here as soon as you pick it.",
       "caption": "9:16 · captions burned in"
+    },
+    "captionPlacement": {
+      "position": "Position",
+      "size": "Size",
+      "positions": {
+        "top_third": "Top third",
+        "middle": "Middle",
+        "bottom_third": "Bottom third"
+      },
+      "sizes": {
+        "small": "S",
+        "normal": "M",
+        "large": "L"
+      }
     }
   },
   "app": {

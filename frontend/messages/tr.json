@@ -557,6 +557,20 @@
     "uploadPreview": {
       "empty": "Videonu seçer seçmez burada görünür.",
       "caption": "9:16 · altyazılar gömülü"
+    },
+    "captionPlacement": {
+      "position": "Konum",
+      "size": "Boyut",
+      "positions": {
+        "top_third": "Üst üçte bir",
+        "middle": "Orta",
+        "bottom_third": "Alt üçte bir"
+      },
+      "sizes": {
+        "small": "S",
+        "normal": "M",
+        "large": "L"
+      }
     }
   },
   "app": {

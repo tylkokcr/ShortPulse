@@ -26,6 +26,8 @@ import { LanguageSelector } from "@/components/editor/LanguageSelector";
 import { OutroToggle } from "@/components/editor/OutroToggle";
 import { VisualSelector } from "@/components/visual/VisualSelector";
 import { CaptionStyleSelector } from "@/components/editor/CaptionStyleSelector";
+import { CaptionPlacement } from "@/components/editor/CaptionPlacement";
+import { presetById } from "@/lib/captionStyles";
 import { ArtStyleSelector } from "@/components/editor/ArtStyleSelector";
 import { NegativePrompt } from "@/components/editor/NegativePrompt";
 import { AspectRatioSelector } from "@/components/editor/AspectRatioSelector";
@@ -71,7 +73,7 @@ type GroupId = (typeof GROUPS)[number]["id"];
 function CreateVideo() {
   const t = useTranslations("studio");
   const router = useRouter();
-  const { draft, toProjectConfig, credits } = useShortPulseStore();
+  const { draft, setDraft, toProjectConfig, credits } = useShortPulseStore();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("generate");
@@ -141,6 +143,17 @@ function CreateVideo() {
         </Field>
         <Field label={t("fields.captionStyle")}>
           <CaptionStyleSelector />
+          {/* Placement below the looks rather than beside them: you pick a
+              style, then decide where it sits — and it survives changing
+              your mind about the style. */}
+          <CaptionPlacement
+            className="mt-3"
+            position={draft.captionPosition}
+            fontSize={draft.captionFontSize ?? presetById(draft.captionPreset).style.font_size}
+            onChange={({ position, fontSize }) =>
+              setDraft({ captionPosition: position, captionFontSize: fontSize })
+            }
+          />
         </Field>
       </>
     ),

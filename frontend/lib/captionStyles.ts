@@ -244,3 +244,66 @@ export const DEFAULT_CAPTION_PRESET = CAPTION_PRESETS[0];
 export function presetById(id: string): CaptionPreset {
   return CAPTION_PRESETS.find((preset) => preset.id === id) ?? DEFAULT_CAPTION_PRESET;
 }
+
+/** The three places captions are allowed to sit.
+ *
+ *  Three rather than a free position: `subtitle_engine` maps each one to
+ *  an ASS alignment and a vertical margin, and a percentage would have to
+ *  be plumbed through that mapping on the backend before it meant
+ *  anything here. Three is also what the frame can honestly offer — a
+ *  caption anywhere but a third is either over the subject's face or off
+ *  the safe area every platform crops into.
+ */
+export const CAPTION_POSITIONS = ["top_third", "middle", "bottom_third"] as const;
+
+/** Three sizes, as real pixel heights at a 1080-wide frame.
+ *
+ *  Absolute rather than a multiplier on the preset, because the same
+ *  control edits a finished project's stored style — where there is no
+ *  preset left to multiply. A multiplier would also drift: apply "large"
+ *  twice across two visits and the second one scales the first one's
+ *  result.
+ *
+ *  The range is narrow on purpose. libass wraps a line that no longer
+ *  fits rather than overflowing the frame, so the failure past `large` is
+ *  a four-word caption silently becoming two lines and covering more
+ *  picture than anyone asked for.
+ */
+export const CAPTION_SIZES = [
+  { id: "small", px: 72 },
+  { id: "normal", px: 84 },
+  { id: "large", px: 100 },
+] as const;
+
+/** Which step a stored size is nearest to.
+ *
+ *  Nearest rather than exact: a preset is free to pick any size and most
+ *  do not land on one of these three, so the control has to be able to
+ *  show where an arbitrary value sits.
+ */
+export function sizeIdFor(px: number): string {
+  return CAPTION_SIZES.reduce((best, step) =>
+    Math.abs(step.px - px) < Math.abs(best.px - px) ? step : best
+  ).id;
+}
+
+/** The preset's look, with the viewer's own placement on top.
+ *
+ *  One function so the studio, the live preview and the post-render
+ *  editor cannot disagree about what the render will be — they were three
+ *  places to forget the same two fields.
+ */
+export function captionStyleFor(draft: {
+  captionPreset: string;
+  captionPosition: SubtitleStyle["position"];
+  /** null keeps whatever size the preset chose, which is what an
+   *  untouched control means — not "84". */
+  captionFontSize: number | null;
+}): SubtitleStyle {
+  const base = presetById(draft.captionPreset).style;
+  return {
+    ...base,
+    position: draft.captionPosition,
+    font_size: draft.captionFontSize ?? base.font_size,
+  };
+}

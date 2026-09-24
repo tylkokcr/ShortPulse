@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import { useTranslations } from "next-intl";
 import { useShortPulseStore } from "@/lib/store";
-import { presetById } from "@/lib/captionStyles";
+import { captionStyleFor, presetById } from "@/lib/captionStyles";
 import type { AspectRatio, LanguageCode } from "@/lib/types";
 
 /**
@@ -66,7 +66,10 @@ export function StudioPreview() {
   const t = useTranslations("studio.preview");
   const { draft } = useShortPulseStore();
   const preset = presetById(draft.captionPreset);
-  const perLine = preset.style.max_words_per_line;
+  // The resolved style, not the preset's — the same function the submit
+  // uses, so the preview cannot promise a placement the render ignores.
+  const style = captionStyleFor(draft);
+  const perLine = style.max_words_per_line;
   const caption = PREVIEW_CAPTION[draft.language];
 
   const lines: string[][] = [];
@@ -75,11 +78,16 @@ export function StudioPreview() {
   }
 
   const placement =
-    preset.style.position === "middle"
+    style.position === "middle"
       ? "items-center"
-      : preset.style.position === "top_third"
+      : style.position === "top_third"
         ? "items-start"
         : "items-end";
+
+  // The preview box is a couple of hundred pixels tall, so the font size
+  // cannot be used directly — it is carried across as a ratio against the
+  // preset's own size, which is what the tuned base below assumes.
+  const sizeRatio = style.font_size / preset.style.font_size;
 
   // Stock footage has no art style, so there's no representative frame to
   // show — a style sample there would promise a look it won't deliver.
@@ -123,11 +131,17 @@ export function StudioPreview() {
           lang={draft.language}
           dir={RTL_LANGUAGES.has(draft.language) ? "rtl" : "ltr"}
           className={clsx(
-            "relative z-10 px-3 pb-4 text-center font-extrabold leading-tight",
-            preset.style.uppercase ? "uppercase" : "normal-case",
-            draft.aspectRatio === "16:9" ? "text-[11px]" : "text-xs"
+            "relative z-10 px-3 text-center font-extrabold leading-tight",
+            style.uppercase ? "uppercase" : "normal-case",
+            // Padding follows the placement: a top caption pinned with
+            // bottom padding sits against the edge of the frame, which is
+            // the one thing the top option exists to avoid.
+            style.position === "top_third" ? "pt-4" : style.position === "middle" ? "" : "pb-4"
           )}
-          style={{ textShadow: `0 0 ${preset.style.outline_width}px #000, 0 1px 3px #000` }}
+          style={{
+            fontSize: `${(draft.aspectRatio === "16:9" ? 11 : 12) * sizeRatio}px`,
+            textShadow: `0 0 ${style.outline_width}px #000, 0 1px 3px #000`,
+          }}
         >
           {lines.map((line, li) => (
             <span key={li} className="block">

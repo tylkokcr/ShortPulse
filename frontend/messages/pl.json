@@ -557,6 +557,20 @@
     "uploadPreview": {
       "empty": "Twój film pojawi się tutaj, gdy tylko go wybierzesz.",
       "caption": "9:16 · napisy wypalone w obrazie"
+    },
+    "captionPlacement": {
+      "position": "Pozycja",
+      "size": "Rozmiar",
+      "positions": {
+        "top_third": "Górna trzecia",
+        "middle": "Środek",
+        "bottom_third": "Dolna trzecia"
+      },
+      "sizes": {
+        "small": "S",
+        "normal": "M",
+        "large": "L"
+      }
     }
   },
   "app": {

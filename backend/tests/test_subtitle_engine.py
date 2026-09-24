@@ -1,6 +1,8 @@
 from pathlib import Path
 
-from app.engines.subtitle_engine import build_ass_subtitles
+import pytest
+
+from app.engines.subtitle_engine import _header_for, build_ass_subtitles
 from app.schemas.project import Scene, SceneAudio, SceneVisual, SubtitleStyle, Word
 
 
@@ -98,9 +100,6 @@ def test_a_boxed_style_asks_libass_for_a_filled_box():
     """BorderStyle 3 fills OutlineColour behind the text instead of
     stroking the glyphs with it. One number, and the only look a single
     bundled font could not otherwise produce."""
-    from app.engines.subtitle_engine import _header_for
-    from app.schemas.project import SubtitleStyle
-
     header = _header_for(SubtitleStyle(box=True), (1080, 1920))
     style_line = next(line for line in header.splitlines() if line.startswith("Style:"))
 
@@ -110,9 +109,6 @@ def test_a_boxed_style_asks_libass_for_a_filled_box():
 
 
 def test_an_ordinary_style_still_asks_for_an_outline():
-    from app.engines.subtitle_engine import _header_for
-    from app.schemas.project import SubtitleStyle
-
     header = _header_for(SubtitleStyle(), (1080, 1920))
     style_line = next(line for line in header.splitlines() if line.startswith("Style:"))
 
@@ -230,3 +226,53 @@ def test_the_coverage_map_matches_what_the_files_contain():
             if all(ord(ch) in by_family[family] for ch in sample)
         }
         assert drawable == set(languages), f"{family}: file says {sorted(drawable)}"
+
+
+# --- where the captions sit, and how big --------------------------------
+#
+# Both were in SubtitleStyle from the start and neither had a control, so
+# neither had a test. They have one now — a picker in the studio and the
+# same picker in the post-render editor — which makes the mapping from a
+# stored value to an ASS field the thing a user is actually turning.
+
+
+def _style_field(style, index: int) -> str:
+    """One field of the Style: line.
+
+    Name,Fontname,Fontsize,...,BorderStyle,Outline,Shadow,Alignment,
+    MarginL,MarginR,MarginV,Encoding — so 2 is the size, 18 the alignment
+    and 21 the vertical margin.
+    """
+
+    header = _header_for(style, (1080, 1920))
+    line = next(line for line in header.splitlines() if line.startswith("Style:"))
+    return line.split(",")[index].strip()
+
+
+@pytest.mark.parametrize(
+    ("position", "alignment"),
+    [("bottom_third", "2"), ("middle", "5"), ("top_third", "8")],
+)
+def test_each_position_maps_to_its_ass_alignment(position, alignment):
+    """Numpad geometry: 2 is bottom-centre, 5 middle, 8 top."""
+    assert _style_field(SubtitleStyle(position=position), 18) == alignment
+
+
+def test_a_centred_caption_gets_no_vertical_margin():
+    """A margin against a middle alignment pushes it off centre, which is
+    the one thing "middle" must not do."""
+    assert _style_field(SubtitleStyle(position="middle"), 21) == "0"
+    assert _style_field(SubtitleStyle(position="bottom_third"), 21) != "0"
+
+
+def test_an_unknown_position_falls_back_to_the_bottom():
+    """Older projects stored before the picker existed, and anything a
+    future client invents. Neither should render captions nowhere."""
+    assert _style_field(SubtitleStyle(position="somewhere-else"), 18) == "2"
+
+
+def test_the_chosen_size_reaches_the_subtitle_file():
+    """The control writes font_size and nothing else reads it, so this is
+    the whole distance between the picker and the burned-in words."""
+    assert _style_field(SubtitleStyle(font_size=72), 2) == "72"
+    assert _style_field(SubtitleStyle(font_size=100), 2) == "100"

@@ -557,6 +557,20 @@
     "uploadPreview": {
       "empty": "Dein Video erscheint hier, sobald du eines auswählst.",
       "caption": "9:16 · Untertitel eingebrannt"
+    },
+    "captionPlacement": {
+      "position": "Position",
+      "size": "Größe",
+      "positions": {
+        "top_third": "Oberes Drittel",
+        "middle": "Mitte",
+        "bottom_third": "Unteres Drittel"
+      },
+      "sizes": {
+        "small": "S",
+        "normal": "M",
+        "large": "L"
+      }
     }
   },
   "app": {

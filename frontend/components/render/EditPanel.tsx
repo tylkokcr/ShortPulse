@@ -15,7 +15,15 @@ import clsx from "clsx";
 import { useTranslations } from "next-intl";
 import { editProject, uploadSecondaryClip } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
-import type { CaptionTrack, Layout, Project, TextOverlay, Word } from "@/lib/types";
+import type {
+  CaptionTrack,
+  Layout,
+  Project,
+  SubtitleStyle,
+  TextOverlay,
+  Word,
+} from "@/lib/types";
+import { CaptionPlacement } from "@/components/editor/CaptionPlacement";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
@@ -228,6 +236,12 @@ export function EditPanel({
   const bumpVideoVersion = useShortPulseStore((s) => s.bumpVideoVersion);
 
   const [lines, setLines] = useState<Line[]>(() => (track ? toLines(track) : []));
+  // Placement is part of the style the burn-in reads, so changing it here
+  // is the same one-pass re-render an edited word is — not a re-run.
+  const [position, setPosition] = useState<SubtitleStyle["position"]>(
+    () => track?.style.position ?? "bottom_third"
+  );
+  const [fontSize, setFontSize] = useState<number>(() => track?.style.font_size ?? 84);
   const [overlays, setOverlays] = useState<TextOverlay[]>(project.edit?.overlays ?? []);
   const [layout, setLayout] = useState<Layout>(project.edit?.layout ?? "full");
   const [secondary, setSecondary] = useState<string | null>(
@@ -265,7 +279,9 @@ export function EditPanel({
     lines.length !== original.length ||
     lines.some((line, i) => line.text !== original[i]?.text) ||
     JSON.stringify(overlays) !== JSON.stringify(project.edit?.overlays ?? []) ||
-    layout !== (project.edit?.layout ?? "full");
+    layout !== (project.edit?.layout ?? "full") ||
+    position !== track?.style.position ||
+    fontSize !== track?.style.font_size;
 
   if (!track) {
     return (
@@ -302,7 +318,7 @@ export function EditPanel({
     try {
       const words = lines.flatMap((line) => toWords(line, line.text));
       const updated = await editProject(project.config.id, {
-        captions: { words, style: track!.style },
+        captions: { words, style: { ...track!.style, position, font_size: fontSize } },
         overlays,
         layout,
       });
@@ -314,7 +330,11 @@ export function EditPanel({
       // show the arrangement the video now has, not the one that produced
       // it.
       const applied = updated.edit?.captions ?? updated.captions;
-      if (applied) setLines(toLines(applied));
+      if (applied) {
+        setLines(toLines(applied));
+        setPosition(applied.style.position);
+        setFontSize(applied.style.font_size);
+      }
       setApplied(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.apply"));
@@ -341,6 +361,16 @@ export function EditPanel({
             {t("addLine")}
           </button>
         </div>
+
+        <CaptionPlacement
+          className="border-b border-border pb-3"
+          position={position}
+          fontSize={fontSize}
+          onChange={(next) => {
+            setPosition(next.position);
+            setFontSize(next.fontSize);
+          }}
+        />
 
         <div className="flex max-h-[340px] flex-col gap-1 overflow-y-auto pr-1">
           {lines.map((line, i) => (

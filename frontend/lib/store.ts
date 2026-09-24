@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { DEFAULT_CAPTION_PRESET, presetById } from "./captionStyles";
+import { DEFAULT_CAPTION_PRESET, captionStyleFor } from "./captionStyles";
 import {
   DEFAULT_LLM_CONFIG,
   DEFAULT_MUSIC_CONFIG,
@@ -10,6 +10,7 @@ import {
   type Project,
   type ProjectConfig,
   type RenderProgress,
+  type SubtitleStyle,
   type AspectRatio,
   type VideoLength,
   type VisualMode,
@@ -23,6 +24,17 @@ interface ProjectDraft {
   language: LanguageCode;
   /** Id from CAPTION_PRESETS — resolved to a full SubtitleStyle on submit. */
   captionPreset: string;
+  /** Where the captions sit and how big they are, applied on top of
+   *  whatever the preset chose. Separate from the preset because they are
+   *  a different kind of decision: the preset is a look, these two are
+   *  placement, and a viewer who wants the words higher does not want a
+   *  different font to come with it. */
+  captionPosition: SubtitleStyle["position"];
+  /** Pixel height at a 1080-wide frame, or null to keep whatever the
+   *  preset chose. Absolute rather than a multiplier so the same three
+   *  steps mean the same thing here and in the post-render editor, where
+   *  there is no preset left to multiply. */
+  captionFontSize: number | null;
   aspectRatio: AspectRatio;
   /** Id from GET /api/art-styles; ignored for stock footage. */
   artStyle: string;
@@ -76,6 +88,8 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
     videoLength: "short",
     language: "en",
     captionPreset: DEFAULT_CAPTION_PRESET.id,
+    captionPosition: DEFAULT_CAPTION_PRESET.style.position,
+    captionFontSize: null,
     aspectRatio: "9:16",
     artStyle: "photoreal",
     negativePrompt: "",
@@ -103,7 +117,7 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
       // An empty voice_id leaves the choice to the backend, which picks
       // the default Piper voice for `language`.
       voice: { ...DEFAULT_VOICE_CONFIG, voice_id: draft.voiceId },
-      subtitles: presetById(draft.captionPreset).style,
+      subtitles: captionStyleFor(draft),
       music: {
         ...DEFAULT_MUSIC_CONFIG,
         enabled: draft.musicEnabled,
