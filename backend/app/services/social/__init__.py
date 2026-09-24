@@ -55,21 +55,25 @@ def build_publishers(settings: Settings) -> dict[str, SocialPublisher]:
             redirect_uri=redirect_uri(settings, "youtube"),
         )
 
-    # One Meta app, two destinations. They are configured together
-    # because they cannot be configured apart: the same app id, the same
-    # login dialog, and the same business verification decides both.
-    # Offering one and not the other would be a setting that does not
-    # exist on Meta's side.
+    # Two Meta destinations, two apps. They used to be configured
+    # together on the reading that one app id served both, which is true
+    # of the Facebook Login route to Instagram and false of Instagram
+    # Business Login — that use case issues its own id and secret, and
+    # the Facebook pair is refused by instagram.com's dialog. Tying them
+    # together meant Instagram was offered the moment Facebook was
+    # configured, and then failed before the user saw a consent screen.
     if settings.meta_app_id and settings.meta_app_secret:
-        publishers["instagram"] = InstagramPublisher(
-            app_id=settings.meta_app_id,
-            app_secret=settings.meta_app_secret,
-            redirect_uri=redirect_uri(settings, "instagram"),
-        )
         publishers["facebook"] = FacebookPublisher(
             app_id=settings.meta_app_id,
             app_secret=settings.meta_app_secret,
             redirect_uri=redirect_uri(settings, "facebook"),
+        )
+
+    if settings.instagram_app_id and settings.instagram_app_secret:
+        publishers["instagram"] = InstagramPublisher(
+            app_id=settings.instagram_app_id,
+            app_secret=settings.instagram_app_secret,
+            redirect_uri=redirect_uri(settings, "instagram"),
         )
 
     if settings.tiktok_client_key and settings.tiktok_client_secret:

@@ -224,18 +224,31 @@ class Settings(BaseSettings):
     youtube_client_id: str | None = None
     youtube_client_secret: str | None = None
 
-    # Instagram Reels and Facebook Page video, via the Graph API.
+    # Facebook Page video, via the Graph API.
     #
-    # One app for both — Meta does not separate them, and neither does
-    # anything here: setting these offers both destinations or neither.
+    # Facebook only. These used to configure Instagram as well, on the
+    # reading that one Meta app served both — true of the Facebook Login
+    # route to Instagram, and not of the one this deployment uses. See
+    # the Instagram settings below.
     #
     # The gate is not a key, it is paperwork. Posting for anyone but the
     # app's own developer needs business verification, which needs a
-    # registered business. Instagram adds a requirement on the *user*
-    # too: a Business or Creator account linked to a Page, because
-    # personal accounts cannot be posted to by any app.
+    # registered business.
     meta_app_id: str | None = None
     meta_app_secret: str | None = None
+
+    # Instagram Reels, via Instagram Business Login.
+    #
+    # Its own app id and secret, from the Instagram product's settings
+    # rather than the Facebook app's — the "Manage messaging & content on
+    # Instagram" use case issues a separate pair, and the Facebook ones
+    # are refused by instagram.com's dialog. Configured independently of
+    # Facebook above, because with this flavour the two genuinely are.
+    #
+    # The requirement on the *user* is a Business or Creator account.
+    # Unlike the Facebook Login route it need not be linked to a Page.
+    instagram_app_id: str | None = None
+    instagram_app_secret: str | None = None
 
     # TikTok, via the Content Posting API.
     #

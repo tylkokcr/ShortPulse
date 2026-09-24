@@ -62,11 +62,25 @@ def test_a_platform_with_no_credentials_is_absent_rather_than_broken():
     assert sorted(publishers) == ["youtube"]
 
 
-def test_one_meta_app_offers_both_of_its_destinations():
-    """They cannot be configured apart: same app, same review."""
+def test_facebook_credentials_do_not_offer_instagram():
+    """They used to, and that was the bug.
+
+    Instagram Business Login issues its own app id and secret; the
+    Facebook pair is refused by instagram.com's dialog. Offering the
+    button anyway meant the connect flow died before the user reached a
+    consent screen, with nothing on our side to explain it.
+    """
     publishers = build_publishers(_settings(meta_app_id="a", meta_app_secret="b"))
 
-    assert sorted(publishers) == ["facebook", "instagram"]
+    assert sorted(publishers) == ["facebook"]
+
+
+def test_instagram_is_configured_on_its_own():
+    publishers = build_publishers(
+        _settings(instagram_app_id="a", instagram_app_secret="b")
+    )
+
+    assert sorted(publishers) == ["instagram"]
 
 
 def test_tiktok_is_configured_on_its_own():
@@ -86,6 +100,8 @@ def test_every_named_platform_can_actually_be_built():
             youtube_client_secret="b",
             meta_app_id="c",
             meta_app_secret="d",
+            instagram_app_id="g",
+            instagram_app_secret="h",
             tiktok_client_key="e",
             tiktok_client_secret="f",
         )
@@ -104,6 +120,8 @@ def test_each_publisher_answers_to_its_own_name():
             youtube_client_secret="b",
             meta_app_id="c",
             meta_app_secret="d",
+            instagram_app_id="g",
+            instagram_app_secret="h",
             tiktok_client_key="e",
             tiktok_client_secret="f",
         )
@@ -141,9 +159,25 @@ def test_tiktok_does_not_ask_to_post_directly():
 
 
 def test_instagram_asks_for_the_permission_that_posts():
+    """The business-login name, not the Facebook-login one. Without this
+    scope the account connects and every publish afterwards is refused."""
     url = InstagramPublisher("ID", "secret", "https://shortpulse.app/cb").authorize_url("nonce")
 
-    assert "instagram_content_publish" in _query(url)["scope"]
+    assert "instagram_business_content_publish" in _query(url)["scope"]
+
+
+def test_instagram_logs_in_through_instagram_not_facebook():
+    """The whole reason this publisher was rewritten.
+
+    The app declares the "Manage messaging & content on Instagram" use
+    case, which is Instagram Business Login. Sending the user to
+    facebook.com with an app id that route never granted fails before any
+    consent screen, so nothing on our side would say why.
+    """
+    url = InstagramPublisher("ID", "secret", "https://shortpulse.app/cb").authorize_url("nonce")
+
+    assert url.startswith("https://www.instagram.com/oauth/authorize")
+    assert "facebook.com" not in url
 
 
 def test_facebook_does_not_ask_for_the_deprecated_publish_permission():
@@ -370,3 +404,133 @@ def test_a_403_with_no_code_is_still_treated_as_a_dead_grant():
     from app.services.social.tiktok import _api_error
 
     assert isinstance(_api_error(httpx.Response(403, text="nope")), ConnectionRevoked)
+
+
+# --- the Instagram business-login flow ----------------------------------
+#
+# The publisher was rewritten from Facebook Login to Instagram Business
+# Login, which changes every call in it: a different dialog, a different
+# token host, a different graph, and a refresh that is a real refresh
+# rather than a second exchange. A scope assertion alone would not have
+# noticed any of that, so these follow the flow to the hosts it uses.
+
+
+class _FakeInstagram:
+    """Enough of Instagram's three hosts to complete a connection."""
+
+    def __init__(self, *, token_shape: str = "flat") -> None:
+        self.token_shape = token_shape
+        self.seen: list[str] = []
+
+    def __call__(self, request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        self.seen.append(url)
+
+        if url.startswith("https://api.instagram.com/oauth/access_token"):
+            body = {
+                "access_token": "short-lived",
+                "user_id": 17841400000000000,
+                "permissions": "instagram_business_basic,instagram_business_content_publish",
+            }
+            if self.token_shape == "wrapped":
+                body = {"data": [body]}
+            return httpx.Response(200, json=body)
+
+        if url.startswith("https://graph.instagram.com/access_token"):
+            return httpx.Response(
+                200, json={"access_token": "long-lived", "expires_in": 5184000}
+            )
+
+        if url.startswith("https://graph.instagram.com/refresh_access_token"):
+            return httpx.Response(
+                200, json={"access_token": "refreshed", "expires_in": 5184000}
+            )
+
+        if url.startswith("https://graph.instagram.com/me"):
+            return httpx.Response(
+                200, json={"user_id": "17841400000000000", "username": "shortpulse"}
+            )
+
+        raise AssertionError(f"unexpected request: {url}")
+
+
+def _serve_instagram(monkeypatch, fake: _FakeInstagram) -> _FakeInstagram:
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        httpx, "AsyncClient", lambda **kw: real_client(transport=httpx.MockTransport(fake))
+    )
+    return fake
+
+
+def _instagram() -> InstagramPublisher:
+    return InstagramPublisher("IG_ID", "ig-secret", "https://shortpulse.app/cb")
+
+
+async def test_connecting_ends_on_a_long_lived_token(monkeypatch):
+    """The short-lived one would die before the first scheduled post, and
+    it cannot be lengthened after it expires."""
+    fake = _serve_instagram(monkeypatch, _FakeInstagram())
+
+    tokens, account = await _instagram().exchange_code("the-code")
+
+    assert tokens.access_token == "long-lived"
+    assert account.external_id == "17841400000000000"
+    assert account.display_name == "@shortpulse"
+    assert any("ig_exchange_token" in url for url in fake.seen)
+
+
+async def test_the_token_response_may_be_wrapped_in_data(monkeypatch):
+    """Documented as {"data": [...]} and returned flat by some app
+    configurations. Reading only one shape fails with nothing in the
+    response to explain it."""
+    _serve_instagram(monkeypatch, _FakeInstagram(token_shape="wrapped"))
+
+    tokens, account = await _instagram().exchange_code("the-code")
+
+    assert tokens.access_token == "long-lived"
+    assert account.external_id == "17841400000000000"
+
+
+async def test_the_refresh_token_is_the_access_token(monkeypatch):
+    """ig_refresh_token presents the token itself — there is no second
+    credential, and storing None would make the connection unrenewable."""
+    _serve_instagram(monkeypatch, _FakeInstagram())
+
+    tokens, _ = await _instagram().exchange_code("the-code")
+
+    assert tokens.refresh_token == tokens.access_token
+
+
+async def test_nothing_in_the_connect_flow_touches_facebook(monkeypatch):
+    """The bug this rewrite fixes. Every host here is Instagram's."""
+    fake = _serve_instagram(monkeypatch, _FakeInstagram())
+
+    await _instagram().exchange_code("the-code")
+
+    assert fake.seen
+    assert not any("facebook.com" in url for url in fake.seen)
+
+
+async def test_refreshing_asks_instagram_to_extend_the_token(monkeypatch):
+    fake = _serve_instagram(monkeypatch, _FakeInstagram())
+
+    tokens = await _instagram().refresh("long-lived")
+
+    assert tokens.access_token == "refreshed"
+    assert any("ig_refresh_token" in url for url in fake.seen)
+
+
+async def test_a_dead_grant_is_reported_as_revoked_rather_than_retried(monkeypatch):
+    """A token past its window cannot be refreshed at all, so retrying is
+    how a queue fills with posts that can never succeed."""
+
+    def refuse(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(400, json={"error": {"message": "expired"}})
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        httpx, "AsyncClient", lambda **kw: real_client(transport=httpx.MockTransport(refuse))
+    )
+
+    with pytest.raises(ConnectionRevoked):
+        await _instagram().refresh("long-dead")
