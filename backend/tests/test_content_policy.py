@@ -174,18 +174,21 @@ def test_the_module_does_not_claim_to_be_a_safety_system():
 
 
 async def test_the_api_refuses_a_blocked_topic_without_creating_anything():
-    """Before the billing gate and before create_project, which is what
-    makes a refusal free — the same ordering the unavailable-mode refusal
-    already had, and for the same reason."""
+    """Free, and first.
+
+    No visual mode is configured here on purpose: the content refusal has
+    to come out ahead of `visual_mode_unavailable`, or somebody who asked
+    for something we refuse outright gets told to pick a different visual
+    mode and try again. It also means this test asserts the refusal
+    rather than the developer's own .env — CI has no Replicate token and
+    caught exactly that.
+    """
     import httpx
     from fastapi import FastAPI
 
     from app.api.routes import projects as projects_route
-    from app.core.config import get_settings
     from app.services import project_store
 
-    monkey = get_settings()
-    monkey.pexels_api_key = "test-key"
     project_store.configure(None)
 
     app = FastAPI()
