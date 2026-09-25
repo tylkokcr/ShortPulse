@@ -445,6 +445,14 @@ class ProjectConfig(BaseModel):
     llm: LLMConfig = Field(default_factory=LLMConfig)
     voice: VoiceConfig = Field(default_factory=VoiceConfig)
     subtitles: SubtitleStyle = Field(default_factory=SubtitleStyle)
+    # Bleep the strong language and mask it in the captions. Off by
+    # default: it silences part of someone's audio, which is not a thing
+    # to do to a video nobody asked to have censored.
+    #
+    # Stored on the project rather than applied once at transcription,
+    # so the words keep their real text — the editor shows what was
+    # actually said, and turning this off re-renders back to it.
+    censor_profanity: bool = False
     music: MusicConfig = Field(default_factory=MusicConfig)
     outro: OutroConfig = Field(default_factory=OutroConfig)
     created_at: datetime = Field(default_factory=datetime.utcnow)

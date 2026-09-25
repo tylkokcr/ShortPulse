@@ -26,9 +26,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from app.core.config import FONTS_DIR
-from app.engines.subtitle_engine import build_ass_subtitles
+from app.engines.subtitle_engine import absolute_words, build_ass_subtitles
 from app.schemas.project import MusicConfig, Scene, SubtitleStyle
-from app.services import reframe
+from app.services import profanity, reframe
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,11 @@ _CLIP_AUDIO_FORMAT = ("-ar", "48000", "-ac", "1")
 # readyState 0 with no error, looking like a broken player rather than a
 # slow one. Costs one extra pass over the output at write time.
 _FASTSTART = ("-movflags", "+faststart")
+
+# The censor tone. 1kHz is the one broadcast has used for decades, which
+# is the point: it reads as "this was removed on purpose" rather than as
+# a fault in the audio.
+BLEEP_HZ = 1000
 
 _VIDEO_EXTENSIONS = {".mp4", ".mov", ".webm", ".mkv"}
 _IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
@@ -320,6 +325,7 @@ async def finalize_render(
     ffmpeg_binary: str = "ffmpeg",
     secondary_video: Path | None = None,
     voice_track: Path | None = None,
+    bleeps: list[tuple[float, float]] | None = None,
 ) -> Path:
     """The single composite pass: lay out the frame, burn in the text, mix
     the audio, encode.
@@ -374,6 +380,29 @@ async def finalize_render(
     if voice_track is not None:
         voice_stream = f"{1 + (secondary_video is not None) + music_enabled}:a"
 
+    # Bleeping happens to the voice before anything else touches it, so
+    # the music mix and the dub path below both work unchanged — they
+    # refer to the speech through one name and that name now points at
+    # the censored copy.
+    #
+    # Two gates rather than a filter that swaps the signal: `volume=0`
+    # enabled over the spans silences the speech there, and the same
+    # expression negated silences the tone everywhere else. What comes
+    # out is one or the other at every instant, never both.
+    bleep_chain = ""
+    if bleeps:
+        spans = "+".join(f"between(t,{start:.3f},{end:.3f})" for start, end in bleeps)
+        # The tone only has to last as far as the final bleep; `amix`
+        # takes its length from the speech, which is the first input.
+        tone_len = max(end for _, end in bleeps) + 1
+        bleep_chain = (
+            f"[{voice_stream}]volume=0:enable='{spans}'[voice_gated];"
+            f"sine=frequency={BLEEP_HZ}:sample_rate=48000:duration={tone_len:.3f}[tone_raw];"
+            f"[tone_raw]volume=0:enable='not({spans})'[tone_gated];"
+            f"[voice_gated][tone_gated]amix=inputs=2:duration=first:normalize=0[speech];"
+        )
+        voice_stream = "speech"
+
     if secondary_video is not None:
         half = target.height // 2
         # setsar=1 on both: vstack refuses inputs whose sample aspect
@@ -392,10 +421,23 @@ async def finalize_render(
 
     if music_enabled:
         music_index = 2 if secondary_video is not None else 1
+        # The ducked mix reads the voice twice — once to key the
+        # compressor, once as the thing being mixed. An *input stream*
+        # can be referenced twice and ffmpeg splits it for you; a
+        # filtergraph label cannot, and the bleep chain above produces
+        # one. Without this the censored copy was silently dropped from
+        # one of the two and the swearing came back.
+        split_chain = ""
+        duck_source = mix_source = voice_stream
+        if bleep_chain and music.duck_on_voice:
+            split_chain = f"[{voice_stream}]asplit=2[voice_key][voice_mix];"
+            duck_source, mix_source = "voice_key", "voice_mix"
+
         audio_chain = (
-            f";[{music_index}:a]volume={music.volume_db}dB,aloop=loop=-1:size=2e9[music];"
+            f";{split_chain}"
+            f"[{music_index}:a]volume={music.volume_db}dB,aloop=loop=-1:size=2e9[music];"
             + (
-                f"[music][{voice_stream}]sidechaincompress=threshold=0.05:ratio=8:attack=5:release=300[ducked];"
+                f"[music][{duck_source}]sidechaincompress=threshold=0.05:ratio=8:attack=5:release=300[ducked];"
                 if music.duck_on_voice
                 else "[music]anull[ducked];"
             )
@@ -404,7 +446,7 @@ async def finalize_render(
             # the voice and the already-ducked music) to guard against
             # clipping — that's what made the mixed music barely audible
             # and the voice noticeably quieter than the no-music path.
-            + f"[{voice_stream}][ducked]amix=inputs=2:duration=first:dropout_transition=2:normalize=0[aout]"
+            + f"[{mix_source}][ducked]amix=inputs=2:duration=first:dropout_transition=2:normalize=0[aout]"
         )
         audio_map = ["-map", "[aout]"]
     else:
@@ -415,12 +457,17 @@ async def finalize_render(
         # trap costing a whole scene's voiceover). A dub makes that
         # explicitness load-bearing rather than defensive — the track we
         # want is not the one ffmpeg would pick.
-        audio_map = ["-map", voice_stream if voice_track is not None else "0:a?"]
+        if voice_stream == "speech":
+            # A filtergraph label, not an input stream — `-map` needs the
+            # brackets that a bare "0:a" must not have.
+            audio_map = ["-map", "[speech]"]
+        else:
+            audio_map = ["-map", voice_stream if voice_track is not None else "0:a?"]
 
     args = [
         "-i", str(concatenated_video),
         *inputs,
-        "-filter_complex", video_chain + audio_chain,
+        "-filter_complex", video_chain + (f";{bleep_chain.rstrip(';')}" if bleep_chain else "") + audio_chain,
         "-map", "[vout]",
         *audio_map,
         "-c:v", "libx264",
@@ -465,6 +512,8 @@ async def render_project(
     scene_gap_s: float = DEFAULT_SCENE_GAP_S,
     on_scene_rendered=None,
     language: str = "en",
+    censor: bool = False,
+    censor_extra: str = "",
 ) -> Path:
     """Full assembly: render each scene clip, THEN build subtitles (using
     each clip's real, frame-quantized duration rather than the pre-render
@@ -487,11 +536,25 @@ async def render_project(
         play_res=(target.width, target.height),
         # Casing rules differ by language — see subtitle_engine._uppercase.
         language=language,
+        censor=censor,
+        censor_extra=censor_extra,
+    )
+
+    # The same words the captions were built from, so the bleep lands on
+    # the syllable the mask covers rather than near it.
+    bleeps = (
+        profanity.spans(absolute_words(scenes), language, censor_extra) if censor else None
     )
 
     concatenated = await concat_scene_clips(clip_paths, output_dir, ffmpeg_binary)
     return await finalize_render(
-        concatenated, subtitle_ass_path, music, final_output_path, target, ffmpeg_binary
+        concatenated,
+        subtitle_ass_path,
+        music,
+        final_output_path,
+        target,
+        ffmpeg_binary,
+        bleeps=bleeps,
     )
 
 

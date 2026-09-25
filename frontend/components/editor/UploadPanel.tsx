@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LanguageSelector } from "./LanguageSelector";
 import { CaptionStyleSelector } from "./CaptionStyleSelector";
+import { CensorToggle } from "./CensorToggle";
 import { presetById } from "@/lib/captionStyles";
 import { UploadPreview } from "./UploadPreview";
 
@@ -49,6 +50,7 @@ export function UploadPanel() {
   // Local rather than in the draft store: the target language is a
   // property of this one action, not of a project that outlives it.
   const [dubLanguage, setDubLanguage] = useState("");
+  const [censor, setCensor] = useState(false);
   // Zero means "caption it whole". The two are mutually exclusive — the
   // API refuses both together rather than quietly doing one — so choosing
   // either clears the other here instead of letting the server say no
@@ -89,6 +91,7 @@ export function UploadPanel() {
           // was missing was this line, so every upload came back Classic
           // whatever was chosen.
           subtitles: presetById(draft.captionPreset).style,
+          censorProfanity: censor,
         },
         setProgress
       );
@@ -235,6 +238,15 @@ export function UploadPanel() {
           <label className="mb-1.5 block text-sm font-medium text-white/70">{t("captionStyle")}</label>
           <CaptionStyleSelector />
         </div>
+
+        {/* Here as well as in the generate tab: somebody captioning their
+            own recording is the case this matters most for — they cannot
+            re-write what was already said. */}
+        <CensorToggle
+          className="border-t border-border pt-4"
+          checked={censor}
+          onChange={setCensor}
+        />
       </Card>
 
       {error && (

@@ -48,6 +48,7 @@ interface ProjectDraft {
   musicEnabled: boolean;
   /** Id from GET /api/music; null means "let the backend use its default". */
   musicTrackId: string | null;
+  censorProfanity: boolean;
   outroEnabled: boolean;
   outroText: string;
   aiVideoAcknowledged: boolean;
@@ -96,6 +97,7 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
     voiceId: "",
     musicEnabled: true,
     musicTrackId: null,
+    censorProfanity: false,
     outroEnabled: false,
     outroText: "",
     aiVideoAcknowledged: false,
@@ -118,6 +120,7 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
       // the default Piper voice for `language`.
       voice: { ...DEFAULT_VOICE_CONFIG, voice_id: draft.voiceId },
       subtitles: captionStyleFor(draft),
+      censor_profanity: draft.censorProfanity,
       music: {
         ...DEFAULT_MUSIC_CONFIG,
         enabled: draft.musicEnabled,

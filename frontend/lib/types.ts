@@ -237,6 +237,9 @@ export interface ProjectConfig {
   llm: LLMConfig;
   voice: VoiceConfig;
   subtitles: SubtitleStyle;
+  /** Bleep the strong language and mask it as *** in the captions.
+   *  Off unless asked for: it silences part of the audio. */
+  censor_profanity?: boolean;
   music: MusicConfig;
   outro: OutroConfig;
   created_at: string;

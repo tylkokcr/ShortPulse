@@ -121,6 +121,7 @@ export async function uploadVideo(
      *  Mutually exclusive with dubLanguage, which the API enforces. */
     clipCount?: number;
     subtitles?: SubtitleStyle;
+    censorProfanity?: boolean;
   },
   onProgress?: (fraction: number) => void
 ): Promise<Project> {
@@ -132,6 +133,7 @@ export async function uploadVideo(
   // is spoken in either way — it is what the transcription pass is told.
   form.append("dub_language", options.dubLanguage ?? "");
   form.append("clip_count", String(options.clipCount ?? 0));
+  form.append("censor_profanity", String(options.censorProfanity ?? false));
   // JSON inside a multipart field, because the file has to be multipart
   // and the style is a nested object. Omitted, the backend keeps its own
   // defaults — which is what this endpoint did for every upload until

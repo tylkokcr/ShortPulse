@@ -571,6 +571,12 @@
         "normal": "M",
         "large": "L"
       }
+    },
+    "censor": {
+      "toggle": "Küfürleri biple",
+      "hint": "Küfür bir tonun altında susturulur ve altyazıda *** olarak görünür. Kelime listesiyle eşleştiriliyor, yani bilinenleri yakalar — garanti değil.",
+      "summaryOn": "Bip açık",
+      "summaryOff": "Bip kapalı"
     }
   },
   "app": {

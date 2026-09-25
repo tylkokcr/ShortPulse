@@ -571,6 +571,12 @@
         "normal": "M",
         "large": "L"
       }
+    },
+    "censor": {
+      "toggle": "Wyciszaj przekleństwa",
+      "hint": "Przekleństwa są wyciszane pod dźwiękiem i pokazywane w napisach jako ***. Dopasowanie do listy słów — złapie te oczywiste, ale niczego nie gwarantuje.",
+      "summaryOn": "Piknięcie włączone",
+      "summaryOff": "Piknięcie wyłączone"
     }
   },
   "app": {

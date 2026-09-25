@@ -571,6 +571,12 @@
         "normal": "M",
         "large": "L"
       }
+    },
+    "censor": {
+      "toggle": "Schimpfwörter auspiepen",
+      "hint": "Flüche werden unter einem Ton stummgeschaltet und im Untertitel als *** gezeigt. Abgeglichen mit einer Wortliste — sie erwischt die offensichtlichen, garantiert aber nichts.",
+      "summaryOn": "Piepton an",
+      "summaryOff": "Piepton aus"
     }
   },
   "app": {

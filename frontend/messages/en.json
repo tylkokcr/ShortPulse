@@ -571,6 +571,12 @@
         "normal": "M",
         "large": "L"
       }
+    },
+    "censor": {
+      "toggle": "Bleep strong language",
+      "hint": "Swearing is silenced under a tone and shown as *** in the captions. Matched against a word list, so it catches the obvious ones — not a guarantee.",
+      "summaryOn": "Bleep on",
+      "summaryOff": "Bleep off"
     }
   },
   "app": {

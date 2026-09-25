@@ -18,6 +18,7 @@ from pathlib import Path
 from app.core.config import Settings, project_dir
 from app.engines import render_engine, subtitle_engine
 from app.schemas.project import EditSpec, Layout, Project
+from app.services import profanity
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,22 @@ async def apply_edit(project: Project, edit: EditSpec, settings: Settings) -> Pa
         play_res=probed,
         overlays=edit.overlays,
         language=project.config.language,
+        censor=project.config.censor_profanity,
+        censor_extra=settings.profanity_extra,
+    )
+
+    # Re-applied, not inherited. An edit burns onto the *source* — see
+    # burn_source_for — which still has the original audio on it, so
+    # without this a caption fix would leave the words masked on screen
+    # and audible underneath: the worst of both.
+    bleeps = (
+        profanity.spans(
+            captions.words if captions else [],
+            project.config.language,
+            settings.profanity_extra,
+        )
+        if project.config.censor_profanity
+        else None
     )
 
     secondary = None
@@ -91,6 +108,7 @@ async def apply_edit(project: Project, edit: EditSpec, settings: Settings) -> Pa
         target=render_engine.RenderTarget(probed[0], probed[1], project.config.fps),
         ffmpeg_binary=settings.ffmpeg_binary,
         secondary_video=secondary,
+        bleeps=bleeps,
     )
 
     # The thumbnail is a frame of a video that just changed.

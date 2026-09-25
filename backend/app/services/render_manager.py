@@ -45,6 +45,7 @@ from app.services import (
     credits,
     db,
     dubbing,
+    profanity,
     project_store,
     publish_manager,
     reframe,
@@ -345,6 +346,8 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 scene_gap_s=settings.scene_gap_s,
                 on_scene_rendered=on_scene_rendered,
                 language=config.language,
+                censor=config.censor_profanity,
+                censor_extra=settings.profanity_extra,
             )
 
         video_s = sum(
@@ -588,7 +591,18 @@ async def run_upload_pipeline(
                 # is the language spoken into it (see subtitle_engine's
                 # Turkish dotted-i handling for why this matters).
                 language=dubbing_to or config.language,
+                censor=config.censor_profanity,
+                censor_extra=settings.profanity_extra,
             )
+
+        # Built from the same words, so the tone covers the syllable the
+        # mask covers. The caption language is the one spoken after a dub,
+        # and so is this.
+        bleeps = (
+            profanity.spans(words, dubbing_to or config.language, settings.profanity_extra)
+            if config.censor_profanity
+            else None
+        )
 
         # 3. Burn in -----------------------------------------------------------
         await _emit(
@@ -607,6 +621,7 @@ async def run_upload_pipeline(
                 target=render_engine.RenderTarget(probed.width, probed.height, config.fps),
                 ffmpeg_binary=settings.ffmpeg_binary,
                 voice_track=voice_track,
+                bleeps=bleeps,
             )
 
         timings.write(

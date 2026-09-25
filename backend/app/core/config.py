@@ -250,6 +250,12 @@ class Settings(BaseSettings):
     instagram_app_id: str | None = None
     instagram_app_secret: str | None = None
 
+    # Extra words to bleep, comma-separated, added to whatever the
+    # project's language list already holds. No fixed list fits every
+    # channel — and the built-in ones are deliberately short, covering
+    # what platforms act on rather than everything anyone finds rude.
+    profanity_extra: str = ""
+
     # TikTok, via the Content Posting API.
     #
     # `client_key`, which is TikTok's name for what everyone else calls a

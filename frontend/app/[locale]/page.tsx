@@ -24,6 +24,7 @@ import { ScriptEditor } from "@/components/editor/ScriptEditor";
 import { DurationSelector } from "@/components/editor/DurationSelector";
 import { LanguageSelector } from "@/components/editor/LanguageSelector";
 import { OutroToggle } from "@/components/editor/OutroToggle";
+import { CensorToggle } from "@/components/editor/CensorToggle";
 import { VisualSelector } from "@/components/visual/VisualSelector";
 import { CaptionStyleSelector } from "@/components/editor/CaptionStyleSelector";
 import { CaptionPlacement } from "@/components/editor/CaptionPlacement";
@@ -168,14 +169,26 @@ function CreateVideo() {
         </Field>
       </>
     ),
-    finishing: <OutroToggle />,
+    finishing: (
+      <>
+        <OutroToggle />
+        <CensorToggle
+          className="border-t border-border pt-4"
+          checked={draft.censorProfanity}
+          onChange={(censorProfanity) => setDraft({ censorProfanity })}
+        />
+      </>
+    ),
   };
 
   const summaries: Record<GroupId, string> = {
     look: `${draft.aspectRatio} · ${draft.language.toUpperCase()} · ${draft.artStyle} · ${draft.captionPreset}`,
     length: lengthLabel,
     audio: t("summary.audio", { voice: voiceLabel, music: musicLabel }),
-    finishing: draft.outroEnabled ? t("summary.outroOn") : t("summary.outroOff"),
+    finishing: [
+      draft.outroEnabled ? t("summary.outroOn") : t("summary.outroOff"),
+      draft.censorProfanity ? t("censor.summaryOn") : t("censor.summaryOff"),
+    ].join(" · "),
   };
 
   return (

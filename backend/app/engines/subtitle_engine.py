@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from app.schemas.project import Scene, SubtitleStyle, TextOverlay, Word
+from app.services import profanity
 
 logger = logging.getLogger(__name__)
 
@@ -257,6 +258,8 @@ def build_ass_from_words(
     play_res: tuple[int, int] = (1080, 1920),
     overlays: list[TextOverlay] | None = None,
     language: str = "en",
+    censor: bool = False,
+    censor_extra: str = "",
 ) -> Path:
     """Build an .ass file from words already timed against the finished
     video.
@@ -265,7 +268,16 @@ def build_ass_from_words(
     per scene and have to be offset first (see `build_ass_subtitles`); an
     uploaded video's words come straight out of Whisper already absolute,
     with no scenes to offset by. Both end up here.
+
+    `censor` masks the strong language on screen. It is applied here, to
+    a copy, rather than to the stored transcript — the words keep their
+    real text so the editor shows what was said and turning the toggle
+    off renders back to it. The matching bleep is `render_engine`'s;
+    masking here alone would leave it audible.
     """
+    if censor:
+        words = profanity.censor_words(words, language, censor_extra)
+
     events: list[str] = []
     for line in _chunk_words(words, style.max_words_per_line):
         events.extend(_events_for_line(line, style, language))
@@ -349,9 +361,17 @@ def build_ass_subtitles(
     output_path: Path,
     play_res: tuple[int, int] = (1080, 1920),
     language: str = "en",
+    censor: bool = False,
+    censor_extra: str = "",
 ) -> Path:
     """Build a single .ass file covering the full timeline of a generated
     project."""
     return build_ass_from_words(
-        absolute_words(scenes), style, output_path, play_res, language=language
+        absolute_words(scenes),
+        style,
+        output_path,
+        play_res,
+        language=language,
+        censor=censor,
+        censor_extra=censor_extra,
     )
