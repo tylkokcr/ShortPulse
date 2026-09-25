@@ -52,6 +52,7 @@ export function UploadPanel() {
   // property of this one action, not of a project that outlives it.
   const [dubLanguage, setDubLanguage] = useState("");
   const [censor, setCensor] = useState(false);
+  const [focus, setFocus] = useState("");
   // Zero means "caption it whole". The two are mutually exclusive — the
   // API refuses both together rather than quietly doing one — so choosing
   // either clears the other here instead of letting the server say no
@@ -95,6 +96,7 @@ export function UploadPanel() {
           // which is why the composed style now has exactly one home.
           subtitles: captionStyleFor(draft),
           censorProfanity: censor,
+          clipGuidance: focus,
         },
         setProgress
       );
@@ -205,6 +207,29 @@ export function UploadPanel() {
             {clipCount ? t("clipsOnHint") : t("clipsOffHint")}
           </p>
         </div>
+
+        {/* Only with clips: there is nothing for it to steer otherwise,
+            and a field that silently does nothing is worse than one that
+            is not there. */}
+        {clipCount > 0 && (
+          <div>
+            <label
+              htmlFor="clip-focus"
+              className="mb-1.5 block text-sm font-medium text-white/70"
+            >
+              {t("focus")}
+            </label>
+            <input
+              id="clip-focus"
+              value={focus}
+              maxLength={300}
+              onChange={(event) => setFocus(event.target.value)}
+              placeholder={t("focusPlaceholder")}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent"
+            />
+            <p className="mt-1.5 text-xs text-white/40">{t("focusHint")}</p>
+          </div>
+        )}
 
         <div className={clsx(clipCount && "pointer-events-none opacity-40")}>
           <label

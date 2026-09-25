@@ -63,6 +63,7 @@ async def upload_video(
     dub_language: str = Form(""),
     clip_count: int = Form(0),
     censor_profanity: bool = Form(False),
+    clip_guidance: str = Form(""),
     # JSON in a form field: the file forces multipart, and this is a
     # nested object. Empty keeps the schema's defaults, which is what an
     # older client sends and what a self-hosted script that posts a file
@@ -148,6 +149,10 @@ async def upload_video(
         dub_language=dub or None,
         clip_count=clips or None,
         censor_profanity=censor_profanity,
+        # Only meaningful for an extraction. Carried on any upload rather
+        # than refused, because a client that sends it with no clip count
+        # has made a harmless mistake, not a dangerous one.
+        clip_guidance=clip_guidance.strip(),
     )
 
     if subtitles.strip():

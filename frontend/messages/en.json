@@ -416,7 +416,10 @@
         "caption": "Captioning",
         "insufficient": "{what} costs {required} credits and you have {balance}.",
         "failed": "Upload failed"
-      }
+      },
+      "focus": "What to look for",
+      "focusPlaceholder": "e.g. the part where he explains the pricing",
+      "focusHint": "Optional. The transcript still decides — if nothing in it matches, you get no clips and your credits back."
     },
     "idea": "The idea",
     "groups": {

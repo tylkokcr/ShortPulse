@@ -416,7 +416,10 @@
         "caption": "Altyazılama",
         "insufficient": "{what} {required} krediye mal oluyor, sendeyse {balance} var.",
         "failed": "Yükleme başarısız"
-      }
+      },
+      "focus": "Ne aransın",
+      "focusPlaceholder": "örn. fiyatlandırmayı anlattığı kısım",
+      "focusHint": "İsteğe bağlı. Karar yine metinde — hiçbir şey uymazsa kesit çıkmaz ve kredilerin geri döner."
     },
     "idea": "Fikir",
     "groups": {

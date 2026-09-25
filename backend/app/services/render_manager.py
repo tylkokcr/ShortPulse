@@ -718,7 +718,9 @@ async def _extract_clips(
     )
 
     with timings.stage("clip_selection"):
-        moments = await clipping.pick_moments(segments, config.llm, config.clip_count or 3)
+        moments = await clipping.pick_moments(
+            segments, config.llm, config.clip_count or 3, config.clip_guidance
+        )
 
     if not moments:
         # Not an error. The transcript was read and nothing in it stood up
@@ -817,6 +819,11 @@ async def _extract_clips(
             update={
                 "id": str(uuid.uuid4()),
                 "clip_count": None,
+                # Reset for the same reason as clip_count: a child is a
+                # short video somebody uploaded, not an extraction, and a
+                # field that only means something to the picker would be
+                # carried into projects the picker never sees.
+                "clip_guidance": "",
                 "topic": moment.title,
             }
         )

@@ -416,7 +416,10 @@
         "caption": "Dodawanie napisów",
         "insufficient": "{what} kosztuje {required} kredytów, a masz {balance}.",
         "failed": "Wysyłanie nie powiodło się"
-      }
+      },
+      "focus": "Czego szukać",
+      "focusPlaceholder": "np. fragment, w którym tłumaczy cennik",
+      "focusHint": "Opcjonalne. Decyduje i tak transkrypcja — jeśli nic nie pasuje, nie będzie klipów, a kredyty wrócą."
     },
     "idea": "Pomysł",
     "groups": {

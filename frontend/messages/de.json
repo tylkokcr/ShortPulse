@@ -416,7 +416,10 @@
         "caption": "Untertiteln",
         "insufficient": "{what} kostet {required} Credits, du hast {balance}.",
         "failed": "Upload fehlgeschlagen"
-      }
+      },
+      "focus": "Wonach gesucht wird",
+      "focusPlaceholder": "z. B. die Stelle, an der er die Preise erklärt",
+      "focusHint": "Optional. Entscheidend bleibt das Transkript — passt nichts dazu, gibt es keine Clips und die Credits zurück."
     },
     "idea": "Die Idee",
     "groups": {

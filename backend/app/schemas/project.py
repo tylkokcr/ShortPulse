@@ -454,6 +454,15 @@ class ProjectConfig(BaseModel):
     # actually said, and turning this off re-renders back to it.
     censor_profanity: bool = False
 
+    # What the uploader wants the clip picker to look for, in their own
+    # words. Empty is the normal case and changes nothing.
+    #
+    # Capped here as well as in `clipping._tidy_guidance`: the schema
+    # refuses an oversized field outright, the service truncates whatever
+    # arrives by another route. Neither is the security boundary — see
+    # `pick_moments` for why the validator downstream is.
+    clip_guidance: str = Field(default="", max_length=300)
+
     # A quick zoom that settles at the top of each generated scene. On by
     # default: a static frame held for four seconds reads as a slideshow
     # however good the picture is, and that is what this product's output

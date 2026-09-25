@@ -149,6 +149,9 @@ export async function uploadVideo(
     clipCount?: number;
     subtitles?: SubtitleStyle;
     censorProfanity?: boolean;
+    /** Free text telling the clip picker what to look for. Ignored
+     *  unless clipCount is set. */
+    clipGuidance?: string;
   },
   onProgress?: (fraction: number) => void
 ): Promise<Project> {
@@ -161,6 +164,7 @@ export async function uploadVideo(
   form.append("dub_language", options.dubLanguage ?? "");
   form.append("clip_count", String(options.clipCount ?? 0));
   form.append("censor_profanity", String(options.censorProfanity ?? false));
+  form.append("clip_guidance", options.clipGuidance ?? "");
   // JSON inside a multipart field, because the file has to be multipart
   // and the style is a nested object. Omitted, the backend keeps its own
   // defaults — which is what this endpoint did for every upload until
