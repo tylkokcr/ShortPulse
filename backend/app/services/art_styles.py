@@ -52,7 +52,11 @@ _BASE_NEGATIVE = (
     # background presence outright would cost that and fix nothing, since
     # what fails is a crowd being the subject.
     "crowd, group of people, many people, "
-    "text overlay, watermark, signature"
+    "text overlay, watermark, signature, "
+    # Content, not quality — see visual_engine.DEFAULT_NEGATIVE_PROMPT,
+    # which carries the same terms for the unstyled path.
+    "nude, nudity, naked, topless, underwear, lingerie, sexual, erotic, "
+    "suggestive pose, gore, blood, mutilation"
 )
 
 # Pushes a stylized render away from photography, which the photoreal-tuned

@@ -57,7 +57,13 @@ DEFAULT_NEGATIVE_PROMPT = (
     # foot and about why the crowd is named rather than people in general.
     "deformed feet, extra toes, crowd, group of people, many people, "
     "text overlay, watermark, signature, cgi, 3d render, illustration, "
-    "overly smooth, plastic, oversaturated"
+    "overly smooth, plastic, oversaturated, "
+    # The last line of defence for content, not for quality. The topic
+    # gate and the script prompt are what should stop this; these are
+    # here for the case where a perfectly innocent prompt lands somewhere
+    # the model did not need to take it.
+    "nude, nudity, naked, topless, underwear, lingerie, sexual, erotic, "
+    "suggestive pose, gore, blood, mutilation"
 )
 
 # The photoreal wording that used to live here is now the "photoreal"

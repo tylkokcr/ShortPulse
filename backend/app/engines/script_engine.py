@@ -121,6 +121,12 @@ about the visual.
 non-verbal cues (body language, micro-expressions, etc.) — the narrator \
 always explains the point out loud in words; the visual is a separate, \
 complementary illustration, not a substitute for narration.
+- Keep every "voiceover_line" and every "visual_prompt" suitable for a \
+general audience and for advertisers: no sexual content, no nudity, no \
+graphic violence or gore. This holds even when the topic invites it — a \
+topic about relationships, anatomy or crime is written about, not \
+depicted. A "visual_prompt" describing a person must describe them \
+clothed.
 - Keep the tone punchy and conversational. No filler.
 - Never include emoji or symbols in "voiceover_line" — it is read aloud by \
 a text-to-speech engine, which will speak an emoji's literal name instead \

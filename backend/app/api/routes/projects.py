@@ -30,7 +30,15 @@ from app.schemas.project import (
     TextOverlay,
     VisualMode,
 )
-from app.services import credits, editing, feedback, project_lock, project_store, regeneration
+from app.services import (
+    content_policy,
+    credits,
+    editing,
+    feedback,
+    project_lock,
+    project_store,
+    regeneration,
+)
 from app.services.media_tokens import InvalidMediaToken
 
 logger = logging.getLogger(__name__)
@@ -93,6 +101,17 @@ async def create_project(
         api_key=settings.openai_api_key,
         temperature=config.llm.temperature,
     )
+
+    # Before the billing gate and before create_project, so a refusal
+    # costs nothing and leaves nothing behind. Not a user setting — see
+    # services/content_policy for why it belongs to the deployment.
+    try:
+        content_policy.check_topic(config.topic, config.raw_script or "")
+    except content_policy.Refused as refusal:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": refusal.code, "reason": refusal.reason},
+        ) from refusal
 
     billing = billing_for(db_pool(request), user_id)
 

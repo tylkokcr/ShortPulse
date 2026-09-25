@@ -86,10 +86,37 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
         if (err instanceof InsufficientCreditsError) throw err;
       }
     }
-    throw new Error(`${response.status} ${response.statusText}: ${body}`);
+    // A 422 here is a refusal with a sentence attached — an unavailable
+    // visual mode, a topic the service will not generate. Showing the
+    // sentence beats showing the JSON it arrived in.
+    const reason = response.status === 422 ? serverReason(body) : null;
+    throw new Error(reason ?? `${response.status} ${response.statusText}: ${body}`);
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
+}
+
+/**
+ * The sentence the server wrote for the user, out of a FastAPI error body.
+ *
+ * `detail` is a string on some routes and `{error, reason}` on others —
+ * the second shape carries a code the UI can branch on alongside the
+ * prose. Passing the object straight to `new Error` yields the literal
+ * text "[object Object]", which is what the upload panel showed for
+ * every 422 it had a good message for.
+ *
+ * Returns null when there is nothing worth showing, so the caller can
+ * fall back to something that at least names the status.
+ */
+function serverReason(body: string): string | null {
+  try {
+    const detail = JSON.parse(body).detail;
+    if (typeof detail === "string") return detail;
+    if (detail && typeof detail.reason === "string") return detail.reason;
+  } catch {
+    // Not JSON, or not shaped like an error we know.
+  }
+  return null;
 }
 
 export function createProject(config: Partial<ProjectConfig> & { topic: string }): Promise<Project> {
@@ -174,11 +201,10 @@ export async function uploadVideo(
       if (xhr.status === 422) {
         // The server's reason is written for the user ("no audio track",
         // "larger than the 200MB limit") — showing it beats a status code.
-        try {
-          reject(new Error(JSON.parse(xhr.responseText).detail));
+        const reason = serverReason(xhr.responseText);
+        if (reason) {
+          reject(new Error(reason));
           return;
-        } catch {
-          // fall through
         }
       }
       reject(new Error(`Upload failed (${xhr.status}): ${xhr.responseText.slice(0, 200)}`));
