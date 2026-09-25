@@ -12,8 +12,9 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LanguageSelector } from "./LanguageSelector";
 import { CaptionStyleSelector } from "./CaptionStyleSelector";
+import { CaptionPlacement } from "./CaptionPlacement";
 import { CensorToggle } from "./CensorToggle";
-import { presetById } from "@/lib/captionStyles";
+import { captionStyleFor, presetById } from "@/lib/captionStyles";
 import { UploadPreview } from "./UploadPreview";
 
 /**
@@ -40,7 +41,7 @@ export function UploadPanel() {
   // generate tab, so they live one level up rather than twice.
   const ts = useTranslations("studio");
   const router = useRouter();
-  const { draft, credits } = useShortPulseStore();
+  const { draft, setDraft, credits } = useShortPulseStore();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
@@ -87,10 +88,12 @@ export function UploadPanel() {
           title: file.name.replace(/\.[^.]+$/, ""),
           dubLanguage,
           clipCount,
-          // The picker below has been on this panel from the start; what
-          // was missing was this line, so every upload came back Classic
-          // whatever was chosen.
-          subtitles: presetById(draft.captionPreset).style,
+          // `captionStyleFor`, not the preset's own style: the placement
+          // control writes position and size onto the draft, and reading
+          // the preset directly threw both away. The same line had the
+          // same shape of bug once before — it used to hardcode Classic —
+          // which is why the composed style now has exactly one home.
+          subtitles: captionStyleFor(draft),
           censorProfanity: censor,
         },
         setProgress
@@ -237,6 +240,18 @@ export function UploadPanel() {
         <div>
           <label className="mb-1.5 block text-sm font-medium text-white/70">{t("captionStyle")}</label>
           <CaptionStyleSelector />
+          {/* Here too, not only on the generate tab. The draft is shared,
+              so the placement chosen there already applied to an upload —
+              it was just invisible on the panel it applied to, which is
+              how it went unnoticed that the value was being dropped. */}
+          <CaptionPlacement
+            className="mt-3"
+            position={draft.captionPosition}
+            fontSize={draft.captionFontSize ?? presetById(draft.captionPreset).style.font_size}
+            onChange={({ position, fontSize }) =>
+              setDraft({ captionPosition: position, captionFontSize: fontSize })
+            }
+          />
         </div>
 
         {/* Here as well as in the generate tab: somebody captioning their
