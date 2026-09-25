@@ -534,3 +534,62 @@ async def test_a_dead_grant_is_reported_as_revoked_rather_than_retried(monkeypat
 
     with pytest.raises(ConnectionRevoked):
         await _instagram().refresh("long-dead")
+
+
+# --- saying why a platform is missing ------------------------------------
+#
+# Absence is this feature's failure mode. A platform that is not
+# configured is simply not on the Connections page — no error, nothing in
+# the API to tell "this deployment doesn't offer it" apart from "you
+# spelled the variable wrong". That cost a deploy cycle: the Instagram
+# credentials were set as INSTAGRAM_CLIENT_ID/SECRET, which is what Meta's
+# OAuth dialog calls them, while this reads INSTAGRAM_APP_ID/SECRET, which
+# is what Meta's console labels them.
+
+
+def test_the_other_true_name_is_called_out(monkeypatch, caplog):
+    """Not a typo — both spellings are Meta's, for the same pair. So the
+    message has to name the one in use and the one expected."""
+    monkeypatch.setenv("INSTAGRAM_CLIENT_ID", "4465462800339235")
+    monkeypatch.setenv("INSTAGRAM_CLIENT_SECRET", "secret")
+    monkeypatch.delenv("INSTAGRAM_APP_ID", raising=False)
+    monkeypatch.delenv("INSTAGRAM_APP_SECRET", raising=False)
+
+    with caplog.at_level("WARNING"):
+        build_publishers(_settings(meta_app_id="a", meta_app_secret="b"))
+
+    warning = "\n".join(caplog.messages)
+    assert "INSTAGRAM_CLIENT_ID" in warning
+    assert "INSTAGRAM_APP_ID" in warning
+
+
+def test_half_a_pair_is_called_out(monkeypatch, caplog):
+    """An id with no secret builds nothing, and looked identical to no
+    configuration at all."""
+    monkeypatch.setenv("INSTAGRAM_APP_ID", "4465462800339235")
+    monkeypatch.delenv("INSTAGRAM_APP_SECRET", raising=False)
+    monkeypatch.delenv("INSTAGRAM_CLIENT_ID", raising=False)
+    monkeypatch.delenv("INSTAGRAM_CLIENT_SECRET", raising=False)
+
+    with caplog.at_level("WARNING"):
+        build_publishers(_settings(instagram_app_id="4465462800339235"))
+
+    warning = "\n".join(caplog.messages)
+    assert "INSTAGRAM_APP_SECRET" in warning
+    assert "needs both" in warning
+
+
+def test_a_platform_nobody_configured_says_nothing(monkeypatch, caplog):
+    """A self-hosted install that publishes nowhere is not misconfigured,
+    and a warning per platform per boot would train the operator to skip
+    the log that matters."""
+    for name in (
+        "INSTAGRAM_APP_ID", "INSTAGRAM_APP_SECRET",
+        "INSTAGRAM_CLIENT_ID", "INSTAGRAM_CLIENT_SECRET",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    with caplog.at_level("WARNING"):
+        build_publishers(_settings(meta_app_id="a", meta_app_secret="b"))
+
+    assert not caplog.messages

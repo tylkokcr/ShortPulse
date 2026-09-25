@@ -14,6 +14,7 @@ be in plain text, and refusing to connect is the right answer to that.
 from __future__ import annotations
 
 import logging
+import os
 
 from app.core.config import Settings
 from app.services.social.base import SocialPublisher
@@ -83,6 +84,76 @@ def build_publishers(settings: Settings) -> dict[str, SocialPublisher]:
             redirect_uri=redirect_uri(settings, "tiktok"),
         )
 
+    _report(settings, publishers)
+    return publishers
+
+
+# The two settings each platform needs, and the names an operator is most
+# likely to reach for instead.
+#
+# The alternates are not typos, they are the other true name: Meta's own
+# OAuth dialog takes `client_id` and `client_secret`, while its console
+# labels the same pair "Instagram app ID" and "Instagram app secret".
+# Someone copying from the dialog docs writes CLIENT and gets silence —
+# the platform simply does not appear, with nothing anywhere saying why.
+# This is the same confusion TikTok's `client_key` is commented about in
+# config.py, one step worse because both spellings are plausible.
+_CREDENTIALS: dict[str, tuple[tuple[str, str], tuple[str, str]]] = {
+    "youtube": (("YOUTUBE_CLIENT_ID", ""), ("YOUTUBE_CLIENT_SECRET", "")),
+    "facebook": (("META_APP_ID", ""), ("META_APP_SECRET", "")),
+    "instagram": (
+        ("INSTAGRAM_APP_ID", "INSTAGRAM_CLIENT_ID"),
+        ("INSTAGRAM_APP_SECRET", "INSTAGRAM_CLIENT_SECRET"),
+    ),
+    "tiktok": (("TIKTOK_CLIENT_KEY", ""), ("TIKTOK_CLIENT_SECRET", "")),
+}
+
+
+def _report(settings: Settings, publishers: dict[str, SocialPublisher]) -> None:
+    """Say what is on, what is off, and — where we can tell — why.
+
+    Absence is the failure mode here. A platform that is not configured
+    is simply missing from the Connections page: no error, no warning,
+    nothing in the API response to distinguish "this deployment does not
+    offer it" from "you spelled the variable wrong". An operator has no
+    way to tell those apart from the outside, so this says it at startup
+    where they will look.
+
+    Not a readiness warning, deliberately: `main.py` reports the install
+    as not production-ready when there are any, and an install that
+    simply does not publish to Instagram is fine.
+    """
     if publishers:
         logger.info("Publishing enabled for: %s", ", ".join(sorted(publishers)))
-    return publishers
+
+    for platform in PLATFORMS:
+        if platform in publishers:
+            continue
+        expected = _CREDENTIALS.get(platform)
+        if not expected:
+            continue
+
+        misspelled = [
+            (wanted, alternate)
+            for wanted, alternate in expected
+            if alternate and not os.environ.get(wanted) and os.environ.get(alternate)
+        ]
+        if misspelled:
+            logger.warning(
+                "%s is not enabled, but %s is set — this deployment reads %s. "
+                "Rename it and restart.",
+                platform,
+                ", ".join(alternate for _, alternate in misspelled),
+                ", ".join(wanted for wanted, _ in misspelled),
+            )
+            continue
+
+        set_names = [wanted for wanted, _ in expected if os.environ.get(wanted)]
+        if set_names and len(set_names) != len(expected):
+            missing = [wanted for wanted, _ in expected if wanted not in set_names]
+            logger.warning(
+                "%s is not enabled: %s is set but %s is not — it needs both.",
+                platform,
+                ", ".join(set_names),
+                ", ".join(missing),
+            )
