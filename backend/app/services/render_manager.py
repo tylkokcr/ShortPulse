@@ -811,11 +811,13 @@ async def _extract_clips(
     try:
         probed_source = await uploads.probe(source, settings.ffprobe_binary)
         source_size: tuple[int, int] | None = (probed_source.width, probed_source.height)
+        source_duration_s: float | None = probed_source.duration_s
     except Exception:  # noqa: BLE001
         # Not fatal. Without a size there is no subject tracking, and the
         # cut falls back to the centre — which is what it did before.
         logger.warning("Could not probe %s; clips will be centre-cropped", source.name)
         source_size = None
+        source_duration_s = None
 
     # Asked for rather than read off the project: the owner is a column,
     # not a field on the model, and it is not optional here — list_projects
@@ -922,6 +924,25 @@ async def _extract_clips(
         project_id,
         status=ProjectStatus.COMPLETE,
         clip_project_ids=child_ids,
+    )
+    # The extraction never wrote one: it returns before the caption path
+    # that does. That was a gap even before windows — this is the run
+    # whose cost is dominated by a single Whisper pass over a long file,
+    # which is exactly the number `timings.json` exists to record, and
+    # now also the only place the saving from a window is visible.
+    window = _clip_window(config)
+    timings.write(
+        paths / "timings.json",
+        extra={
+            "project_id": project_id,
+            "source": "extraction",
+            "language": config.language,
+            "clips": len(child_ids),
+            "source_duration_s": (
+                round(source_duration_s, 2) if source_duration_s is not None else None
+            ),
+            "read_duration_s": round(window[1], 2) if window else None,
+        },
     )
     await _emit(
         project_id,
