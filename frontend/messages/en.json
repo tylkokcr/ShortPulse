@@ -577,6 +577,12 @@
       "hint": "Swearing is silenced under a tone and shown as *** in the captions. Matched against a word list, so it catches the obvious ones — not a guarantee.",
       "summaryOn": "Bleep on",
       "summaryOff": "Bleep off"
+    },
+    "punch": {
+      "toggle": "Punch in on every cut",
+      "hint": "A quick zoom that settles as each scene starts. Stock and AI-video clips only — AI stills already pan.",
+      "summaryOn": "Punch on",
+      "summaryOff": "Punch off"
     }
   },
   "app": {

@@ -577,6 +577,12 @@
       "hint": "Flüche werden unter einem Ton stummgeschaltet und im Untertitel als *** gezeigt. Abgeglichen mit einer Wortliste — sie erwischt die offensichtlichen, garantiert aber nichts.",
       "summaryOn": "Piepton an",
       "summaryOff": "Piepton aus"
+    },
+    "punch": {
+      "toggle": "Bei jedem Schnitt hineinziehen",
+      "hint": "Ein kurzer Zoom, der sich zu Beginn jeder Szene beruhigt. Nur bei Stock- und KI-Video-Clips — KI-Standbilder schwenken ohnehin.",
+      "summaryOn": "Zoom an",
+      "summaryOff": "Zoom aus"
     }
   },
   "app": {

@@ -49,6 +49,7 @@ interface ProjectDraft {
   /** Id from GET /api/music; null means "let the backend use its default". */
   musicTrackId: string | null;
   censorProfanity: boolean;
+  zoomPunch: boolean;
   outroEnabled: boolean;
   outroText: string;
   aiVideoAcknowledged: boolean;
@@ -98,6 +99,7 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
     musicEnabled: true,
     musicTrackId: null,
     censorProfanity: false,
+    zoomPunch: true,
     outroEnabled: false,
     outroText: "",
     aiVideoAcknowledged: false,
@@ -121,6 +123,7 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
       voice: { ...DEFAULT_VOICE_CONFIG, voice_id: draft.voiceId },
       subtitles: captionStyleFor(draft),
       censor_profanity: draft.censorProfanity,
+      zoom_punch: draft.zoomPunch,
       music: {
         ...DEFAULT_MUSIC_CONFIG,
         enabled: draft.musicEnabled,

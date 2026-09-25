@@ -25,6 +25,7 @@ import { DurationSelector } from "@/components/editor/DurationSelector";
 import { LanguageSelector } from "@/components/editor/LanguageSelector";
 import { OutroToggle } from "@/components/editor/OutroToggle";
 import { CensorToggle } from "@/components/editor/CensorToggle";
+import { PunchToggle } from "@/components/editor/PunchToggle";
 import { VisualSelector } from "@/components/visual/VisualSelector";
 import { CaptionStyleSelector } from "@/components/editor/CaptionStyleSelector";
 import { CaptionPlacement } from "@/components/editor/CaptionPlacement";
@@ -172,6 +173,11 @@ function CreateVideo() {
     finishing: (
       <>
         <OutroToggle />
+        <PunchToggle
+          className="border-t border-border pt-4"
+          checked={draft.zoomPunch}
+          onChange={(zoomPunch) => setDraft({ zoomPunch })}
+        />
         <CensorToggle
           className="border-t border-border pt-4"
           checked={draft.censorProfanity}
@@ -187,6 +193,7 @@ function CreateVideo() {
     audio: t("summary.audio", { voice: voiceLabel, music: musicLabel }),
     finishing: [
       draft.outroEnabled ? t("summary.outroOn") : t("summary.outroOff"),
+      draft.zoomPunch ? t("punch.summaryOn") : t("punch.summaryOff"),
       draft.censorProfanity ? t("censor.summaryOn") : t("censor.summaryOff"),
     ].join(" · "),
   };

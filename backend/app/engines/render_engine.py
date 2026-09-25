@@ -208,8 +208,49 @@ async def _render_image_scene_clip(
     await _run_ffmpeg(args, ffmpeg_binary)
 
 
+# The punch-in: how long it lasts and how far it starts out.
+#
+# 0.35s because it has to read as the cut landing rather than as a move —
+# past about half a second the eye follows it as a camera push and the
+# emphasis is gone. The two amounts alternate per scene so a six-scene
+# video does not tick like a metronome.
+PUNCH_S = 0.35
+PUNCH_ZOOMS = (1.08, 1.05)
+
+
+def punch_filter(scene_index: int, target: RenderTarget, duration_s: float) -> str:
+    """A quick zoom that settles, at the top of a scene.
+
+    This is what a short-form edit does at every cut and what the product
+    was missing: a static frame held for four seconds reads as a
+    slideshow, however good the picture is.
+
+    `d=1` makes zoompan emit one frame per input frame, which is what
+    turns a filter written for stills into one that works on video.
+    Without `x`/`y` it would zoom into the top-left corner; those two
+    expressions keep the centre still while the edges come in.
+
+    Eased out, not linear: the move has to decelerate into its resting
+    size or it stops dead and looks like a dropped frame.
+    """
+    zoom = PUNCH_ZOOMS[scene_index % len(PUNCH_ZOOMS)]
+    # `it` is the input timestamp in seconds — `t` inside zoompan is the
+    # output frame's, which advances differently under d=1.
+    ease = f"pow(1-it/{PUNCH_S},2)"
+    z = f"if(lt(it,{PUNCH_S}),1+{zoom - 1:.4f}*{ease},1)"
+    return (
+        f"zoompan=z='{z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
+        f":s={target.width}x{target.height}:fps={target.fps}"
+    )
+
+
 async def _render_video_scene_clip(
-    scene: Scene, target: RenderTarget, output_path: Path, ffmpeg_binary: str, duration: float
+    scene: Scene,
+    target: RenderTarget,
+    output_path: Path,
+    ffmpeg_binary: str,
+    duration: float,
+    punch: bool = True,
 ) -> None:
     """Scale-to-fill + center-crop a stock/AI video clip to the target
     aspect ratio, looping it if it's shorter than the scene's voiceover."""
@@ -219,9 +260,13 @@ async def _render_video_scene_clip(
     total_frames = max(round(duration * target.fps), 1)
     exact_duration = total_frames / target.fps
 
+    # Stock and AI-video clips carry whatever motion was filmed and
+    # nothing else — no cut, no emphasis. The punch is the whole
+    # difference between a scene and a slide.
+    motion = f",{punch_filter(scene.index, target, exact_duration)}" if punch else ""
     video_filter = (
         f"scale={target.width}:{target.height}:force_original_aspect_ratio=increase,"
-        f"crop={target.width}:{target.height},fps={target.fps},format=yuv420p"
+        f"crop={target.width}:{target.height}{motion},fps={target.fps},format=yuv420p"
     )
 
     args = [
@@ -256,6 +301,7 @@ async def render_scene_clip(
     ffmpeg_binary: str = "ffmpeg",
     ffprobe_binary: str = "ffprobe",
     scene_gap_s: float = DEFAULT_SCENE_GAP_S,
+    punch: bool = True,
     duration_override_s: float | None = None,
 ) -> Path:
     """Encode one scene into a clip the concat step can stream-copy.
@@ -286,7 +332,9 @@ async def render_scene_clip(
     if ext in _IMAGE_EXTENSIONS:
         await _render_image_scene_clip(scene, target, output_path, ffmpeg_binary, duration)
     elif ext in _VIDEO_EXTENSIONS:
-        await _render_video_scene_clip(scene, target, output_path, ffmpeg_binary, duration)
+        await _render_video_scene_clip(
+            scene, target, output_path, ffmpeg_binary, duration, punch=punch
+        )
     else:
         raise RenderError(f"Unrecognized visual asset type: {ext}")
 
@@ -512,6 +560,7 @@ async def render_project(
     scene_gap_s: float = DEFAULT_SCENE_GAP_S,
     on_scene_rendered=None,
     language: str = "en",
+    punch: bool = True,
     censor: bool = False,
     censor_extra: str = "",
 ) -> Path:
@@ -523,7 +572,7 @@ async def render_project(
     clip_paths: list[Path] = []
     for scene in scenes:
         clip_path = await render_scene_clip(
-            scene, target, output_dir, ffmpeg_binary, ffprobe_binary, scene_gap_s
+            scene, target, output_dir, ffmpeg_binary, ffprobe_binary, scene_gap_s, punch=punch
         )
         clip_paths.append(clip_path)
         if on_scene_rendered:

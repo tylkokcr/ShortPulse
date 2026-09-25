@@ -453,6 +453,13 @@ class ProjectConfig(BaseModel):
     # so the words keep their real text — the editor shows what was
     # actually said, and turning this off re-renders back to it.
     censor_profanity: bool = False
+
+    # A quick zoom that settles at the top of each generated scene. On by
+    # default: a static frame held for four seconds reads as a slideshow
+    # however good the picture is, and that is what this product's output
+    # was. Only applies to footage that has no motion of its own — stills
+    # already get Ken Burns.
+    zoom_punch: bool = True
     music: MusicConfig = Field(default_factory=MusicConfig)
     outro: OutroConfig = Field(default_factory=OutroConfig)
     created_at: datetime = Field(default_factory=datetime.utcnow)

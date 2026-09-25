@@ -346,6 +346,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 scene_gap_s=settings.scene_gap_s,
                 on_scene_rendered=on_scene_rendered,
                 language=config.language,
+                punch=config.zoom_punch,
                 censor=config.censor_profanity,
                 censor_extra=settings.profanity_extra,
             )

@@ -240,6 +240,9 @@ export interface ProjectConfig {
   /** Bleep the strong language and mask it as *** in the captions.
    *  Off unless asked for: it silences part of the audio. */
   censor_profanity?: boolean;
+  /** A quick zoom that settles at the top of each generated scene. On
+   *  unless turned off — a held frame reads as a slideshow. */
+  zoom_punch?: boolean;
   music: MusicConfig;
   outro: OutroConfig;
   created_at: string;

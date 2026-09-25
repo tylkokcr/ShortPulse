@@ -577,6 +577,12 @@
       "hint": "Küfür bir tonun altında susturulur ve altyazıda *** olarak görünür. Kelime listesiyle eşleştiriliyor, yani bilinenleri yakalar — garanti değil.",
       "summaryOn": "Bip açık",
       "summaryOff": "Bip kapalı"
+    },
+    "punch": {
+      "toggle": "Her kesmede vuruş yap",
+      "hint": "Her sahne başlarken oturan hızlı bir yakınlaşma. Yalnızca stok ve AI video kliplerinde — AI kareleri zaten kayıyor.",
+      "summaryOn": "Vuruş açık",
+      "summaryOff": "Vuruş kapalı"
     }
   },
   "app": {

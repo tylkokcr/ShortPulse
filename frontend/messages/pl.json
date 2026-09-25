@@ -577,6 +577,12 @@
       "hint": "Przekleństwa są wyciszane pod dźwiękiem i pokazywane w napisach jako ***. Dopasowanie do listy słów — złapie te oczywiste, ale niczego nie gwarantuje.",
       "summaryOn": "Piknięcie włączone",
       "summaryOff": "Piknięcie wyłączone"
+    },
+    "punch": {
+      "toggle": "Najazd przy każdym cięciu",
+      "hint": "Szybkie zbliżenie, które wytraca się na starcie każdej sceny. Tylko klipy stockowe i AI wideo — kadry AI i tak się przesuwają.",
+      "summaryOn": "Najazd włączony",
+      "summaryOff": "Najazd wyłączony"
     }
   },
   "app": {
