@@ -51,6 +51,25 @@ function formatSize(bytes: number): string {
   return mb >= 1000 ? `${(mb / 1024).toFixed(1)}GB` : `${mb.toFixed(0)}MB`;
 }
 
+/**
+ * What the extraction will cost, by the same arithmetic the server uses.
+ *
+ * `Math.ceil`, a floor of one: a part-minute is never free and the
+ * shortest legal stretch still costs something. Without a measured
+ * duration there is no window to price, and the server will read the
+ * whole file — so the quote falls back to what it charges for that,
+ * which it cannot know until it has probed. One credit is the floor
+ * either way, and the honest thing to show before a length is known.
+ */
+function clipPrice(
+  windowMs: [number, number],
+  durationMs: number | null,
+  secondsPerCredit: number
+): number {
+  const spanMs = durationMs === null ? 0 : Math.max(windowMs[1] - windowMs[0], 0);
+  return Math.max(1, Math.ceil(spanMs / 1000 / secondsPerCredit));
+}
+
 export function UploadPanel() {
   const t = useTranslations("studio.upload");
   // The credit line and the free-install line are shared with the
@@ -89,8 +108,16 @@ export function UploadPanel() {
   // Quoted from the table the API serves, which is the one the backend
   // charges from — the panel used to print "1 credit" whatever was
   // chosen, which was wrong about a dub and about every clip count.
-  const unit = clipCount ? "upload:clip" : dubLanguage ? "upload:dub" : "upload:caption";
-  const price = (credits?.pricing?.[unit] ?? 1) * (clipCount || 1);
+  //
+  // An extraction is the one price that is not in the table, because it
+  // depends on how much of the source is read. The table publishes the
+  // rate and this runs the same sum `credits.clip_cost` does. Both halves
+  // move together or the panel promises a number the server will not
+  // charge.
+  const secondsPerCredit = credits?.pricing?.["upload:clip_seconds_per_credit"] ?? 120;
+  const price = clipCount
+    ? clipPrice(windowMs, durationMs, secondsPerCredit)
+    : (credits?.pricing?.[dubLanguage ? "upload:dub" : "upload:caption"] ?? 1);
 
   function choose(next: File | null) {
     setError(null);
@@ -295,7 +322,10 @@ export function UploadPanel() {
               labels={{ start: t("windowStart"), end: t("windowEnd") }}
             />
             <p className="mt-1.5 text-xs text-white/40">
-              {t("windowHint", { minutes: Math.round(MIN_WINDOW_MS / 60000) })}
+              {t("windowHint", {
+                minutes: Math.round(MIN_WINDOW_MS / 60000),
+                perCredit: Math.round(secondsPerCredit / 60),
+              })}
             </p>
           </div>
         )}

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from math import ceil
 
 import asyncpg
 
@@ -74,20 +75,24 @@ DUB_COST = 2
 
 # Pulling clips out of a long upload.
 #
-# Per clip, because that is where the work is: one Whisper pass over the
-# source is shared by all of them, and then each cut is re-encoded,
-# transcribed again and burned — which is exactly an autocaption job, and
-# priced as one. The shared pass is not billed separately; it is the part
-# that gets cheaper the more clips you take, and charging for it would
-# make two clips cost more than two captions for no reason the user can
-# see.
+# Priced by the stretch that gets read, not by the number of clips that
+# come out of it. The transcription is the dominant cost and it scales
+# with what is transcribed; the cuts themselves are short re-encodes.
 #
-# What this deliberately does not do is charge by source length. It would
-# be more accurate — the transcription is the dominant cost and it scales
-# with the source — and it would also be the first price in the product
-# that cannot be quoted before the file is uploaded. The duration cap on
-# the route is what keeps the bound honest instead.
-CLIP_COST = AUTOCAPTION_COST
+# This was per clip, for a reason that was precise and is no longer
+# true: source length "cannot be quoted before the file is uploaded".
+# Now it can. The browser knows how long the file is the moment it is
+# chosen, the uploader picks the stretch to read, and the price is on
+# screen before a byte is sent.
+#
+# It also closes a real unfairness. Asking for five clips and getting
+# two still cost five credits, because the transcript decides how many
+# moments are actually in there. Paying for what was processed removes
+# that: the work is the reading, and the reading is what is charged.
+#
+# Two minutes to the credit, rounded up, never less than one — so the
+# shortest legal window costs something and a part-minute is not free.
+CLIP_SECONDS_PER_CREDIT = 120
 
 
 # Re-rolling one scene's visual on a finished video.
@@ -102,12 +107,31 @@ CLIP_COST = AUTOCAPTION_COST
 REGENERATE_SCENE_COST = 1
 
 
+def clip_cost(from_s: float, to_s: float | None) -> int:
+    """What reading this stretch of a source costs.
+
+    Pure arithmetic on the window, so the panel can run the same sum on
+    a file the user has only chosen and arrive at the number the server
+    will charge. The upload route resolves `to_s` against the probe
+    before anything is stored, which is what makes that agreement hold:
+    the only way the two can differ is if the browser's duration is
+    wrong, and then the quote is the one that was wrong.
+
+    `None` is a project stored before windows existed. One credit,
+    because that is what it cost when it was made.
+    """
+    if to_s is None:
+        return AUTOCAPTION_COST
+    span = max(to_s - from_s, 0)
+    return max(1, ceil(span / CLIP_SECONDS_PER_CREDIT))
+
+
 def cost_for(config: ProjectConfig) -> int:
     """Credits a render of this shape costs. Deterministic: the caller is
     quoted this before the render starts and charged exactly this."""
     if config.source == ProjectSource.UPLOAD:
         if config.clip_count:
-            return CLIP_COST * config.clip_count
+            return clip_cost(config.clip_from_s, config.clip_to_s)
         return DUB_COST if config.dub_language else AUTOCAPTION_COST
     mode = VisualMode(config.visual_mode)
     length = VideoLength(config.video_length)

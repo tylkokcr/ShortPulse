@@ -423,7 +423,7 @@
       "window": "Which part to use",
       "windowStart": "Start of the stretch",
       "windowEnd": "End of the stretch",
-      "windowHint": "Drag to pick the stretch to read. Only this part is transcribed — narrow it to skip the intro. At least {minutes} minutes.",
+      "windowHint": "Drag to pick the stretch to read. Only this part is transcribed, and it is what you pay for — 1 credit per {perCredit} minutes. At least {minutes} minutes.",
       "template": "Look",
       "templateHint": "Sets the caption style, where it sits and the frame. Change any of them below afterwards.",
       "templateNeedsClips": "Captioning keeps the frame it was filmed in — pick a look with a different frame when you cut it into clips.",

@@ -197,14 +197,55 @@ def _upload_config(**kwargs):
     return ProjectConfig(topic="x", source=ProjectSource.UPLOAD, **kwargs)
 
 
-def test_an_extraction_is_priced_per_clip():
-    """Each clip is a cut, a transcription and a burn — an autocaption job
-    — so it is priced as one. The shared pass over the source is not
-    billed, which is what makes three clips cost the same as three
-    captions."""
+def test_an_extraction_is_priced_by_the_stretch_it_reads():
+    """Per clip until the uploader could choose a stretch. The reading is
+    the work — one Whisper pass that scales with the source, against cuts
+    that are short re-encodes — so the reading is what is charged, and
+    asking for five clips and getting two no longer costs five."""
     from app.services import credits
 
-    assert credits.cost_for(_upload_config(clip_count=3)) == 3 * credits.AUTOCAPTION_COST
+    ten_minutes = _upload_config(clip_count=3, clip_from_s=0, clip_to_s=600)
+
+    assert credits.cost_for(ten_minutes) == 5
+    # And the clip count does not enter into it.
+    assert credits.cost_for(
+        _upload_config(clip_count=5, clip_from_s=0, clip_to_s=600)
+    ) == 5
+
+
+def test_the_price_is_of_the_window_not_of_the_position():
+    """A stretch late in a long file costs what the same stretch costs at
+    the start. Reading `clip_to_s` alone would charge for the hour
+    before it."""
+    from app.services import credits
+
+    assert credits.cost_for(
+        _upload_config(clip_count=2, clip_from_s=3000, clip_to_s=3600)
+    ) == credits.cost_for(_upload_config(clip_count=2, clip_from_s=0, clip_to_s=600))
+
+
+@pytest.mark.parametrize(
+    ("span_s", "expected"),
+    [(0, 1), (1, 1), (119, 1), (120, 1), (121, 2), (240, 2), (241, 3), (3600, 30)],
+)
+def test_the_rounding_boundaries(span_s, expected):
+    """The panel quotes this number before the upload and the server
+    charges it afterwards, each running the sum for itself. The drift
+    risk is the formula, not the rate, so the edges of the rounding are
+    what is pinned: up, so a part-minute is never free, and never below
+    one."""
+    from app.services import credits
+
+    assert credits.clip_cost(0, span_s) == expected
+
+
+def test_a_project_from_before_windows_keeps_its_price():
+    """`clip_to_s` is null on every extraction stored before this. They
+    cost a credit when they were made and a re-read of one must not
+    invent a different number."""
+    from app.services import credits
+
+    assert credits.cost_for(_upload_config(clip_count=3)) == credits.AUTOCAPTION_COST
 
 
 def test_clips_are_priced_ahead_of_the_dub_rate():
@@ -213,8 +254,8 @@ def test_clips_are_priced_ahead_of_the_dub_rate():
     elsewhere."""
     from app.services import credits
 
-    config = _upload_config(clip_count=2, dub_language="tr")
-    assert credits.cost_for(config) == 2 * credits.AUTOCAPTION_COST
+    config = _upload_config(clip_count=2, dub_language="tr", clip_from_s=0, clip_to_s=600)
+    assert credits.cost_for(config) == 5
 
 
 def test_a_plain_upload_is_unchanged():

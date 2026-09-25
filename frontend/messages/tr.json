@@ -423,7 +423,7 @@
       "window": "Hangi bölüm kullanılsın",
       "windowStart": "Bölümün başı",
       "windowEnd": "Bölümün sonu",
-      "windowHint": "Okunacak bölümü sürükleyerek seç. Yalnızca burası deşifre edilir — girişi atlamak için daralt. En az {minutes} dakika.",
+      "windowHint": "Okunacak bölümü sürükleyerek seç. Yalnızca burası deşifre edilir ve ücret bunun üzerinden hesaplanır — her {perCredit} dakika için 1 kredi. En az {minutes} dakika.",
       "template": "Görünüm",
       "templateHint": "Altyazı stilini, yerini ve kadrajı ayarlar. Sonrasında hepsini aşağıdan değiştirebilirsin.",
       "templateNeedsClips": "Altyazılama videoyu çekildiği kadrajda bırakır — farklı kadrajlı bir görünümü ancak kesitlere bölerken seçebilirsin.",

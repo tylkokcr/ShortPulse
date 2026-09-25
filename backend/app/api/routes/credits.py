@@ -68,11 +68,15 @@ def _pricing_table() -> dict[str, int]:
         for mode in VisualMode
         for length in VideoLength
     }
-    # The three upload prices, quoted the same way and for the same
-    # reason: the panel that offers them hardcoded "1 credit" and was
-    # wrong about a dub and about every clip count. `upload:clip` is the
-    # price of one clip; the caller multiplies by how many it asks for,
-    # which is exactly what cost_for does.
+    # The upload prices, quoted the same way and for the same reason: the
+    # panel that offers them hardcoded "1 credit" and was wrong about a
+    # dub and about every clip count.
+    #
+    # An extraction is the one price that is not a number here, because it
+    # depends on how much of the source is read. What is published is the
+    # rate, and the panel runs the same `ceil(span / rate)` the server
+    # does — the drift risk is the formula, not the number, which is why
+    # the boundaries are pinned by a test.
     quotes.update(
         {
             "upload:caption": credits.cost_for(
@@ -81,9 +85,7 @@ def _pricing_table() -> dict[str, int]:
             "upload:dub": credits.cost_for(
                 ProjectConfig(topic="quote", source=ProjectSource.UPLOAD, dub_language="tr")
             ),
-            "upload:clip": credits.cost_for(
-                ProjectConfig(topic="quote", source=ProjectSource.UPLOAD, clip_count=1)
-            ),
+            "upload:clip_seconds_per_credit": credits.CLIP_SECONDS_PER_CREDIT,
         }
     )
     return quotes

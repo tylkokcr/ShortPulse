@@ -423,7 +423,7 @@
       "window": "Który fragment wykorzystać",
       "windowStart": "Początek fragmentu",
       "windowEnd": "Koniec fragmentu",
-      "windowHint": "Przeciągnij, aby wybrać fragment do odczytania. Tylko on jest transkrybowany — zawęź go, aby pominąć wstęp. Co najmniej {minutes} min.",
+      "windowHint": "Przeciągnij, aby wybrać fragment do odczytania. Tylko on jest transkrybowany i za niego płacisz — 1 kredyt za każde {perCredit} min. Co najmniej {minutes} min.",
       "template": "Styl",
       "templateHint": "Ustawia styl napisów, ich położenie i kadr. Każde z nich zmienisz poniżej.",
       "templateNeedsClips": "Dodawanie napisów zostawia kadr taki, w jakim nagrano — styl z innym kadrem wybierzesz tylko przy cięciu na klipy.",
