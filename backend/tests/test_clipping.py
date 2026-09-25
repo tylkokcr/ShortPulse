@@ -440,3 +440,39 @@ async def test_an_oversized_reason_is_truncated(monkeypatch):
     moment, = await clipping.pick_moments(_transcript(), CONFIG, 1)
 
     assert len(moment.reason) == clipping.MAX_REASON_CHARS
+
+
+# --------------------------------------------------------------------------
+# The frame a clip is cut to
+#
+# `resolution_for`'s docstring records the last time an aspect ratio was
+# "accepted by the API and stored on every project long before anything
+# read it" — asking for 1:1 silently produced a 9:16 video. The upload
+# route can now accept one, so these pin the two halves of not repeating
+# that: it has to reach the cut, and it has to be refused where nothing
+# will read it.
+# --------------------------------------------------------------------------
+
+
+def test_every_ratio_maps_to_a_real_frame():
+    """A ratio that resolves to nothing is the same failure as one that
+    is ignored — the render just uses the default and says nothing."""
+    from app.schemas.project import AspectRatio
+    from app.services.render_manager import resolution_for
+
+    for ratio in AspectRatio:
+        width, height = resolution_for(ratio, (1080, 1920))
+        assert width > 0 and height > 0
+        # H.264 with yuv420p cannot encode an odd dimension.
+        assert width % 2 == 0 and height % 2 == 0
+
+
+def test_the_ratios_are_actually_different_shapes():
+    """Guards the specific bug: all three resolving to the vertical
+    default would pass every other check here."""
+    from app.schemas.project import AspectRatio
+    from app.services.render_manager import resolution_for
+
+    shapes = {resolution_for(r, (1080, 1920)) for r in AspectRatio}
+
+    assert len(shapes) == len(AspectRatio)

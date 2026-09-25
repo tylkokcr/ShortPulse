@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import type {
+  AspectRatio,
   ArtStyle,
   CreditSummary,
   MusicTrack,
@@ -152,6 +153,9 @@ export async function uploadVideo(
     /** Free text telling the clip picker what to look for. Ignored
      *  unless clipCount is set. */
     clipGuidance?: string;
+    /** The frame clips are cut to. The API refuses anything but 9:16
+     *  without clips — captioning leaves the picture alone. */
+    aspectRatio?: AspectRatio;
   },
   onProgress?: (fraction: number) => void
 ): Promise<Project> {
@@ -165,6 +169,7 @@ export async function uploadVideo(
   form.append("clip_count", String(options.clipCount ?? 0));
   form.append("censor_profanity", String(options.censorProfanity ?? false));
   form.append("clip_guidance", options.clipGuidance ?? "");
+  form.append("aspect_ratio", options.aspectRatio ?? "9:16");
   // JSON inside a multipart field, because the file has to be multipart
   // and the style is a nested object. Omitted, the backend keeps its own
   // defaults — which is what this endpoint did for every upload until

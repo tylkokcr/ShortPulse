@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import clsx from "clsx";
 import { useTranslations } from "next-intl";
 import { Film } from "lucide-react";
+import type { AspectRatio, SubtitleStyle } from "@/lib/types";
 
 /**
  * The right-hand column of the caption flow.
@@ -21,7 +23,35 @@ import { Film } from "lucide-react";
  * Without that every re-pick leaks the previous blob for the life of the
  * document, which for a 200MB video is not a rounding error.
  */
-export function UploadPreview({ file }: { file: File | null }) {
+/**
+ * Same proportions the render will have, same idiom as `StudioPreview` —
+ * the widths differ only because this column is narrower than that one.
+ *
+ * A template can set a square or landscape frame, so a box hardcoded to
+ * 9:16 would show a shape the extraction is not going to produce.
+ */
+const ASPECT_CLASS: Record<AspectRatio, string> = {
+  "9:16": "aspect-[9/16] max-w-[260px]",
+  "1:1": "aspect-square max-w-[280px]",
+  "16:9": "aspect-video max-w-[300px]",
+};
+
+/** Where the placeholder bars sit, matching the placement control. */
+const BAR_CLASS: Record<SubtitleStyle["position"], string> = {
+  top_third: "top-[12%]",
+  middle: "top-1/2 -translate-y-1/2",
+  bottom_third: "bottom-0",
+};
+
+export function UploadPreview({
+  file,
+  aspectRatio,
+  captionPosition,
+}: {
+  file: File | null;
+  aspectRatio: AspectRatio;
+  captionPosition: SubtitleStyle["position"];
+}) {
   const t = useTranslations("studio.uploadPreview");
   const [url, setUrl] = useState<string | null>(null);
 
@@ -37,7 +67,12 @@ export function UploadPreview({ file }: { file: File | null }) {
 
   return (
     <div className="lg:sticky lg:top-6">
-      <div className="relative mx-auto aspect-[9/16] w-full max-w-[260px] overflow-hidden rounded-xl border border-border bg-surface">
+      <div
+        className={clsx(
+          "relative mx-auto w-full overflow-hidden rounded-xl border border-border bg-surface",
+          ASPECT_CLASS[aspectRatio]
+        )}
+      >
         {url ? (
           <video
             key={url}
@@ -62,7 +97,12 @@ export function UploadPreview({ file }: { file: File | null }) {
             honest about being a placeholder in a way fake sentences are
             not. Hidden once a real video is playing — the point is made. */}
         {!url && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-1.5 p-5">
+          <div
+            className={clsx(
+              "pointer-events-none absolute inset-x-0 flex flex-col items-center gap-1.5 p-5",
+              BAR_CLASS[captionPosition]
+            )}
+          >
             <span className="h-2 w-3/4 rounded-full bg-white/10" />
             <span className="h-2 w-1/2 rounded-full bg-accent/30" />
           </div>
@@ -70,7 +110,7 @@ export function UploadPreview({ file }: { file: File | null }) {
       </div>
 
       <p className="mt-3 text-center font-mono text-[10px] uppercase tracking-[0.18em] text-white/25">
-        {t("caption")}
+        {t("caption", { ratio: aspectRatio })}
       </p>
     </div>
   );

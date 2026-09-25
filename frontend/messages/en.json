@@ -419,7 +419,11 @@
       },
       "focus": "What to look for",
       "focusPlaceholder": "e.g. the part where he explains the pricing",
-      "focusHint": "Optional. The transcript still decides — if nothing in it matches, you get no clips and your credits back."
+      "focusHint": "Optional. The transcript still decides — if nothing in it matches, you get no clips and your credits back.",
+      "template": "Look",
+      "templateHint": "Sets the caption style, where it sits and the frame. Change any of them below afterwards.",
+      "templateNeedsClips": "Captioning keeps the frame it was filmed in — pick a look with a different frame when you cut it into clips.",
+      "customLook": "Fine-tune the captions"
     },
     "idea": "The idea",
     "groups": {
@@ -559,7 +563,7 @@
     },
     "uploadPreview": {
       "empty": "Your video appears here as soon as you pick it.",
-      "caption": "9:16 · captions burned in"
+      "caption": "{ratio} · captions burned in"
     },
     "captionPlacement": {
       "position": "Position",

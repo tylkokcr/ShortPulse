@@ -419,7 +419,11 @@
       },
       "focus": "Ne aransın",
       "focusPlaceholder": "örn. fiyatlandırmayı anlattığı kısım",
-      "focusHint": "İsteğe bağlı. Karar yine metinde — hiçbir şey uymazsa kesit çıkmaz ve kredilerin geri döner."
+      "focusHint": "İsteğe bağlı. Karar yine metinde — hiçbir şey uymazsa kesit çıkmaz ve kredilerin geri döner.",
+      "template": "Görünüm",
+      "templateHint": "Altyazı stilini, yerini ve kadrajı ayarlar. Sonrasında hepsini aşağıdan değiştirebilirsin.",
+      "templateNeedsClips": "Altyazılama videoyu çekildiği kadrajda bırakır — farklı kadrajlı bir görünümü ancak kesitlere bölerken seçebilirsin.",
+      "customLook": "Altyazılarda ince ayar"
     },
     "idea": "Fikir",
     "groups": {
@@ -559,7 +563,7 @@
     },
     "uploadPreview": {
       "empty": "Videonu seçer seçmez burada görünür.",
-      "caption": "9:16 · altyazılar gömülü"
+      "caption": "{ratio} · altyazılar gömülü"
     },
     "captionPlacement": {
       "position": "Konum",

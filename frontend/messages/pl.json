@@ -419,7 +419,11 @@
       },
       "focus": "Czego szukać",
       "focusPlaceholder": "np. fragment, w którym tłumaczy cennik",
-      "focusHint": "Opcjonalne. Decyduje i tak transkrypcja — jeśli nic nie pasuje, nie będzie klipów, a kredyty wrócą."
+      "focusHint": "Opcjonalne. Decyduje i tak transkrypcja — jeśli nic nie pasuje, nie będzie klipów, a kredyty wrócą.",
+      "template": "Styl",
+      "templateHint": "Ustawia styl napisów, ich położenie i kadr. Każde z nich zmienisz poniżej.",
+      "templateNeedsClips": "Dodawanie napisów zostawia kadr taki, w jakim nagrano — styl z innym kadrem wybierzesz tylko przy cięciu na klipy.",
+      "customLook": "Dopracuj napisy"
     },
     "idea": "Pomysł",
     "groups": {
@@ -559,7 +563,7 @@
     },
     "uploadPreview": {
       "empty": "Twój film pojawi się tutaj, gdy tylko go wybierzesz.",
-      "caption": "9:16 · napisy wypalone w obrazie"
+      "caption": "{ratio} · napisy wypalone w obrazie"
     },
     "captionPlacement": {
       "position": "Pozycja",

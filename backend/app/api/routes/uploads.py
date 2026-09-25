@@ -21,6 +21,7 @@ from pydantic import ValidationError
 from app.api.deps import billing_for, current_user_id, db_pool
 from app.core.config import get_settings, project_dir
 from app.schemas.project import (
+    AspectRatio,
     EditSpec,
     LLMConfig,
     LLMProvider,
@@ -64,6 +65,7 @@ async def upload_video(
     clip_count: int = Form(0),
     censor_profanity: bool = Form(False),
     clip_guidance: str = Form(""),
+    aspect_ratio: str = Form("9:16"),
     # JSON in a form field: the file forces multipart, and this is a
     # nested object. Empty keeps the schema's defaults, which is what an
     # older client sends and what a self-hosted script that posts a file
@@ -123,7 +125,41 @@ async def upload_video(
                 },
             )
 
+    # Validated here rather than left to pydantic so the refusal names the
+    # field and lists what is allowed, the same as an unsupported dub
+    # language does — a raw enum error names neither.
+    try:
+        ratio = AspectRatio(aspect_ratio.strip())
+    except ValueError:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "unsupported_aspect_ratio",
+                "aspect_ratio": aspect_ratio,
+                "supported": [r.value for r in AspectRatio],
+            },
+        ) from None
+
     clips = max(clip_count, 0)
+
+    # Only an extraction reframes. The upload pipeline deliberately leaves
+    # the picture alone — someone captioning a video they shot gets their
+    # own framing back — so a ratio stored on a caption job would be a
+    # value that lies about what was rendered. `resolution_for` carries
+    # the scar from the last time that happened: it was "accepted by the
+    # API and stored on every project long before anything read it".
+    if ratio is not AspectRatio.VERTICAL_9_16 and not clips:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "aspect_ratio_without_clips",
+                "reason": (
+                    "Captioning leaves the picture as it was filmed. Pick a frame "
+                    "when you cut the video into clips."
+                ),
+            },
+        )
+
     if clips:
         if dub:
             # Both would mean dubbing each clip, which is a reasonable
@@ -153,6 +189,7 @@ async def upload_video(
         # than refused, because a client that sends it with no clip count
         # has made a harmless mistake, not a dangerous one.
         clip_guidance=clip_guidance.strip(),
+        aspect_ratio=ratio,
     )
 
     if subtitles.strip():

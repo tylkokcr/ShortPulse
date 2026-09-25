@@ -419,7 +419,11 @@
       },
       "focus": "Wonach gesucht wird",
       "focusPlaceholder": "z. B. die Stelle, an der er die Preise erklärt",
-      "focusHint": "Optional. Entscheidend bleibt das Transkript — passt nichts dazu, gibt es keine Clips und die Credits zurück."
+      "focusHint": "Optional. Entscheidend bleibt das Transkript — passt nichts dazu, gibt es keine Clips und die Credits zurück.",
+      "template": "Look",
+      "templateHint": "Legt Untertitelstil, Position und Bildformat fest. Alles davon lässt sich unten noch ändern.",
+      "templateNeedsClips": "Beim Untertiteln bleibt das Bild so, wie es gefilmt wurde — einen Look mit anderem Format gibt es nur beim Schneiden in Clips.",
+      "customLook": "Untertitel feinjustieren"
     },
     "idea": "Die Idee",
     "groups": {
@@ -559,7 +563,7 @@
     },
     "uploadPreview": {
       "empty": "Dein Video erscheint hier, sobald du eines auswählst.",
-      "caption": "9:16 · Untertitel eingebrannt"
+      "caption": "{ratio} · Untertitel eingebrannt"
     },
     "captionPlacement": {
       "position": "Position",

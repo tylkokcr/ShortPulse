@@ -13,6 +13,9 @@ import { Card } from "@/components/ui/Card";
 import { LanguageSelector } from "./LanguageSelector";
 import { CaptionStyleSelector } from "./CaptionStyleSelector";
 import { CaptionPlacement } from "./CaptionPlacement";
+import { ClipTemplateSelector } from "./ClipTemplateSelector";
+import type { ClipTemplate } from "@/lib/clipTemplates";
+import type { AspectRatio } from "@/lib/types";
 import { CensorToggle } from "./CensorToggle";
 import { captionStyleFor, presetById } from "@/lib/captionStyles";
 import { UploadPreview } from "./UploadPreview";
@@ -53,6 +56,10 @@ export function UploadPanel() {
   const [dubLanguage, setDubLanguage] = useState("");
   const [censor, setCensor] = useState(false);
   const [focus, setFocus] = useState("");
+  // Nothing is lit until the user picks one. A template is a shortcut,
+  // not a default that silently applied.
+  const [template, setTemplate] = useState<string | null>(null);
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>("9:16");
   // Zero means "caption it whole". The two are mutually exclusive — the
   // API refuses both together rather than quietly doing one — so choosing
   // either clears the other here instead of letting the server say no
@@ -97,6 +104,7 @@ export function UploadPanel() {
           subtitles: captionStyleFor(draft),
           censorProfanity: censor,
           clipGuidance: focus,
+          aspectRatio,
         },
         setProgress
       );
@@ -118,6 +126,34 @@ export function UploadPanel() {
   }
 
   const uploading = progress !== null;
+
+  /**
+   * Going back to "caption it whole" gives up the frame with it.
+   *
+   * The tile grid dims the non-vertical looks, but a look picked while
+   * clips were on stays picked — and the API refuses a frame on a caption
+   * job, which would be a 422 arriving after a 200MB upload. The caption
+   * style stays exactly as it is: a template is a shortcut, so only the
+   * part that is no longer on offer is taken back.
+   */
+  function dropFrameChoice() {
+    if (aspectRatio === "9:16") return;
+    setAspectRatio("9:16");
+    setTemplate(null);
+  }
+
+  function applyTemplate(picked: ClipTemplate) {
+    setTemplate(picked.id);
+    setAspectRatio(picked.aspectRatio);
+    // Written onto the draft, not held here: the caption pickers below
+    // read from the draft, so this is what makes the tile and the
+    // fine-tune controls agree instead of quietly disagreeing.
+    setDraft({
+      captionPreset: picked.captionPreset,
+      captionPosition: picked.captionPosition,
+      captionFontSize: picked.captionFontSize,
+    });
+  }
 
   return (
     // Two columns, matching the generate flow next door. The caption
@@ -191,6 +227,7 @@ export function UploadPanel() {
                 onClick={() => {
                   setClipCount(count);
                   if (count) setDubLanguage("");
+                  else dropFrameChoice();
                 }}
                 className={clsx(
                   "rounded-lg border px-3 py-1.5 text-xs transition-colors duration-200",
@@ -261,6 +298,12 @@ export function UploadPanel() {
               : t("dubOffHint")}
           </p>
         </div>
+
+        <ClipTemplateSelector
+          selected={template}
+          onSelect={applyTemplate}
+          framesAllowed={clipCount > 0}
+        />
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-white/70">{t("captionStyle")}</label>
@@ -338,7 +381,11 @@ export function UploadPanel() {
       </div>
       </div>
 
-      <UploadPreview file={file} />
+      <UploadPreview
+        file={file}
+        aspectRatio={aspectRatio}
+        captionPosition={draft.captionPosition}
+      />
     </div>
   );
 }
