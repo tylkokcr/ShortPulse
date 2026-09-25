@@ -695,6 +695,54 @@ def _escape_filter_path(path: Path) -> str:
     return str(path).replace("\\", "/").replace(":", "\\:")
 
 
+async def extract_audio_window(
+    source: Path,
+    destination: Path,
+    start_s: float,
+    duration_s: float,
+    ffmpeg_binary: str = "ffmpeg",
+) -> Path:
+    """Pull one stretch of a video's audio out as a file Whisper can read.
+
+    What makes a processing window worth having. Whisper decodes the whole
+    container otherwise — transcription is the dominant cost of an
+    extraction and the only part that scales with the source, so reading
+    ten minutes of a fifty-minute podcast is the difference the user asked
+    for, not a rounding of it.
+
+    Audio only, mono, 16 kHz: exactly what the model resamples to anyway,
+    and a hundredth of the bytes of a video trim.
+
+    `-ss` before `-i` so the decoder seeks instead of decoding and
+    discarding everything up to the start, as `cut_clip` does. The seek is
+    sample-accurate here because the stream is being re-encoded and
+    `-accurate_seek` is ffmpeg's default for that — which matters, since
+    every timestamp that comes back is offset by `start_s` and a sloppy
+    seek would move every clip boundary by the same error.
+    """
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    await _run_ffmpeg(
+        [
+            "-ss",
+            f"{start_s:.3f}",
+            "-i",
+            str(source),
+            "-t",
+            f"{max(duration_s, 0):.3f}",
+            "-vn",
+            "-ac",
+            "1",
+            "-ar",
+            "16000",
+            "-c:a",
+            "pcm_s16le",
+            str(destination),
+        ],
+        ffmpeg_binary,
+    )
+    return destination
+
+
 async def cut_clip(
     source: Path,
     destination: Path,

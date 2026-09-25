@@ -463,6 +463,20 @@ class ProjectConfig(BaseModel):
     # `pick_moments` for why the validator downstream is.
     clip_guidance: str = Field(default="", max_length=300)
 
+    # The stretch of the source an extraction reads, in seconds from its
+    # start. `clip_to_s` is None only on projects that predate this and on
+    # a request that did not say — the upload route resolves it against
+    # the probed duration before the config is stored, so by the time
+    # anything downstream reads one it is a concrete window.
+    #
+    # Transcription is the dominant cost of an extraction and the only
+    # part that scales with the source, so this is the difference between
+    # reading an hour of podcast and reading the ten minutes the user
+    # cares about. Bounds are checked in the route, where the real
+    # duration is known — a client can claim anything.
+    clip_from_s: float = Field(default=0, ge=0)
+    clip_to_s: float | None = Field(default=None, ge=0)
+
     # A quick zoom that settles at the top of each generated scene. On by
     # default: a static frame held for four seconds reads as a slideshow
     # however good the picture is, and that is what this product's output

@@ -243,6 +243,13 @@ export interface ProjectConfig {
   /** What the uploader wants the clip picker to look for, in their own
    *  words. Only read on an extraction; empty is the normal case. */
   clip_guidance?: string;
+  /** The stretch of the source an extraction read, in seconds. Resolved
+   *  by the server against its own probe, so `clip_to_s` is a real
+   *  position on every project stored since windows existed — null only
+   *  on the ones that predate them and on jobs that read the whole
+   *  video. */
+  clip_from_s?: number;
+  clip_to_s?: number | null;
   /** A quick zoom that settles at the top of each generated scene. On
    *  unless turned off — a held frame reads as a slideshow. */
   zoom_punch?: boolean;

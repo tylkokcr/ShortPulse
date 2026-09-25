@@ -47,10 +47,15 @@ export function UploadPreview({
   file,
   aspectRatio,
   captionPosition,
+  onDuration,
 }: {
   file: File | null;
   aspectRatio: AspectRatio;
   captionPosition: SubtitleStyle["position"];
+  /** How long the chosen file is, once the browser has read its header.
+   *  The panel needs it to offer a stretch of it, and this element is
+   *  the only thing that decodes the file before it is uploaded. */
+  onDuration?: (seconds: number | null) => void;
 }) {
   const t = useTranslations("studio.uploadPreview");
   const [url, setUrl] = useState<string | null>(null);
@@ -82,6 +87,15 @@ export function UploadPreview({
             muted
             loop
             playsInline
+            onLoadedMetadata={(e) => {
+              // Infinity on a stream and NaN before the header is
+              // parsed; neither is a length. Reported as null rather
+              // than swallowed, so the panel hides the control instead
+              // of drawing a timeline of the wrong size — and the server
+              // then fills the window in from its own probe.
+              const seconds = e.currentTarget.duration;
+              onDuration?.(Number.isFinite(seconds) && seconds > 0 ? seconds : null);
+            }}
           />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">

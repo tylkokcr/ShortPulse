@@ -19,6 +19,7 @@ import type { AspectRatio } from "@/lib/types";
 import { CensorToggle } from "./CensorToggle";
 import { captionStyleFor, presetById } from "@/lib/captionStyles";
 import { UploadPreview } from "./UploadPreview";
+import { TimelineRange } from "@/components/ui/TimelineRange";
 
 /**
  * The second way in: caption — or dub — a video the user already has.
@@ -32,6 +33,18 @@ import { UploadPreview } from "./UploadPreview";
  * same project page and the same progress socket.
  */
 const MAX_BYTES = 200 * 1024 * 1024;
+
+/**
+ * The shortest stretch clips can come out of, mirroring the server's
+ * `clipping.MIN_SOURCE_S`.
+ *
+ * Duplicated rather than fetched, like the file-size cap above it: both
+ * exist so a request that is certain to be refused is not made in the
+ * first place, and both are refused again on arrival. The number moving
+ * on the server without moving here costs a 422 with a written reason,
+ * not a wrong render.
+ */
+const MIN_WINDOW_MS = 2 * 60 * 1000;
 
 function formatSize(bytes: number): string {
   const mb = bytes / (1024 * 1024);
@@ -65,6 +78,13 @@ export function UploadPanel() {
   // either clears the other here instead of letting the server say no
   // after the file has been uploaded.
   const [clipCount, setClipCount] = useState(0);
+  // Null until the browser has read the file's header, and again if it
+  // cannot: `null` means "no window", not "zero seconds".
+  const [durationMs, setDurationMs] = useState<number | null>(null);
+  // The whole file until the user says otherwise. Sent as two concrete
+  // numbers either way — the server resolves them against its own probe,
+  // which is the only duration that decides anything.
+  const [windowMs, setWindowMs] = useState<[number, number]>([0, 0]);
 
   // Quoted from the table the API serves, which is the one the backend
   // charges from — the panel used to print "1 credit" whatever was
@@ -81,6 +101,11 @@ export function UploadPanel() {
       setError(`That file is ${formatSize(next.size)}. The limit is 200MB.`);
       return;
     }
+    // Belongs to the old file. Cleared here rather than in an effect so
+    // the control disappears with the video it described, instead of
+    // sitting on a stale length until the new header is read.
+    setDurationMs(null);
+    setWindowMs([0, 0]);
     setFile(next);
   }
 
@@ -105,6 +130,12 @@ export function UploadPanel() {
           censorProfanity: censor,
           clipGuidance: focus,
           aspectRatio,
+          // Only when there is a real one to send. Without a measured
+          // duration the pair would be [0, 0], which is not "the whole
+          // video" — it is an empty window the server would refuse.
+          ...(clipCount > 0 && durationMs !== null
+            ? { clipFromS: windowMs[0] / 1000, clipToS: windowMs[1] / 1000 }
+            : {}),
         },
         setProgress
       );
@@ -244,6 +275,30 @@ export function UploadPanel() {
             {clipCount ? t("clipsOnHint") : t("clipsOffHint")}
           </p>
         </div>
+
+        {/* Only when there is a length to take a stretch out of, and
+            only when there is something to take. A browser that will not
+            say how long the file is (a stream, a container it has to
+            seek to measure) gets no control and sends no window — the
+            server then reads the whole thing, exactly as before. */}
+        {clipCount > 0 && durationMs !== null && durationMs > MIN_WINDOW_MS && (
+          <div>
+            <span className="mb-1.5 block text-sm font-medium text-white/70">
+              {t("window")}
+            </span>
+            <TimelineRange
+              startMs={windowMs[0]}
+              endMs={windowMs[1]}
+              durationMs={durationMs}
+              minSpanMs={MIN_WINDOW_MS}
+              onChange={(start, end) => setWindowMs([start, end])}
+              labels={{ start: t("windowStart"), end: t("windowEnd") }}
+            />
+            <p className="mt-1.5 text-xs text-white/40">
+              {t("windowHint", { minutes: Math.round(MIN_WINDOW_MS / 60000) })}
+            </p>
+          </div>
+        )}
 
         {/* Only with clips: there is nothing for it to steer otherwise,
             and a field that silently does nothing is worse than one that
@@ -385,6 +440,13 @@ export function UploadPanel() {
         file={file}
         aspectRatio={aspectRatio}
         captionPosition={draft.captionPosition}
+        onDuration={(seconds) => {
+          const ms = seconds === null ? null : Math.round(seconds * 1000);
+          setDurationMs(ms);
+          // Defaults to the whole file, so a user who never touches the
+          // control gets what they got before it existed.
+          setWindowMs([0, ms ?? 0]);
+        }}
       />
     </div>
   );

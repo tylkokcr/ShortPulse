@@ -251,3 +251,116 @@ async def test_a_silent_video_is_refused_with_a_reason(upload_app, tmp_path):
     assert response.status_code == 422
     assert "no audio" in response.json()["detail"].lower()
     assert queue.submitted == []
+
+
+# --------------------------------------------------------------------------
+# The processing window
+#
+# What the route stores has to be a window that exists in the file on
+# disk, because every later reader — the audio trim, the cost, the error
+# that names the stretch — treats it as one.
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture
+def long_video(tmp_path):
+    """Long enough to take clips out of. Five frames a second: nothing
+    here decodes the picture, and 4,000 frames of flat colour is time
+    spent for no assertion."""
+    path = tmp_path / "long.mp4"
+    args = [
+        FFMPEG, "-y", "-v", "error",
+        "-f", "lavfi", "-i", "color=c=blue:s=320x240:d=300:r=5",
+        "-f", "lavfi", "-i", "sine=frequency=440:duration=300",
+        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-shortest", "-c:a", "aac",
+        str(path),
+    ]
+    subprocess.run(args, capture_output=True, check=True)
+    return path
+
+
+async def _post(app, video: Path, **data):
+    async with _client(app) as client:
+        return await client.post(
+            "/api/uploads",
+            files={"file": ("talk.mp4", video.read_bytes(), "video/mp4")},
+            data=data,
+        )
+
+
+async def test_an_open_ended_window_is_stored_as_a_real_one(upload_app, long_video):
+    """"To the end" is a sentence about a file, not a value. Stored as
+    one, every later reader would need the file to know what it meant —
+    including the price, which is quoted before the render."""
+    app, _ = upload_app
+
+    response = await _post(app, long_video, clip_count=2, clip_from_s=30)
+
+    assert response.status_code == 201, response.text
+    config = response.json()["config"]
+    assert config["clip_from_s"] == 30
+    assert config["clip_to_s"] == pytest.approx(300, abs=1)
+
+
+async def test_an_end_past_the_video_is_clamped_not_refused(upload_app, long_video):
+    """The browser reads the duration out of the container and ffprobe
+    decodes it; they disagree by a frame on plenty of real files."""
+    app, _ = upload_app
+
+    response = await _post(app, long_video, clip_count=2, clip_from_s=0, clip_to_s=99999)
+
+    assert response.status_code == 201, response.text
+    assert response.json()["config"]["clip_to_s"] == pytest.approx(300, abs=1)
+
+
+async def test_a_window_below_the_floor_is_refused(upload_app, long_video):
+    """The source is long enough and the chosen stretch is not, so the
+    refusal has to be about the stretch — telling someone their
+    five-minute video is too short would send them looking for a fault
+    in the file."""
+    app, queue = upload_app
+
+    response = await _post(app, long_video, clip_count=2, clip_from_s=0, clip_to_s=60)
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["error"] == "window_too_short"
+    assert queue.submitted == []
+
+
+async def test_a_window_that_starts_past_the_end_is_refused(upload_app, long_video):
+    app, queue = upload_app
+
+    response = await _post(app, long_video, clip_count=2, clip_from_s=9000)
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["error"] == "window_outside_source"
+    assert queue.submitted == []
+
+
+async def test_a_refused_window_leaves_nothing_on_disk(upload_app, long_video, tmp_path):
+    """The file is written before the window can be checked against it.
+    A refusal that kept the bytes would be a storage leak with a 200MB
+    cap on it."""
+    from app.services import project_store
+
+    app, _ = upload_app
+
+    response = await _post(app, long_video, clip_count=2, clip_from_s=0, clip_to_s=60)
+
+    assert response.status_code == 422
+    assert await project_store.list_projects(None) == []
+    projects_root = tmp_path / "projects"
+    assert list(projects_root.glob("*/source/*")) == []
+
+
+async def test_captioning_whole_stores_no_window(upload_app, long_video):
+    """Captioning reads the whole video, so a window stored on one would
+    describe work that never happened — the same argument as the frame."""
+    app, _ = upload_app
+
+    response = await _post(app, long_video, clip_from_s=30, clip_to_s=90)
+
+    assert response.status_code == 201, response.text
+    config = response.json()["config"]
+    assert config["clip_from_s"] == 0
+    assert config["clip_to_s"] is None

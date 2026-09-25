@@ -156,6 +156,11 @@ export async function uploadVideo(
     /** The frame clips are cut to. The API refuses anything but 9:16
      *  without clips — captioning leaves the picture alone. */
     aspectRatio?: AspectRatio;
+    /** The stretch of the source to read, in seconds. Sent only when the
+     *  browser could measure the file; the server resolves both against
+     *  its own probe, so these are a request, not the stored truth. */
+    clipFromS?: number;
+    clipToS?: number;
   },
   onProgress?: (fraction: number) => void
 ): Promise<Project> {
@@ -170,6 +175,14 @@ export async function uploadVideo(
   form.append("censor_profanity", String(options.censorProfanity ?? false));
   form.append("clip_guidance", options.clipGuidance ?? "");
   form.append("aspect_ratio", options.aspectRatio ?? "9:16");
+  // Omitted rather than defaulted: no window at all means "read the
+  // whole video", and the server fills the end in from the probe.
+  if (options.clipFromS !== undefined) {
+    form.append("clip_from_s", String(options.clipFromS));
+  }
+  if (options.clipToS !== undefined) {
+    form.append("clip_to_s", String(options.clipToS));
+  }
   // JSON inside a multipart field, because the file has to be multipart
   // and the style is a nested object. Omitted, the backend keeps its own
   // defaults — which is what this endpoint did for every upload until

@@ -476,3 +476,89 @@ def test_the_ratios_are_actually_different_shapes():
     shapes = {resolution_for(r, (1080, 1920)) for r in AspectRatio}
 
     assert len(shapes) == len(AspectRatio)
+
+
+# --------------------------------------------------------------------------
+# The processing window
+#
+# A transcript of a windowed extraction is timed against the original
+# file, not against the window. Everything below is a consequence of that
+# one decision, and each of these is a way of getting it wrong that no
+# other test would catch.
+# --------------------------------------------------------------------------
+
+
+def _late_transcript(start_s: float, span_s: float, count: int = 6) -> list[Segment]:
+    """A short stretch of speech, far into a long source."""
+    each = span_s / count
+    return [
+        Segment(
+            text=f"sentence {i}",
+            start_ms=round((start_s + i * each) * 1000),
+            end_ms=round((start_s + (i + 1) * each) * 1000),
+        )
+        for i in range(count)
+    ]
+
+
+async def test_a_short_window_late_in_the_source_is_still_too_short(monkeypatch):
+    """The floor is on the span, not on the last timestamp.
+
+    Half a minute taken from 20:00 ends at 1230s. Measured by where it
+    ends, it would read as twenty minutes of material and sail past a
+    guard written to reject it."""
+    _answer(monkeypatch, [{"first": 0, "last": 5, "title": "Too little"}])
+
+    with pytest.raises(clipping.NotEnoughSource):
+        await clipping.pick_moments(_late_transcript(1200, 30), CONFIG)
+
+
+async def test_a_long_window_late_in_the_source_is_accepted(monkeypatch):
+    """The other half: a real window must not be rejected for starting
+    late, which is what measuring from zero would do if the floor were
+    ever flipped into a ceiling."""
+    _answer(monkeypatch, [{"first": 0, "last": 3, "title": "Enough"}])
+
+    [moment] = await clipping.pick_moments(_late_transcript(2400, 300), CONFIG)
+
+    # And the seconds are absolute against the original file, because the
+    # segments were: `cut_clip` seeks into the source with these.
+    assert moment.start_s == 2400.0
+
+
+def test_shifting_moves_the_words_as_well_as_the_sentences():
+    """Captions are built from the words. A shift that moved only the
+    sentence bounds would cut the right stretch and caption it with
+    timings from a different part of the video."""
+    from app.engines.audio_engine import shift_segments
+    from app.schemas.project import Word
+
+    segments = [
+        Segment(
+            text="hello there",
+            start_ms=1000,
+            end_ms=3000,
+            words=[
+                Word(text="hello", start_ms=1000, end_ms=2000),
+                Word(text="there", start_ms=2000, end_ms=3000),
+            ],
+        )
+    ]
+
+    [shifted] = shift_segments(segments, 600.0)
+
+    assert (shifted.start_ms, shifted.end_ms) == (601_000, 603_000)
+    assert [(w.start_ms, w.end_ms) for w in shifted.words] == [
+        (601_000, 602_000),
+        (602_000, 603_000),
+    ]
+    # The originals are untouched — the caller may still hold them.
+    assert segments[0].start_ms == 1000
+
+
+def test_shifting_by_nothing_is_the_whole_source_case():
+    from app.engines.audio_engine import shift_segments
+
+    segments = _transcript(3)
+
+    assert shift_segments(segments, 0) == segments

@@ -307,6 +307,44 @@ def transcribe_segments(
     return out
 
 
+def shift_segments(segments: list[Segment], offset_s: float) -> list[Segment]:
+    """Move a transcript of a trimmed window back onto the original clock.
+
+    A window transcription is timed from the window's own start, and
+    everything downstream seeks into the **original** file — `cut_clip`
+    takes `moment.start_s` and hands it straight to ffmpeg. Left
+    unshifted, a moment found at 0:30 of a window that began at 20:00
+    would cut the wrong half-minute of the video, silently, and only for
+    the users who moved the slider.
+
+    So the rule is: timings are absolute against the source from here on,
+    and this is the one place that is true by construction. A zero offset
+    returns the list untouched, which is the whole-source case.
+    """
+    if not offset_s:
+        return segments
+
+    offset_ms = round(offset_s * 1000)
+    return [
+        segment.model_copy(
+            update={
+                "start_ms": segment.start_ms + offset_ms,
+                "end_ms": segment.end_ms + offset_ms,
+                "words": [
+                    word.model_copy(
+                        update={
+                            "start_ms": word.start_ms + offset_ms,
+                            "end_ms": word.end_ms + offset_ms,
+                        }
+                    )
+                    for word in segment.words
+                ],
+            }
+        )
+        for segment in segments
+    ]
+
+
 def transcribe_word_timestamps(
     audio_path: Path,
     model_size: str = "small",

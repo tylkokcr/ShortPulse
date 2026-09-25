@@ -427,3 +427,62 @@ async def test_the_burn_in_points_libass_at_the_bundled_font(tmp_path, target):
     log = result.stderr.decode(errors="ignore")
 
     assert "Montserrat" in log, "libass never loaded the bundled font"
+
+
+# --------------------------------------------------------------------------
+# The processing window
+#
+# Measured by decoding the result, because the failure this guards has no
+# error in it: an off-by-one between `-t` and `-to`, or a seek placed
+# after `-i`, produces a perfectly valid audio file of the wrong stretch,
+# and every timestamp taken from it is then wrong by the same amount.
+# --------------------------------------------------------------------------
+
+
+def _half_silent_source(path: Path, seconds: float = 30.0) -> Path:
+    """Silence for the first half, a loud tone for the second.
+
+    A window that lands where it says it does can be told from one that
+    does not by listening to it, which is the only check that does not
+    simply restate the ffmpeg arguments back to itself.
+    """
+    half = seconds / 2
+    _run([
+        "-f", "lavfi", "-i", f"color=c=blue:s=320x240:d={seconds}:r=5",
+        "-f", "lavfi",
+        "-i", f"aevalsrc=if(gte(t\\,{half})\\,0.5*sin(2*PI*440*t)\\,0):d={seconds}",
+        "-shortest", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac",
+        str(path),
+    ])
+    return path
+
+
+async def test_an_audio_window_takes_the_stretch_it_names(tmp_path):
+    source = _half_silent_source(tmp_path / "talk.mp4")
+
+    early = await render_engine.extract_audio_window(
+        source, tmp_path / "early.wav", 0, 10, FFMPEG
+    )
+    late = await render_engine.extract_audio_window(
+        source, tmp_path / "late.wav", 18, 10, FFMPEG
+    )
+
+    assert await render_engine._probe_duration_ms(early, FFPROBE) / 1000 == pytest.approx(10, abs=0.2)
+    assert await render_engine._probe_duration_ms(late, FFPROBE) / 1000 == pytest.approx(10, abs=0.2)
+    # The first ten seconds are silent and the ten from 0:18 are not. A
+    # seek that never happened would make these two files identical.
+    assert _mean_volume_db(early) < -60
+    assert _mean_volume_db(late) > -30
+
+
+async def test_the_window_stops_where_it_was_told_to(tmp_path):
+    """`-t` is a duration and `-to` is a position. Handing one the other's
+    number reads as working code and produces a window of the wrong
+    length — here, 25 seconds instead of 7."""
+    source = _half_silent_source(tmp_path / "talk.mp4")
+
+    window = await render_engine.extract_audio_window(
+        source, tmp_path / "window.wav", 18, 7, FFMPEG
+    )
+
+    assert await render_engine._probe_duration_ms(window, FFPROBE) / 1000 == pytest.approx(7, abs=0.2)

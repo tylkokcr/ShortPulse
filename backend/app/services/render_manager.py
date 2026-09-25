@@ -29,6 +29,7 @@ from app.schemas.project import (
     AspectRatio,
     CaptionTrack,
     Project,
+    ProjectConfig,
     ProjectSource,
     ProjectStatus,
     RenderProgress,
@@ -89,6 +90,45 @@ def resolution_for(
         logger.warning("Unknown aspect ratio %r; falling back to %r", aspect_ratio, default)
         width, height = default
     return width - (width % 2), height - (height % 2)
+
+
+def _clip_window(config: ProjectConfig) -> tuple[float, float] | None:
+    """The stretch of the source to read, as (start, duration) seconds.
+
+    None for anything that is not a windowed extraction — a plain caption
+    job or a dub reads the whole file, and so does a project stored before
+    windows existed, which has no `clip_to_s` at all.
+
+    The route resolves the window against the probed duration before the
+    config is stored, so the bounds are already known to be real here.
+    """
+    if not config.clip_count or config.clip_to_s is None:
+        return None
+    start = max(config.clip_from_s, 0.0)
+    duration = config.clip_to_s - start
+    return (start, duration) if duration > 0 else None
+
+
+def _window_note(config: ProjectConfig) -> str:
+    """How to describe the stretch that was listened to, for an error.
+
+    "No speech was found in that video" is wrong once a window exists —
+    the video may be full of speech and the chosen minutes silent, and a
+    user told the first thing will go looking for a fault in their file.
+    """
+    window = _clip_window(config)
+    if window is None:
+        return "in that video"
+    start, duration = window
+    return f"between {_clock(start)} and {_clock(start + duration)}"
+
+
+def _clock(seconds: float) -> str:
+    """m:ss, or h:mm:ss past an hour — how a player writes a position."""
+    total = int(seconds)
+    hours, rest = divmod(total, 3600)
+    minutes, secs = divmod(rest, 60)
+    return f"{hours}:{minutes:02d}:{secs:02d}" if hours else f"{minutes}:{secs:02d}"
 
 
 class StageTimings:
@@ -509,14 +549,42 @@ async def run_upload_pipeline(
             # chunked by word count and never need them. Same model and the
             # same single pass in either branch.
             if dubbing_to or config.clip_count:
+                # An extraction may have been given a stretch to work on.
+                # Cutting the audio out first is what makes that stretch
+                # mean anything: Whisper reads the file it is handed from
+                # end to end, so without this the window would change
+                # which moments are offered and nothing about the cost.
+                #
+                # Trimmed even when the window is the whole source, rather
+                # than comparing against the duration to decide. The pass
+                # is audio-only and hands Whisper a 16 kHz wav instead of
+                # a video container, which is cheaper to decode than what
+                # it replaces — so the branch would buy nothing and could
+                # be wrong.
+                listen_to = source
+                window = _clip_window(config)
+                if window is not None:
+                    with timings.stage("window_trim"):
+                        listen_to = await render_engine.extract_audio_window(
+                            source,
+                            paths / "audio" / "window.wav",
+                            window[0],
+                            window[1],
+                            settings.ffmpeg_binary,
+                        )
                 segments = await asyncio.to_thread(
                     audio_engine.transcribe_segments,
-                    source,
+                    listen_to,
                     settings.whisper_model_size,
                     settings.whisper_device,
                     settings.whisper_compute_type,
                     config.language,
                 )
+                # Back onto the original file's clock before anything
+                # reads them: `cut_clip` seeks into the source, not into
+                # the window. See `shift_segments`.
+                if window is not None:
+                    segments = audio_engine.shift_segments(segments, window[0])
                 words = [word for segment in segments for word in segment.words]
             else:
                 words = await asyncio.to_thread(
@@ -530,7 +598,8 @@ async def run_upload_pipeline(
 
         if not words:
             raise RuntimeError(
-                "No speech was found in that video, so there is nothing to caption."
+                f"No speech was found {_window_note(config)}, so there is "
+                "nothing to caption."
             )
 
         # 1a. Clips ------------------------------------------------------------
@@ -824,6 +893,11 @@ async def _extract_clips(
                 # field that only means something to the picker would be
                 # carried into projects the picker never sees.
                 "clip_guidance": "",
+                # The window is a fact about the parent's source, and the
+                # child's source is the cut — inheriting it would claim a
+                # forty-second clip should be read from 20:00 to 30:00.
+                "clip_from_s": 0,
+                "clip_to_s": None,
                 "topic": moment.title,
             }
         )

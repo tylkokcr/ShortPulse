@@ -233,11 +233,18 @@ async def pick_moments(
     if not segments:
         return []
 
-    source_s = segments[-1].end_ms / 1000
+    # The span the transcript covers, not the time it ends at. These were
+    # the same number until a processing window existed: segments now
+    # carry times that are absolute against the original file, so a
+    # thirty-second window starting at 20:00 ends at 1230s and would sail
+    # past a floor meant to reject it. Subtracting the first segment's
+    # start is the same arithmetic when there is no window, because then
+    # it is near zero.
+    source_s = (segments[-1].end_ms - segments[0].start_ms) / 1000
     if source_s < MIN_SOURCE_S:
         raise NotEnoughSource(
-            f"This video is {int(source_s)}s long. Clips are taken from "
-            f"videos over {int(MIN_SOURCE_S / 60)} minutes — for anything "
+            f"This is {int(source_s)}s of speech. Clips are taken from "
+            f"stretches over {int(MIN_SOURCE_S / 60)} minutes — for anything "
             "shorter, caption it whole."
         )
 
