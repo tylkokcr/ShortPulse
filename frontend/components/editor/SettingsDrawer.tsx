@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
 import clsx from "clsx";
@@ -20,7 +21,17 @@ import clsx from "clsx";
  * settings change, and hiding it would hide the answer to the question
  * the panel was opened to ask.
  *
- * Below that it is a sheet with a backdrop, because there is no room to
+ * Rendered through a portal into <body>, and that is load-bearing rather
+ * than tidy. `position: fixed` resolves against the nearest ancestor with
+ * a transform, not against the window, and the studio's entrance
+ * animation leaves one on a wrapper high above this: `animate-fade-up`
+ * finishes at `translateY(0)` with `both`, so the transform never goes
+ * away. Rendered in place inside that subtree, the panel pinned itself to
+ * a card's right edge — 224px past the edge of a 1512px window — and the
+ * backdrop dimmed one card instead of the page. The generate tab was only
+ * ever safe because the shell renders its drawer outside that subtree.
+ *
+ * Below `aside` it is a sheet with a backdrop, because there is no room to
  * be anything else. Keeping the push-aside down to `lg` was the bug this
  * breakpoint exists to fix: three columns competing for 1024px left the
  * form at 275px — narrower than the 400px panel that displaced it — and
@@ -49,7 +60,16 @@ export function SettingsDrawer({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  return (
+  // Nothing on the server: the panel starts closed and off-screen, so
+  // there is no first paint to lose, and document.body does not exist
+  // until there is a document. `useSyncExternalStore` rather than a
+  // mounted flag in an effect — it answers "server or client" during
+  // render without a state write, so there is no hydration mismatch and
+  // nothing to re-render.
+  const mounted = useSyncExternalStore(subscribeToNothing, onClient, onServer);
+  if (!mounted) return null;
+
+  return createPortal(
     <>
       {/* Below `aside` only: past that the panel takes width instead of
           covering anything, so there is nothing to dim and nothing
@@ -101,6 +121,14 @@ export function SettingsDrawer({
           <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-5">{children}</div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
+
+// The drawer never changes between renders on one machine, so the store
+// has nothing to publish — these are the three arguments the hook needs
+// to say "false on the server, true in the browser".
+const subscribeToNothing = () => () => {};
+const onClient = () => true;
+const onServer = () => false;
