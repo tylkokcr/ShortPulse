@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { AppRail } from "@/components/layout/AppRail";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { AccountBar } from "@/components/auth/AccountBar";
+import { GridBackdrop } from "@/components/ui/GridBackdrop";
 
 /**
  * The frame every signed-in screen sits in.
@@ -69,6 +70,14 @@ export function AppShell({
 
   return (
     <div className="relative lg:flex lg:h-dvh lg:overflow-hidden">
+      {/* The same drafting surface the landing and the auth pages sit on,
+          quieter. It lived only on the pages a visitor sees once, which
+          left the two screens people actually work in — this one and the
+          library — on flat #0a0a0a. Fixed and behind everything, so the
+          rail's own background covers it on the left and the content area
+          gets the grid. */}
+      <GridBackdrop intensity="ambient" />
+
       <AppRail />
 
       {/* Below lg only. The rail replaces it above, and rendering both
