@@ -13,13 +13,20 @@ import clsx from "clsx";
  * idea" is a refinement with a working default, so it belongs somewhere
  * you open, not somewhere you scroll past.
  *
- * The panel is fixed to the window and slides in. At `lg` the shell
- * gives the content column a matching right margin, so the page moves
- * aside rather than being covered — which matters because the caption
- * and format preview is the thing most of these settings change, and
- * hiding it would hide the answer to the question the panel was opened
- * to ask. Below `lg` that preview is stacked out of view anyway, so it
- * is a plain overlay with a backdrop.
+ * The panel is fixed to the window and slides in. Past the `aside`
+ * breakpoint the shell gives the content column a matching right margin,
+ * so the page moves aside rather than being covered — which matters
+ * because the caption and format preview is the thing most of these
+ * settings change, and hiding it would hide the answer to the question
+ * the panel was opened to ask.
+ *
+ * Below that it is a sheet with a backdrop, because there is no room to
+ * be anything else. Keeping the push-aside down to `lg` was the bug this
+ * breakpoint exists to fix: three columns competing for 1024px left the
+ * form at 275px — narrower than the 400px panel that displaced it — and
+ * the page scrolling sideways by 203px. One focus surface at a time is
+ * the honest answer at that width, and it is what the flow already did
+ * on a phone.
  */
 export function SettingsDrawer({
   open,
@@ -44,28 +51,29 @@ export function SettingsDrawer({
 
   return (
     <>
-      {/* Below lg only: at lg the panel takes width instead of covering
-          anything, so there is nothing to dim and nothing behind it that
-          a click should dismiss. */}
+      {/* Below `aside` only: past that the panel takes width instead of
+          covering anything, so there is nothing to dim and nothing
+          behind it that a click should dismiss. */}
       <div
         aria-hidden
         onClick={onClose}
         className={clsx(
-          "fixed inset-0 z-40 bg-black/60 transition-opacity duration-300 lg:hidden",
+          "fixed inset-0 z-40 bg-black/60 transition-opacity duration-300 aside:hidden",
           open ? "opacity-100" : "pointer-events-none opacity-0"
         )}
       />
 
       {/* Pinned to the window and slid in, at every width. What changes
-          at `lg` is what the page does about it: there the content column
-          takes a matching right margin and moves aside, so the panel sits
-          next to the preview instead of on top of it. Below `lg` the
-          preview is stacked out of view anyway and this is a plain
-          overlay. */}
+          at `aside` is what the page does about it: there the content
+          column takes a matching right margin and moves aside, so the
+          panel sits next to the preview instead of on top of it. Below
+          that it covers the preview — deliberately, since the preview is
+          the first thing worth giving up when only one of the two can be
+          full width. */}
       <div
         className={clsx(
           "fixed inset-y-0 right-0 z-50 w-full max-w-sm transition-transform duration-300",
-          "lg:max-w-none lg:w-[400px]",
+          "aside:max-w-none aside:w-[400px]",
           open ? "translate-x-0" : "translate-x-full"
         )}
       >

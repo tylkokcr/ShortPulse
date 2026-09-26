@@ -18,6 +18,22 @@ const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      screens: {
+        /**
+         * Where the settings panel can take a column of its own.
+         *
+         * Not a taste breakpoint — arithmetic. The panel is 400px, the
+         * rail 208, the page padding 64, and the preview column 280 plus
+         * its 24 gap. Pushing the content aside below this leaves the
+         * form under 420px, which is narrower than the panel that
+         * displaced it; at 1024 it does not fit at all and the page
+         * scrolls sideways by 203px.
+         *
+         * 420px of form is the floor this is derived from:
+         * 420 + 24 + 280 + 64 + 400 + 208 = 1396.
+         */
+        aside: "1400px",
+      },
       colors: {
         // The steps between these are the whole depth model, and they were
         // too small to see: #0a0a0a under #121212 is eight values out of

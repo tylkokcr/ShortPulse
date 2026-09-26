@@ -89,8 +89,12 @@ export function AppShell({
       <div
         className={clsx(
           "flex min-w-0 flex-1 flex-col",
-          "lg:transition-[margin] lg:duration-300",
-          asideOpen && "lg:mr-[400px]"
+          "aside:transition-[margin] aside:duration-300",
+          // Only where the arithmetic works. Below `aside` the panel is
+          // a sheet over the page instead, because a 400px column taken
+          // out of 1024 leaves 48px of form and a page that scrolls
+          // sideways — see the breakpoint's own note.
+          asideOpen && "aside:mr-[400px]"
         )}
       >
         {/* The section name lives here rather than in each page's body,
