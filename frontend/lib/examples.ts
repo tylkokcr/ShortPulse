@@ -104,7 +104,11 @@ export const EXAMPLES: Example[] = [
   // the vertical ones, because the landing marquee is selling the format
   // the product makes by default and these are not it.
   { slug: "ocean-sq", languageCode: "en", title: "Why the ocean is salty", language: "English", seconds: 21, scenes: 5, square: true },
-  { slug: "quiet-sq", languageCode: "en", title: "Why quiet people read the room", language: "English", seconds: 15, scenes: 5, square: true },
+  // The AI-stills one, square. Same render as its vertical twin in kind:
+  // fast_hybrid over Replicate, photoreal, so the strip still shows what
+  // the three-credit mode produces rather than judging it by the
+  // one-credit one.
+  { slug: "quiet-sq", languageCode: "en", title: "Why quiet people read the room", language: "English", seconds: 20, scenes: 5, square: true, aiStills: true },
   { slug: "dreams-sq", languageCode: "tr", title: "Neden gece rüya görürüz?", language: "Türkçe", seconds: 21, scenes: 5, square: true },
   { slug: "cats-sq", languageCode: "ar", title: "لماذا تخاف القطط من الماء؟", language: "العربية", seconds: 20, scenes: 4, square: true },
 ];

@@ -2,8 +2,10 @@
 
 The clips shown in the "Real output" marquee on the landing page, and the
 four in the studio's "start from an example" strip. Every one came out of
-this pipeline in `stock_media` mode — nothing here was sourced elsewhere
-or touched up afterwards.
+this pipeline — nothing here was sourced elsewhere or touched up
+afterwards. All but two are `stock_media`; `quiet-observers` and
+`quiet-sq` are `fast_hybrid` over Replicate, which is why each strip has
+one clip carrying the AI badge.
 
 ## Two shapes, and which goes where
 
@@ -63,7 +65,11 @@ curl -X POST http://localhost:8000/api/projects \
   -d '{"topic":"Why honey never spoils","visual_mode":"stock_media","video_length":"short","language":"en"}'
 ```
 
-A square one is the same call with `"aspect_ratio": "1:1"` added.
+A square one is the same call with `"aspect_ratio": "1:1"` added. For an
+AI-stills one add `"visual_mode": "fast_hybrid"` and start the backend
+with `VISUAL_PROVIDER=replicate` — otherwise a machine with torch
+installed renders it locally, which is the lower-quality path this page
+deliberately does not show.
 
 Then transcode the finished `final.mp4` down for the web — the masters are
 1080x1920 (or 1080x1080) and far larger than this page needs. Note
