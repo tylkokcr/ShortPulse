@@ -508,3 +508,46 @@ html[data-rail="collapsed"] .rail-foot {
     transition: width 200ms ease;
   }
 }
+
+/* ---------------------------------------------------------------------
+ * Waiting, with the furniture already in place.
+ *
+ * A spinner in an empty page says "something is happening somewhere". A
+ * skeleton in the real grid says "eleven videos, this shape, arriving" —
+ * and because it occupies the final geometry, nothing jumps when the
+ * data lands. That is the whole point: the swap is invisible.
+ *
+ * The sweep is a pseudo-element rather than a background on the box
+ * itself, so the box keeps its own surface colour and the light passes
+ * over it. Parked off-screen under reduced motion, which leaves a plain
+ * grey placeholder — still the right shape, just not moving.
+ * ------------------------------------------------------------------ */
+.skeleton-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-sweep::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.045),
+    transparent
+  );
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton-sweep::after {
+    animation: skeleton-sweep 1.9s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-sweep {
+    to {
+      transform: translateX(100%);
+    }
+  }
+}

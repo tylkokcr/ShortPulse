@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { FolderOpen, Loader2, Plus } from "lucide-react";
+import { FolderOpen, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { deleteProject, listProjects } from "@/lib/api";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { AppShell } from "@/components/layout/AppShell";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { ProjectCard } from "@/components/library/ProjectCard";
+import { ProjectCardSkeleton } from "@/components/library/ProjectCardSkeleton";
 import { Reveal } from "@/components/ui/Reveal";
 
 /**
@@ -29,6 +30,26 @@ export default function LibraryPage() {
   );
 }
 
+/**
+ * Newest first.
+ *
+ * Sorted here rather than in the query, because the ordering is a fact
+ * about this screen: the list endpoint is also what the project page and
+ * the clip list read, and neither wants its rows rearranged. `created_at`
+ * is serialised without a zone, so it is compared as a string — which is
+ * safe for exactly this format, where lexical order is chronological
+ * order, and would not be the moment an offset appeared.
+ */
+function newestFirst(projects: Project[]): Project[] {
+  return [...projects].sort((a, b) =>
+    (b.config.created_at ?? "").localeCompare(a.config.created_at ?? "")
+  );
+}
+
+/** Shared by the skeletons and the real cards: the placeholder only does
+ *  its job if the grid it fills is the grid that replaces it. */
+const GRID = "mt-8 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-5";
+
 function Library() {
   const t = useTranslations("app.library");
   const [projects, setProjects] = useState<Project[] | null>(null);
@@ -36,7 +57,7 @@ function Library() {
 
   useEffect(() => {
     listProjects()
-      .then(setProjects)
+      .then((loaded) => setProjects(newestFirst(loaded)))
       .catch((err) => setError(err instanceof Error ? err.message : t("loadFailed")));
   }, [t]);
 
@@ -49,7 +70,7 @@ function Library() {
       await deleteProject(id);
     } catch {
       // Put it back — it is still there on the server.
-      setProjects(await listProjects());
+      setProjects(newestFirst(await listProjects()));
     }
   }, []);
 
@@ -80,9 +101,15 @@ function Library() {
           </p>
         )}
 
+        {/* Ten, because that is two full rows at the widest column count
+            and one screen's worth — enough to say "a grid of videos is
+            coming", not so many that a library of three deals out a wall
+            of boxes that were never there. */}
         {projects === null && !error && (
-          <div className="mt-20 flex justify-center">
-            <Loader2 size={22} className="animate-spin text-white/30" />
+          <div className={GRID}>
+            {Array.from({ length: 10 }, (_, i) => (
+              <ProjectCardSkeleton key={i} />
+            ))}
           </div>
         )}
 
@@ -105,7 +132,7 @@ function Library() {
         )}
 
         {projects && projects.length > 0 && (
-          <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">
+          <div className={GRID}>
             {projects.map((project, i) => (
               // Staggered by column rather than by absolute index: a
               // library of eighty projects would otherwise have the last
