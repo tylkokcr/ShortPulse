@@ -183,6 +183,24 @@
     "title": "Seventeen videos this pipeline actually made",
     "intro": "Unedited output — AI-written script, Piper voiceover, word-synced captions, in all nine languages the product offers. Sixteen use real stock footage; the one marked AI stills was drawn by the paid mode. Hover any one to play it."
   },
+  "clips": {
+    "eyebrow": "New",
+    "title": "One long recording, several posts",
+    "sub": "Drop in a podcast or a talk, choose the stretch worth reading, and the transcript picks the moments that stand up on their own. Each one comes out captioned, in your library, ready to edit.",
+    "chips": "Cut it into clips",
+    "chipWhole": "Don't — keep it whole",
+    "chipCount": "{count} clips",
+    "window": "Which part to use",
+    "cost": "{credits, plural, one {# credit} other {# credits}} · {span} read",
+    "out": "What came out",
+    "captioned": "Captioned",
+    "capabilities": {
+      "transcript": "The transcript picks the moments — three were asked for here and two were there.",
+      "window": "Only the stretch you choose is transcribed, so an hour of recording is not an hour of work.",
+      "cost": "Priced by what was read, not per clip: one credit every two minutes.",
+      "library": "Every clip lands as its own project — captions, frame and edits included."
+    }
+  },
   "pricing": {
     "eyebrow": "Pricing",
     "title": "Pay for videos, not for a month you didn't use",

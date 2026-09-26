@@ -36,6 +36,7 @@ import { BuiltOn } from "./BuiltOn";
 import { CaptionStyles } from "./CaptionStyles";
 import { ArtStyles } from "./ArtStyles";
 import { HowItWorks } from "./HowItWorks";
+import { ClipShowcase } from "@/components/marketing/ClipShowcase";
 import { EditorShowcase } from "./EditorShowcase";
 import { Faq } from "./Faq";
 
@@ -176,6 +177,10 @@ export function Landing() {
       {/* Examples — real renders, placed before any further claims */}
       <Reveal id="examples" className="scroll-mt-20">
         <Examples />
+      </Reveal>
+
+      <Reveal>
+        <ClipShowcase />
       </Reveal>
 
       <BuiltOn />

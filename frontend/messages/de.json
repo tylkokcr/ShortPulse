@@ -183,6 +183,24 @@
     "title": "Siebzehn Videos, die diese Pipeline tatsächlich gemacht hat",
     "intro": "Ungeschnittenes Ergebnis — KI-geschriebenes Skript, Piper-Sprecher, wortgenaue Untertitel, in allen neun Sprachen des Produkts. Sechzehn nutzen echtes Stockmaterial; das mit AI stills markierte hat der kostenpflichtige Modus gezeichnet. Zum Abspielen mit der Maus darüberfahren."
   },
+  "clips": {
+    "eyebrow": "Neu",
+    "title": "Eine lange Aufnahme, mehrere Posts",
+    "sub": "Leg einen Podcast oder Vortrag ab, wähl den Abschnitt, der gelesen werden soll — das Transkript sucht die Momente, die für sich stehen. Jeder landet mit Untertiteln in deiner Bibliothek, bereit zum Bearbeiten.",
+    "chips": "In Clips schneiden",
+    "chipWhole": "Nicht — ganz lassen",
+    "chipCount": "{count} Clips",
+    "window": "Welcher Teil verwendet wird",
+    "cost": "{credits, plural, one {# Credit} other {# Credits}} · {span} gelesen",
+    "out": "Was dabei herauskam",
+    "captioned": "Untertitelt",
+    "capabilities": {
+      "transcript": "Das Transkript wählt die Momente — hier wurden drei angefragt, zwei waren da.",
+      "window": "Nur der gewählte Abschnitt wird transkribiert; eine Stunde Aufnahme ist keine Stunde Arbeit.",
+      "cost": "Abgerechnet wird das Gelesene, nicht pro Clip: ein Credit je zwei Minuten.",
+      "library": "Jeder Clip wird ein eigenes Projekt — mit Untertiteln, Format und Bearbeitung."
+    }
+  },
   "pricing": {
     "eyebrow": "Preise",
     "title": "Zahl für Videos, nicht für einen Monat, den du nicht genutzt hast",

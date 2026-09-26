@@ -183,6 +183,24 @@
     "title": "Siedemnaście filmów, które ten pipeline naprawdę zrobił",
     "intro": "Materiał bez montażu — scenariusz napisany przez AI, lektor Piper, napisy zsynchronizowane co do słowa, we wszystkich dziewięciu językach produktu. Szesnaście korzysta z prawdziwych materiałów stockowych; ten oznaczony AI stills narysował tryb płatny. Najedź na dowolny, żeby go odtworzyć."
   },
+  "clips": {
+    "eyebrow": "Nowość",
+    "title": "Jedno długie nagranie, kilka postów",
+    "sub": "Wrzuć podcast albo prelekcję, wybierz fragment wart odczytania, a transkrypcja znajdzie momenty, które bronią się same. Każdy trafia do biblioteki z napisami, gotowy do edycji.",
+    "chips": "Potnij na klipy",
+    "chipWhole": "Nie — zostaw w całości",
+    "chipCount": "{count} klipy",
+    "window": "Który fragment wykorzystać",
+    "cost": "{credits, plural, one {# kredyt} few {# kredyty} many {# kredytów} other {# kredytu}} · odczytano {span}",
+    "out": "Co powstało",
+    "captioned": "Z napisami",
+    "capabilities": {
+      "transcript": "Momenty wybiera transkrypcja — tu poproszono o trzy, a były dwa.",
+      "window": "Transkrybowany jest tylko wybrany fragment, więc godzina nagrania to nie godzina pracy.",
+      "cost": "Płacisz za to, co odczytano, nie za klip: jeden kredyt na dwie minuty.",
+      "library": "Każdy klip to osobny projekt — z napisami, kadrem i edycją."
+    }
+  },
   "pricing": {
     "eyebrow": "Cennik",
     "title": "Płacisz za filmy, nie za niewykorzystany miesiąc",

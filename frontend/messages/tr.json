@@ -183,6 +183,24 @@
     "title": "Bu hattın gerçekten ürettiği on yedi video",
     "intro": "Düzenlenmemiş çıktı — yapay zekânın yazdığı metin, Piper seslendirme, kelimeye kilitli altyazılar; ürünün sunduğu dokuz dilin hepsinde. On altısı gerçek stok görüntü kullanıyor; AI stills işaretli olan ücretli modda çizildi. Oynatmak için üzerine gel."
   },
+  "clips": {
+    "eyebrow": "Yeni",
+    "title": "Tek uzun kayıt, birkaç paylaşım",
+    "sub": "Bir podcast ya da konuşma bırak, okunmaya değer aralığı seç; metin kendi başına ayakta duran anları bulur. Her biri altyazılı olarak kütüphanene düşer, düzenlemeye hazır.",
+    "chips": "Kesitlere böl",
+    "chipWhole": "Bölme — bütün kalsın",
+    "chipCount": "{count} kesit",
+    "window": "Hangi bölüm kullanılsın",
+    "cost": "{credits, plural, one {# kredi} other {# kredi}} · {span} okundu",
+    "out": "Ne çıktı",
+    "captioned": "Altyazılı",
+    "capabilities": {
+      "transcript": "Anları metin seçer — burada üç istendi, metinde iki tane vardı.",
+      "window": "Yalnızca seçtiğin aralık deşifre edilir; bir saatlik kayıt bir saatlik iş değildir.",
+      "cost": "Kesit başına değil, okunan süre üzerinden: her iki dakikaya bir kredi.",
+      "library": "Her kesit kendi projesi olarak düşer — altyazısı, kadrajı ve düzenlemesiyle."
+    }
+  },
   "pricing": {
     "eyebrow": "Fiyatlandırma",
     "title": "Kullanmadığın aya değil, videoya öde",
