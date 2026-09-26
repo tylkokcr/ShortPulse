@@ -529,7 +529,8 @@
       "ai_video": "Local text-to-video diffusion. Slowest, needs a real GPU.",
       "stock_media": "Free Pexels/Pixabay footage. Zero GPU required.",
       "aiWarning": "AI Video downloads a large model (tens of GB) the first time you use it on a machine — this can take hours on a slow connection, and generation itself is slow without a real GPU. It's a one-time download; later renders won't repeat it.",
-      "aiAck": "I understand this may take a long time on first use"
+      "aiAck": "I understand this may take a long time on first use",
+      "unavailable": "Not available here"
     },
     "music": {
       "moods": {

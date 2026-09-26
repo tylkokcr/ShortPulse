@@ -53,7 +53,15 @@ export function VisualSelector() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {/* Stacked, not three across.
+          `sm:grid-cols-3` asked the viewport how much room there was, and
+          the answer had nothing to do with this control: it only ever
+          renders inside the settings panel, which is 400px wide however
+          wide the window is. Three columns of a 400px panel is 105px a
+          tile, which is where a sentence of Turkish turns into eight
+          lines and a compound noun hangs out of the box. One column is
+          the honest shape for three text-heavy options. */}
+      <div className="flex flex-col gap-2">
         {OPTIONS.map(({ mode, label, icon: Icon }) => {
           const selected = draft.visualMode === mode;
           const blocked = blockedReason(mode);
@@ -65,7 +73,11 @@ export function VisualSelector() {
               title={blocked ?? undefined}
               onClick={() => setDraft({ visualMode: mode, aiVideoAcknowledged: mode === "ai_video" ? draft.aiVideoAcknowledged : false })}
               className={clsx(
-                "flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-all duration-200",
+                // `items-start` used to sit here, which is what let the
+                // text overflow: in a column flex it sizes every child to
+                // its own content instead of the box, so a long word had
+                // nothing to wrap against.
+                "flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-all duration-200",
                 blocked
                   ? "cursor-not-allowed border-border bg-background opacity-40"
                   : selected
@@ -73,9 +85,27 @@ export function VisualSelector() {
                     : "border-border bg-background hover:border-border-strong hover:bg-surface-hover"
               )}
             >
-              <Icon size={20} className={selected && !blocked ? "text-accent" : "text-white/60"} />
-              <div className="text-sm font-medium">{label}</div>
-              <div className="text-xs text-white/50">{blocked ?? t(mode)}</div>
+              <Icon
+                size={18}
+                className={clsx(
+                  "mt-0.5 shrink-0",
+                  selected && !blocked ? "text-accent" : "text-white/60"
+                )}
+              />
+              <div className="min-w-0">
+                <div className="text-sm font-medium">{label}</div>
+                {/* The mode's own sentence, always. This used to be
+                    replaced by the API's reason when a mode was
+                    unavailable — an English sentence written for whoever
+                    runs the install, shown to a Turkish user in place of
+                    the description, and long enough to double the height
+                    of the row. It is still on the tooltip, where it was
+                    meant to be. */}
+                <div className="mt-0.5 break-words text-xs text-white/50">{t(mode)}</div>
+                {blocked && (
+                  <div className="mt-1 text-[11px] text-white/35">{t("unavailable")}</div>
+                )}
+              </div>
             </button>
           );
         })}

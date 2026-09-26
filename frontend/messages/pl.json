@@ -529,7 +529,8 @@
       "ai_video": "Lokalna dyfuzja tekst-na-wideo. Najwolniejsza, wymaga prawdziwego GPU.",
       "stock_media": "Darmowe materiały z Pexels/Pixabay. Bez GPU.",
       "aiWarning": "AI Video przy pierwszym użyciu na danej maszynie pobiera duży model (dziesiątki GB) — przy wolnym łączu może to potrwać godziny, a samo generowanie bez prawdziwego GPU też jest powolne. To jednorazowe pobranie; kolejne rendery go nie powtarzają.",
-      "aiAck": "Rozumiem, że przy pierwszym użyciu może to długo potrwać"
+      "aiAck": "Rozumiem, że przy pierwszym użyciu może to długo potrwać",
+      "unavailable": "Niedostępne tutaj"
     },
     "music": {
       "moods": {

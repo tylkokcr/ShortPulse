@@ -529,7 +529,8 @@
       "ai_video": "Lokale Text-zu-Video-Diffusion. Am langsamsten, braucht eine echte GPU.",
       "stock_media": "Kostenloses Pexels-/Pixabay-Material. Keine GPU nötig.",
       "aiWarning": "AI Video lädt beim ersten Einsatz auf einem Rechner ein großes Modell herunter (zig GB) — bei langsamer Verbindung kann das Stunden dauern, und ohne echte GPU ist auch die Generierung langsam. Der Download fällt nur einmal an; spätere Renders wiederholen ihn nicht.",
-      "aiAck": "Mir ist klar, dass das beim ersten Mal lange dauern kann"
+      "aiAck": "Mir ist klar, dass das beim ersten Mal lange dauern kann",
+      "unavailable": "Hier nicht verfügbar"
     },
     "music": {
       "moods": {

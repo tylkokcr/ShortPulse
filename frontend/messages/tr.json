@@ -529,7 +529,8 @@
       "ai_video": "Yerel metinden videoya difüzyon. En yavaşı, gerçek bir GPU ister.",
       "stock_media": "Ücretsiz Pexels/Pixabay görüntüleri. GPU gerekmez.",
       "aiWarning": "AI Video, bir makinede ilk kullanımda büyük bir model indirir (onlarca GB) — yavaş bağlantıda saatler sürebilir ve gerçek bir GPU olmadan üretimin kendisi de yavaştır. İndirme tek seferliktir; sonraki renderlar tekrarlamaz.",
-      "aiAck": "İlk kullanımda uzun sürebileceğini anlıyorum"
+      "aiAck": "İlk kullanımda uzun sürebileceğini anlıyorum",
+      "unavailable": "Burada kullanılamıyor"
     },
     "music": {
       "moods": {
