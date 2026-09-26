@@ -32,7 +32,10 @@ export function Examples() {
           {/* Duplicated once so the -50% translate lands on an identical
               frame. aria-hidden on the copy keeps it out of the a11y tree. */}
           {[false, true].map((isClone) =>
-            EXAMPLES.map((example) => (
+            // The vertical ones only. The square renders exist for the
+            // studio's strip, where height is the constraint; here the
+            // format is part of the pitch.
+            EXAMPLES.filter((example) => !example.square).map((example) => (
               <ExampleCard
                 key={`${example.slug}-${isClone}`}
                 example={example}

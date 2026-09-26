@@ -53,6 +53,19 @@ export interface Example {
    *  which is what most of these are and what the credit line below
    *  covers — a generated clip has no videographer to name. */
   aiStills?: boolean;
+  /**
+   * Rendered 1:1 rather than 9:16.
+   *
+   * The studio's strip sits above the form on a working screen, and four
+   * vertical clips made it as tall as the form itself — a row of letterbox
+   * slivers you scroll past to reach the topic field. Square renders are a
+   * third of the height and the frames read at that size.
+   *
+   * The marquee on the landing page keeps the vertical ones. That page is
+   * selling what the product makes, and what it makes by default is
+   * 9:16 — a square showcase would quietly claim otherwise.
+   */
+  square?: boolean;
 }
 
 export const EXAMPLES: Example[] = [
@@ -83,6 +96,17 @@ export const EXAMPLES: Example[] = [
     scenes: 8,
     aiStills: true,
   },
+  // Square renders, for the studio's own strip.
+  //
+  // Same pipeline, same stock mode, `aspect_ratio: "1:1"` — which is also
+  // the first time that setting has been exercised end to end, and it
+  // came back 1080x1080. Kept as separate entries rather than replacing
+  // the vertical ones, because the landing marquee is selling the format
+  // the product makes by default and these are not it.
+  { slug: "ocean-sq", languageCode: "en", title: "Why the ocean is salty", language: "English", seconds: 21, scenes: 5, square: true },
+  { slug: "quiet-sq", languageCode: "en", title: "Why quiet people read the room", language: "English", seconds: 15, scenes: 5, square: true },
+  { slug: "dreams-sq", languageCode: "tr", title: "Neden gece rüya görürüz?", language: "Türkçe", seconds: 21, scenes: 5, square: true },
+  { slug: "cats-sq", languageCode: "ar", title: "لماذا تخاف القطط من الماء؟", language: "العربية", seconds: 20, scenes: 4, square: true },
 ];
 
 /**
@@ -91,16 +115,18 @@ export const EXAMPLES: Example[] = [
  * this is that list, deduplicated across all sixteen stock-footage videos.
  */
 export const FOOTAGE_CREDITS = [
-  "Aaron Burden", "Abdullah | 4K", "Adventure Studio", "Alexey Chudin",
-  "Ambareesh Sridhar Photography", "Ana Sandu", "Angela Roma", "Anna Pou", "Anna Shvets",
-  "Artem Podrez", "aslı aydoğdu", "Bahri Gün", "Bav Vadgama", "Ben Prater",
-  "Canan İldeniz", "cottonbro studio", "Darina Belonogova", "Deti riyanti", "Ebahir",
-  "Emrah", "Hale Ş", "Iceberg San", "Ilya Lyzhin", "John Diez", "Joolsmagools ®️",
-  "Juan Camilo Trujillo  Botero 🇨🇴📸", "JUN HO LEE", "K", "Kakada Chuon", "khezez | خزاز",
-  "Koushalya Karthikeyan", "LauraB", "Lentes  Bella", "Marina Leonova", "Masha Glazova",
-  "Matthias Groeneveld", "Max Medyk", "Michael Burrows", "Mikhail Nilov", "Mizuno K",
-  "Muhtelifane", "Nadezhda Moryak", "Nicola Narracci", "Nikita Ryumshin",
-  "Pachon in Motion", "Pavel Danilyuk", "Photoviewx", "RDNE Stock project",
-  "ROMAN ODINTSOV", "Ron Lach", "Sema", "Shan Ali", "Stefanie Jockschat",
-  "Tima Miroshnichenko", "Timur Weber", "Toni.063371 -  Antonio Sáez", "Şahin Doğdu"
+  "Aaron Burden", "Abdullah | 4K", "Adventure Studio", "Aleks Magnusson", "Alexey Chudin",
+  "Ambareesh Sridhar Photography", "Ana Sandu", "Andre Moura", "Andres Perez",
+  "Angela Roma", "Anna Pou", "Anna Shvets", "Artem Podrez", "aslı aydoğdu", "Bahri Gün",
+  "Barbara Olsen", "Bav Vadgama", "Ben Prater", "Canan İldeniz", "cottonbro studio",
+  "Darina Belonogova", "Deti riyanti", "Ebahir", "Emrah", "Eyüp Can", "Grigoriy Bunkov",
+  "Hale Ş", "Hashim Suhimi", "Iceberg San", "Ilya Lyzhin", "John Diez", "Joolsmagools ®️",
+  "Juan Camilo Trujillo  Botero 🇨🇴📸", "JUN HO LEE", "K", "Kakada Chuon", "Kevin  Malik",
+  "khezez | خزاز", "Koushalya Karthikeyan", "LauraB", "Lentes  Bella", "Luis Quintero",
+  "Marina Leonova", "Masha Glazova", "Matthias Groeneveld", "Max Medyk", "Michael Burrows",
+  "Mikhail Nilov", "Mizuno K", "Muhtelifane", "Nadezhda Moryak", "Nicola Narracci",
+  "Nikita Ryumshin", "Nisasu", "Pachon in Motion", "Pavel Danilyuk", "Photoviewx",
+  "Physical  Pixel", "RDNE Stock project", "ROMAN ODINTSOV", "Ron Lach", "Sema",
+  "Shan Ali", "Stefanie Jockschat", "Thuan Pham", "Tima Miroshnichenko", "Timothy Fuller",
+  "Timur Weber", "Toni.063371 -  Antonio Sáez", "Yuliya Duzhaya", "Şahin Doğdu",
 ];

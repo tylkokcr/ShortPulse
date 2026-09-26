@@ -36,11 +36,19 @@ import { useShortPulseStore } from "@/lib/store";
  * mostly English stock footage usually shows four clips that look like
  * one capability.
  *
- * These four are a demonstration: both visual modes, three languages, and
- * a right-to-left script that is the single hardest thing here to believe
- * works without seeing it.
+ * These four are a demonstration: three languages and a right-to-left
+ * script, which is the single hardest thing here to believe works without
+ * seeing it.
+ *
+ * Square, unlike the marquee's. Four vertical clips made this strip as
+ * tall as the form underneath it — you scrolled past a row of letterbox
+ * slivers to reach the topic field. These are the same pipeline at 1:1,
+ * a third of the height, and the frames actually read at this size. The
+ * cost is that the AI-stills example is not among them: it exists only
+ * as a vertical render, and re-rendering it means paying for hosted
+ * image generation.
  */
-const PICKED = ["ocean", "quiet-observers", "dreams-tr", "cats-ar"] as const;
+const PICKED = ["ocean-sq", "quiet-sq", "dreams-sq", "cats-sq"] as const;
 
 const SHOWN = PICKED.map((slug) => EXAMPLES.find((e) => e.slug === slug)!);
 
@@ -210,7 +218,10 @@ function ExampleTile({
           preload="none"
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
-          className="aspect-[9/16] w-full object-cover"
+          className={clsx(
+            "w-full object-cover",
+            example.square ? "aspect-square" : "aspect-[9/16]"
+          )}
         />
         {!playing && (
           <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
