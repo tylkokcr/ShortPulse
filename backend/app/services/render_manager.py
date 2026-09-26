@@ -446,11 +446,19 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
         # after script generation has none of it, so without this the
         # finished project reads back missing everything the render
         # actually produced.
+        # The rendered file, not `script.total_duration_s`: the target is
+        # what the LLM was asked for, and the outro card, the scene gap
+        # and every rounding in between mean the video is not it.
+        rendered_ms = await render_engine.probe_duration_ms(
+            final_path, settings.ffprobe_binary
+        )
+
         finished = await project_store.update_project(
             project_id,
             status=ProjectStatus.COMPLETE,
             output_path=str(final_path),
             script=script,
+            duration_s=round(rendered_ms / 1000, 2),
             # Flatten the per-scene word timings onto the finished
             # timeline. The scenes keep their own relative timings (that's
             # what they were measured against), but corrections have to be
@@ -724,6 +732,11 @@ async def run_upload_pipeline(
             status=ProjectStatus.COMPLETE,
             output_path=str(final_path),
             captions=CaptionTrack(words=words, style=config.subtitles),
+            # Burning captions does not change how long the video is, so
+            # the probe taken on the way in is the answer. Recorded here
+            # rather than derived in the library, which has neither the
+            # file nor the caption track to derive it from.
+            duration_s=round(probed.duration_s, 2),
             error=None,
         )
         await _emit(

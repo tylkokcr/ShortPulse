@@ -334,6 +334,11 @@ export interface Project {
   /** Credits this render was charged. Always 0 on a self-hosted install,
    *  where there is no billing. */
   credits_cost: number;
+  /** Seconds of finished video, recorded when the render completed.
+   *  Null on anything with no video of its own — still rendering, failed,
+   *  or an extraction — and on every project made before the column
+   *  existed. */
+  duration_s?: number | null;
 }
 
 /**

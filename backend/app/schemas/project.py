@@ -531,6 +531,15 @@ class Project(BaseModel):
     # later, which could have changed in between. 0 on self-hosted
     # installs, where there is no billing at all.
     credits_cost: int = 0
+    # How long the finished video is, in seconds. Recorded when the
+    # render completes, for the same reason `credits_cost` is: the
+    # library needs one small fact about the outcome, and the places it
+    # could otherwise be read from — the script, the caption track — are
+    # the columns the listing query deliberately leaves behind.
+    #
+    # None for anything with no video of its own: a project that has not
+    # finished, one that failed, and an extraction, which holds clips.
+    duration_s: float | None = None
     # Whether one of this project's scenes could be re-drawn, and the
     # sentence to show when it can't.
     #

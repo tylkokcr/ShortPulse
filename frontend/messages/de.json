@@ -609,8 +609,7 @@
       "startOne": "Eines anfangen",
       "badge": {
         "clips": "{count, plural, one {# Clip} other {# Clips}}",
-        "captioned": "Untertitelt",
-        "generated": "Erzeugt"
+        "captioned": "Untertitelt"
       },
       "status": {
         "draft": "Entwurf",

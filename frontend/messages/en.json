@@ -609,8 +609,7 @@
       "startOne": "Start one",
       "badge": {
         "clips": "{count, plural, one {# clip} other {# clips}}",
-        "captioned": "Captioned",
-        "generated": "Generated"
+        "captioned": "Captioned"
       },
       "status": {
         "draft": "draft",

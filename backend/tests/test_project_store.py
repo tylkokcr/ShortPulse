@@ -224,3 +224,43 @@ async def test_column_names_cannot_be_injected(pool):
 
     # And the table is still there with the project intact.
     assert (await store.get_project(config.id)) is not None
+
+
+# --------------------------------------------------------------------------
+# The three lists that have to agree
+#
+# A column lives in three places: the whitelist `update_project` writes
+# through, the query `get_project` reads, and the narrower one the library
+# listing reads. Adding it to some of them is silent — the write raises
+# only when someone tries it, and a missing name in a select surfaces as a
+# KeyError inside the row mapper, at request time, for that one screen.
+# --------------------------------------------------------------------------
+
+
+def _names(select: str) -> set[str]:
+    return {part.strip() for part in select.split(",") if part.strip()}
+
+
+def test_every_column_read_back_can_also_be_written():
+    """`config` is the exception: it is written once at insert and never
+    updated, which is why `update_project` refuses it."""
+    store = PostgresProjectStore
+
+    assert _names(store._SELECT) - {"config"} <= store._COLUMNS
+
+
+def test_the_listing_reads_a_subset_of_the_full_project():
+    """The summary exists to leave the heavy columns behind. A name in it
+    that the full select does not have is a typo that only the library
+    would ever hit."""
+    store = PostgresProjectStore
+
+    assert _names(store._SELECT_SUMMARY) <= _names(store._SELECT)
+
+
+def test_the_listing_still_leaves_the_heavy_columns_behind():
+    """The whole reason the summary exists: 22 projects came to 296KB,
+    61% of it script nobody read."""
+    assert _names(PostgresProjectStore._SELECT_SUMMARY).isdisjoint(
+        {"script", "captions", "edit"}
+    )

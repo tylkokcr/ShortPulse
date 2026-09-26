@@ -86,14 +86,14 @@ class PostgresProjectStore:
     # Columns that live in their own SQL column rather than inside `config`.
     _COLUMNS = {
         "status", "script", "output_path", "error", "credits_cost",
-        "source_path", "captions", "edit", "clip_project_ids",
+        "source_path", "captions", "edit", "clip_project_ids", "duration_s",
     }
 
     # Named once because it appeared verbatim in four queries, and a column
     # added to only three of them fails at read time rather than at write.
     _SELECT = (
         "config, status, script, output_path, error, credits_cost, source_path, "
-        "captions, edit, clip_project_ids"
+        "captions, edit, clip_project_ids, duration_s"
     )
 
     # Listing deliberately omits `script`, `captions` and `edit`. They are
@@ -106,7 +106,8 @@ class PostgresProjectStore:
     # library cannot tell an extraction from a video and offers to play
     # something that does not exist.
     _SELECT_SUMMARY = (
-        "config, status, output_path, error, credits_cost, source_path, clip_project_ids"
+        "config, status, output_path, error, credits_cost, source_path, clip_project_ids, "
+        "duration_s"
     )
 
     def __init__(self, pool: asyncpg.Pool) -> None:
@@ -128,6 +129,7 @@ class PostgresProjectStore:
             # covers a row read through a connection that predates the
             # column rather than a null — the column itself cannot be one.
             clip_project_ids=list(row["clip_project_ids"] or []),
+            duration_s=row["duration_s"],
         )
 
     async def create_project(self, config: ProjectConfig, user_id: str | None = None) -> Project:
@@ -166,6 +168,7 @@ class PostgresProjectStore:
             credits_cost=row["credits_cost"],
             source_path=row["source_path"],
             clip_project_ids=list(row["clip_project_ids"] or []),
+            duration_s=row["duration_s"],
         )
 
     async def list_projects(self, user_id: str | None = None) -> list[Project]:

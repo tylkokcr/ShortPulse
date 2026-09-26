@@ -609,8 +609,7 @@
       "startOne": "Bir tane başlat",
       "badge": {
         "clips": "{count, plural, other {# kesit}}",
-        "captioned": "Altyazılı",
-        "generated": "Üretildi"
+        "captioned": "Altyazılı"
       },
       "status": {
         "draft": "taslak",

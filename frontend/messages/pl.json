@@ -609,8 +609,7 @@
       "startOne": "Zacznij pierwszy",
       "badge": {
         "clips": "{count, plural, one {# klip} few {# klipy} many {# klipów} other {# klipów}}",
-        "captioned": "Z napisami",
-        "generated": "Wygenerowany"
+        "captioned": "Z napisami"
       },
       "status": {
         "draft": "szkic",
