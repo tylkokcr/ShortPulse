@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
+  Frame,
   FileText,
   Palette,
   Clock,
@@ -39,6 +40,7 @@ import { RenderSummary } from "@/components/editor/RenderSummary";
 import { UploadPanel } from "@/components/editor/UploadPanel";
 import { StartFromExample } from "@/components/editor/StartFromExample";
 import { SettingsDrawer } from "@/components/editor/SettingsDrawer";
+import { FieldDisclosure } from "@/components/editor/FieldDisclosure";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 
 export default function HomePage() {
@@ -63,7 +65,21 @@ const accent = (chunks: React.ReactNode) => (
  *  rows on the page and the sections inside the panel are drawn from
  *  this one list, so a group cannot exist in the summary and not in the
  *  panel it claims to open. */
+/**
+ * The five panels, in the order the decisions get made.
+ *
+ * `format` and `look` were one row called "Look & language", and it was
+ * the row that broke the rule the rest of them follow: four rows of
+ * identical weight over panels of wildly different size — 1634px behind
+ * that one against 748px behind Length. A row is a promise about how much
+ * is behind it, so the six fields became two panels of three.
+ *
+ * The split is also the real seam. Frame and language are decided once
+ * and rarely revisited; the visual style, art style and captions are what
+ * somebody comes back to change.
+ */
 const GROUPS = [
+  { id: "format", icon: Frame },
   { id: "look", icon: Palette },
   { id: "length", icon: Clock },
   { id: "audio", icon: MusicIcon },
@@ -126,7 +142,7 @@ function CreateVideo() {
   // every selector already reads the draft from the store, so there is
   // no state to thread and nothing here to re-render around.
   const GROUP_FIELDS: Record<GroupId, React.ReactNode> = {
-    look: (
+    format: (
       <>
         <Field label={t("fields.aspectRatio")}>
           <AspectRatioSelector />
@@ -134,6 +150,10 @@ function CreateVideo() {
         <Field label={t("fields.language")}>
           <LanguageSelector />
         </Field>
+      </>
+    ),
+    look: (
+      <>
         <Field label={t("fields.visualStyle")}>
           <VisualSelector />
         </Field>
@@ -143,7 +163,11 @@ function CreateVideo() {
         <Field label={t("fields.negativePrompt")}>
           <NegativePrompt />
         </Field>
-        <Field label={t("fields.captionStyle")}>
+        {/* The same treatment as the audio catalogues, and for the same
+            reason: eleven preset tiles plus a placement control is the
+            single biggest block in this panel, and it already has an
+            answer. */}
+        <FieldDisclosure label={t("fields.captionStyle")} value={draft.captionPreset}>
           <CaptionStyleSelector />
           {/* Placement below the looks rather than beside them: you pick a
               style, then decide where it sits — and it survives changing
@@ -156,18 +180,22 @@ function CreateVideo() {
               setDraft({ captionPosition: position, captionFontSize: fontSize })
             }
           />
-        </Field>
+        </FieldDisclosure>
       </>
     ),
     length: <DurationSelector />,
     audio: (
       <>
-        <Field label={t("fields.voice")}>
+        {/* Both already have an answer, and both answers are usually the
+            default — so the panel states them and opens the catalogue
+            only if you disagree. Expanded, this was 1676px for two
+            decisions nobody had asked to revisit. */}
+        <FieldDisclosure label={t("fields.voice")} value={voiceLabel}>
           <VoiceSelector />
-        </Field>
-        <Field label={t("fields.music")}>
+        </FieldDisclosure>
+        <FieldDisclosure label={t("fields.music")} value={musicLabel}>
           <MusicSelector />
-        </Field>
+        </FieldDisclosure>
       </>
     ),
     finishing: (
@@ -188,7 +216,8 @@ function CreateVideo() {
   };
 
   const summaries: Record<GroupId, string> = {
-    look: `${draft.aspectRatio} · ${draft.language.toUpperCase()} · ${draft.artStyle} · ${draft.captionPreset}`,
+    format: `${draft.aspectRatio} · ${draft.language.toUpperCase()}`,
+    look: `${draft.visualMode.replace("_", " ")} · ${draft.artStyle} · ${draft.captionPreset}`,
     length: lengthLabel,
     audio: t("summary.audio", { voice: voiceLabel, music: musicLabel }),
     finishing: [

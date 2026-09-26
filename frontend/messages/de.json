@@ -431,7 +431,8 @@
     },
     "idea": "Die Idee",
     "groups": {
-      "look": "Aussehen & Sprache",
+      "format": "Format & Sprache",
+      "look": "Aussehen",
       "length": "Länge",
       "audio": "Audio",
       "finishing": "Letzter Schliff"

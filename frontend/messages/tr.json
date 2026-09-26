@@ -431,7 +431,8 @@
     },
     "idea": "Fikir",
     "groups": {
-      "look": "Görünüm ve dil",
+      "format": "Format & dil",
+      "look": "Görünüm",
       "length": "Uzunluk",
       "audio": "Ses",
       "finishing": "Son dokunuşlar"
