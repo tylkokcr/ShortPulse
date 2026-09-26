@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Play, Sparkles } from "lucide-react";
+import { Play, Sparkles, Undo2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import { EXAMPLES, FOOTAGE_CREDITS, type Example } from "@/lib/examples";
@@ -42,14 +42,53 @@ import { useShortPulseStore } from "@/lib/store";
  */
 const PICKED = ["ocean", "quiet-observers", "dreams-tr", "cats-ar"] as const;
 
+const SHOWN = PICKED.map((slug) => EXAMPLES.find((e) => e.slug === slug)!);
+
+/**
+ * Whether the topic field is still ours rather than theirs.
+ *
+ * The strip used to disappear the instant an example was picked, because
+ * the page hid it on any non-empty topic. That left no way back: not to
+ * the empty form, not even to a different example — one click and the
+ * four videos were gone, having quietly changed the language and the
+ * visual mode on the way out.
+ *
+ * Empty, or still exactly the title an example wrote. The moment somebody
+ * types their own subject the strip goes, which is the behaviour the page
+ * always wanted: four videos offering to overwrite what you just wrote.
+ */
+export function topicIsUntouched(topic: string): boolean {
+  const trimmed = topic.trim();
+  return trimmed === "" || SHOWN.some((example) => example.title === trimmed);
+}
+
 export function StartFromExample({ className }: { className?: string }) {
   const t = useTranslations("studio.examples");
   const setDraft = useShortPulseStore((s) => s.setDraft);
-  const topic = useShortPulseStore((s) => s.draft.topic);
+  const draft = useShortPulseStore((s) => s.draft);
+  const topic = draft.topic;
 
-  const shown = PICKED.map((slug) => EXAMPLES.find((e) => e.slug === slug)!);
+  const shown = SHOWN;
+  // What the form held before the first example overwrote it. An example
+  // sets four fields, so undoing it has to put back four — clearing the
+  // topic alone would leave someone who picked the Arabic clip with a
+  // blank field and an Arabic render still queued up behind it.
+  // State rather than a ref: whether there is something to undo decides
+  // whether the button is drawn, and a ref changing draws nothing.
+  const [before, setBefore] = useState<Pick<
+    typeof draft,
+    "topic" | "language" | "visualMode" | "videoLength"
+  > | null>(null);
 
   function load(example: Example) {
+    setBefore((snapshot) =>
+      snapshot ?? {
+        topic: draft.topic,
+        language: draft.language,
+        visualMode: draft.visualMode,
+        videoLength: draft.videoLength,
+      }
+    );
     setDraft({
       topic: example.title,
       language: example.languageCode,
@@ -58,11 +97,29 @@ export function StartFromExample({ className }: { className?: string }) {
     });
   }
 
+  function undo() {
+    if (!before) return;
+    setDraft(before);
+    setBefore(null);
+  }
+
   return (
     <div className={clsx("flex flex-col gap-3", className)}>
-      <div className="flex items-baseline gap-2">
+      <div className="flex flex-wrap items-baseline gap-2">
         <h2 className="text-sm font-semibold text-white/80">{t("title")}</h2>
         <p className="text-xs text-white/35">{t("sub")}</p>
+        {/* Only once something has been loaded, and it puts back all four
+            fields rather than just the visible one. */}
+        {before !== null && topic.trim() !== "" && (
+          <button
+            type="button"
+            onClick={undo}
+            className="ml-auto flex items-center gap-1 rounded-md px-2 py-1 text-xs text-white/40 transition-colors hover:bg-surface-hover hover:text-white"
+          >
+            <Undo2 size={12} />
+            {t("undo")}
+          </button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-3">

@@ -38,7 +38,7 @@ import { MusicSelector } from "@/components/editor/MusicSelector";
 import { VoiceSelector } from "@/components/editor/VoiceSelector";
 import { RenderSummary } from "@/components/editor/RenderSummary";
 import { UploadPanel } from "@/components/editor/UploadPanel";
-import { StartFromExample } from "@/components/editor/StartFromExample";
+import { StartFromExample, topicIsUntouched } from "@/components/editor/StartFromExample";
 import { SettingsDrawer } from "@/components/editor/SettingsDrawer";
 import { FieldDisclosure } from "@/components/editor/FieldDisclosure";
 import { RequireAuth } from "@/components/auth/RequireAuth";
@@ -326,7 +326,7 @@ function CreateVideo() {
             answer to anything. Once something is typed the row would be
             four videos sitting between the user and the button, offering
             to overwrite what they just wrote. */}
-        {mode === "generate" && !draft.topic.trim() && (
+        {mode === "generate" && topicIsUntouched(draft.topic) && (
           <div className="animate-fade-up mt-8">
             <StartFromExample />
           </div>

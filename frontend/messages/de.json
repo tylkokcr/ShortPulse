@@ -497,7 +497,8 @@
       "title": "Mit einem Beispiel anfangen",
       "sub": "Echte Renders. Eines auszuwählen füllt das Formular — das Skript wird trotzdem neu geschrieben.",
       "credit": "Material von <pexels>Pexels</pexels>, gefilmt von {count} Videografen.",
-      "creditNames": "{names}. Der Clip mit KI-Standbildern hat kein Material zu nennen — jedes Bild davon wurde generiert."
+      "creditNames": "{names}. Der Clip mit KI-Standbildern hat kein Material zu nennen — jedes Bild davon wurde generiert.",
+      "undo": "Rückgängig"
     },
     "renderSummary": {
       "title": "Dieser Render",

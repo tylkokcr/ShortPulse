@@ -497,7 +497,8 @@
       "title": "Start from an example",
       "sub": "Real renders. Picking one fills the form in — the script is still written fresh.",
       "credit": "Footage from <pexels>Pexels</pexels>, filmed by {count} videographers.",
-      "creditNames": "{names}. The AI-stills clip has no footage to credit — every frame of it was generated."
+      "creditNames": "{names}. The AI-stills clip has no footage to credit — every frame of it was generated.",
+      "undo": "Undo"
     },
     "renderSummary": {
       "title": "This render",
