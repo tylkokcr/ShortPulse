@@ -77,7 +77,15 @@ export function AppRail() {
   ];
 
   return (
-    <nav className="app-rail hidden shrink-0 flex-col overflow-hidden border-r border-border/60 bg-surface/30 lg:flex">
+    <nav
+      // No fill. The rail used to be a 30% surface wash, which was there
+      // to separate it from a flat black page — and now the page has a
+      // drafting surface of its own, that wash only dimmed the grid under
+      // one column of it. The hairline does the separating; the surface
+      // runs edge to edge behind everything, which is what makes it read
+      // as one sheet rather than a panel beside a panel.
+      className="app-rail hidden shrink-0 flex-col overflow-hidden border-r border-border/50 lg:flex"
+    >
       <div className="flex items-center gap-2 px-4 py-4">
         <Link href="/" className="inline-flex shrink-0 transition-opacity hover:opacity-80">
           <Logo />
