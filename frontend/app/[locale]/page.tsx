@@ -11,7 +11,6 @@ import {
   Wand2,
   ArrowRight,
   Coins,
-  ChevronRight,
   Upload,
 } from "lucide-react";
 import clsx from "clsx";
@@ -40,6 +39,7 @@ import { RenderSummary } from "@/components/editor/RenderSummary";
 import { UploadPanel } from "@/components/editor/UploadPanel";
 import { StartFromExample, topicIsUntouched } from "@/components/editor/StartFromExample";
 import { SettingsDrawer } from "@/components/editor/SettingsDrawer";
+import { SettingRow } from "@/components/editor/SettingRow";
 import { FieldDisclosure } from "@/components/editor/FieldDisclosure";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 
@@ -99,6 +99,9 @@ function CreateVideo() {
   // of state rather than an open flag beside a selection: "open at
   // nothing" is not a state this can be in.
   const [drawerGroup, setDrawerGroup] = useState<GroupId | null>(null);
+  // The caption tab owns its own drawer — every value in it is that
+  // panel's state — but the shell is what reserves the column for it.
+  const [uploadAsideOpen, setUploadAsideOpen] = useState(false);
 
   const canSubmit =
     draft.topic.trim().length > 0 &&
@@ -230,7 +233,9 @@ function CreateVideo() {
   return (
     <AppShell
       section="studio"
-      asideOpen={mode === "generate" && drawerGroup !== null}
+      asideOpen={
+        mode === "generate" ? drawerGroup !== null : uploadAsideOpen
+      }
       aside={
         mode === "generate" ? (
           <SettingsDrawer
@@ -318,7 +323,7 @@ function CreateVideo() {
           // column, so constraining it here would leave the preview
           // squeezed against the form.
           <div className="animate-fade-up mt-8">
-            <UploadPanel />
+            <UploadPanel onAsideOpenChange={setUploadAsideOpen} />
           </div>
         )}
 
@@ -440,58 +445,3 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-/**
- * Collapsible step. Every section past the first two starts closed with
- * its current value in the header, so the form reads as a short summary
- * until you actually want to change something — the alternative is five
- * expanded panels of controls that mostly keep their defaults.
- */
-/**
- * A setting group, as a line rather than a panel.
- *
- * Says what it is currently set to and opens the drawer at it. The
- * summary is the point: four of these stack into the height one closed
- * accordion used to take, and you can read the whole configuration
- * without opening anything.
- */
-function SettingRow({
-  icon: Icon,
-  title,
-  summary,
-  open,
-  onClick,
-}: {
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-  title: string;
-  summary: string;
-  open: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-expanded={open}
-      className={clsx(
-        "group flex items-center gap-3 rounded-lg border px-4 py-3 text-left",
-        "transition-[border-color,background-color] duration-200",
-        open
-          ? "border-accent/50 bg-accent/[0.06]"
-          : "border-border hover:border-border-strong hover:bg-surface-hover"
-      )}
-    >
-      <Icon size={14} className={clsx("shrink-0", open ? "text-accent" : "text-white/40")} />
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium">{title}</span>
-        <span className="mt-0.5 block truncate text-xs text-white/40">{summary}</span>
-      </span>
-      <ChevronRight
-        size={15}
-        className={clsx(
-          "shrink-0 transition-colors",
-          open ? "text-accent" : "text-white/25 group-hover:text-white/50"
-        )}
-      />
-    </button>
-  );
-}

@@ -13,7 +13,11 @@ export function CaptionStyleSelector() {
 
   return (
     // The font variables hang here so every preview below resolves them.
-    <div className={clsx("grid grid-cols-2 gap-3 sm:grid-cols-4", CAPTION_FONT_VARS)}>
+    //
+    // Two columns, not four. These live in the 400px settings drawer on
+    // both studio tabs; `sm:grid-cols-4` was measuring the window and
+    // giving each preset 85px to show a caption in.
+    <div className={clsx("grid grid-cols-2 gap-3", CAPTION_FONT_VARS)}>
       {CAPTION_PRESETS.map((preset) => {
         const selected = draft.captionPreset === preset.id;
         return (

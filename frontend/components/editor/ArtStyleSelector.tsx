@@ -46,7 +46,10 @@ export function ArtStyleSelector() {
       {/* Two columns below 380px. Three of them leaves a 52px tile, and the
           style names are single words — "Claymation" is 65px and cannot
           wrap, so it spills out of its own button on a 320px phone. */}
-      <div className="grid grid-cols-2 gap-3 min-[380px]:grid-cols-3 sm:grid-cols-6">
+      {/* Three at most. Six columns of the 400px drawer is a 55px
+          thumbnail with "Claymation" wrapped under it — the window
+          this was sized against is not the box it renders in. */}
+      <div className="grid grid-cols-2 gap-3 min-[380px]:grid-cols-3">
         {styles.map((style) => {
           const selected = draft.artStyle === style.id;
           return (

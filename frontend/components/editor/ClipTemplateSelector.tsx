@@ -43,7 +43,12 @@ export function ClipTemplateSelector({
   return (
     <div className={className}>
       <span className="mb-1.5 block text-sm font-medium text-white/70">{t("template")}</span>
-      <div className={clsx("grid grid-cols-2 gap-3 sm:grid-cols-3", CAPTION_FONT_VARS)}>
+      {/* Two columns, fixed. `sm:grid-cols-3` asked the window how
+          much room there was, and the answer stopped being relevant
+          when this moved into the settings drawer: that is 384-400px
+          whatever the window is, so three columns meant 115px tiles
+          with an eight-line description under each. */}
+      <div className={clsx("grid grid-cols-2 gap-3", CAPTION_FONT_VARS)}>
         {CLIP_TEMPLATES.map((template) => {
           const preset = presetById(template.captionPreset);
           const blocked = !framesAllowed && template.aspectRatio !== "9:16";

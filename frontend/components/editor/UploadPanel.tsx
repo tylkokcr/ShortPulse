@@ -1,7 +1,17 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { ArrowRight, Captions, FileVideo, TriangleAlert, Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  ArrowRight,
+  Captions,
+  FileVideo,
+  Frame,
+  Palette,
+  Scissors,
+  TriangleAlert,
+  Upload,
+  Wand2,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import { useRouter } from "@/i18n/navigation";
@@ -14,12 +24,15 @@ import { LanguageSelector } from "./LanguageSelector";
 import { CaptionStyleSelector } from "./CaptionStyleSelector";
 import { CaptionPlacement } from "./CaptionPlacement";
 import { ClipTemplateSelector } from "./ClipTemplateSelector";
-import type { ClipTemplate } from "@/lib/clipTemplates";
+import { FieldDisclosure } from "./FieldDisclosure";
+import { templateById, type ClipTemplate } from "@/lib/clipTemplates";
 import type { AspectRatio } from "@/lib/types";
 import { CensorToggle } from "./CensorToggle";
 import { captionStyleFor, presetById } from "@/lib/captionStyles";
 import { UploadPreview } from "./UploadPreview";
 import { TimelineRange } from "@/components/ui/TimelineRange";
+import { SettingRow } from "./SettingRow";
+import { SettingsDrawer } from "./SettingsDrawer";
 
 /**
  * The second way in: caption — or dub — a video the user already has.
@@ -46,6 +59,24 @@ const MAX_BYTES = 200 * 1024 * 1024;
  */
 const MIN_WINDOW_MS = 2 * 60 * 1000;
 
+/**
+ * The panels, in the order the decisions get made.
+ *
+ * Same shape as the generate tab's, and three of the four names are its
+ * names — two tabs of one screen disagreeing about how settings work
+ * reads as two products. `cut` is the one that only exists here: it holds
+ * the questions that only mean something once the video is being cut into
+ * clips, and the row is not drawn at all otherwise.
+ */
+const UPLOAD_GROUPS = [
+  { id: "format", icon: Frame },
+  { id: "cut", icon: Scissors },
+  { id: "look", icon: Palette },
+  { id: "finishing", icon: Wand2 },
+] as const;
+
+type UploadGroupId = (typeof UPLOAD_GROUPS)[number]["id"];
+
 function formatSize(bytes: number): string {
   const mb = bytes / (1024 * 1024);
   return mb >= 1000 ? `${(mb / 1024).toFixed(1)}GB` : `${mb.toFixed(0)}MB`;
@@ -70,11 +101,22 @@ function clipPrice(
   return Math.max(1, Math.ceil(spanMs / 1000 / secondsPerCredit));
 }
 
-export function UploadPanel() {
+export function UploadPanel({
+  onAsideOpenChange,
+}: {
+  /** Told when this tab's settings drawer opens or closes, so the shell
+   *  can give it a column of its own on a wide enough window. The panel
+   *  owns the drawer because it owns every value in it; the shell only
+   *  needs to know whether one is showing. */
+  onAsideOpenChange?: (open: boolean) => void;
+}) {
   const t = useTranslations("studio.upload");
   // The credit line and the free-install line are shared with the
   // generate tab, so they live one level up rather than twice.
   const ts = useTranslations("studio");
+  // The group names are the generate tab's, shared deliberately — see
+  // UPLOAD_GROUPS.
+  const tg = useTranslations("studio.groups");
   const router = useRouter();
   const { draft, setDraft, credits } = useShortPulseStore();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -104,6 +146,14 @@ export function UploadPanel() {
   // numbers either way — the server resolves them against its own probe,
   // which is the only duration that decides anything.
   const [windowMs, setWindowMs] = useState<[number, number]>([0, 0]);
+  const [drawerGroup, setDrawerGroup] = useState<UploadGroupId | null>(null);
+
+  const asideOpen = drawerGroup !== null;
+  useEffect(() => {
+    onAsideOpenChange?.(asideOpen);
+    // Leaving the tab with a panel open would otherwise keep the margin.
+    return () => onAsideOpenChange?.(false);
+  }, [asideOpen, onAsideOpenChange]);
 
   // Quoted from the table the API serves, which is the one the backend
   // charges from — the panel used to print "1 credit" whatever was
@@ -213,6 +263,120 @@ export function UploadPanel() {
     });
   }
 
+
+  // The fields, by group. Plain JSX for the same reason the generate tab
+  // uses it: every control here already reads what it needs from this
+  // component's state or the draft, so there is nothing to thread.
+  // What each row says it is set to, so the four of them read as the
+  // whole configuration without opening anything.
+  const summaries: Record<UploadGroupId, string> = {
+    format: draft.language.toUpperCase(),
+    cut:
+      durationMs !== null && (windowMs[1] - windowMs[0]) < durationMs
+        ? `${clock(windowMs[0])}–${clock(windowMs[1])}`
+        : t("cutWholeSummary"),
+    look: [template ? templateById(template).name : t("lookCustom"), draft.captionPreset]
+      .filter(Boolean)
+      .join(" · "),
+    finishing: censor ? ts("censor.summaryOn") : ts("censor.summaryOff"),
+  };
+
+  const GROUP_FIELDS: Record<UploadGroupId, React.ReactNode> = {
+    format: (
+      <>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-white/70">{t("spokenLanguage")}</label>
+          <LanguageSelector />
+          <p className="mt-1.5 text-xs text-white/40">{t("spokenLanguageHint")}</p>
+        </div>
+      </>
+    ),
+    cut: (
+      <>
+        {/* Only when there is a length to take a stretch out of, and
+            only when there is something to take. A browser that will not
+            say how long the file is (a stream, a container it has to
+            seek to measure) gets no control and sends no window — the
+            server then reads the whole thing, exactly as before. */}
+        {clipCount > 0 && durationMs !== null && durationMs > MIN_WINDOW_MS && (
+          <div>
+            <span className="mb-1.5 block text-sm font-medium text-white/70">
+              {t("window")}
+            </span>
+            <TimelineRange
+              startMs={windowMs[0]}
+              endMs={windowMs[1]}
+              durationMs={durationMs}
+              minSpanMs={MIN_WINDOW_MS}
+              onChange={(start, end) => setWindowMs([start, end])}
+              labels={{ start: t("windowStart"), end: t("windowEnd") }}
+            />
+            <p className="mt-1.5 text-xs text-white/40">
+              {t("windowHint", {
+                minutes: Math.round(MIN_WINDOW_MS / 60000),
+                perCredit: Math.round(secondsPerCredit / 60),
+              })}
+            </p>
+          </div>
+        )}
+        {/* Only with clips: there is nothing for it to steer otherwise,
+            and a field that silently does nothing is worse than one that
+            is not there. */}
+        {clipCount > 0 && (
+          <div>
+            <label
+              htmlFor="clip-focus"
+              className="mb-1.5 block text-sm font-medium text-white/70"
+            >
+              {t("focus")}
+            </label>
+            <input
+              id="clip-focus"
+              value={focus}
+              maxLength={300}
+              onChange={(event) => setFocus(event.target.value)}
+              placeholder={t("focusPlaceholder")}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent"
+            />
+            <p className="mt-1.5 text-xs text-white/40">{t("focusHint")}</p>
+          </div>
+        )}
+      </>
+    ),
+    look: (
+      <>
+        <ClipTemplateSelector
+          selected={template}
+          onSelect={applyTemplate}
+          framesAllowed={clipCount > 0}
+        />
+      
+        {/* Behind its own value, as on the generate tab: eleven preset
+            tiles and a placement control is the biggest block in this
+            panel, and the template above has usually just answered it. */}
+        <FieldDisclosure label={t("captionStyle")} value={draft.captionPreset}>
+          <CaptionStyleSelector />
+          {/* Here too, not only on the generate tab. The draft is shared,
+              so the placement chosen there already applied to an upload —
+              it was just invisible on the panel it applied to, which is
+              how it went unnoticed that the value was being dropped. */}
+          <CaptionPlacement
+            className="mt-3"
+            position={draft.captionPosition}
+            fontSize={draft.captionFontSize ?? presetById(draft.captionPreset).style.font_size}
+            onChange={({ position, fontSize }) =>
+              setDraft({ captionPosition: position, captionFontSize: fontSize })
+            }
+          />
+        </FieldDisclosure>
+      </>
+    ),
+    // Here as well as in the generate tab: somebody captioning their own
+    // recording is the case this matters most for — they cannot re-write
+    // what was already said.
+    finishing: <CensorToggle checked={censor} onChange={setCensor} />,
+  };
+
   return (
     // Two columns, matching the generate flow next door. The caption
     // screen used to be a single narrow card in the middle of the page,
@@ -270,12 +434,6 @@ export function UploadPanel() {
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-white/70">{t("spokenLanguage")}</label>
-          <LanguageSelector />
-          <p className="mt-1.5 text-xs text-white/40">{t("spokenLanguageHint")}</p>
-        </div>
-
-        <div>
           <label className="mb-1.5 block text-sm font-medium text-white/70">{t("clips")}</label>
           <div className="flex flex-wrap gap-2">
             {[0, 2, 3, 4, 5].map((count) => (
@@ -302,56 +460,6 @@ export function UploadPanel() {
             {clipCount ? t("clipsOnHint") : t("clipsOffHint")}
           </p>
         </div>
-
-        {/* Only when there is a length to take a stretch out of, and
-            only when there is something to take. A browser that will not
-            say how long the file is (a stream, a container it has to
-            seek to measure) gets no control and sends no window — the
-            server then reads the whole thing, exactly as before. */}
-        {clipCount > 0 && durationMs !== null && durationMs > MIN_WINDOW_MS && (
-          <div>
-            <span className="mb-1.5 block text-sm font-medium text-white/70">
-              {t("window")}
-            </span>
-            <TimelineRange
-              startMs={windowMs[0]}
-              endMs={windowMs[1]}
-              durationMs={durationMs}
-              minSpanMs={MIN_WINDOW_MS}
-              onChange={(start, end) => setWindowMs([start, end])}
-              labels={{ start: t("windowStart"), end: t("windowEnd") }}
-            />
-            <p className="mt-1.5 text-xs text-white/40">
-              {t("windowHint", {
-                minutes: Math.round(MIN_WINDOW_MS / 60000),
-                perCredit: Math.round(secondsPerCredit / 60),
-              })}
-            </p>
-          </div>
-        )}
-
-        {/* Only with clips: there is nothing for it to steer otherwise,
-            and a field that silently does nothing is worse than one that
-            is not there. */}
-        {clipCount > 0 && (
-          <div>
-            <label
-              htmlFor="clip-focus"
-              className="mb-1.5 block text-sm font-medium text-white/70"
-            >
-              {t("focus")}
-            </label>
-            <input
-              id="clip-focus"
-              value={focus}
-              maxLength={300}
-              onChange={(event) => setFocus(event.target.value)}
-              placeholder={t("focusPlaceholder")}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent"
-            />
-            <p className="mt-1.5 text-xs text-white/40">{t("focusHint")}</p>
-          </div>
-        )}
 
         <div className={clsx(clipCount && "pointer-events-none opacity-40")}>
           <label
@@ -384,38 +492,38 @@ export function UploadPanel() {
           </p>
         </div>
 
-        <ClipTemplateSelector
-          selected={template}
-          onSelect={applyTemplate}
-          framesAllowed={clipCount > 0}
-        />
-
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-white/70">{t("captionStyle")}</label>
-          <CaptionStyleSelector />
-          {/* Here too, not only on the generate tab. The draft is shared,
-              so the placement chosen there already applied to an upload —
-              it was just invisible on the panel it applied to, which is
-              how it went unnoticed that the value was being dropped. */}
-          <CaptionPlacement
-            className="mt-3"
-            position={draft.captionPosition}
-            fontSize={draft.captionFontSize ?? presetById(draft.captionPreset).style.font_size}
-            onChange={({ position, fontSize }) =>
-              setDraft({ captionPosition: position, captionFontSize: fontSize })
-            }
-          />
+        {/* Everything past the file and what to do with it. Four rows
+            where there used to be six expanded sections and 2238px of
+            scroll — the same trade the generate tab made, and the same
+            rule: a row says what it is set to, and the drawer is where
+            you change it. */}
+        <div className="flex flex-col gap-2">
+          {UPLOAD_GROUPS.map((group) => {
+            // Nothing in it applies until the video is being cut up, and
+            // a row that opens an empty panel is worse than no row.
+            if (group.id === "cut" && clipCount === 0) return null;
+            return (
+              <SettingRow
+                key={group.id}
+                icon={group.icon}
+                title={tg(group.id)}
+                summary={summaries[group.id]}
+                open={drawerGroup === group.id}
+                onClick={() => setDrawerGroup(group.id)}
+              />
+            );
+          })}
         </div>
-
-        {/* Here as well as in the generate tab: somebody captioning their
-            own recording is the case this matters most for — they cannot
-            re-write what was already said. */}
-        <CensorToggle
-          className="border-t border-border pt-4"
-          checked={censor}
-          onChange={setCensor}
-        />
       </Card>
+
+      <SettingsDrawer
+        open={drawerGroup !== null}
+        onClose={() => setDrawerGroup(null)}
+        icon={UPLOAD_GROUPS.find((g) => g.id === drawerGroup)?.icon}
+        title={drawerGroup ? tg(drawerGroup) : ""}
+      >
+        {drawerGroup && GROUP_FIELDS[drawerGroup]}
+      </SettingsDrawer>
 
       {error && (
         <p className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
@@ -480,4 +588,10 @@ export function UploadPanel() {
       />
     </div>
   );
+}
+
+/** m:ss, for the window summary on the row. */
+function clock(ms: number): string {
+  const total = Math.round(ms / 1000);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }

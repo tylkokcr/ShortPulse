@@ -427,11 +427,14 @@
       "template": "Görünüm",
       "templateHint": "Altyazı stilini, yerini ve kadrajı ayarlar. Sonrasında hepsini aşağıdan değiştirebilirsin.",
       "templateNeedsClips": "Altyazılama videoyu çekildiği kadrajda bırakır — farklı kadrajlı bir görünümü ancak kesitlere bölerken seçebilirsin.",
-      "customLook": "Altyazılarda ince ayar"
+      "customLook": "Altyazılarda ince ayar",
+      "cutWholeSummary": "Videonun tamamı",
+      "lookCustom": "Özel"
     },
     "idea": "Fikir",
     "groups": {
       "format": "Format & dil",
+      "cut": "Kesim",
       "look": "Görünüm",
       "length": "Uzunluk",
       "audio": "Ses",

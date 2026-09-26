@@ -427,11 +427,14 @@
       "template": "Styl",
       "templateHint": "Ustawia styl napisów, ich położenie i kadr. Każde z nich zmienisz poniżej.",
       "templateNeedsClips": "Dodawanie napisów zostawia kadr taki, w jakim nagrano — styl z innym kadrem wybierzesz tylko przy cięciu na klipy.",
-      "customLook": "Dopracuj napisy"
+      "customLook": "Dopracuj napisy",
+      "cutWholeSummary": "Cały film",
+      "lookCustom": "Własny"
     },
     "idea": "Pomysł",
     "groups": {
       "format": "Format i język",
+      "cut": "Cięcie",
       "look": "Wygląd",
       "length": "Długość",
       "audio": "Dźwięk",

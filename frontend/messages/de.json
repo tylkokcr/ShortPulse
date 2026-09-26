@@ -427,11 +427,14 @@
       "template": "Look",
       "templateHint": "Legt Untertitelstil, Position und Bildformat fest. Alles davon lässt sich unten noch ändern.",
       "templateNeedsClips": "Beim Untertiteln bleibt das Bild so, wie es gefilmt wurde — einen Look mit anderem Format gibt es nur beim Schneiden in Clips.",
-      "customLook": "Untertitel feinjustieren"
+      "customLook": "Untertitel feinjustieren",
+      "cutWholeSummary": "Ganzes Video",
+      "lookCustom": "Eigen"
     },
     "idea": "Die Idee",
     "groups": {
       "format": "Format & Sprache",
+      "cut": "Der Schnitt",
       "look": "Aussehen",
       "length": "Länge",
       "audio": "Audio",

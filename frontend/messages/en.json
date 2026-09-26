@@ -427,11 +427,14 @@
       "template": "Look",
       "templateHint": "Sets the caption style, where it sits and the frame. Change any of them below afterwards.",
       "templateNeedsClips": "Captioning keeps the frame it was filmed in — pick a look with a different frame when you cut it into clips.",
-      "customLook": "Fine-tune the captions"
+      "customLook": "Fine-tune the captions",
+      "cutWholeSummary": "Whole video",
+      "lookCustom": "Custom"
     },
     "idea": "The idea",
     "groups": {
       "format": "Format & language",
+      "cut": "The cut",
       "look": "Look",
       "length": "Length",
       "audio": "Audio",
