@@ -199,6 +199,16 @@
       "window": "Transkrybowany jest tylko wybrany fragment, więc godzina nagrania to nie godzina pracy.",
       "cost": "Płacisz za to, co odczytano, nie za klip: jeden kredyt na dwie minuty.",
       "library": "Każdy klip to osobny projekt — z napisami, kadrem i edycją."
+    },
+    "shots": {
+      "studio": {
+        "caption": "Każde ustawienie to jeden wiersz z aktualną wartością; otwierasz ten, który chcesz zmienić.",
+        "alt": "Studio ShortPulse z otwartym panelem Wygląd i szablonami klipów"
+      },
+      "library": {
+        "caption": "Każdy klip trafia jako osobny projekt — z napisami, długością i kadrem.",
+        "alt": "Biblioteka ShortPulse: projekt źródłowy i dwa wycięte z niego klipy"
+      }
     }
   },
   "pricing": {

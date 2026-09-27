@@ -35,6 +35,15 @@ const CLIPS = [
   { title: "Speed and Clarity", seconds: 12 },
 ];
 
+/**
+ * Screens, not mockups: both are captures of the studio running against a
+ * real extraction — the one whose numbers this section quotes.
+ */
+const SHOTS = [
+  { key: "studio", src: "/shots/studio-look.jpg", width: 1200, height: 546 },
+  { key: "library", src: "/shots/library-clips.jpg", width: 1010, height: 640 },
+] as const;
+
 const CAPABILITIES = [
   { key: "transcript", icon: Sparkles },
   { key: "window", icon: Timer },
@@ -152,6 +161,35 @@ export function ClipShowcase() {
             ))}
           </ul>
         </div>
+      </div>
+
+      {/* And what it looks like while you do it.
+          Two real screens rather than a third drawing: the controls above
+          say what happens, these say the product exists and has been
+          used. Captured in English — the caption underneath carries the
+          meaning in the reader's own language, so nobody has to read the
+          screenshot. */}
+      <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2">
+        {SHOTS.map((shot) => (
+          <figure key={shot.src} className="flex flex-col gap-2">
+            {/* Already the right size and already compressed — running
+                these through the optimiser would add a server round trip
+                to re-encode what was encoded once, by hand, for this
+                exact slot. Same call `ProjectCard` makes. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={shot.src}
+              alt={t(`shots.${shot.key}.alt`)}
+              width={shot.width}
+              height={shot.height}
+              loading="lazy"
+              className="w-full rounded-lg border border-border bg-surface"
+            />
+            <figcaption className="text-xs leading-relaxed text-white/40">
+              {t(`shots.${shot.key}.caption`)}
+            </figcaption>
+          </figure>
+        ))}
       </div>
     </section>
   );

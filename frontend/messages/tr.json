@@ -199,6 +199,16 @@
       "window": "Yalnızca seçtiğin aralık deşifre edilir; bir saatlik kayıt bir saatlik iş değildir.",
       "cost": "Kesit başına değil, okunan süre üzerinden: her iki dakikaya bir kredi.",
       "library": "Her kesit kendi projesi olarak düşer — altyazısı, kadrajı ve düzenlemesiyle."
+    },
+    "shots": {
+      "studio": {
+        "caption": "Her ayar, neye ayarlı olduğunu söyleyen tek bir satır; değiştirmek istediğini açıyorsun.",
+        "alt": "ShortPulse stüdyosu, Görünüm paneli açık ve kesit şablonları görünüyor"
+      },
+      "library": {
+        "caption": "Her kesit kendi projesi olarak düşer — altyazılı, süresi ve kadrajıyla.",
+        "alt": "ShortPulse kütüphanesi: kaynak proje ve ondan kesilen iki kesit"
+      }
     }
   },
   "pricing": {

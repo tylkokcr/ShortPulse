@@ -199,6 +199,16 @@
       "window": "Nur der gewählte Abschnitt wird transkribiert; eine Stunde Aufnahme ist keine Stunde Arbeit.",
       "cost": "Abgerechnet wird das Gelesene, nicht pro Clip: ein Credit je zwei Minuten.",
       "library": "Jeder Clip wird ein eigenes Projekt — mit Untertiteln, Format und Bearbeitung."
+    },
+    "shots": {
+      "studio": {
+        "caption": "Jede Einstellung ist eine Zeile, die zeigt, worauf sie steht; du öffnest die, die du ändern willst.",
+        "alt": "Das ShortPulse-Studio mit geöffnetem Aussehen-Panel und Clip-Vorlagen"
+      },
+      "library": {
+        "caption": "Jeder Clip kommt als eigenes Projekt an — untertitelt, mit Länge und Format.",
+        "alt": "Die ShortPulse-Bibliothek mit einem Quellprojekt und den zwei daraus geschnittenen Clips"
+      }
     }
   },
   "pricing": {

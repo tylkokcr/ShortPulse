@@ -199,6 +199,16 @@
       "window": "Only the stretch you choose is transcribed, so an hour of recording is not an hour of work.",
       "cost": "Priced by what was read, not per clip: one credit every two minutes.",
       "library": "Every clip lands as its own project — captions, frame and edits included."
+    },
+    "shots": {
+      "studio": {
+        "caption": "Every setting is one row that says what it is set to; open the one you want to change.",
+        "alt": "The ShortPulse studio with the Look panel open, showing clip templates"
+      },
+      "library": {
+        "caption": "Each clip arrives as its own project — captioned, with its length and frame.",
+        "alt": "The ShortPulse library showing a source project and the two clips cut from it"
+      }
     }
   },
   "pricing": {
