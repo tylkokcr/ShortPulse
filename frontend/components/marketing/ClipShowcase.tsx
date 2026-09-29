@@ -2,6 +2,7 @@ import { Scissors, Sparkles, Timer, Wallet } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { LoopingClip } from "@/components/marketing/LoopingClip";
 
 /**
  * Cutting a long recording into posts, shown as the studio doing it.
@@ -40,8 +41,17 @@ const CLIPS = [
  * real extraction — the one whose numbers this section quotes.
  */
 const SHOTS = [
-  { key: "studio", src: "/shots/studio-look.jpg", width: 1200, height: 546 },
-  { key: "library", src: "/shots/library-clips.jpg", width: 1010, height: 640 },
+  // A loop rather than a still: four real frames of the studio — clips
+  // chosen, the Look panel, a template picked, the cut panel — joined
+  // with short fades. Captured from the browser tab itself, 245KB.
+  {
+    key: "studio",
+    src: "/shots/studio-flow.mp4",
+    poster: "/shots/studio-flow.jpg",
+    width: 1280,
+    height: 652,
+  },
+  { key: "library", src: "/shots/library-clips.jpg", poster: null, width: 1010, height: 640 },
 ] as const;
 
 const CAPABILITIES = [
@@ -172,19 +182,32 @@ export function ClipShowcase() {
       <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2">
         {SHOTS.map((shot) => (
           <figure key={shot.src} className="flex flex-col gap-2">
-            {/* Already the right size and already compressed — running
-                these through the optimiser would add a server round trip
-                to re-encode what was encoded once, by hand, for this
-                exact slot. Same call `ProjectCard` makes. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={shot.src}
-              alt={t(`shots.${shot.key}.alt`)}
-              width={shot.width}
-              height={shot.height}
-              loading="lazy"
-              className="w-full rounded-lg border border-border bg-surface"
-            />
+            {shot.poster ? (
+              <LoopingClip
+                src={shot.src}
+                poster={shot.poster}
+                width={shot.width}
+                height={shot.height}
+                label={t(`shots.${shot.key}.alt`)}
+                className="h-auto w-full rounded-lg border border-border bg-surface"
+              />
+            ) : (
+              <>
+                {/* Already the right size and already compressed — running
+                    these through the optimiser would add a server round
+                    trip to re-encode what was encoded once, by hand, for
+                    this exact slot. Same call `ProjectCard` makes. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={shot.src}
+                  alt={t(`shots.${shot.key}.alt`)}
+                  width={shot.width}
+                  height={shot.height}
+                  loading="lazy"
+                  className="w-full rounded-lg border border-border bg-surface"
+                />
+              </>
+            )}
             <figcaption className="text-xs leading-relaxed text-white/40">
               {t(`shots.${shot.key}.caption`)}
             </figcaption>
