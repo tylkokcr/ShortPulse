@@ -37,27 +37,6 @@ const CLIPS = [
   { title: "Speed and Clarity", seconds: 12 },
 ];
 
-/**
- * Screens, not mockups: both are captures of the studio running against a
- * real extraction.
- */
-const SHOTS = [
-  // A loop rather than a still: four real frames of the studio — clips
-  // chosen, the Look panel, a template picked, the cut panel — joined
-  // with short fades. Captured from the browser tab itself, 245KB.
-  {
-    key: "studio",
-    src: "/shots/studio-flow.mp4",
-    poster: "/shots/studio-flow.jpg",
-    width: 1280,
-    height: 652,
-  },
-  // A real extraction: a two-minute source made of five of this
-  // pipeline's own renders, cut into four clips by the same code the
-  // hosted service runs. Nothing on it is anyone else's footage.
-  { key: "library", src: "/shots/library-clips.jpg", poster: null, width: 1450, height: 610 },
-] as const;
-
 const CAPABILITIES = [
   { key: "transcript", icon: Sparkles },
   { key: "window", icon: Timer },
@@ -199,53 +178,6 @@ export function ClipShowcase() {
         </div>
       </div>
 
-      {/* And what it looks like while you do it.
-          Two real screens rather than a third drawing: the controls above
-          say what happens, these say the product exists and has been
-          used. Captured in English — the caption underneath carries the
-          meaning in the reader's own language, so nobody has to read the
-          screenshot. */}
-      {/* Columns in proportion to each shot's width-to-height, so the two
-          come out the same height. Both were captured 610–650px tall,
-          so equal height is also equal scale — with equal columns the
-          wider studio shot shrank to two-thirds the size of the library,
-          and the same sidebar read at two different sizes side by side.
-          The ratios are the SHOTS dimensions: 1280/652 and 1450/610. */}
-      <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-[1.963fr_2.377fr]">
-        {SHOTS.map((shot) => (
-          <figure key={shot.src} className="flex flex-col gap-2">
-            {shot.poster ? (
-              <LoopingClip
-                src={shot.src}
-                poster={shot.poster}
-                width={shot.width}
-                height={shot.height}
-                label={t(`shots.${shot.key}.alt`)}
-                className="h-auto w-full rounded-lg border border-border bg-surface"
-              />
-            ) : (
-              <>
-                {/* Already the right size and already compressed — running
-                    these through the optimiser would add a server round
-                    trip to re-encode what was encoded once, by hand, for
-                    this exact slot. Same call `ProjectCard` makes. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={shot.src}
-                  alt={t(`shots.${shot.key}.alt`)}
-                  width={shot.width}
-                  height={shot.height}
-                  loading="lazy"
-                  className="w-full rounded-lg border border-border bg-surface"
-                />
-              </>
-            )}
-            <figcaption className="text-xs leading-relaxed text-white/40">
-              {t(`shots.${shot.key}.caption`)}
-            </figcaption>
-          </figure>
-        ))}
-      </div>
     </section>
   );
 }

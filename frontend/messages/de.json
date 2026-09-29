@@ -65,7 +65,7 @@
     "viewSource": "Quellcode ansehen",
     "badge": "Open Source · selbst hosten oder gehostet nutzen",
     "headline": "Aus einem Thema ein <accent>fertig postbares</accent> Hochformat-Video.",
-    "sub": "Skript, Voiceover, wortgenaue Untertitel, Bilder und Musik — zusammengesetzt von einer Pipeline, die du wirklich nachlesen kannst. Pro Video zahlen oder selbst hosten und nichts zahlen. Ein Abo gibt es so oder so nicht.",
+    "sub": "Skript, Voiceover, wortgenaue Untertitel, Bilder und Musik — aus einem einzigen Thema. Oder bring dein eigenes Video mit: untertiteln, in eine andere Sprache vertonen, in Clips schneiden und automatisch auf YouTube posten. Pro Video zahlen oder selbst hosten und nichts zahlen; ein Abo gibt es so oder so nicht.",
     "stats": {
       "languages": "Sprachen",
       "artStyles": "Bildstile",
@@ -122,6 +122,18 @@
       "outro": {
         "title": "Abschlusskarte im eigenen Look",
         "detail": "Eine optionale Abschlusskarte, lokal mit Pillow gerendert — das letzte Bild ist dein Call-to-Action, keine Vermutung eines Diffusionsmodells."
+      },
+      "clips": {
+        "title": "Langes Video rein, Clips raus",
+        "detail": "Ein Podcast oder Vortrag geht rein; das Transkript wählt die Momente, die sich lohnen, und jeder kommt untertitelt zurück. Bezahlt wird nach gelesenen Minuten, nicht pro Clip."
+      },
+      "dub": {
+        "title": "In eine andere Sprache vertonen",
+        "detail": "Dein eigenes Video, neu gesprochen in einer der neun Sprachen über dem Originalbild — mit passenden Untertiteln."
+      },
+      "autopost": {
+        "title": "Postet für dich auf YouTube",
+        "detail": "Verbinde einmal einen Kanal, und jedes fertige Rendering kann automatisch rausgehen. Instagram und Facebook kommen."
       }
     },
     "comparison": {
@@ -199,16 +211,6 @@
       "window": "Nur der gewählte Abschnitt wird transkribiert; eine Stunde Aufnahme ist keine Stunde Arbeit.",
       "cost": "Abgerechnet wird das Gelesene, nicht pro Clip: ein Credit je zwei Minuten.",
       "library": "Jeder Clip wird ein eigenes Projekt — mit Untertiteln, Format und Bearbeitung."
-    },
-    "shots": {
-      "studio": {
-        "caption": "Jede Einstellung ist eine Zeile, die zeigt, worauf sie steht; du öffnest die, die du ändern willst.",
-        "alt": "Das ShortPulse-Studio mit geöffnetem Aussehen-Panel und Clip-Vorlagen"
-      },
-      "library": {
-        "caption": "Jeder Clip kommt als eigenes Projekt an — untertitelt, mit Länge und Format.",
-        "alt": "Die ShortPulse-Bibliothek mit einem Quellprojekt und den vier daraus geschnittenen Clips"
-      }
     },
     "split": {
       "source": "Ein langes Video",
@@ -867,6 +869,44 @@
         "insufficient": "Nicht genug Credits — du hast {balance}, das kostet {required}.",
         "regenerate": "Das hat nicht geklappt. Es wurde nichts berechnet; versuch es erneut."
       }
+    }
+  },
+  "tour": {
+    "eyebrow": "Das ganze Studio",
+    "title": "Fünf Aufgaben, ein Ort dafür",
+    "sub": "Starte mit einem Thema oder mit Material, das du schon hast. Das sind Bildschirme der App selbst — wähle einen Tab, um jeden Teil zu sehen.",
+    "new": "Neu",
+    "create": {
+      "title": "Video aus einem Thema",
+      "detail": "Gib ein Thema ein. Die App schreibt das Skript, nimmt den Voiceover auf, findet Material oder erzeugt Bilder, timt jeden Untertitel und mischt Musik dazu — ein fertiges Hochkantvideo.",
+      "alt": "Das Studio mit eingegebenem Thema, den Einstellungszeilen und einer Live-Vorschau der Untertitel"
+    },
+    "dub": {
+      "title": "Dein Video untertiteln oder vertonen",
+      "detail": "Lade dein eigenes Material hoch, und jedes gesprochene Wort wird getimt und eingebrannt. Wähle eine andere Sprache, und es wird über dein Bild neu gesprochen.",
+      "alt": "Der Tab für Untertitel und Vertonung, auf Türkisch eingestellt, mit geöffneten Untertitel-Vorlagen"
+    },
+    "clips": {
+      "title": "In Clips schneiden",
+      "detail": "Wirf einen Podcast oder Vortrag hinein, und das Transkript wählt die Momente, die für sich stehen. Jeder landet als eigenes untertiteltes Video in deiner Bibliothek.",
+      "alt": "Die Bibliothek mit einem Quellvideo und den vier daraus geschnittenen Clips"
+    },
+    "edit": {
+      "title": "Nach dem Rendern bearbeiten",
+      "detail": "Einen Untertitel korrigieren, verschieben, vergrößern, eine Szene neu würfeln oder das Layout ändern — ohne von vorn anzufangen.",
+      "alt": "Der Editor mit den Untertitelzeilen eines fertigen Videos neben seiner Vorschau"
+    },
+    "publish": {
+      "title": "Automatisch posten",
+      "detail": "Verbinde deinen YouTube-Kanal, und fertige Videos gehen von selbst raus — das erste wartet auf deinen Klick. Instagram und Facebook sind unterwegs."
+    },
+    "publishScreen": {
+      "channel": "Dein Kanal",
+      "eyebrow": "Veröffentlichen",
+      "title": "Verbundene Konten",
+      "autoTitle": "Fertige Videos automatisch posten",
+      "autoOn": "Jeder Render wird hier gepostet, sobald er fertig ist.",
+      "soon": "In Arbeit"
     }
   }
 }

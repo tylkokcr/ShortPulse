@@ -65,7 +65,7 @@
     "viewSource": "View source",
     "badge": "Open source · self-hosted or hosted",
     "headline": "Turn a topic into a <accent>ready-to-post</accent> vertical video.",
-    "sub": "Script, voiceover, word-synced captions, visuals and music — assembled by a pipeline you can actually read. Pay per video or self-host it for nothing. No subscription either way.",
+    "sub": "Script, voiceover, word-synced captions, visuals and music — from a single topic. Or bring your own video to caption it, dub it, cut it into clips and post it to YouTube automatically. Pay per video or self-host it for nothing; no subscription either way.",
     "stats": {
       "languages": "languages",
       "artStyles": "art styles",
@@ -122,6 +122,18 @@
       "outro": {
         "title": "Branded outro card",
         "detail": "An optional closing card rendered locally with Pillow, so the last frame is your call-to-action, not a diffusion guess."
+      },
+      "clips": {
+        "title": "Long video in, clips out",
+        "detail": "A podcast or a talk goes in; the transcript picks the moments worth posting and each comes back captioned. Priced by the minutes read, not per clip."
+      },
+      "dub": {
+        "title": "Dub into another language",
+        "detail": "Your own video, spoken again in any of the nine languages over the original picture — with captions to match."
+      },
+      "autopost": {
+        "title": "Posts to YouTube for you",
+        "detail": "Connect a channel once and every finished render can go out automatically. Instagram and Facebook are coming."
       }
     },
     "comparison": {
@@ -199,16 +211,6 @@
       "window": "Only the stretch you choose is transcribed, so an hour of recording is not an hour of work.",
       "cost": "Priced by what was read, not per clip: one credit every two minutes.",
       "library": "Every clip lands as its own project — captions, frame and edits included."
-    },
-    "shots": {
-      "studio": {
-        "caption": "Every setting is one row that says what it is set to; open the one you want to change.",
-        "alt": "The ShortPulse studio with the Look panel open, showing clip templates"
-      },
-      "library": {
-        "caption": "Each clip arrives as its own project — captioned, with its length and frame.",
-        "alt": "The ShortPulse library showing a source project and the four clips cut from it"
-      }
     },
     "split": {
       "source": "A long video",
@@ -867,6 +869,44 @@
         "insufficient": "Not enough credits — you have {balance} and this costs {required}.",
         "regenerate": "That didn't work. Nothing was charged; try again."
       }
+    }
+  },
+  "tour": {
+    "eyebrow": "The whole studio",
+    "title": "Five jobs, one place to do them",
+    "sub": "Start from a topic or from footage you already have. These are screens of the app itself — pick a tab to see each part.",
+    "new": "New",
+    "create": {
+      "title": "Video from a topic",
+      "detail": "Type a topic. It writes the script, records the voiceover, finds footage or draws stills, times every caption and mixes in music — one finished vertical video.",
+      "alt": "The studio with a topic typed in, the settings rows and a live caption preview"
+    },
+    "dub": {
+      "title": "Caption or dub your video",
+      "detail": "Upload your own footage and every spoken word is timed and burned in. Pick another language and it is spoken again over your picture.",
+      "alt": "The caption and dub tab, set to dub into Turkish, with the caption templates open"
+    },
+    "clips": {
+      "title": "Cut into clips",
+      "detail": "Drop in a podcast or a talk and the transcript picks the moments that stand on their own. Each lands in your library as its own captioned video.",
+      "alt": "The library with a source video and the four clips cut from it"
+    },
+    "edit": {
+      "title": "Edit after the render",
+      "detail": "Fix a caption, move it, resize it, re-roll a scene or change the layout — without starting over.",
+      "alt": "The editor with the caption lines of a finished video beside its preview"
+    },
+    "publish": {
+      "title": "Post automatically",
+      "detail": "Connect your YouTube channel and finished videos go out on their own — the first one waits for your click. Instagram and Facebook are on the way."
+    },
+    "publishScreen": {
+      "channel": "Your channel",
+      "eyebrow": "Publishing",
+      "title": "Connected accounts",
+      "autoTitle": "Post finished videos automatically",
+      "autoOn": "Every render will be posted here as soon as it finishes.",
+      "soon": "In progress"
     }
   }
 }

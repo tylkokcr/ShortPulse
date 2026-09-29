@@ -551,3 +551,21 @@ html[data-rail="collapsed"] .rail-foot {
     }
   }
 }
+
+/* FeatureTour: a bar under the open tab that fills while it waits to move
+   on. Duration comes from the component, so the bar and the timer that
+   advances the tab cannot disagree. */
+.tour-progress {
+  animation-name: tour-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+
+@keyframes tour-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}

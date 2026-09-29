@@ -15,6 +15,9 @@ import {
   X,
   Github,
   Sparkles,
+  Scissors,
+  Languages,
+  Send,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -37,6 +40,7 @@ import { CaptionStyles } from "./CaptionStyles";
 import { ArtStyles } from "./ArtStyles";
 import { HowItWorks } from "./HowItWorks";
 import { ClipShowcase } from "@/components/marketing/ClipShowcase";
+import { FeatureTour } from "./FeatureTour";
 import { EditorShowcase } from "./EditorShowcase";
 import { Faq } from "./Faq";
 
@@ -67,9 +71,11 @@ const STAT_KEYS = ["languages", "artStyles", "freeCredits", "licensed"] as const
 const PIPELINE_ICONS = [FileText, Mic, Captions, ImageIcon, Film];
 const PIPELINE_KEYS = ["script", "voiceover", "captions", "visuals", "assemble"] as const;
 
-const FEATURE_ICONS = [Lock, Captions, Globe, Music, ImageIcon, Sparkles];
+// The three newest first: a visitor skimming this grid should learn that
+// it cuts clips, dubs and posts before learning that the music ducks.
+const FEATURE_ICONS = [Scissors, Languages, Send, Lock, Captions, Globe, Music, ImageIcon, Sparkles];
 const FEATURE_KEYS = [
-  "local", "captions", "languages", "music", "stills", "outro",
+  "clips", "dub", "autopost", "local", "captions", "languages", "music", "stills", "outro",
 ] as const;
 
 const COMPARISON_KEYS = [
@@ -177,6 +183,11 @@ export function Landing() {
       {/* Examples — real renders, placed before any further claims */}
       <Reveal id="examples" className="scroll-mt-20">
         <Examples />
+      </Reveal>
+
+      {/* Everything it does, before any one part of it in detail. */}
+      <Reveal>
+        <FeatureTour />
       </Reveal>
 
       <Reveal>

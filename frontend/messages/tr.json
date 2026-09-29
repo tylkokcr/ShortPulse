@@ -65,7 +65,7 @@
     "viewSource": "Kaynak kodu gör",
     "badge": "Açık kaynak · kendin barındır ya da bizde çalıştır",
     "headline": "Bir konuyu <accent>paylaşmaya hazır</accent> dikey videoya çevir.",
-    "sub": "Senaryo, seslendirme, kelimesi kelimesine altyazı, görseller ve müzik — gerçekten okuyabileceğin bir hattan geçerek birleşir. Video başına öde ya da kendin barındırıp hiç ödeme. İki durumda da abonelik yok.",
+    "sub": "Senaryo, seslendirme, kelimesi kelimesine altyazı, görseller ve müzik — tek bir konudan. Ya da kendi videonu getir: altyazısını ekle, başka dilde seslendir, kliplere böl ve YouTube'a otomatik paylaş. Video başına öde ya da kendin barındırıp hiç ödeme; iki durumda da abonelik yok.",
     "stats": {
       "languages": "dil",
       "artStyles": "çizim stili",
@@ -122,6 +122,18 @@
       "outro": {
         "title": "Markalı kapanış kartı",
         "detail": "Pillow ile yerelde üretilen isteğe bağlı kapanış kartı — son kare senin çağrın olur, difüzyonun tahmini değil."
+      },
+      "clips": {
+        "title": "Uzun video girer, klipler çıkar",
+        "detail": "Bir podcast ya da konuşma verirsin; transkript paylaşmaya değer anları seçer, her biri altyazılı döner. Ücret klip başına değil, okunan dakikaya göre."
+      },
+      "dub": {
+        "title": "Başka bir dilde seslendir",
+        "detail": "Kendi videon, dokuz dilden herhangi birinde orijinal görüntünün üzerinden yeniden seslendirilir — uyumlu altyazısıyla."
+      },
+      "autopost": {
+        "title": "YouTube'a senin yerine paylaşır",
+        "detail": "Kanalını bir kez bağla, biten her render otomatik yayınlanabilsin. Instagram ve Facebook geliyor."
       }
     },
     "comparison": {
@@ -199,16 +211,6 @@
       "window": "Yalnızca seçtiğin aralık deşifre edilir; bir saatlik kayıt bir saatlik iş değildir.",
       "cost": "Kesit başına değil, okunan süre üzerinden: her iki dakikaya bir kredi.",
       "library": "Her kesit kendi projesi olarak düşer — altyazısı, kadrajı ve düzenlemesiyle."
-    },
-    "shots": {
-      "studio": {
-        "caption": "Her ayar, neye ayarlı olduğunu söyleyen tek bir satır; değiştirmek istediğini açıyorsun.",
-        "alt": "ShortPulse stüdyosu, Görünüm paneli açık ve kesit şablonları görünüyor"
-      },
-      "library": {
-        "caption": "Her kesit kendi projesi olarak düşer — altyazılı, süresi ve kadrajıyla.",
-        "alt": "ShortPulse kütüphanesi: kaynak proje ve ondan kesilen dört kesit"
-      }
     },
     "split": {
       "source": "Uzun bir video",
@@ -867,6 +869,44 @@
         "insufficient": "Kredi yetmiyor — sende {balance} var, bu {required} tutuyor.",
         "regenerate": "Bu işe yaramadı. Hiçbir ücret alınmadı; tekrar dene."
       }
+    }
+  },
+  "tour": {
+    "eyebrow": "Stüdyonun tamamı",
+    "title": "Beş iş, hepsi tek yerde",
+    "sub": "Bir konudan ya da elindeki görüntüden başla. Bunlar uygulamanın kendi ekranları — her bölümü görmek için bir sekme seç.",
+    "new": "Yeni",
+    "create": {
+      "title": "Konudan video",
+      "detail": "Bir konu yaz. Senaryoyu yazar, seslendirir, görüntü bulur ya da görsel çizer, her altyazıyı zamanlar ve müziği ekler — bitmiş, dikey bir video.",
+      "alt": "Konu yazılmış stüdyo, ayar satırları ve canlı altyazı önizlemesi"
+    },
+    "dub": {
+      "title": "Videonu altyazıla ya da seslendir",
+      "detail": "Kendi videonu yükle; söylenen her kelime zamanlanıp videoya işlenir. Başka bir dil seçersen görüntünün üzerinden o dilde yeniden seslendirilir.",
+      "alt": "Türkçe seslendirmeye ayarlanmış altyazı ve seslendirme sekmesi, altyazı şablonları açık"
+    },
+    "clips": {
+      "title": "Kliplere böl",
+      "detail": "Bir podcast ya da konuşma yükle; transkript kendi başına ayakta duran anları seçer. Her biri kütüphanene altyazılı, ayrı bir video olarak düşer.",
+      "alt": "Kaynak video ve ondan kesilen dört klibin göründüğü kütüphane"
+    },
+    "edit": {
+      "title": "Render'dan sonra düzenle",
+      "detail": "Bir altyazıyı düzelt, taşı, boyutunu değiştir, bir sahneyi yeniden üret ya da yerleşimi değiştir — baştan başlamadan.",
+      "alt": "Bitmiş bir videonun altyazı satırları ve önizlemesiyle düzenleyici"
+    },
+    "publish": {
+      "title": "Otomatik paylaş",
+      "detail": "YouTube kanalını bağla, biten videolar kendiliğinden yayınlansın — ilki senin tıklamanı bekler. Instagram ve Facebook yolda."
+    },
+    "publishScreen": {
+      "channel": "Kanalın",
+      "eyebrow": "Yayınlama",
+      "title": "Bağlı hesaplar",
+      "autoTitle": "Biten videoları otomatik paylaş",
+      "autoOn": "Her render biter bitmez buraya gönderilecek.",
+      "soon": "Üzerinde çalışılıyor"
     }
   }
 }

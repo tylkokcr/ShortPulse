@@ -65,7 +65,7 @@
     "viewSource": "Zobacz kod",
     "badge": "Otwarty kod · hostuj sam lub korzystaj u nas",
     "headline": "Zamień temat w <accent>gotowy do publikacji</accent> film pionowy.",
-    "sub": "Scenariusz, lektor, napisy zsynchronizowane co do słowa, obrazy i muzyka — złożone przez potok, który naprawdę możesz przeczytać. Płać za film albo hostuj sam i nie płać nic. Abonamentu nie ma w żadnym wariancie.",
+    "sub": "Scenariusz, lektor, napisy zsynchronizowane co do słowa, obrazy i muzyka — z jednego tematu. Albo przynieś własne wideo: dodaj napisy, zdubbinguj je, potnij na klipy i publikuj na YouTube automatycznie. Płać za film albo hostuj sam i nie płać nic; abonamentu nie ma w żadnym wariancie.",
     "stats": {
       "languages": "języków",
       "artStyles": "stylów graficznych",
@@ -122,6 +122,18 @@
       "outro": {
         "title": "Własna plansza końcowa",
         "detail": "Opcjonalna plansza końcowa renderowana lokalnie przez Pillow — ostatni kadr to twoje wezwanie do działania, a nie zgadywanka modelu dyfuzyjnego."
+      },
+      "clips": {
+        "title": "Długie wideo na wejściu, klipy na wyjściu",
+        "detail": "Wrzucasz podcast albo wystąpienie; transkrypcja wybiera momenty warte publikacji, każdy wraca z napisami. Cena za przeczytane minuty, nie za klip."
+      },
+      "dub": {
+        "title": "Dubbing na inny język",
+        "detail": "Twoje własne wideo nagrane od nowa w dowolnym z dziewięciu języków na oryginalnym obrazie — z pasującymi napisami."
+      },
+      "autopost": {
+        "title": "Publikuje na YouTube za ciebie",
+        "detail": "Połącz kanał raz, a każdy gotowy render może wychodzić automatycznie. Instagram i Facebook już wkrótce."
       }
     },
     "comparison": {
@@ -199,16 +211,6 @@
       "window": "Transkrybowany jest tylko wybrany fragment, więc godzina nagrania to nie godzina pracy.",
       "cost": "Płacisz za to, co odczytano, nie za klip: jeden kredyt na dwie minuty.",
       "library": "Każdy klip to osobny projekt — z napisami, kadrem i edycją."
-    },
-    "shots": {
-      "studio": {
-        "caption": "Każde ustawienie to jeden wiersz z aktualną wartością; otwierasz ten, który chcesz zmienić.",
-        "alt": "Studio ShortPulse z otwartym panelem Wygląd i szablonami klipów"
-      },
-      "library": {
-        "caption": "Każdy klip trafia jako osobny projekt — z napisami, długością i kadrem.",
-        "alt": "Biblioteka ShortPulse: projekt źródłowy i cztery wycięte z niego klipy"
-      }
     },
     "split": {
       "source": "Długie wideo",
@@ -867,6 +869,44 @@
         "insufficient": "Za mało kredytów — masz {balance}, a to kosztuje {required}.",
         "regenerate": "Nie udało się. Nic nie zostało pobrane; spróbuj ponownie."
       }
+    }
+  },
+  "tour": {
+    "eyebrow": "Całe studio",
+    "title": "Pięć zadań, jedno miejsce",
+    "sub": "Zacznij od tematu albo od nagrania, które już masz. To ekrany samej aplikacji — wybierz kartę, żeby zobaczyć każdą część.",
+    "new": "Nowe",
+    "create": {
+      "title": "Wideo z tematu",
+      "detail": "Wpisz temat. Aplikacja pisze scenariusz, nagrywa lektora, znajduje materiał albo rysuje kadry, synchronizuje każdy napis i dodaje muzykę — gotowe pionowe wideo.",
+      "alt": "Studio z wpisanym tematem, wierszami ustawień i podglądem napisów na żywo"
+    },
+    "dub": {
+      "title": "Napisy lub dubbing twojego wideo",
+      "detail": "Wgraj własne nagranie, a każde wypowiedziane słowo zostanie zsynchronizowane i wtopione w obraz. Wybierz inny język, a zostanie nagrane od nowa na twoim obrazie.",
+      "alt": "Karta napisów i dubbingu ustawiona na dubbing po turecku, z otwartymi szablonami napisów"
+    },
+    "clips": {
+      "title": "Potnij na klipy",
+      "detail": "Wrzuć podcast albo wystąpienie, a transkrypcja wybierze momenty, które bronią się same. Każdy trafia do biblioteki jako osobne wideo z napisami.",
+      "alt": "Biblioteka z filmem źródłowym i czterema wyciętymi z niego klipami"
+    },
+    "edit": {
+      "title": "Edytuj po renderze",
+      "detail": "Popraw napis, przesuń go, zmień rozmiar, wygeneruj scenę od nowa albo zmień układ — bez zaczynania od zera.",
+      "alt": "Edytor z wierszami napisów gotowego wideo obok jego podglądu"
+    },
+    "publish": {
+      "title": "Publikuj automatycznie",
+      "detail": "Połącz kanał YouTube, a gotowe filmy wyjdą same — pierwszy czeka na twoje kliknięcie. Instagram i Facebook są w drodze."
+    },
+    "publishScreen": {
+      "channel": "Twój kanał",
+      "eyebrow": "Publikowanie",
+      "title": "Połączone konta",
+      "autoTitle": "Publikuj gotowe filmy automatycznie",
+      "autoOn": "Każdy render trafi tutaj, gdy tylko się skończy.",
+      "soon": "W przygotowaniu"
     }
   }
 }
