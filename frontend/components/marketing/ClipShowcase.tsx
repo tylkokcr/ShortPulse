@@ -93,7 +93,7 @@ export function ClipShowcase() {
           person, so there is no one in it whose likeness needs a release. */}
       <div className="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_220px] lg:items-end">
         <ClipSplit />
-        <figure className="mx-auto flex w-full max-w-[220px] flex-col gap-2">
+        <figure className="mx-auto flex w-full max-w-[170px] flex-col gap-2 lg:max-w-[220px]">
           <LoopingClip
             src="/examples/quiet-observers.mp4"
             poster="/examples/quiet-observers.jpg"
@@ -202,7 +202,13 @@ export function ClipShowcase() {
           used. Captured in English — the caption underneath carries the
           meaning in the reader's own language, so nobody has to read the
           screenshot. */}
-      <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2">
+      {/* Columns in proportion to each shot's width-to-height, so the two
+          come out the same height. Both were captured about 650px tall,
+          so equal height is also equal scale — with equal columns the
+          wider studio shot shrank to two-thirds the size of the library,
+          and the same sidebar read at two different sizes side by side.
+          The ratios are the SHOTS dimensions: 1280/652 and 1010/640. */}
+      <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-[1.963fr_1.578fr]">
         {SHOTS.map((shot) => (
           <figure key={shot.src} className="flex flex-col gap-2">
             {shot.poster ? (
