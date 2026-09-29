@@ -39,7 +39,7 @@ const CLIPS = [
 
 /**
  * Screens, not mockups: both are captures of the studio running against a
- * real extraction — the one whose numbers this section quotes.
+ * real extraction.
  */
 const SHOTS = [
   // A loop rather than a still: four real frames of the studio — clips
@@ -52,7 +52,10 @@ const SHOTS = [
     width: 1280,
     height: 652,
   },
-  { key: "library", src: "/shots/library-clips.jpg", poster: null, width: 1010, height: 640 },
+  // A real extraction: a two-minute source made of five of this
+  // pipeline's own renders, cut into four clips by the same code the
+  // hosted service runs. Nothing on it is anyone else's footage.
+  { key: "library", src: "/shots/library-clips.jpg", poster: null, width: 1450, height: 610 },
 ] as const;
 
 const CAPABILITIES = [
@@ -203,12 +206,12 @@ export function ClipShowcase() {
           meaning in the reader's own language, so nobody has to read the
           screenshot. */}
       {/* Columns in proportion to each shot's width-to-height, so the two
-          come out the same height. Both were captured about 650px tall,
+          come out the same height. Both were captured 610–650px tall,
           so equal height is also equal scale — with equal columns the
           wider studio shot shrank to two-thirds the size of the library,
           and the same sidebar read at two different sizes side by side.
-          The ratios are the SHOTS dimensions: 1280/652 and 1010/640. */}
-      <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-[1.963fr_1.578fr]">
+          The ratios are the SHOTS dimensions: 1280/652 and 1450/610. */}
+      <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-[1.963fr_2.377fr]">
         {SHOTS.map((shot) => (
           <figure key={shot.src} className="flex flex-col gap-2">
             {shot.poster ? (
