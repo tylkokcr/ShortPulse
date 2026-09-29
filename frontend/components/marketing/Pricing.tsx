@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/Card";
 import { formatPrice } from "@/lib/money";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Link } from "@/i18n/navigation";
 
 const REPO_URL = "https://github.com/tylkokcr/ShortPulse";
 
@@ -144,11 +145,14 @@ export function Pricing() {
             <Feature>{t("free.everyLanguage")}</Feature>
             <Feature>{t("free.noWatermark")}</Feature>
           </ul>
-          <a href="#sign-in" className="mt-auto pt-2">
+          {/* To the sign-in page. These pointed at #sign-in, an anchor that
+              left with the embedded form when sign-in became its own route —
+              so every pricing button silently did nothing. */}
+          <Link href="/login" className="mt-auto pt-2">
             <Button variant="secondary" className="w-full">
               {t("free.cta")}
             </Button>
-          </a>
+          </Link>
         </Card>
 
         {/* A deployment that cannot charge shows no prices. The API still
@@ -208,11 +212,14 @@ export function Pricing() {
                 <Feature>{t("neverExpire")}</Feature>
               </ul>
 
-              <a href="#sign-in" className="mt-auto pt-2">
+              {/* Sign in, then straight on to the packs: somebody who pressed
+                  "Get 400 credits" came to buy, and an empty studio would make
+                  them go and find the page again. */}
+              <Link href="/login?next=/credits" className="mt-auto pt-2">
                 <Button variant={pack.popular ? "gradient" : "secondary"} className="w-full">
                   {t("packCta", { credits: pack.credits })}
                 </Button>
-              </a>
+              </Link>
             </Card>
           );
         })}

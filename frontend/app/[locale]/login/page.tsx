@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { SiteHeader } from "@/components/layout/SiteHeader";
@@ -28,19 +28,29 @@ export default function LoginPage() {
   const t = useTranslations("login");
   const router = useRouter();
   const { loading, session, enabled } = useAuth();
+  // Where to go once signed in. Read once, on the first render: the sign-in
+  // panel clears the query string when it reads a provider's reply, and a
+  // child's effect runs before this page's, so reading it later finds
+  // nothing. A provider sends the browser back to this exact URL, which is
+  // how it survives the round trip.
+  const [next] = useState(() =>
+    typeof window === "undefined"
+      ? "/"
+      : safeNext(new URLSearchParams(window.location.search).get("next"))
+  );
 
   useEffect(() => {
     // Already signed in — including the moment right after a provider
     // hands the session back in the URL fragment, which is what makes
     // this the OAuth landing spot as well as the form.
     if (session) {
-      router.replace("/");
+      router.replace(next);
       return;
     }
     // A self-hosted install has no accounts at all. There is nothing to
     // show here and no way to satisfy a login, so don't pretend there is.
     if (!loading && !enabled) router.replace("/");
-  }, [session, loading, enabled, router]);
+  }, [session, loading, enabled, router, next]);
 
   // Blank while the session resolves, and blank on the way out. Same
   // reasoning as RequireAuth: the lookup takes milliseconds and a flash
@@ -83,4 +93,18 @@ export default function LoginPage() {
       </main>
     </div>
   );
+}
+
+/**
+ * Only paths on this site. `next` arrives in a URL anyone can craft, and
+ * following it to another origin would make this page an open redirect
+ * that shows our sign-in form first — exactly what a phishing link wants.
+ * "//host" is protocol-relative and "/\\host" is read as one by some
+ * browsers, so both are refused along with anything absolute.
+ */
+function safeNext(value: string | null): string {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) {
+    return "/";
+  }
+  return value;
 }
