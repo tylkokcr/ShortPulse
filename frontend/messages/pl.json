@@ -209,6 +209,14 @@
         "caption": "Każdy klip trafia jako osobny projekt — z napisami, długością i kadrem.",
         "alt": "Biblioteka ShortPulse: projekt źródłowy i dwa wycięte z niego klipy"
       }
+    },
+    "split": {
+      "source": "Długie wideo",
+      "clips": "Pięć klipów"
+    },
+    "talking": {
+      "caption": "Z bliska: napisy podświetlają się słowo po słowie, w rytm głosu.",
+      "alt": "Pionowy klip z kobietą z profilu; napisy podświetlają każde wypowiadane słowo"
     }
   },
   "pricing": {

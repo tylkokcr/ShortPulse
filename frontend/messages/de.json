@@ -209,6 +209,14 @@
         "caption": "Jeder Clip kommt als eigenes Projekt an — untertitelt, mit Länge und Format.",
         "alt": "Die ShortPulse-Bibliothek mit einem Quellprojekt und den zwei daraus geschnittenen Clips"
       }
+    },
+    "split": {
+      "source": "Ein langes Video",
+      "clips": "Fünf Clips"
+    },
+    "talking": {
+      "caption": "Aus der Nähe: Untertitel leuchten Wort für Wort auf, im Takt der Stimme.",
+      "alt": "Ein vertikaler Clip mit einer Frau im Profil; die Untertitel heben jedes gesprochene Wort hervor"
     }
   },
   "pricing": {

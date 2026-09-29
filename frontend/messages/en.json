@@ -209,6 +209,14 @@
         "caption": "Each clip arrives as its own project — captioned, with its length and frame.",
         "alt": "The ShortPulse library showing a source project and the two clips cut from it"
       }
+    },
+    "split": {
+      "source": "A long video",
+      "clips": "Five clips"
+    },
+    "talking": {
+      "caption": "Up close: captions light up word by word, in step with the voice.",
+      "alt": "A vertical clip of a woman in profile, with captions highlighting each word as it is spoken"
     }
   },
   "pricing": {

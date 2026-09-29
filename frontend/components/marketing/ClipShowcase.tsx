@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { LoopingClip } from "@/components/marketing/LoopingClip";
+import { ClipSplit } from "@/components/marketing/ClipSplit";
 
 /**
  * Cutting a long recording into posts, shown as the studio doing it.
@@ -83,6 +84,28 @@ export function ClipShowcase() {
         </span>
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t("title")}</h2>
         <p className="max-w-xl text-sm text-white/50">{t("sub")}</p>
+      </div>
+
+      {/* The idea first, moving: a long video cut into five, then the next
+          one. Beside it, one clip up close — a face and its words lighting
+          up as they are spoken, which is what each of those five cards is.
+          The close-up is the AI-stills render, not stock footage of a
+          person, so there is no one in it whose likeness needs a release. */}
+      <div className="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_220px] lg:items-end">
+        <ClipSplit />
+        <figure className="mx-auto flex w-full max-w-[220px] flex-col gap-2">
+          <LoopingClip
+            src="/examples/quiet-observers.mp4"
+            poster="/examples/quiet-observers.jpg"
+            width={640}
+            height={1138}
+            label={t("talking.alt")}
+            className="aspect-[9/16] h-auto w-full rounded-lg border border-accent/40 bg-surface object-cover"
+          />
+          <figcaption className="text-xs leading-relaxed text-white/40">
+            {t("talking.caption")}
+          </figcaption>
+        </figure>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px] lg:items-start">

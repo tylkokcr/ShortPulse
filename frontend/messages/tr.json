@@ -209,6 +209,14 @@
         "caption": "Her kesit kendi projesi olarak düşer — altyazılı, süresi ve kadrajıyla.",
         "alt": "ShortPulse kütüphanesi: kaynak proje ve ondan kesilen iki kesit"
       }
+    },
+    "split": {
+      "source": "Uzun bir video",
+      "clips": "Beş klip"
+    },
+    "talking": {
+      "caption": "Yakından: altyazılar sesle aynı anda, kelime kelime yanar.",
+      "alt": "Profilden bir kadının göründüğü dikey klip; altyazıda söylenen her kelime vurgulanıyor"
     }
   },
   "pricing": {
