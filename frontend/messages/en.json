@@ -685,7 +685,9 @@
         "disconnectFailed": "Couldn't disconnect that account.",
         "loadFailed": "Couldn't load your connections",
         "start": "Couldn't start connecting"
-      }
+      },
+      "comingSoon": "In progress",
+      "comingSoonHint": "Publishing here is being finished — it will be switched on soon."
     },
     "credits": {
       "balance": "{count, plural, one {# credit} other {# credits}}",
@@ -797,7 +799,7 @@
     },
     "publish": {
       "title": "Publish this video",
-      "noneIntro": "Connect a YouTube, Instagram or TikTok account and you can post a finished render straight from here.",
+      "noneIntro": "Connect a YouTube account and you can post a finished render straight from here.",
       "connectAccount": "Connect an account",
       "fieldTitle": "Title",
       "titlePlaceholder": "What this video is called",

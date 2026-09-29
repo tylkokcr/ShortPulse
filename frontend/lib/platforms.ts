@@ -25,3 +25,19 @@ export const PLATFORM_ICONS: Record<SocialPlatform, typeof Youtube> = {
   // and is not pretending to be their logo.
   tiktok: Music2,
 };
+
+/**
+ * Platforms shown as on the way, with no way to connect them yet.
+ *
+ * Instagram and Facebook publishing is built, but Meta's app review needs
+ * a registered business (a JDG) and that registration is still pending.
+ * Until it goes through, a Connect button would lead to Meta's own
+ * "app not available" screen — so they are listed, marked as in progress,
+ * and cannot be pressed. Empty this list to switch them back on; nothing
+ * else about them changes.
+ */
+export const COMING_SOON: readonly SocialPlatform[] = ["instagram", "facebook"];
+
+export function isComingSoon(platform: SocialPlatform): boolean {
+  return COMING_SOON.includes(platform);
+}

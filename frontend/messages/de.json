@@ -685,7 +685,9 @@
         "disconnectFailed": "Das Konto ließ sich nicht trennen.",
         "loadFailed": "Deine Verbindungen ließen sich nicht laden",
         "start": "Das Verbinden konnte nicht gestartet werden"
-      }
+      },
+      "comingSoon": "In Arbeit",
+      "comingSoonHint": "Das Posten hierhin wird gerade fertiggestellt — es wird bald freigeschaltet."
     },
     "credits": {
       "balance": "{count, plural, one {# Credit} other {# Credits}}",
@@ -797,7 +799,7 @@
     },
     "publish": {
       "title": "Dieses Video veröffentlichen",
-      "noneIntro": "Verbinde ein YouTube-, Instagram- oder TikTok-Konto, dann kannst du einen fertigen Render direkt von hier posten.",
+      "noneIntro": "Verbinde ein YouTube-Konto, dann kannst du einen fertigen Render direkt von hier posten.",
       "connectAccount": "Konto verbinden",
       "fieldTitle": "Titel",
       "titlePlaceholder": "Wie dieses Video heißt",

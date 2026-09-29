@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Hammer, Loader2, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import {
@@ -12,7 +12,7 @@ import {
   startSocialConnect,
 } from "@/lib/api";
 import type { SocialConnection, SocialPlatform } from "@/lib/types";
-import { PLATFORM_ICONS, PLATFORM_LABELS } from "@/lib/platforms";
+import { COMING_SOON, PLATFORM_ICONS, PLATFORM_LABELS, isComingSoon } from "@/lib/platforms";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { AppShell } from "@/components/layout/AppShell";
@@ -117,7 +117,7 @@ function Connections() {
   }
 
   const unconnected = (platforms ?? []).filter(
-    (p) => !(connections ?? []).some((c) => c.platform === p)
+    (p) => !isComingSoon(p) && !(connections ?? []).some((c) => c.platform === p)
   );
 
   return (
@@ -174,6 +174,28 @@ function Connections() {
                     )}
                     {t("connect")}
                   </Button>
+                </Card>
+              );
+            })}
+
+            {/* On the way, and said so: visible so nobody wonders whether
+                they are planned, not pressable because they cannot work
+                yet. See COMING_SOON. */}
+            {COMING_SOON.map((platform) => {
+              const Icon = PLATFORM_ICONS[platform];
+              return (
+                <Card key={platform} className="flex items-center gap-3 opacity-60">
+                  <Icon size={18} className="shrink-0 text-white/30" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium text-white/70">
+                      {PLATFORM_LABELS[platform]}
+                    </span>
+                    <span className="block text-xs text-white/35">{t("comingSoonHint")}</span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-white/45">
+                    <Hammer size={12} />
+                    {t("comingSoon")}
+                  </span>
                 </Card>
               );
             })}

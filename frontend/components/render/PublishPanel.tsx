@@ -19,7 +19,7 @@ import {
 } from "@/lib/api";
 import { Link } from "@/i18n/navigation";
 import type { Project, SocialConnection, SocialPost } from "@/lib/types";
-import { PLATFORM_ICONS as ICONS, PLATFORM_LABELS as LABELS } from "@/lib/platforms";
+import { PLATFORM_ICONS as ICONS, PLATFORM_LABELS as LABELS, isComingSoon } from "@/lib/platforms";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
@@ -55,7 +55,9 @@ export function PublishPanel({ project }: { project: Project }) {
         getSocialConnections(),
         getProjectPosts(projectId),
       ]);
-      setConnections(conns);
+      // A connection to a platform that is switched off cannot post, so
+      // it is not offered as somewhere to post to.
+      setConnections(conns.filter((c) => !isComingSoon(c.platform)));
       setPosts(existing);
     } catch {
       // 503 on a deployment without publishing, 401 on a self-hosted one.

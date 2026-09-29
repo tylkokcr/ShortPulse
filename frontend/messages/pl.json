@@ -685,7 +685,9 @@
         "disconnectFailed": "Nie udało się odłączyć tego konta.",
         "loadFailed": "Nie udało się wczytać twoich połączeń",
         "start": "Nie udało się rozpocząć łączenia"
-      }
+      },
+      "comingSoon": "W przygotowaniu",
+      "comingSoonHint": "Publikowanie tutaj jest na ukończeniu — wkrótce zostanie włączone."
     },
     "credits": {
       "balance": "{count, plural, one {# kredyt} few {# kredyty} many {# kredytów} other {# kredytów}}",
@@ -797,7 +799,7 @@
     },
     "publish": {
       "title": "Opublikuj ten film",
-      "noneIntro": "Połącz konto YouTube, Instagram lub TikTok, a gotowy render opublikujesz prosto stąd.",
+      "noneIntro": "Połącz konto YouTube, a gotowy render opublikujesz prosto stąd.",
       "connectAccount": "Połącz konto",
       "fieldTitle": "Tytuł",
       "titlePlaceholder": "Jak nazywa się ten film",
