@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import json
 import logging
+import re
+import unicodedata
 from typing import Literal
+from urllib.parse import quote
 
 import asyncpg
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -829,10 +832,49 @@ async def download_project_video(
     # everything as an attachment leaves the player spinning forever with
     # no error. Passing `filename=` to FileResponse forces attachment, so
     # the header is set by hand.
-    name = f"{project.config.topic[:40].strip().replace(' ', '_') or project_id}.mp4"
     disposition = "attachment" if download else "inline"
     return FileResponse(
         project.output_path,
         media_type="video/mp4",
-        headers={"Content-Disposition": f'{disposition}; filename="{name}"'},
+        headers={
+            "Content-Disposition": content_disposition(
+                disposition, project.config.topic, fallback=project_id
+            )
+        },
+    )
+
+
+_NO_DECOMPOSITION = str.maketrans({"ı": "i", "İ": "I"})
+
+
+def content_disposition(disposition: str, title: str, *, fallback: str) -> str:
+    """A Content-Disposition header that survives any title.
+
+    Headers go out as latin-1, so writing the title in raw — which this
+    did — raised on anything outside it and turned the response into a
+    500. That is most Turkish ("ş", "ı", "ğ") and, less obviously, an
+    uploaded file's own name: macOS hands over "kürk" decomposed, as "u"
+    plus a combining diaeresis, and the combining mark is not latin-1
+    either. The player then got an error where a video should be and sat
+    on 0:00 with no message.
+
+    So: an ASCII `filename` for anything that only reads that, and the
+    real name in `filename*` (RFC 6266 / 5987) for browsers, which prefer
+    it. An uploaded video's title is its file name, so a trailing ".mp4"
+    is dropped rather than doubled.
+    """
+    stem = re.sub(r"\.(mp4|mov|m4v|webm|mkv)$", "", title.strip(), flags=re.IGNORECASE)
+    stem = unicodedata.normalize("NFC", stem)[:40].strip().replace(" ", "_") or fallback
+    # Dotless and dotted I have no ASCII decomposition, so they would be
+    # dropped rather than turned into the letter everyone reads them as.
+    ascii_stem = (
+        unicodedata.normalize("NFKD", stem.translate(_NO_DECOMPOSITION))
+        .encode("ascii", "ignore")
+        .decode("ascii")
+    )
+    # Quotes and backslashes would end or escape the quoted string early.
+    ascii_stem = re.sub(r'["\\]', "", ascii_stem) or fallback
+    return (
+        f'{disposition}; filename="{ascii_stem}.mp4"; '
+        f"filename*=UTF-8''{quote(stem + '.mp4', safe='')}"
     )
