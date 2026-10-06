@@ -462,12 +462,14 @@
       "windowStart": "Anfang des Abschnitts",
       "windowEnd": "Ende des Abschnitts",
       "windowHint": "Zieh, um den Abschnitt zu wählen, der gelesen wird. Nur er wird transkribiert, und dafür zahlst du — 1 Credit je {perCredit} Minuten. Mindestens {minutes} Minuten.",
-      "template": "Look",
-      "templateHint": "Legt Untertitelstil, Position und Bildformat fest. Alles davon lässt sich unten noch ändern.",
+      "template": "Clip-Vorlage",
+      "templateHint": "Jede legt das Bildformat der Clips fest, zusammen mit dem Untertitelstil und seiner Position. Alles davon lässt sich unten ändern.",
       "templateNeedsClips": "Beim Untertiteln bleibt das Bild so, wie es gefilmt wurde — einen Look mit anderem Format gibt es nur beim Schneiden in Clips.",
       "customLook": "Untertitel feinjustieren",
       "cutWholeSummary": "Ganzes Video",
-      "lookCustom": "Eigen"
+      "lookCustom": "Eigen",
+      "captionStyleOnly": "Nur den Untertitelstil ändern",
+      "captionStyleHint": "Wie die Wörter auf deinem Video aussehen und wo sie stehen."
     },
     "idea": "Die Idee",
     "groups": {

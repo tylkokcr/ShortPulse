@@ -462,12 +462,14 @@
       "windowStart": "Start of the stretch",
       "windowEnd": "End of the stretch",
       "windowHint": "Drag to pick the stretch to read. Only this part is transcribed, and it is what you pay for — 1 credit per {perCredit} minutes. At least {minutes} minutes.",
-      "template": "Look",
-      "templateHint": "Sets the caption style, where it sits and the frame. Change any of them below afterwards.",
+      "template": "Clip template",
+      "templateHint": "Each one sets the frame the clips are cut to, together with the caption style and where it sits. Change any of it below.",
       "templateNeedsClips": "Captioning keeps the frame it was filmed in — pick a look with a different frame when you cut it into clips.",
       "customLook": "Fine-tune the captions",
       "cutWholeSummary": "Whole video",
-      "lookCustom": "Custom"
+      "lookCustom": "Custom",
+      "captionStyleOnly": "Change just the caption style",
+      "captionStyleHint": "How the words look on your video and where they sit."
     },
     "idea": "The idea",
     "groups": {

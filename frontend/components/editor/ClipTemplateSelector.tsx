@@ -70,7 +70,10 @@ export function ClipTemplateSelector({
                     : "border-border bg-surface hover:-translate-y-0.5 hover:border-border-strong hover:bg-surface-hover"
               )}
             >
-              <CaptionPreview preset={{ ...preset, style: previewStyle(template, preset.style) }} />
+              <CaptionPreview
+                preset={{ ...preset, style: previewStyle(template, preset.style) }}
+                frame={template.aspectRatio}
+              />
               <div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs font-medium">{template.name}</span>

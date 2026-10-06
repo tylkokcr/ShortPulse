@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import { CAPTION_PRESETS, type CaptionPreset } from "@/lib/captionStyles";
 import { CAPTION_FONT_VARS } from "@/lib/captionFonts";
-import { LANGUAGE_OPTIONS } from "@/lib/types";
+import { LANGUAGE_OPTIONS, type AspectRatio } from "@/lib/types";
 import { useShortPulseStore } from "@/lib/store";
 
 export function CaptionStyleSelector() {
@@ -70,9 +70,18 @@ export function CaptionStyleSelector() {
 export function CaptionPreview({
   preset,
   className,
+  frame,
 }: {
   preset: CaptionPreset;
   className?: string;
+  /**
+   * Draw the picture in this shape inside the tile instead of filling it.
+   * For clip templates, where the frame is the thing that differs: six
+   * tiles of the same grey rectangle with a caption on each read as six
+   * more caption styles, and the 1:1 and 16:9 ones only said otherwise in
+   * a nine-pixel badge.
+   */
+  frame?: AspectRatio;
 }) {
   const words = ["this", "is", "how", "it", "looks"].slice(0, preset.style.max_words_per_line);
   const activeIndex = 1;
@@ -84,14 +93,15 @@ export function CaptionPreview({
         ? "items-start"
         : "items-end";
 
-  return (
+  const picture = (
     <div
       className={clsx(
         // Lighter than it was. These previews stand in for a video frame,
         // and a near-black one gives white captions with a black outline
         // nothing to sit against — the styles all looked identical because
         // the only thing separating them was invisible.
-        "flex aspect-[4/3] w-full justify-center overflow-hidden rounded-md bg-gradient-to-br from-neutral-500 via-neutral-700 to-neutral-800 p-2",
+        "flex w-full justify-center overflow-hidden rounded-md bg-gradient-to-br from-neutral-500 via-neutral-700 to-neutral-800",
+        frame ? "h-full p-1" : "aspect-[4/3] p-2",
         justify,
         className
       )}
@@ -144,6 +154,26 @@ export function CaptionPreview({
           );
         })}
       </p>
+    </div>
+  );
+
+  if (!frame) return picture;
+  // Positioned rather than flexed: a percentage height inside an
+  // aspect-ratio box is not definite, so the frame grew with its caption
+  // and the tiles came out different heights.
+  return (
+    <div className="relative aspect-[4/3] w-full rounded-md bg-black/40">
+      <div
+        className={clsx(
+          "absolute",
+          frame === "16:9"
+            ? "inset-x-1.5 top-1/2 -translate-y-1/2"
+            : "inset-y-1.5 left-1/2 -translate-x-1/2"
+        )}
+        style={{ aspectRatio: frame.replace(":", " / ") }}
+      >
+        {picture}
+      </div>
     </div>
   );
 }

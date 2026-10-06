@@ -462,12 +462,14 @@
       "windowStart": "Bölümün başı",
       "windowEnd": "Bölümün sonu",
       "windowHint": "Okunacak bölümü sürükleyerek seç. Yalnızca burası deşifre edilir ve ücret bunun üzerinden hesaplanır — her {perCredit} dakika için 1 kredi. En az {minutes} dakika.",
-      "template": "Görünüm",
-      "templateHint": "Altyazı stilini, yerini ve kadrajı ayarlar. Sonrasında hepsini aşağıdan değiştirebilirsin.",
+      "template": "Klip şablonu",
+      "templateHint": "Her biri kliplerin kesileceği kadrajı, altyazı stiliyle ve altyazının yeriyle birlikte ayarlar. Hepsini aşağıdan değiştirebilirsin.",
       "templateNeedsClips": "Altyazılama videoyu çekildiği kadrajda bırakır — farklı kadrajlı bir görünümü ancak kesitlere bölerken seçebilirsin.",
       "customLook": "Altyazılarda ince ayar",
       "cutWholeSummary": "Videonun tamamı",
-      "lookCustom": "Özel"
+      "lookCustom": "Özel",
+      "captionStyleOnly": "Sadece altyazı stilini değiştir",
+      "captionStyleHint": "Kelimelerin videonda nasıl görüneceği ve nerede duracağı."
     },
     "idea": "Fikir",
     "groups": {

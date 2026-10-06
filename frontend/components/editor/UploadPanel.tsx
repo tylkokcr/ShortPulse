@@ -275,11 +275,33 @@ export function UploadPanel({
       durationMs !== null && (windowMs[1] - windowMs[0]) < durationMs
         ? `${clock(windowMs[0])}–${clock(windowMs[1])}`
         : t("cutWholeSummary"),
-    look: [template ? templateById(template).name : t("lookCustom"), draft.captionPreset]
-      .filter(Boolean)
-      .join(" · "),
+    // A template name only where templates are offered.
+    look:
+      clipCount > 0
+        ? [template ? templateById(template).name : t("lookCustom"), draft.captionPreset].join(" · ")
+        : draft.captionPreset,
     finishing: censor ? ts("censor.summaryOn") : ts("censor.summaryOff"),
   };
+
+  // The caption look and its placement, shown directly when captioning
+  // and behind a disclosure under the templates when cutting clips. The
+  // placement is here too, not only on the generate tab: the draft is
+  // shared, so the placement chosen there already applied to an upload —
+  // it was just invisible on the panel it applied to, which is how it went
+  // unnoticed that the value was being dropped.
+  const captionControls = (
+    <>
+      <CaptionStyleSelector />
+      <CaptionPlacement
+        className="mt-3"
+        position={draft.captionPosition}
+        fontSize={draft.captionFontSize ?? presetById(draft.captionPreset).style.font_size}
+        onChange={({ position, fontSize }) =>
+          setDraft({ captionPosition: position, captionFontSize: fontSize })
+        }
+      />
+    </>
+  );
 
   const GROUP_FIELDS: Record<UploadGroupId, React.ReactNode> = {
     format: (
@@ -343,34 +365,33 @@ export function UploadPanel({
         )}
       </>
     ),
-    look: (
-      <>
-        <ClipTemplateSelector
-          selected={template}
-          onSelect={applyTemplate}
-          framesAllowed={clipCount > 0}
-        />
-      
-        {/* Behind its own value, as on the generate tab: eleven preset
-            tiles and a placement control is the biggest block in this
-            panel, and the template above has usually just answered it. */}
-        <FieldDisclosure label={t("captionStyle")} value={draft.captionPreset}>
-          <CaptionStyleSelector />
-          {/* Here too, not only on the generate tab. The draft is shared,
-              so the placement chosen there already applied to an upload —
-              it was just invisible on the panel it applied to, which is
-              how it went unnoticed that the value was being dropped. */}
-          <CaptionPlacement
-            className="mt-3"
-            position={draft.captionPosition}
-            fontSize={draft.captionFontSize ?? presetById(draft.captionPreset).style.font_size}
-            onChange={({ position, fontSize }) =>
-              setDraft({ captionPosition: position, captionFontSize: fontSize })
-            }
+    // Templates only when cutting clips. A template is a frame plus a
+    // caption look; captioning keeps the frame it was filmed in, so there
+    // a template was only ever a second, coarser caption picker sitting on
+    // top of the real one — six tiles that looked exactly like the eleven
+    // below them, with nothing to say what was different. Without clips,
+    // the caption style is the whole answer and is shown as it is.
+    look:
+      clipCount > 0 ? (
+        <>
+          <ClipTemplateSelector
+            selected={template}
+            onSelect={applyTemplate}
+            framesAllowed
           />
-        </FieldDisclosure>
-      </>
-    ),
+          <FieldDisclosure label={t("captionStyleOnly")} value={draft.captionPreset}>
+            {captionControls}
+          </FieldDisclosure>
+        </>
+      ) : (
+        <div>
+          <span className="mb-1 block text-sm font-medium text-white/70">
+            {t("captionStyle")}
+          </span>
+          <p className="mb-3 text-xs text-white/40">{t("captionStyleHint")}</p>
+          {captionControls}
+        </div>
+      ),
     // Here as well as in the generate tab: somebody captioning their own
     // recording is the case this matters most for — they cannot re-write
     // what was already said.

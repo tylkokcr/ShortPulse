@@ -462,12 +462,14 @@
       "windowStart": "Początek fragmentu",
       "windowEnd": "Koniec fragmentu",
       "windowHint": "Przeciągnij, aby wybrać fragment do odczytania. Tylko on jest transkrybowany i za niego płacisz — 1 kredyt za każde {perCredit} min. Co najmniej {minutes} min.",
-      "template": "Styl",
-      "templateHint": "Ustawia styl napisów, ich położenie i kadr. Każde z nich zmienisz poniżej.",
+      "template": "Szablon klipu",
+      "templateHint": "Każdy ustawia kadr, do którego tniemy klipy, razem ze stylem napisów i ich położeniem. Wszystko zmienisz poniżej.",
       "templateNeedsClips": "Dodawanie napisów zostawia kadr taki, w jakim nagrano — styl z innym kadrem wybierzesz tylko przy cięciu na klipy.",
       "customLook": "Dopracuj napisy",
       "cutWholeSummary": "Cały film",
-      "lookCustom": "Własny"
+      "lookCustom": "Własny",
+      "captionStyleOnly": "Zmień tylko styl napisów",
+      "captionStyleHint": "Jak słowa wyglądają na twoim wideo i gdzie się znajdują."
     },
     "idea": "Pomysł",
     "groups": {
