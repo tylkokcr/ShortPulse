@@ -174,7 +174,11 @@ def _render_line_text(
                 )
         else:
             parts.append(f"{{\\c{style.primary_color}}}{text}{{\\r}}")
-    return " ".join(parts)
+    # Japanese and Chinese put no spaces between words. Joined with them,
+    # a line read as separated syllables — and what Whisper or a
+    # translation hands back for these is already cut into runs.
+    unspaced = language.split("-")[0].lower() in ("ja", "zh")
+    return ("" if unspaced else " ").join(parts)
 
 
 def _events_for_line(line: SubtitleLine, style: SubtitleStyle, language: str) -> list[str]:

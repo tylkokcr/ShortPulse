@@ -470,7 +470,12 @@
       "lookCustom": "Własny",
       "captionStyleOnly": "Zmień tylko styl napisów",
       "captionStyleHint": "Jak słowa wyglądają na twoim wideo i gdzie się znajdują.",
-      "spokenAuto": "Wykryj automatycznie"
+      "spokenAuto": "Wykryj automatycznie",
+      "captionLanguage": "Napisy w języku",
+      "captionLanguageSame": "Język mówiony",
+      "captionLanguageOnHint": "Głos zostaje bez zmian; napisy są tłumaczone zdanie po zdaniu i widoczne, gdy każde z nich pada.",
+      "captionLanguageOffHint": "Przetłumacz napisy, żeby dotrzeć do widzów, którzy nie znają języka — dźwięk zostaje nietknięty.",
+      "captionLanguageWithDub": "Dubbing ma napisy w języku, na który jest dubbingowany."
     },
     "idea": "Pomysł",
     "groups": {

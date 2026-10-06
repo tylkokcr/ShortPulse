@@ -470,7 +470,12 @@
       "lookCustom": "Eigen",
       "captionStyleOnly": "Nur den Untertitelstil ändern",
       "captionStyleHint": "Wie die Wörter auf deinem Video aussehen und wo sie stehen.",
-      "spokenAuto": "Automatisch erkennen"
+      "spokenAuto": "Automatisch erkennen",
+      "captionLanguage": "Untertitel auf",
+      "captionLanguageSame": "Die gesprochene Sprache",
+      "captionLanguageOnHint": "Die Stimme bleibt, wie sie ist; die Untertitel werden Satz für Satz übersetzt und erscheinen, während der jeweilige Satz gesprochen wird.",
+      "captionLanguageOffHint": "Übersetze die Untertitel, um Zuschauer zu erreichen, die die Sprache nicht sprechen — der Ton bleibt unberührt.",
+      "captionLanguageWithDub": "Eine Vertonung wird in der Sprache untertitelt, in die sie vertont wird."
     },
     "idea": "Die Idee",
     "groups": {

@@ -470,7 +470,12 @@
       "lookCustom": "Özel",
       "captionStyleOnly": "Sadece altyazı stilini değiştir",
       "captionStyleHint": "Kelimelerin videonda nasıl görüneceği ve nerede duracağı.",
-      "spokenAuto": "Otomatik algıla"
+      "spokenAuto": "Otomatik algıla",
+      "captionLanguage": "Altyazı dili",
+      "captionLanguageSame": "Konuşulan dil",
+      "captionLanguageOnHint": "Ses olduğu gibi kalır; altyazılar cümle cümle çevrilir ve her cümle konuşulurken ekranda görünür.",
+      "captionLanguageOffHint": "O dili bilmeyen izleyicilere ulaşmak için altyazıyı çevir — sese dokunulmaz.",
+      "captionLanguageWithDub": "Seslendirilen video, seslendirildiği dilde altyazılanır."
     },
     "idea": "Fikir",
     "groups": {

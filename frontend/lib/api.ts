@@ -144,6 +144,10 @@ export async function uploadVideo(
     language: string;
     title?: string;
     dubLanguage?: string;
+    /** Captions in this language over the original speech. Empty means
+     *  caption what is spoken. Not with dubLanguage — a dub is already
+     *  captioned in the language it dubs into. */
+    captionLanguage?: string;
     /** Turns the upload into an extraction: the transcript is read for
      *  the moments that stand up alone and each becomes its own project.
      *  Mutually exclusive with dubLanguage, which the API enforces. */
@@ -171,6 +175,7 @@ export async function uploadVideo(
   // Empty means "no dub, just captions". `language` stays what the video
   // is spoken in either way — it is what the transcription pass is told.
   form.append("dub_language", options.dubLanguage ?? "");
+  form.append("caption_language", options.captionLanguage ?? "");
   form.append("clip_count", String(options.clipCount ?? 0));
   form.append("censor_profanity", String(options.censorProfanity ?? false));
   form.append("clip_guidance", options.clipGuidance ?? "");

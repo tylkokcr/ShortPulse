@@ -544,6 +544,7 @@ async def run_upload_pipeline(
             message="Listening to the video and timing every word...",
         )
         dubbing_to = config.dub_language
+        captioning_to = config.caption_language
         segments: list = []
         # Nobody said what is spoken, so Whisper works it out. Forcing a
         # language is what this used to do, with the studio's default of
@@ -565,7 +566,9 @@ async def run_upload_pipeline(
             # an extraction cuts on their boundaries; captions alone are
             # chunked by word count and never need them. Same model and the
             # same single pass in either branch.
-            if dubbing_to or config.clip_count:
+            # A caption translation needs them too, for the same reason a
+            # dub does: a sentence is the unit that gets translated.
+            if dubbing_to or config.clip_count or captioning_to:
                 # An extraction may have been given a stretch to work on.
                 # Cutting the audio out first is what makes that stretch
                 # mean anything: Whisper reads the file it is handed from
@@ -622,6 +625,10 @@ async def run_upload_pipeline(
             config = config.model_copy(update={"language": detected})
             project = project.model_copy(update={"config": config})
             await project_store.update_project(project_id, config=config)
+            if captioning_to == detected:
+                # Already in the language asked for; captioning it as
+                # spoken is the translation.
+                captioning_to = None
             if dubbing_to and dubbing_to == detected:
                 raise RuntimeError(
                     "This video is already in the language you asked to dub it "
@@ -672,6 +679,27 @@ async def run_upload_pipeline(
             # Caption what is now being said, not what was said before.
             words = dubbing.words_from_segments(spoken)
 
+        # What was actually said, kept for the bleep: a translated caption
+        # changes the words on screen and nothing about the audio, so the
+        # tone has to land on the source words' timing.
+        spoken_words = words
+        spoken_language = dubbing_to or config.language
+
+        # 1c. Caption translation ---------------------------------------------
+        if captioning_to and not dubbing_to:
+            await _emit(
+                project_id,
+                stage=RenderStage.SUBTITLE_GENERATION,
+                progress_pct=35,
+                message=f"Translating {len(segments)} lines for the captions...",
+            )
+            with timings.stage("caption_translation"):
+                translations = await dubbing.translate_segments(
+                    segments, config.language, captioning_to, config.llm, strict=True
+                )
+            words = dubbing.translated_caption_words(segments, translations, captioning_to)
+        caption_language = (captioning_to if not dubbing_to else None) or dubbing_to or config.language
+
         # 2. Subtitles ---------------------------------------------------------
         await _emit(
             project_id,
@@ -692,7 +720,7 @@ async def run_upload_pipeline(
                 # Casing follows the language on screen, which after a dub
                 # is the language spoken into it (see subtitle_engine's
                 # Turkish dotted-i handling for why this matters).
-                language=dubbing_to or config.language,
+                language=caption_language,
                 censor=config.censor_profanity,
                 censor_extra=settings.profanity_extra,
             )
@@ -701,7 +729,7 @@ async def run_upload_pipeline(
         # mask covers. The caption language is the one spoken after a dub,
         # and so is this.
         bleeps = (
-            profanity.spans(words, dubbing_to or config.language, settings.profanity_extra)
+            profanity.spans(spoken_words, spoken_language, settings.profanity_extra)
             if config.censor_profanity
             else None
         )

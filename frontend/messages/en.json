@@ -470,7 +470,12 @@
       "lookCustom": "Custom",
       "captionStyleOnly": "Change just the caption style",
       "captionStyleHint": "How the words look on your video and where they sit.",
-      "spokenAuto": "Detect automatically"
+      "spokenAuto": "Detect automatically",
+      "captionLanguage": "Captions in",
+      "captionLanguageSame": "The language spoken",
+      "captionLanguageOnHint": "The voice stays as it is; the captions are translated sentence by sentence and shown while each one is spoken.",
+      "captionLanguageOffHint": "Translate the captions to reach viewers who don't speak the language — the audio is not touched.",
+      "captionLanguageWithDub": "A dub is captioned in the language it is dubbed into."
     },
     "idea": "The idea",
     "groups": {

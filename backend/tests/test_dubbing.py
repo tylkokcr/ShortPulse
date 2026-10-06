@@ -196,3 +196,41 @@ def test_a_dub_costs_more_than_a_caption_pass():
 def test_dub_language_must_be_a_language_code():
     with pytest.raises(ValueError):
         ProjectConfig(topic="x", source=ProjectSource.UPLOAD, dub_language="turkish")
+
+
+async def test_dropped_lines_are_asked_for_again(monkeypatch):
+    calls: list[str] = []
+
+    async def fake_complete_json(llm, system_prompt, prompt):
+        calls.append(prompt)
+        if len(calls) == 1:
+            return {"lines": [{"i": 0, "text": "first"}]}
+        return {"lines": [{"i": 1, "text": "second"}]}
+
+    monkeypatch.setattr(dubbing.script_engine, "complete_json", fake_complete_json)
+
+    segments = [_segment("bir", 0, 1000), _segment("iki", 1000, 2000)]
+    out = await dubbing.translate_segments(segments, "tr", "en", None)
+
+    assert out == ["first", "second"]
+    # The second request carries only the line that was missing.
+    assert "1. iki" in calls[1] and "0. bir" not in calls[1]
+
+
+async def test_strict_translation_refuses_to_leave_source_text_in(monkeypatch):
+    """Captions in the wrong language look finished and are not."""
+
+    async def fake_complete_json(llm, system_prompt, prompt):
+        return {"lines": [{"i": 0, "text": "first"}]}
+
+    monkeypatch.setattr(dubbing.script_engine, "complete_json", fake_complete_json)
+
+    segments = [_segment("bir", 0, 1000), _segment("iki", 1000, 2000)]
+    with pytest.raises(dubbing.DubbingError):
+        await dubbing.translate_segments(segments, "tr", "en", None, strict=True)
+
+
+def test_the_translator_is_told_not_to_invent_numbers():
+    prompt = dubbing._TRANSLATE_SYSTEM.format(source="Turkish", target="English")
+    assert "Never add a number" in prompt
+    assert "mis-heard" in prompt

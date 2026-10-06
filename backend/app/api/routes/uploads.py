@@ -143,6 +143,9 @@ async def upload_video(
     language: str = Form(AUTO_LANGUAGE),
     title: str = Form(""),
     dub_language: str = Form(""),
+    # Captions in another language over the original speech. See
+    # ProjectConfig.caption_language.
+    caption_language: str = Form(""),
     clip_count: int = Form(0),
     censor_profanity: bool = Form(False),
     clip_guidance: str = Form(""),
@@ -183,6 +186,34 @@ async def upload_video(
     settings = get_settings()
 
     dub = dub_language.strip().lower()
+    translate_to = caption_language.strip().lower()
+    if translate_to:
+        from app.engines.script_engine import LANGUAGE_NAMES
+
+        if translate_to not in LANGUAGE_NAMES:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error": "unsupported_caption_language",
+                    "language": translate_to,
+                    "supported": sorted(LANGUAGE_NAMES),
+                },
+            )
+        if dub:
+            # A dub already captions in the language it dubs into, so a
+            # second target would be asking for two different answers.
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error": "caption_language_with_dub",
+                    "reason": "A dub is captioned in its own language already.",
+                },
+            )
+        if language != AUTO_LANGUAGE and translate_to == language.strip().lower():
+            # Not refused: captioning in the language spoken is what an
+            # upload does anyway. Dropped, so nothing calls a translator
+            # to turn Turkish into Turkish.
+            translate_to = ""
     if dub:
         # Checked here rather than in the schema because the catalogue of
         # voices lives in audio_engine, which imports the schema. Checked
@@ -314,6 +345,7 @@ async def upload_video(
             source=ProjectSource.UPLOAD,
             language=language,
             dub_language=dub or None,
+            caption_language=translate_to or None,
             clip_count=clips or None,
             censor_profanity=censor_profanity,
             # Only meaningful for an extraction. Carried on any upload rather

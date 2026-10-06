@@ -428,6 +428,16 @@ class ProjectConfig(BaseModel):
         pattern=r"^[a-z]{2}$",
         description="Target language for dubbing an uploaded video. None means no dub.",
     )
+    # Set only on uploads: the language the captions should be written in
+    # when it is not the one spoken. The speech is left alone — this is a
+    # translation of the words on screen, where dub_language replaces the
+    # voice. The two are exclusive; a dub already captions in its target.
+    caption_language: str | None = Field(
+        default=None,
+        pattern=r"^[a-z]{2}$",
+        description="Translate an uploaded video's captions into this language. "
+        "None means caption in the language spoken.",
+    )
     # Set only on uploads, and only when the caller asked for clips: how
     # many stretches to look for in a long video.
     #

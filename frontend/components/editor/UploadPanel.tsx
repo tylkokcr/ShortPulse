@@ -133,6 +133,9 @@ export function UploadPanel({
   // answers by translating: English captions over Turkish speech.
   // "auto" lets the server listen first and keep what it hears.
   const [spokenLanguage, setSpokenLanguage] = useState("auto");
+  // Captions translated over the original speech. Empty: caption what is
+  // said. Cleared by a dub, which captions in its own language.
+  const [captionLanguage, setCaptionLanguage] = useState("");
   const [censor, setCensor] = useState(false);
   const [focus, setFocus] = useState("");
   // Nothing is lit until the user picks one. A template is a shortcut,
@@ -202,6 +205,7 @@ export function UploadPanel({
           language: spokenLanguage,
           title: file.name.replace(/\.[^.]+$/, ""),
           dubLanguage,
+          captionLanguage: dubLanguage ? "" : captionLanguage,
           clipCount,
           // `captionStyleFor`, not the preset's own style: the placement
           // control writes position and size onto the draft, and reading
@@ -325,6 +329,7 @@ export function UploadPanel({
               setSpokenLanguage(event.target.value);
               // A dub into the language it is already in is refused.
               if (event.target.value === dubLanguage) setDubLanguage("");
+              if (event.target.value === captionLanguage) setCaptionLanguage("");
             }}
             className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-white outline-none transition-colors hover:border-border-strong focus:border-accent"
           >
@@ -518,7 +523,10 @@ export function UploadPanel({
           <select
             id="dub-language"
             value={dubLanguage}
-            onChange={(event) => setDubLanguage(event.target.value)}
+            onChange={(event) => {
+              setDubLanguage(event.target.value);
+              if (event.target.value) setCaptionLanguage("");
+            }}
             className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-white outline-none transition-colors hover:border-border-strong focus:border-accent"
           >
             <option value="">{t("dubNone")}</option>
@@ -536,6 +544,41 @@ export function UploadPanel({
               : dubLanguage
               ? t("dubOnHint")
               : t("dubOffHint")}
+          </p>
+        </div>
+
+        {/* Next to the dub because it is the other half of the same
+            question — who is this video for — and the cheaper answer:
+            the voice stays, only the words on screen change. */}
+        <div className={clsx(dubLanguage && "pointer-events-none opacity-40")}>
+          <label
+            htmlFor="caption-language"
+            className="mb-1.5 block text-sm font-medium text-white/70"
+          >
+            {t("captionLanguage")}
+          </label>
+          <select
+            id="caption-language"
+            value={dubLanguage ? "" : captionLanguage}
+            disabled={Boolean(dubLanguage)}
+            onChange={(event) => setCaptionLanguage(event.target.value)}
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-white outline-none transition-colors hover:border-border-strong focus:border-accent"
+          >
+            <option value="">{t("captionLanguageSame")}</option>
+            {LANGUAGE_OPTIONS.filter((option) => option.code !== spokenLanguage).map(
+              (option) => (
+                <option key={option.code} value={option.code}>
+                  {option.label}
+                </option>
+              )
+            )}
+          </select>
+          <p className="mt-1.5 text-xs text-white/40">
+            {dubLanguage
+              ? t("captionLanguageWithDub")
+              : captionLanguage
+                ? t("captionLanguageOnHint")
+                : t("captionLanguageOffHint")}
           </p>
         </div>
 

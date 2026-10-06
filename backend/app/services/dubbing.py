@@ -25,6 +25,7 @@ shapes, that this module refuses to serve.
 from __future__ import annotations
 
 import logging
+import re
 from pathlib import Path
 
 from app.engines import audio_engine, render_engine, script_engine
@@ -62,6 +63,14 @@ _TRANSLATE_SYSTEM = (
     "will be read aloud in the time the original took.\n"
     "- Translate meaning, not words. Natural spoken {target}, not a gloss.\n"
     "- Keep names, numbers and units as they are.\n"
+    "- The lines come from automatic speech recognition and can contain "
+    "mis-heard words: a word split in two, a material or a place spelled as "
+    "it sounded. Use the surrounding lines to recover the word the speaker "
+    "meant, and translate that.\n"
+    "- Never add a number, percentage, name or claim that is not in the "
+    "source. If a line is unclear, translate what is there.\n"
+    "- Write every line entirely in {target}. Leave nothing in {source} or "
+    "any third language except proper names.\n"
     "- No commentary, no notes, no markdown.\n"
     'Reply with JSON: {{"lines": [{{"i": 0, "text": "..."}}]}}'
 )
@@ -72,6 +81,8 @@ async def translate_segments(
     source_language: str,
     target_language: str,
     llm: LLMConfig,
+    *,
+    strict: bool = False,
 ) -> list[str]:
     """Translate every sentence in one call.
 
@@ -79,55 +90,84 @@ async def translate_segments(
     see the paragraph resolves the pronouns and the terminology that a
     translator shown a single line cannot. The numbering is what lets the
     answer be put back in order.
+
+    Lines the model drops are asked for again, once, on their own. After
+    that a dub keeps the source text for what is still missing — a wrong
+    sentence spoken is a visible failure, not a silent gap — while a
+    `strict` caller (captions) gets an error instead: captions in the
+    wrong language look like a finished video and are not one.
     """
     if not segments:
         return []
 
     source = script_engine.LANGUAGE_NAMES.get(source_language, source_language)
     target = script_engine.LANGUAGE_NAMES.get(target_language, target_language)
+    system = _TRANSLATE_SYSTEM.format(source=source, target=target)
 
-    numbered = "\n".join(f"{i}. {segment.text}" for i, segment in enumerate(segments))
-    parsed = await script_engine.complete_json(
-        llm,
-        _TRANSLATE_SYSTEM.format(source=source, target=target),
-        f"Lines to translate:\n{numbered}",
+    by_index = await _translate_lines(
+        llm, system, {i: segment.text for i, segment in enumerate(segments)}
     )
-
-    lines = parsed.get("lines")
-    if not isinstance(lines, list):
-        raise DubbingError("Translation response had no 'lines' array")
-
-    # Indexed rather than zipped: a model that drops or reorders a line
-    # would otherwise shift every sentence after it onto the wrong slot,
-    # and a dub that is one sentence out of step is worse than one with a
-    # missing sentence.
-    by_index: dict[int, str] = {}
-    for entry in lines:
-        if not isinstance(entry, dict):
-            continue
-        raw_index = entry.get("i")
-        if raw_index is None:
-            continue
-        try:
-            index = int(raw_index)
-        except (TypeError, ValueError):
-            continue
-        text = str(entry.get("text") or "").strip()
-        if text:
-            by_index[index] = text
-
     missing = [i for i in range(len(segments)) if i not in by_index]
     if missing:
         logger.warning(
-            "Translation missing %d of %d lines; keeping the original for those",
+            "Translation missing %d of %d lines; asking again for those",
             len(missing),
             len(segments),
         )
+        by_index.update(
+            await _translate_lines(llm, system, {i: segments[i].text for i in missing})
+        )
+        missing = [i for i in range(len(segments)) if i not in by_index]
 
-    # A line the model skipped keeps its source text. It will be spoken in
-    # the target voice and sound wrong, which is a visible failure rather
-    # than a silent gap where a sentence used to be.
+    if len(missing) == len(segments):
+        # Nothing came back at all — not a dropped line but a translator
+        # that did not answer. Neither a dub nor captions can be made of
+        # the source text alone.
+        raise DubbingError(f"The translation into {target} came back empty.")
+    if missing and strict:
+        raise DubbingError(
+            f"The captions could not be translated into {target} "
+            f"({len(missing)} of {len(segments)} lines came back empty)."
+        )
+    if missing:
+        logger.warning(
+            "Translation still missing %d of %d lines; keeping the original for those",
+            len(missing),
+            len(segments),
+        )
     return [by_index.get(i, segments[i].text) for i in range(len(segments))]
+
+
+async def _translate_lines(llm: LLMConfig, system: str, lines: dict[int, str]) -> dict[int, str]:
+    """One request for these numbered lines, read back by number.
+
+    Indexed rather than zipped: a model that drops or reorders a line would
+    otherwise shift every sentence after it onto the wrong slot, and a dub
+    that is one sentence out of step is worse than one with a missing
+    sentence.
+    """
+    numbered = "\n".join(f"{i}. {text}" for i, text in lines.items())
+    try:
+        parsed = await script_engine.complete_json(llm, system, f"Lines to translate:\n{numbered}")
+    except Exception:  # noqa: BLE001 - a failed attempt is reported as missing lines
+        logger.exception("Translation request failed")
+        return {}
+
+    entries = parsed.get("lines") if isinstance(parsed, dict) else None
+    if not isinstance(entries, list):
+        return {}
+    out: dict[int, str] = {}
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        try:
+            index = int(entry.get("i"))  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            continue
+        text = str(entry.get("text") or "").strip()
+        if index in lines and text:
+            out[index] = text
+    return out
 
 
 async def _speak_into_slot(
@@ -299,4 +339,69 @@ def words_from_segments(segments: list[Segment]) -> list:
                     end_ms=start + round(per),
                 )
             )
+    return words
+
+
+# Languages written without spaces between words. A translated line in one
+# of these comes back as a single "word" to str.split(), which would put a
+# whole sentence on screen at once; it is cut into short runs instead, and
+# subtitle_engine joins them without spaces.
+UNSPACED_LANGUAGES = frozenset({"ja", "zh"})
+
+# Characters per run for an unspaced language. Short, because a run is
+# what one caption word is, and four of them make a line: at the caption
+# size a 1080-wide frame holds about twelve CJK characters.
+_UNSPACED_RUN = 3
+
+_CJK_BREAKS = re.compile(r"(?<=[、。！？，．・「」『』])")
+
+
+def _caption_tokens(text: str, language: str) -> list[str]:
+    if language.split("-")[0].lower() not in UNSPACED_LANGUAGES:
+        return text.split()
+    tokens: list[str] = []
+    for phrase in _CJK_BREAKS.split(text.replace(" ", "")):
+        for start in range(0, len(phrase), _UNSPACED_RUN):
+            run = phrase[start : start + _UNSPACED_RUN]
+            if run:
+                tokens.append(run)
+    return tokens
+
+
+def translated_caption_words(
+    segments: list[Segment], translations: list[str], language: str
+) -> list:
+    """Caption words for a translation laid over the original speech.
+
+    The voice is untouched, so each translated sentence has to occupy the
+    time its original was spoken in — the line on screen is the line being
+    said, which is what a viewer checks. Within the sentence the words are
+    spread by length rather than evenly: a long word takes longer to read,
+    and even spacing left short words up as long as long ones.
+
+    The highlight then moves through the sentence at the speaker's pace.
+    It cannot follow the speaker word for word — the words are not the
+    ones being spoken — and it is not presented as if it did.
+    """
+    from app.schemas.project import Word
+
+    words: list[Word] = []
+    for segment, text in zip(segments, translations, strict=False):
+        tokens = _caption_tokens(text, language)
+        if not tokens:
+            continue
+        span = max(segment.end_ms - segment.start_ms, 1)
+        weights = [max(len(token), 1) for token in tokens]
+        total = sum(weights)
+        cursor = float(segment.start_ms)
+        for token, weight in zip(tokens, weights, strict=True):
+            length = span * weight / total
+            words.append(
+                Word(
+                    text=token,
+                    start_ms=round(cursor),
+                    end_ms=round(cursor + length),
+                )
+            )
+            cursor += length
     return words
