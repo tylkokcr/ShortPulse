@@ -429,7 +429,7 @@
       "dropHint": "MP4, MOV, WebM oder MKV · bis 200 MB · braucht eine Tonspur",
       "pickAnother": "Klicken, um eine andere Datei zu wählen",
       "spokenLanguage": "Gesprochene Sprache",
-      "spokenLanguageHint": "Die Sprache vorab anzugeben verhindert, dass kurze Clips falsch erkannt werden.",
+      "spokenLanguageHint": "Auf automatisch hört es zuerst zu und untertitelt in der Sprache, die gesprochen wird. Wähle nur dann selbst, wenn ein kurzer Clip in der falschen Sprache herauskommt.",
       "clips": "In Clips schneiden",
       "clipsNone": "Nicht — am Stück lassen",
       "clipsCount": "{count} Clips",
@@ -469,7 +469,8 @@
       "cutWholeSummary": "Ganzes Video",
       "lookCustom": "Eigen",
       "captionStyleOnly": "Nur den Untertitelstil ändern",
-      "captionStyleHint": "Wie die Wörter auf deinem Video aussehen und wo sie stehen."
+      "captionStyleHint": "Wie die Wörter auf deinem Video aussehen und wo sie stehen.",
+      "spokenAuto": "Automatisch erkennen"
     },
     "idea": "Die Idee",
     "groups": {

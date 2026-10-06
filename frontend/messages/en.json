@@ -429,7 +429,7 @@
       "dropHint": "MP4, MOV, WebM or MKV · up to 200MB · needs an audio track",
       "pickAnother": "Click to pick a different file",
       "spokenLanguage": "Spoken language",
-      "spokenLanguageHint": "Telling it the language up front stops short clips getting mis-detected.",
+      "spokenLanguageHint": "Left on automatic, it listens first and captions in whatever is spoken. Pick one only if a short clip comes out in the wrong language.",
       "clips": "Cut it into clips",
       "clipsNone": "Don't — keep it whole",
       "clipsCount": "{count} clips",
@@ -469,7 +469,8 @@
       "cutWholeSummary": "Whole video",
       "lookCustom": "Custom",
       "captionStyleOnly": "Change just the caption style",
-      "captionStyleHint": "How the words look on your video and where they sit."
+      "captionStyleHint": "How the words look on your video and where they sit.",
+      "spokenAuto": "Detect automatically"
     },
     "idea": "The idea",
     "groups": {

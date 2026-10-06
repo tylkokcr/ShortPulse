@@ -372,6 +372,12 @@ class OutroConfig(BaseModel):
     accent_color: str = "#ff5c1a"
 
 
+# An uploaded video's `language` before Whisper has listened to it. Set by
+# the upload route when nobody said what is spoken, and replaced by the
+# detected code before anything else reads it — see run_upload_pipeline.
+AUTO_LANGUAGE = "auto"
+
+
 class ProjectConfig(BaseModel):
     """Top-level request body for POST /api/projects."""
 

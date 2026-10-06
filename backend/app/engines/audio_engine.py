@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Callable
 from pathlib import Path
 
 from app.schemas.project import Scene, Segment, TTSProvider, VoiceConfig, Word
@@ -262,6 +263,7 @@ def transcribe_segments(
     device: str = "cpu",
     compute_type: str = "int8",
     language: str | None = None,
+    on_language: Callable[[str], None] | None = None,
 ) -> list[Segment]:
     """Transcribe into sentences, each carrying its own words.
 
@@ -277,7 +279,12 @@ def transcribe_segments(
     translate or re-speak in one.
     """
     model = _get_whisper_model(model_size, device, compute_type)
-    segments, _info = model.transcribe(str(audio_path), word_timestamps=True, language=language)
+    segments, info = model.transcribe(str(audio_path), word_timestamps=True, language=language)
+    # What Whisper decided it was hearing — the language asked for when
+    # one was given, its own detection when not. Reported rather than
+    # returned so neither function's shape changes for its other callers.
+    if on_language is not None:
+        on_language(info.language)
 
     out: list[Segment] = []
     for segment in segments:
@@ -351,6 +358,7 @@ def transcribe_word_timestamps(
     device: str = "cpu",
     compute_type: str = "int8",
     language: str | None = None,
+    on_language: Callable[[str], None] | None = None,
 ) -> list[Word]:
     """Run faster-whisper on a rendered voiceover clip and return
     word-level timing. Runs synchronously (CPU/GPU-bound); call via
@@ -361,7 +369,12 @@ def transcribe_word_timestamps(
     and avoids the rare case where a short clip gets misdetected.
     """
     model = _get_whisper_model(model_size, device, compute_type)
-    segments, _info = model.transcribe(str(audio_path), word_timestamps=True, language=language)
+    segments, info = model.transcribe(str(audio_path), word_timestamps=True, language=language)
+    # What Whisper decided it was hearing — the language asked for when
+    # one was given, its own detection when not. Reported rather than
+    # returned so neither function's shape changes for its other callers.
+    if on_language is not None:
+        on_language(info.language)
 
     words: list[Word] = []
     for segment in segments:

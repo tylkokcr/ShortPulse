@@ -429,7 +429,7 @@
       "dropHint": "MP4, MOV, WebM lub MKV · do 200 MB · wymaga ścieżki dźwiękowej",
       "pickAnother": "Kliknij, aby wybrać inny plik",
       "spokenLanguage": "Język mówiony",
-      "spokenLanguageHint": "Podanie języka z góry zapobiega błędnemu rozpoznaniu krótkich klipów.",
+      "spokenLanguageHint": "Na automacie najpierw słucha i dodaje napisy w języku, którym się mówi. Wybierz ręcznie tylko wtedy, gdy krótki klip wyjdzie w złym języku.",
       "clips": "Potnij na klipy",
       "clipsNone": "Nie tnij — zostaw w całości",
       "clipsCount": "{count, plural, few {# klipy} many {# klipów} other {# klipów}}",
@@ -469,7 +469,8 @@
       "cutWholeSummary": "Cały film",
       "lookCustom": "Własny",
       "captionStyleOnly": "Zmień tylko styl napisów",
-      "captionStyleHint": "Jak słowa wyglądają na twoim wideo i gdzie się znajdują."
+      "captionStyleHint": "Jak słowa wyglądają na twoim wideo i gdzie się znajdują.",
+      "spokenAuto": "Wykryj automatycznie"
     },
     "idea": "Pomysł",
     "groups": {

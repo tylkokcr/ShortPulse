@@ -26,6 +26,7 @@ from app.engines import (
     visual_engine,
 )
 from app.schemas.project import (
+    AUTO_LANGUAGE,
     AspectRatio,
     CaptionTrack,
     Project,
@@ -544,6 +545,14 @@ async def run_upload_pipeline(
         )
         dubbing_to = config.dub_language
         segments: list = []
+        # Nobody said what is spoken, so Whisper works it out. Forcing a
+        # language is what this used to do, with the studio's default of
+        # English: Turkish speech came back as English captions, because
+        # Whisper told it is hearing English translates rather than
+        # transcribes.
+        detect = config.language == AUTO_LANGUAGE
+        forced_language = None if detect else config.language
+        heard: list[str] = []
         with timings.stage("transcription"):
             # faster-whisper decodes the container itself, so the mp4 goes
             # in directly — no separate audio extraction step.
@@ -586,7 +595,8 @@ async def run_upload_pipeline(
                     settings.whisper_model_size,
                     settings.whisper_device,
                     settings.whisper_compute_type,
-                    config.language,
+                    forced_language,
+                    heard.append,
                 )
                 # Back onto the original file's clock before anything
                 # reads them: `cut_clip` seeks into the source, not into
@@ -601,7 +611,21 @@ async def run_upload_pipeline(
                     settings.whisper_model_size,
                     settings.whisper_device,
                     settings.whisper_compute_type,
-                    config.language,
+                    forced_language,
+                    heard.append,
+                )
+
+        # Keep what was heard, before anything reads the language: the dub
+        # translates from it, the clips inherit it and the editor shows it.
+        if detect:
+            detected = heard[0] if heard else "en"
+            config = config.model_copy(update={"language": detected})
+            project = project.model_copy(update={"config": config})
+            await project_store.update_project(project_id, config=config)
+            if dubbing_to and dubbing_to == detected:
+                raise RuntimeError(
+                    "This video is already in the language you asked to dub it "
+                    "into. Upload it for captions instead."
                 )
 
         if not words:

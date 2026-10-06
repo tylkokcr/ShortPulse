@@ -23,6 +23,7 @@ from pydantic import ValidationError
 from app.api.deps import billing_for, current_user_id, db_pool
 from app.core.config import get_settings, project_dir
 from app.schemas.project import (
+    AUTO_LANGUAGE,
     AspectRatio,
     EditSpec,
     LLMConfig,
@@ -137,7 +138,9 @@ def _resolve_window(
 async def upload_video(
     request: Request,
     file: UploadFile = File(...),
-    language: str = Form("en"),
+    # What is spoken. "auto" — the default — lets Whisper decide; a code
+    # forces it. See AUTO_LANGUAGE.
+    language: str = Form(AUTO_LANGUAGE),
     title: str = Form(""),
     dub_language: str = Form(""),
     clip_count: int = Form(0),
@@ -195,7 +198,7 @@ async def upload_video(
                     "supported": sorted(PIPER_VOICE_BY_LANGUAGE),
                 },
             )
-        if dub == language.strip().lower():
+        if language != AUTO_LANGUAGE and dub == language.strip().lower():
             # Not a dub, and the case we deliberately do not offer: with
             # the speaker's own language coming out of a different mouth,
             # mismatched lips read as a broken video rather than as

@@ -20,7 +20,6 @@ import { useShortPulseStore } from "@/lib/store";
 import { LANGUAGE_OPTIONS } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { LanguageSelector } from "./LanguageSelector";
 import { CaptionStyleSelector } from "./CaptionStyleSelector";
 import { CaptionPlacement } from "./CaptionPlacement";
 import { ClipTemplateSelector } from "./ClipTemplateSelector";
@@ -128,6 +127,12 @@ export function UploadPanel({
   // Local rather than in the draft store: the target language is a
   // property of this one action, not of a project that outlives it.
   const [dubLanguage, setDubLanguage] = useState("");
+  // What is spoken in the file — its own field, not the studio's
+  // language. That one defaults to English for writing scripts, and
+  // sending it here told Whisper a Turkish video was English, which it
+  // answers by translating: English captions over Turkish speech.
+  // "auto" lets the server listen first and keep what it hears.
+  const [spokenLanguage, setSpokenLanguage] = useState("auto");
   const [censor, setCensor] = useState(false);
   const [focus, setFocus] = useState("");
   // Nothing is lit until the user picks one. A template is a shortcut,
@@ -194,7 +199,7 @@ export function UploadPanel({
       const project = await uploadVideo(
         file,
         {
-          language: draft.language,
+          language: spokenLanguage,
           title: file.name.replace(/\.[^.]+$/, ""),
           dubLanguage,
           clipCount,
@@ -270,7 +275,7 @@ export function UploadPanel({
   // What each row says it is set to, so the four of them read as the
   // whole configuration without opening anything.
   const summaries: Record<UploadGroupId, string> = {
-    format: draft.language.toUpperCase(),
+    format: spokenLanguage === "auto" ? t("spokenAuto") : spokenLanguage.toUpperCase(),
     cut:
       durationMs !== null && (windowMs[1] - windowMs[0]) < durationMs
         ? `${clock(windowMs[0])}–${clock(windowMs[1])}`
@@ -307,8 +312,29 @@ export function UploadPanel({
     format: (
       <>
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-white/70">{t("spokenLanguage")}</label>
-          <LanguageSelector />
+          <label
+            htmlFor="spoken-language"
+            className="mb-1.5 block text-sm font-medium text-white/70"
+          >
+            {t("spokenLanguage")}
+          </label>
+          <select
+            id="spoken-language"
+            value={spokenLanguage}
+            onChange={(event) => {
+              setSpokenLanguage(event.target.value);
+              // A dub into the language it is already in is refused.
+              if (event.target.value === dubLanguage) setDubLanguage("");
+            }}
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-white outline-none transition-colors hover:border-border-strong focus:border-accent"
+          >
+            <option value="auto">{t("spokenAuto")}</option>
+            {LANGUAGE_OPTIONS.map((option) => (
+              <option key={option.code} value={option.code}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           <p className="mt-1.5 text-xs text-white/40">{t("spokenLanguageHint")}</p>
         </div>
       </>
@@ -496,7 +522,7 @@ export function UploadPanel({
             className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-white outline-none transition-colors hover:border-border-strong focus:border-accent"
           >
             <option value="">{t("dubNone")}</option>
-            {LANGUAGE_OPTIONS.filter((option) => option.code !== draft.language).map(
+            {LANGUAGE_OPTIONS.filter((option) => option.code !== spokenLanguage).map(
               (option) => (
                 <option key={option.code} value={option.code}>
                   {option.label}

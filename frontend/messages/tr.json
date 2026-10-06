@@ -429,7 +429,7 @@
       "dropHint": "MP4, MOV, WebM veya MKV · en fazla 200MB · ses kanalı gerekir",
       "pickAnother": "Başka bir dosya seçmek için tıkla",
       "spokenLanguage": "Konuşulan dil",
-      "spokenLanguageHint": "Dili baştan söylemek, kısa kliplerin yanlış algılanmasını önler.",
+      "spokenLanguageHint": "Otomatikte bırakırsan önce dinler ve hangi dil konuşuluyorsa o dilde altyazı yazar. Yalnızca kısa bir klip yanlış dilde çıkarsa elle seç.",
       "clips": "Kesitlere böl",
       "clipsNone": "Bölme — bütün kalsın",
       "clipsCount": "{count} kesit",
@@ -469,7 +469,8 @@
       "cutWholeSummary": "Videonun tamamı",
       "lookCustom": "Özel",
       "captionStyleOnly": "Sadece altyazı stilini değiştir",
-      "captionStyleHint": "Kelimelerin videonda nasıl görüneceği ve nerede duracağı."
+      "captionStyleHint": "Kelimelerin videonda nasıl görüneceği ve nerede duracağı.",
+      "spokenAuto": "Otomatik algıla"
     },
     "idea": "Fikir",
     "groups": {

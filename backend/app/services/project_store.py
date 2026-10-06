@@ -84,8 +84,12 @@ class PostgresProjectStore:
     that were interrupted mid-flight (see the projects_rendering_idx)."""
 
     # Columns that live in their own SQL column rather than inside `config`.
+    # `config` is writable for one reason: an upload asked to detect its
+    # own language learns it only once Whisper has listened, and what it
+    # learns has to outlive the render — a dub, the clips cut from it and
+    # the editor all read the language off the stored config.
     _COLUMNS = {
-        "status", "script", "output_path", "error", "credits_cost",
+        "config", "status", "script", "output_path", "error", "credits_cost",
         "source_path", "captions", "edit", "clip_project_ids", "duration_s",
     }
 
@@ -208,7 +212,7 @@ class PostgresProjectStore:
         sets, values = [], []
         for i, (key, value) in enumerate(updates.items(), start=2):
             sets.append(f"{key} = ${i}")
-            if key in ("script", "captions", "edit") and value is not None:
+            if key in ("config", "script", "captions", "edit") and value is not None:
                 # Pydantic model -> JSONB
                 value = value.model_dump_json() if hasattr(value, "model_dump_json") else json.dumps(value)
                 sets[-1] = f"{key} = ${i}::jsonb"
