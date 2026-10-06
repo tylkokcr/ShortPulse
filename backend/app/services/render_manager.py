@@ -508,6 +508,28 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
         )
 
 
+async def _whisper_model_for(source: Path, config: ProjectConfig, settings: Settings) -> str:
+    """Which Whisper model reads this upload: the accurate one if it is short.
+
+    Measured on what will actually be transcribed — the chosen window for
+    an extraction, the whole file otherwise — since that is what the time
+    is spent on. A file that cannot be measured gets the fast model: the
+    accurate one on an hour-long file is the mistake to avoid.
+    """
+    accurate = settings.whisper_short_model_size.strip()
+    if not accurate:
+        return settings.whisper_model_size
+    window = _clip_window(config)
+    if window is not None:
+        span_s = window[1]
+    else:
+        try:
+            span_s = (await render_engine.probe_duration_ms(source, settings.ffprobe_binary)) / 1000
+        except Exception:  # noqa: BLE001 - unmeasurable means "assume long"
+            return settings.whisper_model_size
+    return accurate if span_s <= settings.whisper_short_max_s else settings.whisper_model_size
+
+
 async def run_upload_pipeline(
     project: Project,
     settings: Settings,
@@ -545,6 +567,7 @@ async def run_upload_pipeline(
         )
         dubbing_to = config.dub_language
         captioning_to = config.caption_language
+        whisper_model = await _whisper_model_for(source, config, settings)
         segments: list = []
         # Nobody said what is spoken, so Whisper works it out. Forcing a
         # language is what this used to do, with the studio's default of
@@ -595,7 +618,7 @@ async def run_upload_pipeline(
                 segments = await asyncio.to_thread(
                     audio_engine.transcribe_segments,
                     listen_to,
-                    settings.whisper_model_size,
+                    whisper_model,
                     settings.whisper_device,
                     settings.whisper_compute_type,
                     forced_language,
@@ -611,7 +634,7 @@ async def run_upload_pipeline(
                 words = await asyncio.to_thread(
                     audio_engine.transcribe_word_timestamps,
                     source,
-                    settings.whisper_model_size,
+                    whisper_model,
                     settings.whisper_device,
                     settings.whisper_compute_type,
                     forced_language,

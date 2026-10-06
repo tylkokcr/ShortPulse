@@ -41,6 +41,16 @@ class Settings(BaseSettings):
 
     # TTS / ASR
     whisper_model_size: str = "small"
+    # A bigger model for uploads short enough to afford it. small mishears
+    # product words — "lama yünü" came back "Lama Yunu", "ithal kumaş"
+    # "İtal Kumaş" — and every caption and translation inherits that;
+    # medium got the same clip right at about 2.5x the time. Uploads are
+    # where the words were not written by us, and the short ones are most
+    # of them, so they get the accurate model and a long extraction (up to
+    # an hour of podcast, read to pick moments) keeps the fast one. Empty
+    # turns it off.
+    whisper_short_model_size: str = "medium"
+    whisper_short_max_s: float = 180.0
     whisper_device: str = "cpu"  # "cuda" if a GPU is available
     whisper_compute_type: str = "int8"
 
