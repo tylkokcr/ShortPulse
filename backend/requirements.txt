@@ -14,6 +14,12 @@ openai>=1.35            # optional: only needed if using the OpenAI provider
 piper-tts>=1.2            # default: local, MIT-licensed ONNX voices
 edge-tts>=6.1             # optional fallback; free but no commercial licence
 faster-whisper>=1.0
+# faster-whisper decodes audio with av.open(..., metadata_errors="ignore"),
+# and PyAV 19 removed that argument. Unpinned, the next image build picked
+# up 19 and every transcription — captions, dubs, clips — failed with
+# "open() got an unexpected keyword argument 'metadata_errors'". Lift this
+# once a faster-whisper release stops passing it.
+av>=11,<19
 # TTS>=0.22              # optional: Coqui XTTS-v2 voice cloning, uncomment to enable
 
 # --- Visual generation --------------------------------------------------
