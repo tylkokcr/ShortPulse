@@ -71,7 +71,14 @@ async def apply_edit(project: Project, edit: EditSpec, settings: Settings) -> Pa
         # text off-screen.
         play_res=probed,
         overlays=edit.overlays,
-        language=project.config.language,
+        # The language on screen: a translation's or a dub's, not the one
+        # the source was spoken in. It decides Turkish casing and whether
+        # Japanese runs are joined without spaces.
+        language=(
+            project.config.caption_language
+            or project.config.dub_language
+            or project.config.language
+        ),
         censor=project.config.censor_profanity,
         censor_extra=settings.profanity_extra,
     )

@@ -466,8 +466,14 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             # made against the video the user is actually watching — and
             # reburning from this costs one ffmpeg pass instead of the
             # whole pipeline.
+            # With the line breaks the burn used, so the editor shows the
+            # lines on screen and an edit to them survives the next burn.
             captions=CaptionTrack(
-                words=subtitle_engine.absolute_words(script.scenes),
+                words=subtitle_engine.with_line_starts(
+                    subtitle_engine.absolute_words(script.scenes),
+                    config.subtitles.max_words_per_line,
+                    config.language,
+                ),
                 style=config.subtitles,
             ),
             # Clear any error left by a reconciler that raced this render.
@@ -806,7 +812,12 @@ async def run_upload_pipeline(
             project_id,
             status=ProjectStatus.COMPLETE,
             output_path=str(final_path),
-            captions=CaptionTrack(words=words, style=config.subtitles),
+            captions=CaptionTrack(
+                words=subtitle_engine.with_line_starts(
+                    words, config.subtitles.max_words_per_line, caption_language
+                ),
+                style=config.subtitles,
+            ),
             # Burning captions does not change how long the video is, so
             # the probe taken on the way in is the answer. Recorded here
             # rather than derived in the library, which has neither the

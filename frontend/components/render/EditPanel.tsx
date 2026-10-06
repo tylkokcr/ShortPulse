@@ -49,18 +49,29 @@ interface Line {
 }
 
 function toLines(track: CaptionTrack): Line[] {
-  const perLine = track.style.max_words_per_line;
-  const lines: Line[] = [];
-  for (let i = 0; i < track.words.length; i += perLine) {
-    const words = track.words.slice(i, i + perLine);
-    if (words.length === 0) continue;
-    lines.push({
+  // The breaks the video was burned with, when the render recorded them —
+  // which is what makes a line here a line on screen. Older projects have
+  // none and were burned in fixed runs of the style's word count, so that
+  // is what they are shown as.
+  const groups: Word[][] = [];
+  if (track.words.some((w) => w.starts_line)) {
+    for (const word of track.words) {
+      if (word.starts_line || groups.length === 0) groups.push([word]);
+      else groups[groups.length - 1].push(word);
+    }
+  } else {
+    const perLine = track.style.max_words_per_line;
+    for (let i = 0; i < track.words.length; i += perLine) {
+      groups.push(track.words.slice(i, i + perLine));
+    }
+  }
+  return groups
+    .filter((words) => words.length > 0)
+    .map((words) => ({
       words,
       startMs: words[0].start_ms,
       text: words.map((w) => w.text).join(" "),
-    });
-  }
-  return lines;
+    }));
 }
 
 /**
@@ -75,8 +86,11 @@ function toLines(track: CaptionTrack): Line[] {
 function toWords(line: Line, text: string): Word[] {
   const parts = text.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return [];
+  // Each line keeps its own first word as a line start, so the renderer
+  // breaks exactly here. Without this the server re-chunked the words on
+  // every apply and a word moved to the next line came back where it was.
   if (parts.length === line.words.length) {
-    return parts.map((part, i) => ({ ...line.words[i], text: part }));
+    return parts.map((part, i) => ({ ...line.words[i], text: part, starts_line: i === 0 }));
   }
   const start = line.words[0].start_ms;
   const end = line.words[line.words.length - 1].end_ms;
@@ -86,6 +100,7 @@ function toWords(line: Line, text: string): Word[] {
     start_ms: Math.round(start + step * i),
     end_ms: Math.round(start + step * (i + 1)),
     confidence: null,
+    starts_line: i === 0,
   }));
 }
 
@@ -106,7 +121,9 @@ function blankLine(lines: Line[], placeholder: string): Line {
   const last = lines[lines.length - 1]?.words.at(-1);
   const start = last ? last.end_ms + 200 : 0;
   return {
-    words: [{ text: placeholder, start_ms: start, end_ms: start + 1500, confidence: null }],
+    words: [
+      { text: placeholder, start_ms: start, end_ms: start + 1500, confidence: null, starts_line: true },
+    ],
     startMs: start,
     text: placeholder,
   };

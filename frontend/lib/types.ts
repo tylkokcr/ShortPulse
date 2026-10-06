@@ -70,6 +70,9 @@ export interface Word {
   start_ms: number;
   end_ms: number;
   confidence?: number | null;
+  /** Opens a caption line. Set by the render and by the editor, so the
+   *  lines the editor shows are the lines the video is burned with. */
+  starts_line?: boolean;
 }
 
 export interface SceneAudio {

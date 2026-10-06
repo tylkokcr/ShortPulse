@@ -94,6 +94,11 @@ class Word(BaseModel):
     start_ms: int
     end_ms: int
     confidence: float | None = None
+    # This word opens a caption line. Set on a stored caption track — the
+    # render writes where it broke the lines, and the editor writes where
+    # the user moved them — so a line on screen is the line that was
+    # edited. With none set, the renderer plans the lines itself.
+    starts_line: bool = False
 
 
 class Segment(BaseModel):

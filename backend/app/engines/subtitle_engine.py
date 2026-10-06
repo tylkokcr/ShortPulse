@@ -120,14 +120,159 @@ def _format_timestamp(ms: int) -> str:
     return f"{hours:d}:{minutes:02d}:{seconds:02d}.{centiseconds:02d}"
 
 
-def _chunk_words(words: list[Word], max_words_per_line: int) -> list[SubtitleLine]:
-    lines: list[SubtitleLine] = []
-    for i in range(0, len(words), max_words_per_line):
-        chunk = words[i : i + max_words_per_line]
-        if not chunk:
-            continue
-        lines.append(SubtitleLine(words=chunk, start_ms=chunk[0].start_ms, end_ms=chunk[-1].end_ms))
+# Words a caption line should not end on: articles, prepositions,
+# conjunctions, the verb "to be". A line that stops on one of these reads
+# as cut mid-thought ("THIS MODEL IS" / "SPECIALLY MADE"), so the break
+# moves past it. Small on purpose — the common offenders, not a grammar.
+_WEAK_WORDS: dict[str, frozenset[str]] = {
+    "en": frozenset(
+        "a an the of to in on at for from with by and or but is are was were be "
+        "it its this that as so if than then into our your their my his her".split()
+    ),
+    "tr": frozenset("ve ile bir bu şu o da de ki ya ama için gibi çok en her".split()),
+    "de": frozenset(
+        "der die das den dem des ein eine einen einem und oder aber mit von zu im in "
+        "an auf für ist sind war".split()
+    ),
+    "fr": frozenset(
+        "le la les un une des de du et ou mais à au aux en dans sur pour par est "
+        "sont ce cette".split()
+    ),
+    "es": frozenset(
+        "el la los las un una unos unas de del y o pero a al en con por para es "
+        "son este esta".split()
+    ),
+    "pt": frozenset(
+        "o a os as um uma de do da dos das e ou mas em no na com por para é são "
+        "este esta".split()
+    ),
+    "it": frozenset(
+        "il lo la i gli le un una di del della e o ma a al in con per è sono questo "
+        "questa".split()
+    ),
+    "ru": frozenset("и в во на с со к по из за о об от до а но что это как".split()),
+}
+
+_SENTENCE_END = (".", "!", "?", "…", "。", "！", "？")
+_CLAUSE_END = (",", ";", ":", "、", "，")
+# A silence this long between two words ends the line whatever the
+# words are: a caption that waits on screen across a pause has gone stale.
+_PAUSE_MS = 700
+
+
+def _bare(text: str) -> str:
+    return text.strip(".,!?;:…\"'“”«»()").lower()
+
+
+def _break_score(prev: Word, language: str) -> int:
+    """How good a place the end of `prev` is to end a line."""
+    text = prev.text.rstrip()
+    if text.endswith(_CLAUSE_END):
+        return 3
+    weak = _WEAK_WORDS.get(language.split("-")[0].lower(), frozenset())
+    if _bare(text) in weak:
+        return -3
+    return 0
+
+
+def _plan_run(run: list[Word], max_per_line: int, language: str) -> list[list[Word]]:
+    """Lines for one sentence (or one stretch between pauses).
+
+    As few lines as the limit allows, of about equal length — "4 + 1"
+    leaves a lone word on screen where "3 + 2" reads as two phrases — with
+    each break nudged a word either way toward a comma and away from
+    ending on an article or preposition.
+    """
+    n = len(run)
+    if n <= max_per_line:
+        return [run]
+    count = -(-n // max_per_line)
+    lines: list[list[Word]] = []
+    start = 0
+    for j in range(1, count):
+        ideal = round(n * j / count)
+        best, best_score = None, None
+        for cut in (ideal - 1, ideal, ideal + 1):
+            length = cut - start
+            remaining = n - cut
+            lines_left = count - j
+            if not (1 <= length <= max_per_line):
+                continue
+            if not (lines_left <= remaining <= lines_left * max_per_line):
+                continue
+            score = _break_score(run[cut - 1], language) * 2 - abs(cut - ideal)
+            if best_score is None or score > best_score:
+                best, best_score = cut, score
+        cut = best if best is not None else min(start + max_per_line, n - (count - j))
+        lines.append(run[start:cut])
+        start = cut
+    lines.append(run[start:])
+    return [line for line in lines if line]
+
+
+def plan_lines(words: list[Word], max_per_line: int, language: str = "en") -> list[list[Word]]:
+    """Split a caption track into the lines it will be shown in.
+
+    Words already marked `starts_line` are a plan someone made — the last
+    render, or a person in the editor — and are kept as they are. Only a
+    line that has grown past twice the limit (a long paste into one line)
+    is split again, because a caption that runs off the frame is worse than
+    one that moved. Without marks the lines are planned: sentences and
+    pauses first, then even lines within each.
+    """
+    max_per_line = max(max_per_line, 1)
+    if not words:
+        return []
+
+    if any(word.starts_line for word in words):
+        marked: list[list[Word]] = []
+        for word in words:
+            if word.starts_line or not marked:
+                marked.append([word])
+            else:
+                marked[-1].append(word)
+        out: list[list[Word]] = []
+        for line in marked:
+            if len(line) > max_per_line * 2:
+                out.extend(_plan_run(line, max_per_line, language))
+            else:
+                out.append(line)
+        return out
+
+    runs: list[list[Word]] = [[]]
+    for i, word in enumerate(words):
+        if runs[-1] and word.start_ms - words[i - 1].end_ms >= _PAUSE_MS:
+            runs.append([])
+        runs[-1].append(word)
+        if word.text.rstrip().endswith(_SENTENCE_END):
+            runs.append([])
+    lines: list[list[Word]] = []
+    for run in runs:
+        if run:
+            lines.extend(_plan_run(run, max_per_line, language))
     return lines
+
+
+def with_line_starts(words: list[Word], max_per_line: int, language: str = "en") -> list[Word]:
+    """The same words, each marked with whether it opens a line.
+
+    What gets stored on a finished project, so the editor shows the lines
+    the video was burned with and an edit to them survives the next burn.
+    """
+    out: list[Word] = []
+    for line in plan_lines(words, max_per_line, language):
+        for i, word in enumerate(line):
+            out.append(word.model_copy(update={"starts_line": i == 0}))
+    return out
+
+
+def _chunk_words(
+    words: list[Word], max_words_per_line: int, language: str = "en"
+) -> list[SubtitleLine]:
+    return [
+        SubtitleLine(words=line, start_ms=line[0].start_ms, end_ms=line[-1].end_ms)
+        for line in plan_lines(words, max_words_per_line, language)
+    ]
 
 
 # Uppercasing is not language-neutral, and the one case that matters here
@@ -283,7 +428,7 @@ def build_ass_from_words(
         words = profanity.censor_words(words, language, censor_extra)
 
     events: list[str] = []
-    for line in _chunk_words(words, style.max_words_per_line):
+    for line in _chunk_words(words, style.max_words_per_line, language):
         events.extend(_events_for_line(line, style, language))
     # Layer 1, so authored text draws above the caption track where they
     # happen to occupy the same moment.
@@ -318,6 +463,7 @@ def shift_words_from(words: list[Word], at_ms: int, delta_ms: int) -> list[Word]
             start_ms=w.start_ms + delta_ms if w.start_ms >= at_ms else w.start_ms,
             end_ms=w.end_ms + delta_ms if w.start_ms >= at_ms else w.end_ms,
             confidence=w.confidence,
+            starts_line=w.starts_line,
         )
         for w in words
     ]
