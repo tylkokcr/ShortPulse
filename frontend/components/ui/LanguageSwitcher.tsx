@@ -19,7 +19,15 @@ import { LOCALE_LABELS, routing, type Locale } from "@/i18n/routing";
  * platform's own control is the one that already works with a keyboard,
  * a screen reader and a thumb.
  */
-export function LanguageSwitcher({ className }: { className?: string }) {
+export function LanguageSwitcher({
+  className,
+  compact,
+}: {
+  className?: string;
+  /** Text only, right-aligned: for a labelled row that already says
+   *  "Language", where the globe would say it twice. */
+  compact?: boolean;
+}) {
   const locale = useLocale() as Locale;
   const pathname = usePathname();
   const router = useRouter();
@@ -27,11 +35,13 @@ export function LanguageSwitcher({ className }: { className?: string }) {
 
   return (
     <div className={clsx("relative flex items-center", className)}>
-      <Globe
-        size={15}
-        className="pointer-events-none absolute left-2 text-white/40"
-        aria-hidden
-      />
+      {!compact && (
+        <Globe
+          size={15}
+          className="pointer-events-none absolute left-2 text-white/40"
+          aria-hidden
+        />
+      )}
       <select
         value={locale}
         disabled={pending}
@@ -43,8 +53,9 @@ export function LanguageSwitcher({ className }: { className?: string }) {
           startTransition(() => router.replace(pathname, { locale: next }));
         }}
         className={clsx(
-          "cursor-pointer appearance-none rounded-lg border border-transparent bg-transparent py-1 pl-7 pr-2",
-          "text-sm text-white/50 outline-none transition-colors",
+          "cursor-pointer appearance-none rounded-lg border border-transparent bg-transparent py-1 pr-2",
+          compact ? "pl-2 text-right text-xs text-white/60" : "pl-7 text-sm text-white/50",
+          "outline-none transition-colors",
           "hover:border-border hover:text-white focus:border-accent",
           pending && "opacity-50"
         )}

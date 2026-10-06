@@ -69,11 +69,19 @@ export function AppRail() {
     };
   }, []);
 
+  // `motion` names the icon's own small movement (see .rail-icon in
+  // globals.css): a wand flicks, the books lean, the share node pulses,
+  // the coin turns over. Each says what the place is for, the way the
+  // logo's beat says what the product is called.
   const items = [
-    { href: "/", icon: Wand2, label: t("studio") },
-    { href: "/library", icon: Library, label: t("library") },
-    ...(publishes ? [{ href: "/connections", icon: Share2, label: t("connections") }] : []),
-    ...(credits?.enabled ? [{ href: "/credits", icon: Coins, label: t("credits") }] : []),
+    { href: "/", icon: Wand2, label: t("studio"), motion: "flick" },
+    { href: "/library", icon: Library, label: t("library"), motion: "lean" },
+    ...(publishes
+      ? [{ href: "/connections", icon: Share2, label: t("connections"), motion: "pulse" }]
+      : []),
+    ...(credits?.enabled
+      ? [{ href: "/credits", icon: Coins, label: t("credits"), motion: "turn" }]
+      : []),
   ];
 
   return (
@@ -145,7 +153,15 @@ export function AppRail() {
                   active ? "bg-accent" : "bg-transparent"
                 )}
               />
-              <item.icon size={15} className={clsx("shrink-0", active && "text-accent")} />
+              {/* Keyed on the state so arriving on a page plays the
+                  movement once, as well as on hover. */}
+              <span
+                key={active ? "on" : "off"}
+                className={clsx("rail-icon shrink-0", active && "rail-icon-arrived")}
+                data-motion={item.motion}
+              >
+                <item.icon size={15} className={clsx(active && "text-accent")} />
+              </span>
               <span className="rail-label">{item.label}</span>
             </Link>
           );
@@ -155,38 +171,121 @@ export function AppRail() {
       {/* Pushed to the bottom: preferences and identity are things you
           reach for occasionally, and putting them under the destinations
           would give them the same weight as the four screens. */}
-      <div className="rail-foot mt-auto flex flex-col gap-3 border-t border-border/60 px-4 py-4">
-        {/* Stacked, not side by side. A language name and five accent
-            dots come to 192px of controls in 176px of rail, and the last
-            dot was cut off by the border. */}
-        <LanguageSwitcher className="-ml-2" />
-        <AccentSwitcher />
+      <div className="rail-foot mt-auto flex flex-col gap-3 border-t border-border/60 px-3 py-3">
+        {/* Preferences as one labelled block. They were three loose
+            controls — a select, a row of dots, a link — with nothing to
+            say what the dots were, so the row read as decoration. */}
+        <div className="flex flex-col gap-2 rounded-lg border border-border/60 bg-white/[0.015] px-2.5 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-mono text-[9px] uppercase tracking-widest text-white/30">
+              {t("language")}
+            </span>
+            <LanguageSwitcher className="-mr-1.5" compact />
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-mono text-[9px] uppercase tracking-widest text-white/30">
+              {t("accent")}
+            </span>
+            <AccentSwitcher className="gap-1.5" />
+          </div>
+        </div>
+
+        {enabled && session ? (
+          <AccountRow
+            email={session.user.email ?? ""}
+            name={metaString(session.user.user_metadata, "full_name") ?? metaString(session.user.user_metadata, "name")}
+            picture={metaString(session.user.user_metadata, "avatar_url") ?? metaString(session.user.user_metadata, "picture")}
+            signOutLabel={t("signOut")}
+            onSignOut={signOut}
+          />
+        ) : null}
 
         <a
           href={REPO_URL}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-2 text-xs text-white/35 transition-colors hover:text-white/70"
+          className="flex items-center gap-1.5 px-1 text-[11px] text-white/30 transition-colors hover:text-white/70"
         >
-          <Github size={13} />
+          <Github size={12} />
           {t("source")}
         </a>
-
-        {enabled && session && (
-          <div className="flex flex-col gap-1.5 border-t border-border/60 pt-3">
-            <span className="truncate text-[11px] text-white/30" title={session.user.email}>
-              {session.user.email}
-            </span>
-            <button
-              onClick={signOut}
-              className="flex items-center gap-1.5 text-xs text-white/40 transition-colors hover:text-white/80"
-            >
-              <LogOut size={12} />
-              {t("signOut")}
-            </button>
-          </div>
-        )}
       </div>
     </nav>
+  );
+}
+
+/** A string out of Supabase's untyped user metadata, or nothing. */
+function metaString(meta: Record<string, unknown> | undefined, key: string): string | null {
+  const value = meta?.[key];
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+/**
+ * Who is signed in, and the way out.
+ *
+ * The picture and name are the ones Google returned at sign-in — the
+ * privacy policy says they are shown only to you, in the app, and this is
+ * that place. Without them (a magic-link account) it falls back to the
+ * first letter of the address on the accent, so the row keeps its shape.
+ */
+function AccountRow({
+  email,
+  name,
+  picture,
+  signOutLabel,
+  onSignOut,
+}: {
+  email: string;
+  name: string | null;
+  picture: string | null;
+  signOutLabel: string;
+  onSignOut: () => void;
+}) {
+  const [pictureFailed, setPictureFailed] = useState(false);
+  const initial = (name ?? email).trim().charAt(0).toUpperCase() || "?";
+
+  return (
+    <div className="flex items-center gap-2.5 px-1">
+      {picture && !pictureFailed ? (
+        // A 28px avatar from Google's CDN: the optimiser would add a
+        // round trip to resize what is already tiny, and its host list
+        // would need Google's in it.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={picture}
+          alt=""
+          width={28}
+          height={28}
+          referrerPolicy="no-referrer"
+          onError={() => setPictureFailed(true)}
+          className="h-7 w-7 shrink-0 rounded-full border border-border object-cover"
+        />
+      ) : (
+        <span
+          aria-hidden
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/15 text-xs font-semibold text-accent"
+        >
+          {initial}
+        </span>
+      )}
+      <span className="min-w-0 flex-1">
+        {name && <span className="block truncate text-xs text-white/80">{name}</span>}
+        <span
+          className={clsx("block truncate", name ? "text-[10px] text-white/35" : "text-[11px] text-white/50")}
+          title={email}
+        >
+          {email}
+        </span>
+      </span>
+      <button
+        type="button"
+        onClick={onSignOut}
+        aria-label={signOutLabel}
+        title={signOutLabel}
+        className="shrink-0 rounded-md p-1.5 text-white/35 transition-colors hover:bg-surface-hover hover:text-white/80"
+      >
+        <LogOut size={14} />
+      </button>
+    </div>
   );
 }
