@@ -425,8 +425,12 @@ export interface PublicPricing {
 export interface CreditPack {
   id: string;
   credits: number;
+  /** What a checkout started now charges. */
   price_cents: number;
   popular: boolean;
+  /** Only during a sale: the regular price, struck through. */
+  regular_price_cents?: number | null;
+  sale_ends_at?: string | null;
 }
 
 export interface CreditEntry {

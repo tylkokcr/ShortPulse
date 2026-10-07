@@ -302,3 +302,26 @@ def test_cost_scales_with_mode_and_length():
     # Longer presets render more scenes, so they cost more.
     assert hybrid_long > hybrid_short
     assert stock_short >= 1, "every render costs at least one credit"
+
+
+def test_the_sale_is_dated_and_starts_from_a_price_charged_for_30_days():
+    """The Omnibus rule: the struck-through price must have been the
+    lowest charged in the 30 days before the reduction. The regular
+    prices went up on 2026-10-07, so the sale may not start before
+    2026-11-06, and it has to end."""
+    from datetime import UTC, datetime, timedelta
+
+    from app.services import credits
+
+    raised = datetime(2026, 10, 7, tzinfo=UTC)
+    assert credits.SALE.starts - raised >= timedelta(days=30)
+    assert credits.SALE.ends > credits.SALE.starts
+
+    pack = credits.pack_by_id("creator")
+    assert pack is not None and pack.sale_price_cents is not None
+    before = credits.SALE.starts - timedelta(seconds=1)
+    during = credits.SALE.starts
+    after = credits.SALE.ends
+    assert pack.price_now(before) == pack.price_cents
+    assert pack.price_now(during) == pack.sale_price_cents < pack.price_cents
+    assert pack.price_now(after) == pack.price_cents

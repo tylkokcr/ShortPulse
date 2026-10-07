@@ -12,6 +12,7 @@ import type { CreditPack } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { formatPrice } from "@/lib/money";
+import { SaleNote, SaleOff } from "@/components/ui/SalePrice";
 import { Badge } from "@/components/ui/Badge";
 import { AppShell } from "@/components/layout/AppShell";
 import { RequireAuth } from "@/components/auth/RequireAuth";
@@ -194,11 +195,13 @@ function Credits() {
                   </span>
                   {pack.popular && <Badge tone="accent">{t("popular")}</Badge>}
                 </div>
+                <SaleOff pack={pack} currency={credits?.currency} />
 
                 <p className="flex items-center gap-1.5 text-sm text-white/70">
                   <Coins size={14} className="text-accent" />
                   {t("packCredits", { count: pack.credits })}
                 </p>
+                <SaleNote pack={pack} currency={credits?.currency} />
                 <p className="text-xs leading-relaxed text-white/40">
                   {/* Quoted from the same table the backend charges from, and
                       only for the modes this install can run — the shipped

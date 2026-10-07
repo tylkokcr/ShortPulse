@@ -1061,5 +1061,9 @@
     "fromFiles": "Aus Meinen Dateien wählen",
     "keep": "In Meinen Dateien behalten",
     "keepHint": "Damit du sie ohne erneutes Hochladen wiederverwenden kannst."
+  },
+  "sale": {
+    "lowest": "Niedrigster Preis der letzten 30 Tage vor der Ermäßigung: {price}.",
+    "ends": "Angebot endet am {date}."
   }
 }

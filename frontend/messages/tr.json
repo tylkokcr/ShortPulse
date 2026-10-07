@@ -1061,5 +1061,9 @@
     "fromFiles": "Dosyalarımdan seç",
     "keep": "Dosyalarıma kaydet",
     "keepHint": "Böylece tekrar yüklemeden yeniden kullanabilirsin."
+  },
+  "sale": {
+    "lowest": "İndirimden önceki 30 günün en düşük fiyatı: {price}.",
+    "ends": "Kampanya {date} tarihinde biter."
   }
 }

@@ -1061,5 +1061,9 @@
     "fromFiles": "Wybierz z Moich plików",
     "keep": "Zapisz w Moich plikach",
     "keepHint": "Żeby użyć go ponownie bez wgrywania."
+  },
+  "sale": {
+    "lowest": "Najniższa cena z 30 dni przed obniżką: {price}.",
+    "ends": "Promocja kończy się {date}."
   }
 }

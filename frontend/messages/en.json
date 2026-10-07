@@ -1061,5 +1061,9 @@
     "fromFiles": "Choose from My files",
     "keep": "Keep in My files",
     "keepHint": "So you can use it again without uploading it."
+  },
+  "sale": {
+    "lowest": "Lowest price in the 30 days before the reduction: {price}.",
+    "ends": "Offer ends {date}."
   }
 }

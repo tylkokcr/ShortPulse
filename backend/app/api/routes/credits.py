@@ -8,7 +8,7 @@ rather than show a balance of zero and imply the user is broke.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -36,8 +36,13 @@ class LedgerEntryOut(BaseModel):
 class CreditPackOut(BaseModel):
     id: str
     credits: int
+    # What a checkout started now charges.
     price_cents: int
     popular: bool
+    # During a sale, the regular price: struck through on the page and
+    # stated as the lowest of the last 30 days (see credits.SALE).
+    regular_price_cents: int | None = None
+    sale_ends_at: datetime | None = None
 
 
 class CreditSummary(BaseModel):
@@ -100,7 +105,18 @@ def _pricing_table() -> dict[str, int]:
 
 
 def _packs() -> list[CreditPackOut]:
-    return [CreditPackOut(**vars(pack)) for pack in credits.CREDIT_PACKS]
+    now = datetime.now(UTC)
+    return [
+        CreditPackOut(
+            id=pack.id,
+            credits=pack.credits,
+            price_cents=pack.price_now(now),
+            popular=pack.popular,
+            regular_price_cents=pack.price_cents if pack.on_sale(now) else None,
+            sale_ends_at=credits.SALE.ends if pack.on_sale(now) else None,
+        )
+        for pack in credits.CREDIT_PACKS
+    ]
 
 
 class PublicPricing(BaseModel):

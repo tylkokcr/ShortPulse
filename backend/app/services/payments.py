@@ -79,7 +79,7 @@ async def create_checkout_session(
                     "quantity": 1,
                     "price_data": {
                         "currency": settings.stripe_currency,
-                        "unit_amount": pack.price_cents,
+                        "unit_amount": pack.price_now(),
                         # Inclusive: the price on the page is the price
                         # paid, and VAT is carved out of it. Exclusive
                         # would add tax at the last step, which for a

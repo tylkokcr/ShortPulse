@@ -9,6 +9,7 @@ import { getPublicPricing } from "@/lib/api";
 import type { CreditPack } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { formatPrice } from "@/lib/money";
+import { SaleNote, SaleOff } from "@/components/ui/SalePrice";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
@@ -21,9 +22,9 @@ const REPO_URL = "https://github.com/tylkokcr/ShortPulse";
  * unreachable, which is exactly when you least want a blank pricing table.
  */
 const FALLBACK_PACKS: CreditPack[] = [
-  { id: "starter", credits: 100, price_cents: 900, popular: false },
-  { id: "creator", credits: 400, price_cents: 2900, popular: true },
-  { id: "studio", credits: 1200, price_cents: 7900, popular: false },
+  { id: "starter", credits: 100, price_cents: 1190, popular: false },
+  { id: "creator", credits: 400, price_cents: 3490, popular: true },
+  { id: "studio", credits: 1200, price_cents: 9490, popular: false },
 ];
 
 /** Which pack ids have written copy. A deployment is free to define its
@@ -199,6 +200,8 @@ export function Pricing() {
                 </span>
                 <span className="text-xs text-white/40">{t("oneOff")}</span>
               </div>
+              <SaleOff pack={pack} currency={currency} />
+              <SaleNote pack={pack} currency={currency} />
 
               <ul className="flex flex-col gap-2 text-xs text-white/50">
                 <Feature>

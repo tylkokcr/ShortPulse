@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from math import ceil
 
 import asyncpg
@@ -281,21 +282,61 @@ class CreditPack:
 
     id: str
     credits: int
-    price_cents: int
+    price_cents: int  # the regular price
     popular: bool = False
+    # The price while SALE runs, if this pack is in it.
+    sale_price_cents: int | None = None
 
     @property
     def price_usd(self) -> float:
         return self.price_cents / 100
+
+    def on_sale(self, now: datetime | None = None) -> bool:
+        return self.sale_price_cents is not None and SALE.running(now)
+
+    def price_now(self, now: datetime | None = None) -> int:
+        """What a checkout started now charges — the only price the
+        checkout and the price list may use."""
+        if self.on_sale(now) and self.sale_price_cents is not None:
+            return self.sale_price_cents
+        return self.price_cents
+
+
+@dataclass(frozen=True)
+class Sale:
+    starts: datetime
+    ends: datetime
+
+    def running(self, now: datetime | None = None) -> bool:
+        now = now or datetime.now(UTC)
+        return self.starts <= now < self.ends
+
+
+# A price reduction, under the EU's Omnibus rule (in Poland, art. 4 ust. 2
+# of the price-information act): the struck-through price shown beside a
+# reduced one must be the lowest price charged in the 30 days before the
+# reduction. So the regular prices above went up on 2026-10-07 and the
+# sale starts more than 30 days later, from a price that was really
+# charged the whole time — and the page states that price as the 30-day
+# lowest. Two things would make the sale unlawful to show, and neither
+# may happen while this is set:
+#   - lowering a regular price in the 30 days before `starts`;
+#   - running it open-ended: a reduction that never ends is the new price,
+#     and striking out the old one beside it is then misleading.
+SALE = Sale(
+    starts=datetime(2026, 11, 8, tzinfo=UTC),
+    ends=datetime(2026, 12, 7, tzinfo=UTC),
+)
 
 
 # The ledger has no expiry column and none of the code prunes it, so
 # "credits never expire" below is a property of the schema, not a promise
 # the UI is making on its own.
 CREDIT_PACKS: tuple[CreditPack, ...] = (
-    CreditPack(id="starter", credits=100, price_cents=900),
-    CreditPack(id="creator", credits=400, price_cents=2900, popular=True),
-    CreditPack(id="studio", credits=1200, price_cents=7900),
+    # Raised from 900 / 2900 / 7900 on 2026-10-07; see SALE.
+    CreditPack(id="starter", credits=100, price_cents=1190, sale_price_cents=949),
+    CreditPack(id="creator", credits=400, price_cents=3490, popular=True, sale_price_cents=2790),
+    CreditPack(id="studio", credits=1200, price_cents=9490, sale_price_cents=7590),
 )
 
 
