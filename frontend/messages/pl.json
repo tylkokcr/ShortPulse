@@ -416,7 +416,8 @@
   "studio": {
     "tabs": {
       "generate": "Wygeneruj z tematu",
-      "upload": "Dodaj napisy lub dubbing"
+      "upload": "Dodaj napisy lub dubbing",
+      "beat": "Montaż z moich klipów"
     },
     "generate": {
       "title": "O czym jest ten <accent>film</accent>?",
@@ -646,6 +647,57 @@
       "hint": "Szybkie zbliżenie, które wytraca się na starcie każdej sceny. Tylko klipy stockowe i AI wideo — kadry AI i tak się przesuwają.",
       "summaryOn": "Najazd włączony",
       "summaryOff": "Najazd wyłączony"
+    },
+    "beat": {
+      "title": "Twoje klipy, <accent>cięte do rytmu</accent>.",
+      "intro": "Wrzuć klipy i wybierz utwór. Znajduje rytm i drop, bierze najlepszy moment każdego klipu i łączy je z efektami jak w fan editach.",
+      "clips": "Twoje klipy",
+      "drop": "Upuść tutaj klipy",
+      "dropHint": "Do {max} filmów — dowolny kształt, kadrujemy do 9:16",
+      "remove": "Usuń",
+      "addMore": "Dodaj więcej",
+      "rights": "Używaj klipów, które nagrałeś lub do których masz prawa. Nic nie jest wyszukiwane ani pobierane za ciebie.",
+      "music": "Muzyka",
+      "musicSource": {
+        "library": "Z biblioteki",
+        "own": "Mój utwór"
+      },
+      "preview": "Odtwórz podgląd",
+      "pickSong": "Wybierz plik z utworem",
+      "ownSongNotice": "Używaj tylko utworu, do którego masz prawa — muzyka chroniona prawem autorskim może sprawić, że film zostanie wyciszony lub usunięty.",
+      "musicHint": "Fragment utworu wokół dropu jest wybierany automatycznie. Dźwięk klipów jest wyciszony.",
+      "length": "Długość",
+      "style": "Styl",
+      "styles": {
+        "energetic": {
+          "name": "Energiczny",
+          "hint": "Szybkie cięcia, uderzenia zoomu, błysk i zwolnienie na dropie."
+        },
+        "cinematic": {
+          "name": "Filmowy",
+          "hint": "Dłuższe ujęcia, powolne zbliżenia, filmowa kolorystyka i miękki błysk na dropie."
+        },
+        "calm": {
+          "name": "Spokojny",
+          "hint": "Cięcie co takt, łagodny ruch, miękkie kolory."
+        }
+      },
+      "price": "{credits, plural, one {# kredyt} few {# kredyty} many {# kredytów} other {# kredytu}}",
+      "free": "Za darmo · działa na tym komputerze",
+      "cta": "Zrób montaż",
+      "uploading": "Wysyłanie {pct}%",
+      "starting": "Startuje...",
+      "errors": {
+        "credits": "Za mało kredytów na ten montaż.",
+        "generic": "Coś poszło nie tak. Spróbuj ponownie."
+      },
+      "how": {
+        "title": "Co robi",
+        "beat": "Znajduje tempo, uderzenia i drop w utworze.",
+        "moments": "Mierzy każdy klip i bierze jego najbardziej dynamiczny moment.",
+        "drop": "Buduje napięcie, a na dropie uderza najmocniejszym efektem stylu.",
+        "effects": "Tnie w rytm, koryguje kolory, kadruje wszystko do 9:16."
+      }
     }
   },
   "app": {
@@ -769,7 +821,9 @@
         "transcription": "Transkrypcja",
         "visuals": "Obrazy",
         "subtitles": "Napisy",
-        "ffmpeg_assembly": "Render"
+        "ffmpeg_assembly": "Render",
+        "analysis": "Rytm i ruch",
+        "caption_translation": "Tłumaczenie"
       },
       "video": "Wideo",
       "scenes": "Sceny",
@@ -876,7 +930,8 @@
       "errors": {
         "insufficient": "Za mało kredytów — masz {balance}, a to kosztuje {required}.",
         "regenerate": "Nie udało się. Nic nie zostało pobrane; spróbuj ponownie."
-      }
+      },
+      "beatEditNoScenes": "Ten montaż powstał z twoich klipów, więc nie ma wygenerowanych scen — użyj karty Edycja, żeby dodać na nim tekst."
     }
   },
   "tour": {

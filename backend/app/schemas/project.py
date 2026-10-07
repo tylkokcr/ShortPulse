@@ -60,6 +60,8 @@ class ProjectSource(StrEnum):
 
     GENERATED = "generated"
     UPLOAD = "upload"
+    # The user's own clips cut to a track — see engines/beat_edit.py.
+    BEAT_EDIT = "beat_edit"
 
 
 class RenderStage(StrEnum):
@@ -377,6 +379,32 @@ class OutroConfig(BaseModel):
     accent_color: str = "#ff5c1a"
 
 
+class BeatEditStyle(StrEnum):
+    """How hard the cut hits. See engines/beat_edit.STYLES."""
+
+    ENERGETIC = "energetic"
+    CINEMATIC = "cinematic"
+    CALM = "calm"
+
+
+class BeatEditSpec(BaseModel):
+    """What was asked of a beat edit. Paths are not here on purpose: the
+    clips and an uploaded track live at fixed names in the project's own
+    directory (see services/beat_edits.py), and a library track is an id
+    resolved server-side, so nothing in a request can point ffmpeg at a
+    file of its choosing."""
+
+    clip_count: int = Field(ge=1, le=20)
+    # One of the two: a track from GET /api/music, or a file the user
+    # uploaded with the clips.
+    music_track_id: str | None = None
+    music_uploaded: bool = False
+    duration_s: float = Field(default=15.0, ge=5.0, le=60.0)
+    style: BeatEditStyle = BeatEditStyle.ENERGETIC
+    # Where in the track the edit starts. None: around the drop.
+    music_start_s: float | None = Field(default=None, ge=0.0)
+
+
 # An uploaded video's `language` before Whisper has listened to it. Set by
 # the upload route when nobody said what is spoken, and replaced by the
 # detected code before anything else reads it — see run_upload_pipeline.
@@ -437,6 +465,8 @@ class ProjectConfig(BaseModel):
     # when it is not the one spoken. The speech is left alone — this is a
     # translation of the words on screen, where dub_language replaces the
     # voice. The two are exclusive; a dub already captions in its target.
+    # Set only on beat edits.
+    beat_edit: BeatEditSpec | None = None
     caption_language: str | None = Field(
         default=None,
         pattern=r"^[a-z]{2}$",

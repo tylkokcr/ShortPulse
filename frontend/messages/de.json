@@ -416,7 +416,8 @@
   "studio": {
     "tabs": {
       "generate": "Aus einem Thema erzeugen",
-      "upload": "Mein Video untertiteln oder synchronisieren"
+      "upload": "Mein Video untertiteln oder synchronisieren",
+      "beat": "Meine Clips schneiden"
     },
     "generate": {
       "title": "Worum geht es in diesem <accent>Video</accent>?",
@@ -646,6 +647,57 @@
       "hint": "Ein kurzer Zoom, der sich zu Beginn jeder Szene beruhigt. Nur bei Stock- und KI-Video-Clips — KI-Standbilder schwenken ohnehin.",
       "summaryOn": "Zoom an",
       "summaryOff": "Zoom aus"
+    },
+    "beat": {
+      "title": "Deine Clips, <accent>im Takt geschnitten</accent>.",
+      "intro": "Lade deine Clips hoch und wähle einen Song. Es findet den Beat und den Drop, nimmt den besten Moment jedes Clips und schneidet sie mit den Effekten eines Fan-Edits zusammen.",
+      "clips": "Deine Clips",
+      "drop": "Clips hier ablegen",
+      "dropHint": "Bis zu {max} Videos — jedes Format, sie werden auf 9:16 gebracht",
+      "remove": "Entfernen",
+      "addMore": "Mehr hinzufügen",
+      "rights": "Nutze Clips, die du gedreht hast oder nutzen darfst. Es wird nichts für dich gesucht oder heruntergeladen.",
+      "music": "Musik",
+      "musicSource": {
+        "library": "Aus der Bibliothek",
+        "own": "Mein eigener Song"
+      },
+      "preview": "Vorschau abspielen",
+      "pickSong": "Songdatei auswählen",
+      "ownSongNotice": "Nutze nur einen Song, an dem du die Rechte hast — urheberrechtlich geschützte Musik kann dazu führen, dass das Video stummgeschaltet oder entfernt wird.",
+      "musicHint": "Der Teil des Songs um den Drop wird automatisch verwendet. Der Ton der Clips wird stummgeschaltet.",
+      "length": "Länge",
+      "style": "Stil",
+      "styles": {
+        "energetic": {
+          "name": "Energetisch",
+          "hint": "Schnelle Schnitte, Zoom-Schläge, Blitz und Zeitlupe auf dem Drop."
+        },
+        "cinematic": {
+          "name": "Filmisch",
+          "hint": "Längere Einstellungen, langsame Ranfahrten, Film-Look und weicher Blitz auf dem Drop."
+        },
+        "calm": {
+          "name": "Ruhig",
+          "hint": "Ein Schnitt pro Takt, sanfte Bewegung, weiche Farben."
+        }
+      },
+      "price": "{credits, plural, one {# Credit} other {# Credits}}",
+      "free": "Kostenlos · läuft auf diesem Rechner",
+      "cta": "Edit erstellen",
+      "uploading": "Wird hochgeladen {pct}%",
+      "starting": "Startet...",
+      "errors": {
+        "credits": "Nicht genug Credits für diesen Edit.",
+        "generic": "Etwas ist schiefgelaufen. Versuch es noch einmal."
+      },
+      "how": {
+        "title": "Was es macht",
+        "beat": "Findet Tempo, Beats und den Drop im Song.",
+        "moments": "Misst jeden Clip und nimmt seinen bewegtesten Moment.",
+        "drop": "Baut auf und trifft den Drop mit dem stärksten Effekt des Stils.",
+        "effects": "Schneidet im Takt, gradet die Farben, bringt alles auf 9:16."
+      }
     }
   },
   "app": {
@@ -769,7 +821,9 @@
         "transcription": "Transkription",
         "visuals": "Bilder",
         "subtitles": "Untertitel",
-        "ffmpeg_assembly": "Render"
+        "ffmpeg_assembly": "Render",
+        "analysis": "Beat & Bewegung",
+        "caption_translation": "Übersetzung"
       },
       "video": "Video",
       "scenes": "Szenen",
@@ -876,7 +930,8 @@
       "errors": {
         "insufficient": "Nicht genug Credits — du hast {balance}, das kostet {required}.",
         "regenerate": "Das hat nicht geklappt. Es wurde nichts berechnet; versuch es erneut."
-      }
+      },
+      "beatEditNoScenes": "Dieser Edit wurde aus deinen Clips geschnitten und hat daher keine generierten Szenen — nutze den Tab Bearbeiten, um Text darüberzulegen."
     }
   },
   "tour": {

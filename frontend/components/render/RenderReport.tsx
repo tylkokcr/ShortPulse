@@ -27,6 +27,8 @@ const STAGE_KEYS = [
   "visuals",
   "subtitles",
   "ffmpeg_assembly",
+  "analysis",
+  "caption_translation",
 ] as const;
 
 function seconds(value: number): string {

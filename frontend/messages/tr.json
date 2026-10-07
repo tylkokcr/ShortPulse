@@ -416,7 +416,8 @@
   "studio": {
     "tabs": {
       "generate": "Konudan üret",
-      "upload": "Videomu altyazıla veya seslendir"
+      "upload": "Videomu altyazıla veya seslendir",
+      "beat": "Kliplerimle edit"
     },
     "generate": {
       "title": "Bu <accent>video</accent> ne hakkında?",
@@ -646,6 +647,57 @@
       "hint": "Her sahne başlarken oturan hızlı bir yakınlaşma. Yalnızca stok ve AI video kliplerinde — AI kareleri zaten kayıyor.",
       "summaryOn": "Vuruş açık",
       "summaryOff": "Vuruş kapalı"
+    },
+    "beat": {
+      "title": "Kliplerin, <accent>ritme göre kesilmiş</accent>.",
+      "intro": "Kliplerini at ve bir şarkı seç. Ritmi ve drop'u bulur, her klibin en iyi anını alır ve fan edit'lerdeki efektlerle birleştirir.",
+      "clips": "Kliplerin",
+      "drop": "Kliplerini buraya bırak",
+      "dropHint": "En fazla {max} video — şekli fark etmez, 9:16'ya uyarlanır",
+      "remove": "Kaldır",
+      "addMore": "Daha ekle",
+      "rights": "Kendi çektiğin ya da kullanma hakkın olan klipleri kullan. Senin adına hiçbir şey aranmaz veya indirilmez.",
+      "music": "Müzik",
+      "musicSource": {
+        "library": "Kütüphaneden",
+        "own": "Kendi şarkım"
+      },
+      "preview": "Önizlemeyi çal",
+      "pickSong": "Bir şarkı dosyası seç",
+      "ownSongNotice": "Sadece hakkına sahip olduğun bir şarkı kullan — telifli müzik paylaşmak videonun sesinin kapatılmasına veya kaldırılmasına yol açabilir.",
+      "musicHint": "Şarkının drop'u çevresindeki kısmı otomatik kullanılır. Kliplerin kendi sesi kapatılır.",
+      "length": "Uzunluk",
+      "style": "Stil",
+      "styles": {
+        "energetic": {
+          "name": "Enerjik",
+          "hint": "Hızlı kesimler, zoom vuruşları, drop'ta flaş ve yavaş çekim."
+        },
+        "cinematic": {
+          "name": "Sinematik",
+          "hint": "Daha uzun planlar, yavaş yakınlaşma, film tonu ve drop'ta yumuşak flaş."
+        },
+        "calm": {
+          "name": "Sakin",
+          "hint": "Her ölçüde bir kesim, yumuşak hareket, yumuşak renk."
+        }
+      },
+      "price": "{credits, plural, one {# kredi} other {# kredi}}",
+      "free": "Ücretsiz · bu makinede çalışır",
+      "cta": "Edit'i hazırla",
+      "uploading": "Yükleniyor %{pct}",
+      "starting": "Başlıyor...",
+      "errors": {
+        "credits": "Bu edit için yeterli kredin yok.",
+        "generic": "Bir şeyler ters gitti. Tekrar dene."
+      },
+      "how": {
+        "title": "Ne yapar",
+        "beat": "Şarkının temposunu, vuruşlarını ve drop'unu bulur.",
+        "moments": "Her klibi ölçer ve en hareketli anını alır.",
+        "drop": "Önce yükselir, sonra drop'ta stilin en güçlü efektiyle vurur.",
+        "effects": "Vuruşta keser, rengi ayarlar, her şeyi 9:16'ya oturtur."
+      }
     }
   },
   "app": {
@@ -769,7 +821,9 @@
         "transcription": "Deşifre",
         "visuals": "Görseller",
         "subtitles": "Altyazı",
-        "ffmpeg_assembly": "Render"
+        "ffmpeg_assembly": "Render",
+        "analysis": "Ritim ve hareket",
+        "caption_translation": "Çeviri"
       },
       "video": "Video",
       "scenes": "Sahne",
@@ -876,7 +930,8 @@
       "errors": {
         "insufficient": "Kredi yetmiyor — sende {balance} var, bu {required} tutuyor.",
         "regenerate": "Bu işe yaramadı. Hiçbir ücret alınmadı; tekrar dene."
-      }
+      },
+      "beatEditNoScenes": "Bu edit senin kliplerinden kesildi, bu yüzden üretilmiş sahnesi yok — üstüne yazı eklemek için Edit sekmesini kullan."
     }
   },
   "tour": {

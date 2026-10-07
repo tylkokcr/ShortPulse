@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.middleware import RateLimitMiddleware, SupabaseAuthMiddleware
 from app.api.routes import (
     art_styles,
+    beat_edits,
     credits,
     music,
     projects,
@@ -138,6 +139,7 @@ app.include_router(voices.router)
 app.include_router(art_styles.router)
 app.include_router(visual_modes.router)
 app.include_router(uploads.router)
+app.include_router(beat_edits.router)
 app.include_router(social.router)
 
 

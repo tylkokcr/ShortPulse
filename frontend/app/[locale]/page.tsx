@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Coins,
   Upload,
+  Scissors,
 } from "lucide-react";
 import clsx from "clsx";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -37,6 +38,7 @@ import { MusicSelector } from "@/components/editor/MusicSelector";
 import { VoiceSelector } from "@/components/editor/VoiceSelector";
 import { RenderSummary } from "@/components/editor/RenderSummary";
 import { UploadPanel } from "@/components/editor/UploadPanel";
+import { BeatEditPanel } from "@/components/editor/BeatEditPanel";
 import { StartFromExample, topicIsUntouched } from "@/components/editor/StartFromExample";
 import { SettingsDrawer } from "@/components/editor/SettingsDrawer";
 import { SettingRow } from "@/components/editor/SettingRow";
@@ -51,7 +53,7 @@ export default function HomePage() {
   );
 }
 
-type Mode = "generate" | "upload";
+type Mode = "generate" | "upload" | "beat";
 
 /** The emphasised span inside a heading. `t.rich` hands the tag's contents
  *  back as chunks, which keeps the accented word *inside* the sentence —
@@ -234,7 +236,7 @@ function CreateVideo() {
     <AppShell
       section="studio"
       asideOpen={
-        mode === "generate" ? drawerGroup !== null : uploadAsideOpen
+        mode === "generate" ? drawerGroup !== null : mode === "upload" && uploadAsideOpen
       }
       aside={
         mode === "generate" ? (
@@ -306,10 +308,10 @@ function CreateVideo() {
             ) : (
               <>
                 <h1 className="mt-1.5 text-3xl font-semibold tracking-tight">
-                  {t.rich("upload.title", { accent })}
+                  {t.rich(mode === "beat" ? "beat.title" : "upload.title", { accent })}
                 </h1>
                 <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/50">
-                  {t("upload.intro")}
+                  {t(mode === "beat" ? "beat.intro" : "upload.intro")}
                 </p>
               </>
             )}
@@ -324,6 +326,12 @@ function CreateVideo() {
           // squeezed against the form.
           <div className="animate-fade-up mt-8">
             <UploadPanel onAsideOpenChange={setUploadAsideOpen} />
+          </div>
+        )}
+
+        {mode === "beat" && (
+          <div className="animate-fade-up mt-8">
+            <BeatEditPanel />
           </div>
         )}
 
@@ -408,6 +416,9 @@ function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void 
     // written — a language field inside this tab — and a tab promising
     // captions gave nobody a reason to open it and find out.
     { id: "upload", label: t("tabs.upload"), icon: Upload },
+    // Your own clips cut to a track. Third because it is the newest, not
+    // the least: the first two are what most people came for.
+    { id: "beat", label: t("tabs.beat"), icon: Scissors },
   ];
 
   return (
@@ -422,13 +433,14 @@ function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void 
           onClick={() => onChange(tab.id)}
           aria-pressed={mode === tab.id}
           className={clsx(
-            "flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 sm:flex-none sm:justify-start sm:px-4 sm:text-sm",
+            // Three tabs share a phone's width, so a label may wrap there.
+            "flex flex-1 items-center justify-center gap-2 rounded-lg px-2 py-2 text-center text-[12px] font-medium leading-tight transition-all duration-200 sm:flex-none sm:justify-start sm:whitespace-nowrap sm:px-4 sm:text-sm",
             mode === tab.id
               ? "bg-surface-raised text-white shadow-sm"
               : "text-white/50 hover:text-white/80"
           )}
         >
-          <tab.icon size={15} />
+          <tab.icon size={15} className="shrink-0" />
           {tab.label}
         </button>
       ))}

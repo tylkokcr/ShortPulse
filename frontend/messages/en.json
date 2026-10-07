@@ -416,7 +416,8 @@
   "studio": {
     "tabs": {
       "generate": "Generate from a topic",
-      "upload": "Caption or dub my video"
+      "upload": "Caption or dub my video",
+      "beat": "Edit my clips"
     },
     "generate": {
       "title": "What's this <accent>video</accent> about?",
@@ -646,6 +647,57 @@
       "hint": "A quick zoom that settles as each scene starts. Stock and AI-video clips only — AI stills already pan.",
       "summaryOn": "Punch on",
       "summaryOff": "Punch off"
+    },
+    "beat": {
+      "title": "Your clips, <accent>cut to the beat</accent>.",
+      "intro": "Drop in your clips and pick a song. It finds the beat and the drop, takes the best moment of each clip and cuts them together with the effects a fan edit uses.",
+      "clips": "Your clips",
+      "drop": "Drop your clips here",
+      "dropHint": "Up to {max} videos — any shape, they are framed to 9:16",
+      "remove": "Remove",
+      "addMore": "Add more",
+      "rights": "Use clips you shot or have the right to use. Nothing is searched for or downloaded for you.",
+      "music": "Music",
+      "musicSource": {
+        "library": "From the library",
+        "own": "My own song"
+      },
+      "preview": "Play preview",
+      "pickSong": "Choose a song file",
+      "ownSongNotice": "Only use a song you have the rights to — posting copyrighted music can get the video muted or taken down.",
+      "musicHint": "The part of the song around its drop is used automatically. The clips' own sound is muted.",
+      "length": "Length",
+      "style": "Style",
+      "styles": {
+        "energetic": {
+          "name": "Energetic",
+          "hint": "Fast cuts, zoom hits, a flash and slow motion on the drop."
+        },
+        "cinematic": {
+          "name": "Cinematic",
+          "hint": "Longer shots, slow push-ins, a film grade and a soft flash on the drop."
+        },
+        "calm": {
+          "name": "Calm",
+          "hint": "A cut every bar, gentle movement, soft colour."
+        }
+      },
+      "price": "{credits, plural, one {# credit} other {# credits}}",
+      "free": "Free · runs on this machine",
+      "cta": "Make the edit",
+      "uploading": "Uploading {pct}%",
+      "starting": "Starting...",
+      "errors": {
+        "credits": "Not enough credits for this edit.",
+        "generic": "Something went wrong. Try again."
+      },
+      "how": {
+        "title": "What it does",
+        "beat": "Finds the tempo, the beats and the drop in the song.",
+        "moments": "Measures every clip and takes its most active moment.",
+        "drop": "Builds up, then hits the drop with the style's biggest effect.",
+        "effects": "Cuts on the beat, grades the colour, frames everything to 9:16."
+      }
     }
   },
   "app": {
@@ -769,7 +821,9 @@
         "transcription": "Transcription",
         "visuals": "Visuals",
         "subtitles": "Subtitles",
-        "ffmpeg_assembly": "Render"
+        "ffmpeg_assembly": "Render",
+        "analysis": "Beat & motion",
+        "caption_translation": "Translation"
       },
       "video": "Video",
       "scenes": "Scenes",
@@ -876,7 +930,8 @@
       "errors": {
         "insufficient": "Not enough credits — you have {balance} and this costs {required}.",
         "regenerate": "That didn't work. Nothing was charged; try again."
-      }
+      },
+      "beatEditNoScenes": "This edit was cut from your clips, so it has no generated scenes — use the Edit tab to add text over it."
     }
   },
   "tour": {

@@ -17,6 +17,17 @@ const nextConfig = {
   // to be worth shipping — the full node_modules here is ~500MB.
   output: "standalone",
 
+  experimental: {
+    // The /api rewrite below buffers request bodies, and by default only
+    // the first 10MB. In production Caddy sends /api straight to the
+    // backend and never touches this, but a self-hosted install without
+    // Caddy — and local development — goes through it, and every upload
+    // past 10MB arrived cut off: a 200MB video, or a beat edit's clips.
+    // Sized to the largest body the backend accepts: a beat edit's 800MB
+    // of clips plus its track.
+    proxyClientMaxBodySize: "850mb",
+  },
+
   async rewrites() {
     return [
       {

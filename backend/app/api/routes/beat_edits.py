@@ -1,0 +1,178 @@
+"""Cut the user's own clips to a track.
+
+The footage and, when they bring one, the music are the user's — this
+endpoint never searches for or fetches either. That is the line between a
+tool for editing your own material and one that republishes other
+people's: see engines/beat_edit.py.
+"""
+
+from __future__ import annotations
+
+import logging
+import shutil
+import uuid
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+
+from app.api.deps import billing_for, current_user_id, db_pool
+from app.api.routes.music import track_path_for
+from app.core.config import get_settings, project_dir
+from app.schemas.project import (
+    BeatEditSpec,
+    BeatEditStyle,
+    Project,
+    ProjectConfig,
+    ProjectSource,
+)
+from app.services import beat_edits, credits, project_store, uploads
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/beat-edits", tags=["beat-edits"])
+
+
+async def _chunks(file: UploadFile):
+    while chunk := await file.read(1 << 20):
+        yield chunk
+
+
+@router.post("", response_model=Project, status_code=201)
+async def create_beat_edit(
+    request: Request,
+    clips: list[UploadFile] = File(...),
+    music: UploadFile | None = File(None),
+    music_track_id: str = Form(""),
+    duration_s: float = Form(15.0),
+    style: str = Form(BeatEditStyle.ENERGETIC.value),
+    music_start_s: float | None = Form(None),
+    title: str = Form(""),
+    user_id: str | None = Depends(current_user_id),
+) -> Project:
+    """Accept the clips and a track, then queue the edit.
+
+    The same order as an upload: an id first so the files have a
+    server-chosen place to land, every file written and probed, the row
+    created, the charge last — a rejected clip never costs a credit — and
+    one unwind for all of it.
+    """
+    settings = get_settings()
+
+    if not clips:
+        raise HTTPException(status_code=422, detail="Add at least one clip.")
+    if len(clips) > beat_edits.MAX_CLIPS:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "too_many_clips", "max": beat_edits.MAX_CLIPS},
+        )
+    try:
+        chosen_style = BeatEditStyle(style.strip())
+    except ValueError:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "unsupported_style", "supported": [s.value for s in BeatEditStyle]},
+        ) from None
+
+    track_id = music_track_id.strip() or None
+    if music is None and track_id is None:
+        raise HTTPException(status_code=422, detail="Pick a track or upload your own.")
+    if music is not None and track_id is not None:
+        raise HTTPException(status_code=422, detail="Pick a track or upload one, not both.")
+    if track_id is not None:
+        try:
+            library_track = track_path_for(track_id)
+        except HTTPException:
+            raise HTTPException(status_code=422, detail="That track isn't in the library.") from None
+        track_length = await beat_edits.probe_audio(library_track, settings.ffprobe_binary)
+    else:
+        track_length = 0.0
+
+    project_id = str(uuid.uuid4())
+    paths = project_dir(project_id)
+    created = False
+    try:
+        total = 0
+        for index, clip in enumerate(clips):
+            suffix = Path(clip.filename or "").suffix.lower()
+            destination = beat_edits.clip_path(paths, index, suffix)
+            try:
+                total += await uploads.save_stream(_chunks(clip), destination)
+                await uploads.probe(destination, settings.ffprobe_binary)
+            except uploads.UploadRejected as exc:
+                raise HTTPException(
+                    status_code=422, detail=f"{clip.filename or 'A clip'}: {exc}"
+                ) from exc
+            if total > beat_edits.MAX_TOTAL_BYTES:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Clips come to more than "
+                    f"{beat_edits.MAX_TOTAL_BYTES // (1024 * 1024)}MB together.",
+                )
+
+        if music is not None:
+            suffix = Path(music.filename or "").suffix.lower()
+            destination = beat_edits.music_path(paths, suffix)
+            try:
+                await uploads.save_stream(_chunks(music), destination, beat_edits.MAX_MUSIC_BYTES)
+                track_length = await beat_edits.probe_audio(destination, settings.ffprobe_binary)
+            except uploads.UploadRejected as exc:
+                raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+        if track_length < 5.0:
+            raise HTTPException(status_code=422, detail="That track is too short to cut to.")
+
+        spec = BeatEditSpec(
+            clip_count=len(clips),
+            music_track_id=track_id,
+            music_uploaded=music is not None,
+            # A video longer than the track would end in silence.
+            duration_s=min(max(duration_s, 5.0), 60.0, track_length),
+            style=chosen_style,
+            music_start_s=music_start_s,
+        )
+        config = ProjectConfig(
+            id=project_id,
+            topic=title.strip() or "Beat edit",
+            source=ProjectSource.BEAT_EDIT,
+            beat_edit=spec,
+        )
+        # The track is the soundtrack; nothing is mixed under it, and the
+        # editor must not add the default one when it re-burns.
+        config.music.enabled = False
+
+        await project_store.create_project(config, user_id)
+        created = True
+
+        billing = billing_for(db_pool(request), user_id)
+        if billing is not None:
+            cost = credits.cost_for(config)
+            try:
+                await credits.spend(
+                    billing.pool,
+                    billing.user_id,
+                    cost,
+                    project_id=config.id,
+                    idempotency_key=f"render:{config.id}",
+                    note="beat_edit",
+                )
+            except credits.InsufficientCredits as exc:
+                raise HTTPException(
+                    status_code=402,
+                    detail={
+                        "error": "insufficient_credits",
+                        "balance": exc.balance,
+                        "required": exc.required,
+                    },
+                ) from exc
+            project = await project_store.update_project(config.id, credits_cost=cost)
+        else:
+            project = await project_store.get_project(config.id)  # type: ignore[assignment]
+    except Exception:
+        if created:
+            await project_store.delete_project(project_id)
+        shutil.rmtree(paths, ignore_errors=True)
+        raise
+
+    assert project is not None
+    await request.app.state.render_queue.submit(project)
+    return project

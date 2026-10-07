@@ -126,9 +126,17 @@ def clip_cost(from_s: float, to_s: float | None) -> int:
     return max(1, ceil(span / CLIP_SECONDS_PER_CREDIT))
 
 
+# A beat edit is ffmpeg over the user's own clips: no model, no stock
+# search, no transcription. Priced like a caption job, which is the
+# nearest thing in cost.
+BEAT_EDIT_COST = 1
+
+
 def cost_for(config: ProjectConfig) -> int:
     """Credits a render of this shape costs. Deterministic: the caller is
     quoted this before the render starts and charged exactly this."""
+    if config.source == ProjectSource.BEAT_EDIT:
+        return BEAT_EDIT_COST
     if config.source == ProjectSource.UPLOAD:
         if config.clip_count:
             return clip_cost(config.clip_from_s, config.clip_to_s)

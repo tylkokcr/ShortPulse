@@ -86,6 +86,9 @@ def _pricing_table() -> dict[str, int]:
                 ProjectConfig(topic="quote", source=ProjectSource.UPLOAD, dub_language="tr")
             ),
             "upload:clip_seconds_per_credit": credits.CLIP_SECONDS_PER_CREDIT,
+            "beat_edit": credits.cost_for(
+                ProjectConfig(topic="quote", source=ProjectSource.BEAT_EDIT)
+            ),
         }
     )
     return quotes

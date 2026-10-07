@@ -138,6 +138,64 @@ export function createProject(config: Partial<ProjectConfig> & { topic: string }
  * caller watches it over the same render-progress socket as a generated
  * one.
  */
+/**
+ * A multipart POST that reports upload progress, which fetch cannot.
+ * Shared by the two endpoints that take files: a single video, and a
+ * beat edit's clips and track.
+ */
+async function postMultipart(
+  path: string,
+  form: FormData,
+  onProgress?: (fraction: number) => void
+): Promise<Project> {
+  const headers = await authHeaders();
+
+  return new Promise<Project>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_BASE}${path}`);
+    for (const [key, value] of Object.entries(headers)) {
+      xhr.setRequestHeader(key, value);
+    }
+    // Deliberately no Content-Type: the browser has to set it, because
+    // only it knows the multipart boundary it generated.
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress?.(event.loaded / event.total);
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 201) {
+        resolve(JSON.parse(xhr.responseText) as Project);
+        return;
+      }
+      if (xhr.status === 402) {
+        try {
+          const detail = JSON.parse(xhr.responseText).detail;
+          reject(new InsufficientCreditsError(detail.balance, detail.required));
+          return;
+        } catch {
+          // fall through to the generic error below
+        }
+      }
+      if (xhr.status === 422) {
+        // The server's reason is written for the user ("no audio track",
+        // "larger than the 200MB limit") — showing it beats a status code.
+        const reason = serverReason(xhr.responseText);
+        if (reason) {
+          reject(new Error(reason));
+          return;
+        }
+      }
+      reject(new Error(`Upload failed (${xhr.status}): ${xhr.responseText.slice(0, 200)}`));
+    };
+
+    xhr.onerror = () => reject(new Error("Upload failed — check your connection."));
+    xhr.onabort = () => reject(new Error("Upload cancelled."));
+
+    xhr.send(form);
+  });
+}
+
 export async function uploadVideo(
   file: File,
   options: {
@@ -196,52 +254,7 @@ export async function uploadVideo(
     form.append("subtitles", JSON.stringify(options.subtitles));
   }
 
-  const headers = await authHeaders();
-
-  return new Promise<Project>((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${API_BASE}/uploads`);
-    for (const [key, value] of Object.entries(headers)) {
-      xhr.setRequestHeader(key, value);
-    }
-    // Deliberately no Content-Type: the browser has to set it, because
-    // only it knows the multipart boundary it generated.
-
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) onProgress?.(event.loaded / event.total);
-    };
-
-    xhr.onload = () => {
-      if (xhr.status === 201) {
-        resolve(JSON.parse(xhr.responseText) as Project);
-        return;
-      }
-      if (xhr.status === 402) {
-        try {
-          const detail = JSON.parse(xhr.responseText).detail;
-          reject(new InsufficientCreditsError(detail.balance, detail.required));
-          return;
-        } catch {
-          // fall through to the generic error below
-        }
-      }
-      if (xhr.status === 422) {
-        // The server's reason is written for the user ("no audio track",
-        // "larger than the 200MB limit") — showing it beats a status code.
-        const reason = serverReason(xhr.responseText);
-        if (reason) {
-          reject(new Error(reason));
-          return;
-        }
-      }
-      reject(new Error(`Upload failed (${xhr.status}): ${xhr.responseText.slice(0, 200)}`));
-    };
-
-    xhr.onerror = () => reject(new Error("Upload failed — check your connection."));
-    xhr.onabort = () => reject(new Error("Upload cancelled."));
-
-    xhr.send(form);
-  });
+  return postMultipart("/uploads", form, onProgress);
 }
 
 export function getProject(projectId: string): Promise<Project> {
@@ -552,3 +565,30 @@ export const publishProject = (body: {
 /** Release a post the first-post rule held back. */
 export const approvePost = (postId: string) =>
   request<SocialPost>(`/social/posts/${postId}/approve`, { method: "POST" });
+
+export type BeatEditStyle = "energetic" | "cinematic" | "calm";
+
+/**
+ * Cut the user's own clips to a track. Exactly one of `musicTrackId` (a
+ * library track) and `musicFile` (their own) is sent.
+ */
+export async function createBeatEdit(
+  clips: File[],
+  options: {
+    musicTrackId?: string;
+    musicFile?: File;
+    durationS: number;
+    style: BeatEditStyle;
+    title?: string;
+  },
+  onProgress?: (fraction: number) => void
+): Promise<Project> {
+  const form = new FormData();
+  for (const clip of clips) form.append("clips", clip);
+  if (options.musicFile) form.append("music", options.musicFile);
+  else form.append("music_track_id", options.musicTrackId ?? "");
+  form.append("duration_s", String(options.durationS));
+  form.append("style", options.style);
+  form.append("title", options.title ?? "");
+  return postMultipart("/beat-edits", form, onProgress);
+}

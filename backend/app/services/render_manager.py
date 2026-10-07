@@ -514,6 +514,128 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
         )
 
 
+async def run_beat_edit_pipeline(project: Project, settings: Settings) -> None:
+    """Cut the user's clips to the track they chose. See engines/beat_edit.py.
+
+    Reports through the same stages and channel as the other two, so the
+    project page needs nothing new to follow it. The result is kept twice:
+    `final.mp4`, which the editor overwrites, and `edit_base.mp4`, the cut
+    with nothing written on it, which is what the editor draws onto.
+    """
+    from app.api.routes.music import track_path_for
+    from app.engines import beat_edit
+    from app.services import beat_edits
+
+    config = project.config
+    project_id = config.id
+    spec = config.beat_edit
+    paths = project_dir(project_id)
+    timings = StageTimings()
+
+    try:
+        await project_store.update_project(project_id, status=ProjectStatus.RENDERING)
+        if spec is None:
+            raise RuntimeError("This project has no beat edit settings.")
+        clips = beat_edits.clip_paths(paths)
+        if not clips:
+            raise RuntimeError("The clips for this edit are missing from storage.")
+        if spec.music_uploaded:
+            track = beat_edits.uploaded_music(paths)
+            if track is None:
+                raise RuntimeError("The uploaded track is missing from storage.")
+        else:
+            track = track_path_for(spec.music_track_id or "")
+
+        await _emit(
+            project_id,
+            stage=RenderStage.TRANSCRIPTION,
+            progress_pct=10,
+            message="Finding the beat and the busiest moments in each clip...",
+        )
+        with timings.stage("analysis"):
+            grid = await asyncio.to_thread(beat_edit.analyze_beats, track, settings.ffmpeg_binary)
+            motion = [
+                await asyncio.to_thread(beat_edit.motion_profile, clip, settings.ffmpeg_binary)
+                for clip in clips
+            ]
+            plan = beat_edit.plan_edit(
+                grid,
+                motion,
+                target_s=spec.duration_s,
+                style=spec.style.value,
+                music_start=spec.music_start_s,
+            )
+
+        await _emit(
+            project_id,
+            stage=RenderStage.ASSEMBLY,
+            progress_pct=40,
+            message=f"Cutting {len(plan.cuts)} shots to {grid.tempo_bpm:.0f} BPM...",
+        )
+        final_path = paths / "output" / "final.mp4"
+        final_path.parent.mkdir(parents=True, exist_ok=True)
+        with timings.stage("ffmpeg_assembly"):
+            await asyncio.to_thread(
+                beat_edit.render_edit,
+                plan,
+                track,
+                final_path,
+                paths / "work",
+                settings.ffmpeg_binary,
+            )
+        shutil.copyfile(final_path, beat_edits.base_path(paths))
+        shutil.rmtree(paths / "work", ignore_errors=True)
+
+        timings.write(
+            paths / "timings.json",
+            extra={
+                "project_id": project_id,
+                "source": "beat_edit",
+                "tempo_bpm": round(grid.tempo_bpm, 1),
+                "cuts": len(plan.cuts),
+                "style": spec.style.value,
+                "music_start_s": round(plan.music_start, 2),
+                "video_duration_s": round(plan.duration, 2),
+            },
+        )
+        await render_engine.extract_poster(
+            final_path,
+            paths / "output" / "poster.jpg",
+            ffmpeg_binary=settings.ffmpeg_binary,
+            ffprobe_binary=settings.ffprobe_binary,
+        )
+        await project_store.update_project(
+            project_id,
+            status=ProjectStatus.COMPLETE,
+            output_path=str(final_path),
+            # The editor draws onto this, not onto final.mp4.
+            source_path=str(beat_edits.base_path(paths)),
+            # Empty but present, so the editor opens and text can be added.
+            captions=CaptionTrack(words=[], style=config.subtitles),
+            duration_s=round(plan.duration, 2),
+            error=None,
+        )
+        await _emit(
+            project_id,
+            stage=RenderStage.DONE,
+            progress_pct=100,
+            message="Edit ready.",
+            output_path=str(final_path),
+        )
+    except Exception as exc:  # noqa: BLE001 - surface any failure to the client
+        logger.exception("Beat edit failed for project %s", project_id)
+        monitoring.report_render_failure(exc, project_id=project_id, stage="beat_edit")
+        await project_store.update_project(project_id, status=ProjectStatus.FAILED, error=str(exc))
+        await _refund_failed_render(project_id, reason=str(exc))
+        await _emit(
+            project_id,
+            stage=RenderStage.FAILED,
+            progress_pct=0,
+            message="Edit failed.",
+            error=str(exc),
+        )
+
+
 async def _whisper_model_for(source: Path, config: ProjectConfig, settings: Settings) -> str:
     """Which Whisper model reads this upload: the accurate one if it is short.
 
@@ -1287,7 +1409,9 @@ class RenderTaskQueue:
                 # purpose: both are ffmpeg- and Whisper-bound, so they
                 # compete for the same machine and should respect the same
                 # concurrency limit.
-                if project.config.source == ProjectSource.UPLOAD:
+                if project.config.source == ProjectSource.BEAT_EDIT:
+                    await run_beat_edit_pipeline(project, self._settings)
+                elif project.config.source == ProjectSource.UPLOAD:
                     # The queue passes itself in so an extraction can put
                     # its clips back on it rather than rendering them
                     # inside this worker's slot.

@@ -222,7 +222,7 @@ export interface OutroConfig {
 
 /** Where the video came from. An upload skips generation entirely and
  *  only runs the captioning tail of the pipeline. */
-export type ProjectSource = "generated" | "upload";
+export type ProjectSource = "generated" | "upload" | "beat_edit";
 
 export interface ProjectConfig {
   id: string;

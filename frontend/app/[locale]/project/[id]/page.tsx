@@ -191,7 +191,9 @@ function Project({ id }: { id: string }) {
                   <p className="text-sm text-white/40">
                     {project?.config.source === "upload"
                       ? t("uploadedNoScenes")
-                      : t("scriptWorking")}
+                      : project?.config.source === "beat_edit"
+                        ? t("beatEditNoScenes")
+                        : t("scriptWorking")}
                   </p>
                 ) : (
                   <>
