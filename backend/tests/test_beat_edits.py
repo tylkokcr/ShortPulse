@@ -208,7 +208,7 @@ def _two_sizes(seconds: float = 120.0) -> beat_edit.ClipMotion:
     rate = beat_edit._MOTION_FPS
     n = int(seconds * rate)
     half = n // 2
-    activity = np.concatenate([np.full(half, 0.004), np.full(n - half, 0.12)]).astype(np.float32)
+    activity = np.concatenate([np.full(half, 0.03), np.full(n - half, 0.25)]).astype(np.float32)
     scores = np.concatenate([np.full(half, 2.0), np.full(n - half, 20.0)])
     return beat_edit.ClipMotion(
         Path("match.mp4"), seconds, scores, cuts=[half], width=1920, height=1080, activity=activity
@@ -265,6 +265,49 @@ def test_a_shot_keeps_its_payoff_inside_it():
     assert start is not None
     position = (strike / rate - start) / 2.0
     assert 0.35 <= position <= 0.85, position
+
+
+def _setup_then_play(seconds: float = 60.0) -> beat_edit.ClipMotion:
+    """A free kick being lined up — wide, and nothing moves — then two
+    shots of play a little closer in."""
+    rate = beat_edit._MOTION_FPS
+    n = int(seconds * rate)
+    third = n // 3
+    activity = np.full(n, 0.09, dtype=np.float32)
+    activity[:third] = 0.002
+    scores = np.full(n, 4.0)
+    scores[:third] = 1.0
+    return beat_edit.ClipMotion(
+        Path("wides.mp4"), seconds, scores, cuts=[third, 2 * third],
+        width=1920, height=1080, activity=activity,
+    )
+
+
+def test_a_still_wide_shot_is_not_chosen_for_its_size():
+    """The free kick being lined up is the only wide shot, but nothing
+    happens in it: the shot of play is taken instead."""
+    clip = _setup_then_play()
+    start = clip.busiest(2.0, [], prefer=("wide", "medium"))
+    assert start is not None and start >= clip.duration_s / 3, start
+
+
+def test_the_seed_varies_the_shots_and_none_keeps_them():
+    clip = _setup_then_play(240.0)
+    clip.cuts = [int(k * 4 * beat_edit._MOTION_FPS) for k in range(1, 60)]
+    plans = [beat_edit.plan_edit(_grid(), [clip], 15.0, "cinematic", seed=s) for s in range(4)]
+    starts = {tuple(round(c.source_start, 2) for c in p.cuts) for p in plans}
+    assert len(starts) > 1
+    again = [beat_edit.plan_edit(_grid(), [clip], 15.0, "cinematic") for _ in range(2)]
+    assert [c.source_start for c in again[0].cuts] == [c.source_start for c in again[1].cuts]
+
+
+def test_a_wide_landscape_shot_is_shown_closer():
+    plan = beat_edit.plan_edit(_grid(), [_two_sizes()], 15.0, "energetic")
+    wide = [c for c in plan.cuts if c.source_start < 60.0]
+    close = [c for c in plan.cuts if c.source_start >= 60.0]
+    assert wide and all(c.zoom == beat_edit.WIDE_ZOOM for c in wide)
+    assert close and all(c.zoom == 1.0 for c in close)
+    assert "crop=1080:ih:x=" in beat_edit._segment_filter(wide[0])
 
 
 async def test_a_library_track_can_be_read_before_the_edit(beat_app):
