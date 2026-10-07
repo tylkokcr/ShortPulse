@@ -555,7 +555,9 @@ async def run_beat_edit_pipeline(project: Project, settings: Settings) -> None:
         with timings.stage("analysis"):
             grid = await asyncio.to_thread(beat_edit.analyze_beats, track, settings.ffmpeg_binary)
             motion = [
-                await asyncio.to_thread(beat_edit.motion_profile, clip, settings.ffmpeg_binary)
+                await asyncio.to_thread(
+                    beat_edit.motion_profile, clip, settings.ffmpeg_binary, settings.ffprobe_binary
+                )
                 for clip in clips
             ]
             plan = beat_edit.plan_edit(

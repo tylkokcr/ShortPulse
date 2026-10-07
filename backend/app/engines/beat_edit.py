@@ -175,26 +175,96 @@ _MOTION_W, _MOTION_H = 54, 96
 class ClipMotion:
     path: Path
     duration_s: float
-    scores: np.ndarray  # mean absolute frame difference, per sample
+    scores: np.ndarray  # how much the picture moves, per sample, cuts removed
+    # Samples where the clip itself cuts to a new shot. A compilation is
+    # full of them, and they are the biggest frame differences in it: left
+    # in, "the busiest stretch" meant "the stretch with a cut in it", and
+    # every shot of the edit had a second, unplanned cut inside it.
+    cuts: list[int] = field(default_factory=list)
+    width: int = 0
+    height: int = 0
 
-    def busiest(self, length_s: float, avoid: list[tuple[float, float]]) -> float:
-        """Start of the most active `length_s` stretch not overlapping `avoid`."""
+    @property
+    def landscape(self) -> bool:
+        return self.width > self.height
+
+    def shots(self) -> list[tuple[float, float]]:
+        """The clip's own shots, as (start, end) seconds."""
+        bounds = [0, *self.cuts, len(self.scores)]
+        return [
+            (bounds[i] / _MOTION_FPS, bounds[i + 1] / _MOTION_FPS)
+            for i in range(len(bounds) - 1)
+            if bounds[i + 1] > bounds[i]
+        ]
+
+    def busiest(self, length_s: float, avoid: list[tuple[float, float]]) -> float | None:
+        """Start of the most active `length_s` stretch that sits inside one
+        of the clip's own shots and overlaps nothing in `avoid`; None if no
+        shot is long enough."""
         n = max(1, int(round(length_s * _MOTION_FPS)))
-        if len(self.scores) <= n:
-            return 0.0
+        if len(self.scores) < n:
+            return None
         sums = np.convolve(self.scores, np.ones(n), mode="valid")
-        order = np.argsort(sums)[::-1]
-        for index in order:
-            start = index / _MOTION_FPS
-            end = start + length_s
-            if end > self.duration_s - 0.05:
-                continue
-            if all(end <= a or start >= b for a, b in avoid):
-                return float(start)
-        return float(order[0] / _MOTION_FPS)
+        margin = 0.04
+        best, best_sum = None, -math.inf
+        for shot_start, shot_end in self.shots():
+            first = int(math.ceil((shot_start + margin) * _MOTION_FPS))
+            last = int(math.floor((shot_end - margin - length_s) * _MOTION_FPS))
+            for index in range(max(first, 0), min(last, len(sums) - 1) + 1):
+                start = index / _MOTION_FPS
+                end = start + length_s
+                if end > self.duration_s - 0.05:
+                    continue
+                if any(not (end <= a or start >= b) for a, b in avoid):
+                    continue
+                if sums[index] > best_sum:
+                    best, best_sum = float(start), float(sums[index])
+        return best
+
+    def longest_free_shot(self, avoid: list[tuple[float, float]]) -> tuple[float, float] | None:
+        """The longest of the clip's shots not yet used — for a cut longer
+        than any shot, which is then slowed to fill it."""
+        free = [
+            (a, b)
+            for a, b in self.shots()
+            if b - a > 0.2 and all(b <= x or a >= y for x, y in avoid)
+        ]
+        return max(free, key=lambda s: s[1] - s[0]) if free else None
 
 
-def motion_profile(clip: Path, ffmpeg: str = "ffmpeg") -> ClipMotion:
+def _source_cuts(diffs: np.ndarray) -> list[int]:
+    """Samples where the picture changes far more than around it: a cut,
+    not motion. A pan or a sprint raises the difference for many samples
+    in a row; a cut is one sample that towers over its neighbours."""
+    cuts: list[int] = []
+    n = len(diffs)
+    for i in range(n):
+        lo, hi = max(0, i - 12), min(n, i + 13)
+        neighbours = np.concatenate([diffs[lo:i], diffs[i + 1 : hi]])
+        local = float(np.median(neighbours)) if len(neighbours) else 0.0
+        if diffs[i] > max(14.0, 3.5 * local):
+            cuts.append(i + 1)  # the first sample of the new shot
+    # One cut can register on two neighbouring samples; keep the first.
+    return [c for k, c in enumerate(cuts) if k == 0 or c - cuts[k - 1] > 2]
+
+
+def motion_profile(clip: Path, ffmpeg: str = "ffmpeg", ffprobe: str | None = None) -> ClipMotion:
+    if ffprobe is None:
+        ffprobe = ffmpeg[: -len("ffmpeg")] + "ffprobe" if ffmpeg.endswith("ffmpeg") else "ffprobe"
+    probe = subprocess.run(
+        [ffprobe,
+         "-v", "error", "-select_streams", "v:0", "-show_entries",
+         "stream=width,height:stream_side_data=rotation", "-of", "csv=p=0", str(clip)],
+        capture_output=True, text=True,
+    ).stdout.strip().splitlines()
+    width = height = 0
+    if probe:
+        parts = [p for p in probe[0].split(",") if p.strip()]
+        if len(parts) >= 2:
+            width, height = int(parts[0]), int(parts[1])
+            rotation = next((int(float(p)) for p in parts[2:] if p.strip("-").isdigit()), 0)
+            if abs(rotation) in (90, 270):
+                width, height = height, width
     raw = subprocess.run(
         [ffmpeg, "-nostdin", "-v", "error", "-i", str(clip), "-vf",
          f"fps={_MOTION_FPS},scale={_MOTION_W}:{_MOTION_H},format=gray",
@@ -203,8 +273,17 @@ def motion_profile(clip: Path, ffmpeg: str = "ffmpeg") -> ClipMotion:
     ).stdout
     frames = np.frombuffer(raw, dtype=np.uint8).reshape(-1, _MOTION_H, _MOTION_W).astype(np.float32)
     diffs = np.abs(np.diff(frames, axis=0)).mean(axis=(1, 2)) if len(frames) > 1 else np.zeros(1)
-    scores = np.concatenate([[diffs[0] if len(diffs) else 0.0], diffs])
-    return ClipMotion(path=clip, duration_s=len(frames) / _MOTION_FPS, scores=scores)
+    cuts = _source_cuts(diffs)
+    cleaned = diffs.copy()
+    for c in cuts:
+        i = c - 1
+        lo, hi = max(0, i - 6), min(len(diffs), i + 7)
+        cleaned[i] = float(np.median(diffs[lo:hi]))
+    scores = np.concatenate([[cleaned[0] if len(cleaned) else 0.0], cleaned])
+    return ClipMotion(
+        path=clip, duration_s=len(frames) / _MOTION_FPS, scores=scores,
+        cuts=cuts, width=width, height=height,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -219,6 +298,9 @@ class Cut:
     duration: float  # on the timeline
     speed: float = 1.0  # < 1 is slow motion
     effects: list[str] = field(default_factory=list)
+    # Filmed wider than tall: shown whole over a blurred fill rather than
+    # cropped to a vertical sliver of its middle.
+    landscape: bool = False
 
 
 @dataclass
@@ -243,8 +325,12 @@ class Style:
 
 STYLES: dict[str, Style] = {
     "energetic": Style(2, 1, "punch", ("flash", "rgbsplit", "shake"), 0.5, "shake", "grade"),
-    "cinematic": Style(4, 2, "drift", ("softflash",), 0.5, None, "grade_film"),
-    "calm": Style(4, 4, "drift", (), 1.0, None, "grade_soft"),
+    # Long enough to read a move from start to finish: two bars before the
+    # drop, one after — about four and two seconds at 120 BPM. At two and
+    # one beats it was cutting every second, which reads as fast however
+    # soft the grade.
+    "cinematic": Style(8, 4, "drift", ("softflash",), 0.5, None, "grade_film"),
+    "calm": Style(8, 8, "drift", (), 1.0, None, "grade_soft"),
 }
 
 
@@ -310,38 +396,68 @@ def plan_edit(
     cuts: list[Cut] = []
     last: Path | None = None
     turn = 0
-    for k in range(len(points) - 1):
-        start, end = points[k], points[k + 1]
+    beat_set = [b for b in timeline]
+    # The slowest a shot is stretched to fill a cut. Past half speed,
+    # without frame interpolation, motion stutters.
+    min_speed = 0.5
+    queue = [(points[k], points[k + 1]) for k in range(len(points) - 1)]
+    k = 0
+    while queue:
+        start, end = queue.pop(0)
         length = end - start
         if length < 0.08:
             continue
-        effects: list[str] = [look.grade]
-        speed = 1.0
         is_drop = drop is not None and abs(start - drop) < 0.05
-        if is_drop:
-            effects += list(look.drop_effects)
-            speed = look.drop_speed
-        elif round(start, 3) in downbeats:
-            effects.append(look.bar_effect)
-        elif look.after_drop_extra and drop is not None and start > drop and k % 3 == 0:
-            effects.append(look.after_drop_extra)
-        else:
-            effects.append("drift")
+        speed = look.drop_speed if is_drop else 1.0
 
         # Every clip in turn, busiest first, never the same one twice running.
         clip = order[turn % len(order)]
         if clip.path == last and len(order) > 1:
             turn += 1
             clip = order[turn % len(order)]
-        turn += 1
+
         source_len = length * speed
-        if clip.duration_s < source_len + 0.1:
-            # A clip shorter than the cut plays at the speed that fits it.
-            speed = max(0.25, (clip.duration_s - 0.1) / length)
-            source_len = length * speed
         src = clip.busiest(source_len, used[clip.path])
+        if src is None:
+            # No shot of this clip is long enough at this speed. Slow its
+            # longest free shot to fill the cut if half speed is enough;
+            # if not, the cut is longer than this footage can hold in one
+            # piece, so it becomes two cuts at the beat nearest its middle
+            # — a cut on the beat rather than one the source makes for us.
+            shot = clip.longest_free_shot(used[clip.path])
+            available = max(0.1, (shot[1] - shot[0] - 0.08) if shot else clip.duration_s - 0.1)
+            inside = [b for b in beat_set if start + 0.2 < b < end - 0.2]
+            if available / length < min_speed and inside:
+                middle = min(inside, key=lambda b: abs(b - (start + end) / 2))
+                queue[:0] = [(start, middle), (middle, end)]
+                continue
+            # No beat to split on: stretch further rather than cut mid-beat.
+            floor = min_speed if available / length >= min_speed else 0.25
+            speed = max(floor, min(speed, available / length))
+            source_len = length * speed
+            src = (shot[0] + 0.04) if shot else 0.0
+            if src + source_len > clip.duration_s:
+                src = max(0.0, clip.duration_s - source_len - 0.05)
+        turn += 1
+
+        effects: list[str] = [look.grade]
+        if is_drop:
+            effects += list(look.drop_effects)
+        elif round(start, 3) in downbeats:
+            effects.append(look.bar_effect)
+        elif look.after_drop_extra and drop is not None and start > drop and k % 3 == 0:
+            effects.append(look.after_drop_extra)
+        else:
+            effects.append("drift")
+        k += 1
+
         used[clip.path].append((src, src + source_len))
-        cuts.append(Cut(clip=clip.path, source_start=src, duration=length, speed=speed, effects=effects))
+        cuts.append(
+            Cut(
+                clip=clip.path, source_start=src, duration=length, speed=speed,
+                effects=effects, landscape=clip.landscape,
+            )
+        )
         last = clip.path
 
     return EditPlan(music_start=music_start, duration=points[-1] - points[0], cuts=cuts)
@@ -354,11 +470,27 @@ def plan_edit(
 
 def _segment_filter(cut: Cut) -> str:
     """The filter graph for one cut, its clock starting at zero."""
+    timing = f"setpts={1 / cut.speed:.4f}*(PTS-STARTPTS),fps={FPS}"
     cover = (
         f"scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase,"
         f"crop={WIDTH}:{HEIGHT},setsar=1"
     )
-    chain = [f"setpts={1 / cut.speed:.4f}*(PTS-STARTPTS)", f"fps={FPS}", cover]
+    if cut.landscape:
+        # A landscape shot cropped to fill a vertical frame keeps a third
+        # of its width: on a match broadcast that was legs, a referee and
+        # an advertising board, with the player somewhere off the edge.
+        # Here three quarters of the width stays in the middle, and the
+        # space above and below is the same picture blurred and darkened,
+        # which is how a fan edit fills it.
+        framing = (
+            f"[0:v]{timing},split[s1][s2];"
+            f"[s1]{cover},boxblur=20:2,eq=brightness=-0.12:saturation=0.8[bg];"
+            f"[s2]scale={int(WIDTH * 4 / 3)}:-2,crop={WIDTH}:ih,setsar=1[fg];"
+            "[bg][fg]overlay=(W-w)/2:(H-h)/2,setsar=1[framed];"
+        )
+    else:
+        framing = f"[0:v]{timing},{cover}[framed];"
+    chain: list[str] = []
     frames = max(1, int(round(cut.duration * FPS)))
 
     if "punch" in cut.effects or "flash" in cut.effects or "softflash" in cut.effects:
@@ -392,16 +524,16 @@ def _segment_filter(cut: Cut) -> str:
         chain.append("vignette=PI/4")
     elif "grade_soft" in cut.effects:
         chain.append("eq=contrast=1.04:saturation=1.08:brightness=0.02")
-    graph = ",".join(chain)
+    graph = ",".join(chain) or "null"
     flash_len = 0.22 if "flash" in cut.effects else 0.45
     if "flash" in cut.effects or "softflash" in cut.effects:
         graph = (
-            f"[0:v]{graph},format=yuv420p,split[base][w];"
+            f"{framing}[framed]{graph},format=yuv420p,split[base][w];"
             f"[w]drawbox=c=white@1:t=fill,format=rgba,fade=t=out:st=0:d={flash_len}:alpha=1[flash];"
             "[base][flash]overlay=format=auto"
         )
     else:
-        graph = f"[0:v]{graph}"
+        graph = f"{framing}[framed]{graph}"
     return graph + f",trim=duration={cut.duration:.3f},format=yuv420p[v]"
 
 

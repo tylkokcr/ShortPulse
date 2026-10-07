@@ -155,3 +155,37 @@ def test_a_steady_click_track_is_read_at_its_tempo(tmp_path):
     )
     grid = beat_edit.analyze_beats(click, FFMPEG)
     assert abs(grid.tempo_bpm - 120.0) < 3 or abs(grid.tempo_bpm - 60.0) < 2
+
+
+def _compilation_motion(shot_s: float = 1.2, total_s: float = 18.0) -> beat_edit.ClipMotion:
+    """A clip that is itself a compilation: steady motion, a cut every
+    `shot_s` seconds."""
+    rate = beat_edit._MOTION_FPS
+    n = int(total_s * rate)
+    cuts = [int(round(k * shot_s * rate)) for k in range(1, int(total_s / shot_s))]
+    scores = np.full(n, 6.0)
+    return beat_edit.ClipMotion(Path("comp.mp4"), total_s, scores, cuts=cuts, width=1280, height=720)
+
+
+def test_a_compilation_cut_is_found_and_motion_is_not():
+    diffs = np.full(200, 6.0) + np.sin(np.arange(200)) * 2  # a pan: busy, steady
+    diffs[50] = 60.0  # a cut
+    diffs[120] = 55.0  # another
+    assert beat_edit._source_cuts(diffs) == [51, 121]
+
+
+@pytest.mark.parametrize("style", ["energetic", "cinematic", "calm"])
+def test_no_shot_of_the_edit_contains_a_cut_from_the_source(style):
+    clip = _compilation_motion()
+    plan = beat_edit.plan_edit(_grid(), [clip], 15.0, style)
+    source_cuts = [c / beat_edit._MOTION_FPS for c in clip.cuts]
+    for cut in plan.cuts:
+        start, end = cut.source_start, cut.source_start + cut.duration * cut.speed
+        assert not any(start + 0.05 < c < end - 0.05 for c in source_cuts), (style, start, end)
+
+
+def test_a_landscape_clip_is_marked_for_the_blurred_frame():
+    plan = beat_edit.plan_edit(_grid(), [_compilation_motion()], 10.0, "calm")
+    assert all(cut.landscape for cut in plan.cuts)
+    graph = beat_edit._segment_filter(plan.cuts[0])
+    assert "boxblur" in graph and "overlay" in graph
