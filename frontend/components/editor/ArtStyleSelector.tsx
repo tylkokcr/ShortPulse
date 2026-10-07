@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useArtStyleText } from "@/lib/artStyleText";
 import { Check } from "lucide-react";
 import clsx from "clsx";
 import { listArtStyles } from "@/lib/api";
@@ -20,6 +21,7 @@ import type { ArtStyle } from "@/lib/types";
  */
 export function ArtStyleSelector() {
   const t = useTranslations("studio.artStyle");
+  const text = useArtStyleText();
   const { draft, setDraft } = useShortPulseStore();
   const [styles, setStyles] = useState<ArtStyle[]>([]);
 
@@ -57,7 +59,7 @@ export function ArtStyleSelector() {
               key={style.id}
               type="button"
               onClick={() => setDraft({ artStyle: style.id })}
-              title={style.description}
+              title={text(style).description}
               className={clsx(
                 "group flex flex-col gap-2 rounded-lg border p-1.5 text-left transition-all duration-200",
                 selected
@@ -71,7 +73,7 @@ export function ArtStyleSelector() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`/art-styles/${style.sample}`}
-                  alt={`${style.name} example frame`}
+                  alt={`${text(style).name} example frame`}
                   loading="lazy"
                   className="aspect-[9/16] w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
@@ -82,7 +84,7 @@ export function ArtStyleSelector() {
                 )}
               </span>
               <span className="px-0.5 pb-0.5 text-[11px] font-medium leading-tight">
-                {style.name}
+                {text(style).name}
               </span>
             </button>
           );
@@ -90,7 +92,10 @@ export function ArtStyleSelector() {
       </div>
 
       <p className="text-[11px] leading-relaxed text-white/30">
-        {styles.find((style) => style.id === draft.artStyle)?.description}
+        {(() => {
+          const picked = styles.find((style) => style.id === draft.artStyle);
+          return picked ? text(picked).description : null;
+        })()}
       </p>
     </div>
   );

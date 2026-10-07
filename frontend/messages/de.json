@@ -916,5 +916,31 @@
       "autoOn": "Jeder Render wird hier gepostet, sobald er fertig ist.",
       "soon": "In Arbeit"
     }
+  },
+  "artStyleCatalog": {
+    "photoreal": {
+      "name": "Fotorealistisch",
+      "description": "Sieht aus wie gefilmt. Am besten für Gegenstände und Landschaften, am schwächsten bei Menschen."
+    },
+    "anime": {
+      "name": "Anime",
+      "description": "Cel-Shading, klare Linien, satte Farben."
+    },
+    "toon3d": {
+      "name": "3D-Trickfilm",
+      "description": "Großäugige Figuren wie aus dem Animationsfilm, weiches Licht."
+    },
+    "comic": {
+      "name": "Comic",
+      "description": "Getuschte Konturen und Rasterschattierung."
+    },
+    "clay": {
+      "name": "Knetanimation",
+      "description": "Knetfiguren mit sichtbaren Fingerabdrücken."
+    },
+    "pixel": {
+      "name": "Pixel-Art",
+      "description": "Klobige 16-Bit-Sprites, begrenzte Palette."
+    }
   }
 }

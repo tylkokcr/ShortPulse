@@ -916,5 +916,31 @@
       "autoOn": "Każdy render trafi tutaj, gdy tylko się skończy.",
       "soon": "W przygotowaniu"
     }
+  },
+  "artStyleCatalog": {
+    "photoreal": {
+      "name": "Fotorealizm",
+      "description": "Wygląda jak nagranie. Najlepszy do przedmiotów i krajobrazów, najsłabszy do ludzi."
+    },
+    "anime": {
+      "name": "Anime",
+      "description": "Cieniowanie cel, czysta kreska, nasycone kolory."
+    },
+    "toon3d": {
+      "name": "Animacja 3D",
+      "description": "Postacie z dużymi oczami jak z filmu animowanego, miękkie światło."
+    },
+    "comic": {
+      "name": "Komiks",
+      "description": "Tuszowe kontury i rastrowe cieniowanie."
+    },
+    "clay": {
+      "name": "Plastelina",
+      "description": "Modele z plasteliny z widocznymi odciskami palców."
+    },
+    "pixel": {
+      "name": "Pixel art",
+      "description": "Wyraziste 16-bitowe sprite'y, ograniczona paleta."
+    }
   }
 }

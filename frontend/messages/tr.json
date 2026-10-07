@@ -491,7 +491,7 @@
       "language": "Dil",
       "visualStyle": "Görsel stil",
       "artStyle": "Çizim stili",
-      "negativePrompt": "Kadrda istemediklerin",
+      "negativePrompt": "Kadrajda istemediklerin",
       "captionStyle": "Altyazı stili",
       "voice": "Anlatıcı sesi",
       "music": "Arka plan müziği"
@@ -915,6 +915,32 @@
       "autoTitle": "Biten videoları otomatik paylaş",
       "autoOn": "Her render biter bitmez buraya gönderilecek.",
       "soon": "Üzerinde çalışılıyor"
+    }
+  },
+  "artStyleCatalog": {
+    "photoreal": {
+      "name": "Fotogerçekçi",
+      "description": "Gerçek çekim gibi görünür. Nesnelerde ve manzarada en iyisi, insanlarda en zayıfı."
+    },
+    "anime": {
+      "name": "Anime",
+      "description": "Cel gölgeleme, temiz çizgiler, doygun renkler."
+    },
+    "toon3d": {
+      "name": "3D Animasyon",
+      "description": "Animasyon filmlerindeki gibi iri gözlü karakterler, yumuşak ışık."
+    },
+    "comic": {
+      "name": "Çizgi Roman",
+      "description": "Mürekkep konturlar ve noktalı gölgeleme."
+    },
+    "clay": {
+      "name": "Kil Animasyon",
+      "description": "Parmak izleri görünen hamur modeller."
+    },
+    "pixel": {
+      "name": "Piksel Sanatı",
+      "description": "İri 16-bit karakterler, sınırlı renk paleti."
     }
   }
 }

@@ -916,5 +916,31 @@
       "autoOn": "Every render will be posted here as soon as it finishes.",
       "soon": "In progress"
     }
+  },
+  "artStyleCatalog": {
+    "photoreal": {
+      "name": "Photoreal",
+      "description": "Looks like footage. Best for objects and scenery, worst for people."
+    },
+    "anime": {
+      "name": "Anime",
+      "description": "Cel shading, clean line art, saturated colour."
+    },
+    "toon3d": {
+      "name": "3D Toon",
+      "description": "Big-eyed animated-film characters, soft light."
+    },
+    "comic": {
+      "name": "Comic",
+      "description": "Inked outlines and halftone shading."
+    },
+    "clay": {
+      "name": "Claymation",
+      "description": "Plasticine models with visible fingerprints."
+    },
+    "pixel": {
+      "name": "Pixel Art",
+      "description": "Chunky 16-bit sprites, limited palette."
+    }
   }
 }

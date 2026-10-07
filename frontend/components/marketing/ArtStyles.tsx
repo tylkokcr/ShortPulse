@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { listArtStyles } from "@/lib/api";
 import type { ArtStyle } from "@/lib/types";
+import { useArtStyleText } from "@/lib/artStyleText";
 
 /**
  * The art styles, shown with the frames they actually produce.
@@ -73,6 +74,7 @@ export function ArtStyles() {
 
 function StyleCard({ style }: { style: ArtStyle }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const { name, description } = useArtStyleText()(style);
 
   /**
    * Nothing is fetched until the pointer arrives: `preload="none"` plus a
@@ -108,7 +110,7 @@ function StyleCard({ style }: { style: ArtStyle }) {
           ref={videoRef}
           src={`/art-styles/${style.id}.mp4`}
           poster={`/art-styles/${style.sample}`}
-          aria-label={`${style.name} example frame`}
+          aria-label={`${name} example frame`}
           muted
           loop
           playsInline
@@ -117,9 +119,9 @@ function StyleCard({ style }: { style: ArtStyle }) {
         />
       </div>
       <figcaption>
-        <span className="block text-xs font-medium">{style.name}</span>
+        <span className="block text-xs font-medium">{name}</span>
         <span className="mt-0.5 block text-[11px] leading-snug text-white/40">
-          {style.description}
+          {description}
         </span>
       </figcaption>
     </figure>
