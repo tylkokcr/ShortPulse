@@ -698,6 +698,16 @@
         "moments": "Misst jeden Clip und nimmt seinen bewegtesten Moment.",
         "drop": "Baut auf und trifft den Drop mit dem stärksten Effekt des Stils.",
         "effects": "Schneidet im Takt, gradet die Farben, bringt alles auf 9:16."
+      },
+      "window": {
+        "title": "Welcher Teil des Songs",
+        "hint": "Zieh ihn am Song entlang. Er rastet am Taktanfang ein, damit jeder Schnitt im Takt bleibt. Der Ton der Clips ist stummgeschaltet.",
+        "reading": "Der Beat des Songs wird gelesen...",
+        "drop": "Drop",
+        "label": "Teil des Songs, den der Edit nutzt",
+        "play": "Diesen Teil abspielen",
+        "stop": "Stopp",
+        "reset": "Zurück zum Vorschlag"
       }
     }
   },

@@ -265,3 +265,44 @@ def test_a_shot_keeps_its_payoff_inside_it():
     assert start is not None
     position = (strike / rate - start) / 2.0
     assert 0.35 <= position <= 0.85, position
+
+
+async def test_a_library_track_can_be_read_before_the_edit(beat_app):
+    app, _ = beat_app
+    from app.api.routes.music import available_tracks
+
+    track = next(t.id for t in available_tracks() if t.category == "upbeat")
+    async with _client(app) as client:
+        response = await client.post("/api/beat-edits/analyze", data={"music_track_id": track})
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["duration_s"] > 10 and 60 < body["tempo_bpm"] < 200
+    assert len(body["envelope"]) == 240 and max(body["envelope"]) == 1.0
+    assert set(body["suggested_starts"]) == {"10", "15", "30", "60"}
+    # A suggested start is on a bar.
+    assert round(body["suggested_starts"]["15"], 3) in {round(b, 3) for b in body["downbeats"]}
+
+
+async def test_an_uploaded_song_is_read_and_not_kept(beat_app, tmp_path):
+    app, _ = beat_app
+    import subprocess
+
+    song = tmp_path / "song.wav"
+    subprocess.run(
+        [FFMPEG, "-nostdin", "-v", "error", "-y", "-f", "lavfi", "-i",
+         "sine=frequency=220:duration=20", str(song)],
+        check=True,
+    )
+    async with _client(app) as client:
+        response = await client.post(
+            "/api/beat-edits/analyze", files={"music": ("song.wav", song.read_bytes(), "audio/wav")}
+        )
+    assert response.status_code in (200, 422), response.text
+    assert not any((tmp_path / "projects").rglob("music.*"))
+
+
+async def test_analysis_needs_a_song(beat_app):
+    app, _ = beat_app
+    async with _client(app) as client:
+        response = await client.post("/api/beat-edits/analyze")
+    assert response.status_code == 422

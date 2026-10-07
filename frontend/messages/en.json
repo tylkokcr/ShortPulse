@@ -698,6 +698,16 @@
         "moments": "Measures every clip and takes its most active moment.",
         "drop": "Builds up, then hits the drop with the style's biggest effect.",
         "effects": "Cuts on the beat, grades the colour, frames everything to 9:16."
+      },
+      "window": {
+        "title": "Which part of the song",
+        "hint": "Drag it along the song. It snaps to the start of a bar so every cut stays on the beat. The clips' own sound is muted.",
+        "reading": "Reading the song's beats...",
+        "drop": "drop",
+        "label": "Stretch of the song the edit uses",
+        "play": "Play this part",
+        "stop": "Stop",
+        "reset": "Back to the suggestion"
       }
     }
   },

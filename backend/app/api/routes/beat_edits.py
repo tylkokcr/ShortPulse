@@ -8,12 +8,16 @@ people's: see engines/beat_edit.py.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import shutil
+import tempfile
 import uuid
+from functools import lru_cache
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from pydantic import BaseModel
 
 from app.api.deps import billing_for, current_user_id, db_pool
 from app.api.routes.media import keep as keep_in_files
@@ -210,3 +214,82 @@ async def create_beat_edit(
             await keep_in_files(path, name, kind, user_id)
     await request.app.state.render_queue.submit(project)
     return project
+
+
+class TrackAnalysis(BaseModel):
+    """What the panel draws under the song: its shape, where the bars fall,
+    where it drops, and where an edit of each length would start."""
+
+    duration_s: float
+    tempo_bpm: float
+    drop_s: float | None
+    downbeats: list[float]
+    envelope: list[float]
+    suggested_starts: dict[str, float]
+
+
+_LENGTHS = (10, 15, 30, 60)
+
+
+def _analysis_of(path: Path, ffmpeg: str) -> TrackAnalysis:
+    from app.engines import beat_edit
+
+    grid = beat_edit.analyze_beats(path, ffmpeg)
+    return TrackAnalysis(
+        duration_s=round(grid.duration_s, 2),
+        tempo_bpm=round(grid.tempo_bpm, 1),
+        drop_s=round(grid.drop_s, 2) if grid.drop_s is not None else None,
+        downbeats=[round(b, 3) for b in grid.downbeats],
+        envelope=beat_edit.envelope(path, 240, ffmpeg),
+        suggested_starts={
+            str(length): round(beat_edit.default_start(grid, float(length)), 3) for length in _LENGTHS
+        },
+    )
+
+
+@lru_cache(maxsize=64)
+def _library_analysis(track_path: str, ffmpeg: str) -> TrackAnalysis:
+    # The library does not change while the server runs, and the same few
+    # tracks are picked over and over: a second of numpy per pick is a
+    # second the panel waits for nothing.
+    return _analysis_of(Path(track_path), ffmpeg)
+
+
+@router.post("/analyze", response_model=TrackAnalysis)
+async def analyze_track(
+    music: UploadFile | None = File(None),
+    music_track_id: str = Form(""),
+    music_media_id: str = Form(""),
+    user_id: str | None = Depends(current_user_id),
+) -> TrackAnalysis:
+    """Read a song before the edit is made, so its stretch can be chosen.
+
+    Exactly one of: a library track, a song in My files, or a file — the
+    last is analysed from a temporary copy and not kept.
+    """
+    settings = get_settings()
+    if music_track_id.strip():
+        try:
+            path = track_path_for(music_track_id.strip())
+        except HTTPException:
+            raise HTTPException(status_code=422, detail="That track isn't in the library.") from None
+        return await asyncio.to_thread(_library_analysis, str(path), settings.ffmpeg_binary)
+    if music_media_id.strip():
+        media = await media_store.get_owned(music_media_id.strip(), user_id)
+        if media is None or media.kind != "audio":
+            raise HTTPException(status_code=422, detail="That song isn't in your files.")
+        return await asyncio.to_thread(_analysis_of, media.path, settings.ffmpeg_binary)
+    if music is None:
+        raise HTTPException(status_code=422, detail="Choose a song to analyse.")
+
+    with tempfile.TemporaryDirectory() as work:
+        destination = beat_edits.music_path(Path(work), Path(music.filename or "").suffix.lower())
+        try:
+            await uploads.save_stream(_chunks(music), destination, beat_edits.MAX_MUSIC_BYTES)
+            await beat_edits.probe_audio(destination, settings.ffprobe_binary)
+        except uploads.UploadRejected as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        try:
+            return await asyncio.to_thread(_analysis_of, destination, settings.ffmpeg_binary)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc

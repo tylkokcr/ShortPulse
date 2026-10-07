@@ -698,6 +698,16 @@
         "moments": "Mierzy każdy klip i bierze jego najbardziej dynamiczny moment.",
         "drop": "Buduje napięcie, a na dropie uderza najmocniejszym efektem stylu.",
         "effects": "Tnie w rytm, koryguje kolory, kadruje wszystko do 9:16."
+      },
+      "window": {
+        "title": "Który fragment utworu",
+        "hint": "Przeciągnij wzdłuż utworu. Przyciąga się do początku taktu, więc każde cięcie zostaje w rytmie. Dźwięk klipów jest wyciszony.",
+        "reading": "Odczytywanie rytmu utworu...",
+        "drop": "drop",
+        "label": "Fragment utworu użyty w montażu",
+        "play": "Odtwórz ten fragment",
+        "stop": "Zatrzymaj",
+        "reset": "Wróć do sugestii"
       }
     }
   },

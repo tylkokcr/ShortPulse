@@ -125,6 +125,18 @@ def _track_beats(onset: np.ndarray, period: float, tightness: float = 100.0) -> 
     return beats[::-1]
 
 
+def envelope(audio: Path, points: int = 240, ffmpeg: str = "ffmpeg") -> list[float]:
+    """The track's loudness in `points` steps, 0 to 1 — what the panel
+    draws as a waveform under the chosen stretch."""
+    signal = _decode_mono(audio, ffmpeg)
+    if len(signal) == 0:
+        return [0.0] * points
+    chunks = np.array_split(np.abs(signal), points)
+    levels = np.array([float(np.sqrt((c.astype(np.float64) ** 2).mean())) if len(c) else 0.0 for c in chunks])
+    peak = float(levels.max()) or 1.0
+    return [round(float(v) / peak, 3) for v in levels]
+
+
 def analyze_beats(audio: Path, ffmpeg: str = "ffmpeg") -> BeatGrid:
     signal = _decode_mono(audio, ffmpeg)
     onset, rms = _onset_envelope(signal)
@@ -500,6 +512,20 @@ STYLES: dict[str, Style] = {
 }
 
 
+def default_start(grid: BeatGrid, target_s: float) -> float:
+    """Where in the track an edit starts when nobody chose: on a bar, so
+    the drop lands about a third of the way in — long enough to build,
+    early enough to pay off. The first bar when there is no drop."""
+    target_s = min(target_s, max(4.0, grid.duration_s - 0.5))
+    if grid.drop_s is not None:
+        wanted = grid.drop_s - target_s * 0.33
+        starts = [b for b in grid.downbeats if b <= wanted] or grid.downbeats[:1]
+        start = starts[-1]
+    else:
+        start = grid.downbeats[0] if grid.downbeats else 0.0
+    return max(0.0, min(start, grid.duration_s - target_s))
+
+
 def plan_edit(
     grid: BeatGrid,
     clips: list[ClipMotion],
@@ -525,12 +551,8 @@ def plan_edit(
         asked = music_start
         music_start = min(beats, key=lambda b: abs(b - asked))
         music_start = min(music_start, max(0.0, grid.duration_s - target_s))
-    elif grid.drop_s is not None:
-        wanted = grid.drop_s - target_s * 0.33
-        starts = [b for b in grid.downbeats if b <= wanted] or grid.downbeats[:1]
-        music_start = starts[-1]
     else:
-        music_start = grid.downbeats[0]
+        music_start = default_start(grid, target_s)
     music_end = min(music_start + target_s, grid.duration_s)
 
     timeline = [b for b in beats if music_start - 0.01 <= b <= music_end]

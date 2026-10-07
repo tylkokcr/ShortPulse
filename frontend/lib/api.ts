@@ -164,7 +164,7 @@ async function postMultipart<T = Project>(
     };
 
     xhr.onload = () => {
-      if (xhr.status === 201) {
+      if (xhr.status >= 200 && xhr.status < 300) {
         resolve(JSON.parse(xhr.responseText) as T);
         return;
       }
@@ -590,6 +590,8 @@ export async function createBeatEdit(
     saveToFiles?: boolean;
     durationS: number;
     style: BeatEditStyle;
+    /** Where in the song the edit starts. Omitted: around the drop. */
+    musicStartS?: number;
     title?: string;
   },
   onProgress?: (fraction: number) => void
@@ -602,6 +604,7 @@ export async function createBeatEdit(
   else form.append("music_track_id", options.musicTrackId ?? "");
   form.append("save_to_files", String(options.saveToFiles ?? false));
   form.append("duration_s", String(options.durationS));
+  if (options.musicStartS !== undefined) form.append("music_start_s", String(options.musicStartS));
   form.append("style", options.style);
   form.append("title", options.title ?? "");
   return postMultipart("/beat-edits", form, onProgress);
@@ -630,4 +633,27 @@ export async function deleteMedia(id: string): Promise<void> {
 
 export async function getMediaUrls(id: string): Promise<import("./types").MediaUrls> {
   return request(`/media/${id}/url`);
+}
+
+export interface TrackAnalysis {
+  duration_s: number;
+  tempo_bpm: number;
+  drop_s: number | null;
+  downbeats: number[];
+  envelope: number[];
+  suggested_starts: Record<string, number>;
+}
+
+/** Read a song before the edit, so its stretch can be chosen. One of the
+ *  three sources. */
+export async function analyzeTrack(source: {
+  trackId?: string;
+  mediaId?: string;
+  file?: File;
+}): Promise<TrackAnalysis> {
+  const form = new FormData();
+  if (source.trackId) form.append("music_track_id", source.trackId);
+  if (source.mediaId) form.append("music_media_id", source.mediaId);
+  if (source.file) form.append("music", source.file);
+  return postMultipart<TrackAnalysis>("/beat-edits/analyze", form);
 }

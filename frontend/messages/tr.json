@@ -698,6 +698,16 @@
         "moments": "Her klibi ölçer ve en hareketli anını alır.",
         "drop": "Önce yükselir, sonra drop'ta stilin en güçlü efektiyle vurur.",
         "effects": "Vuruşta keser, rengi ayarlar, her şeyi 9:16'ya oturtur."
+      },
+      "window": {
+        "title": "Şarkının hangi kısmı",
+        "hint": "Şarkı boyunca sürükle. Ölçü başlarına yapışır, böylece her kesim ritimde kalır. Kliplerin kendi sesi kapatılır.",
+        "reading": "Şarkının ritmi okunuyor...",
+        "drop": "drop",
+        "label": "Edit'in kullandığı şarkı kısmı",
+        "play": "Bu kısmı dinle",
+        "stop": "Durdur",
+        "reset": "Öneriye dön"
       }
     }
   },

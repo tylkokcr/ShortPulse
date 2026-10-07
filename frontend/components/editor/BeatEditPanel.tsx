@@ -6,12 +6,16 @@ import { Film, FolderOpen, Loader2, Music, Pause, Play, Plus, Scissors, Upload, 
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import {
+  analyzeTrack,
   createBeatEdit,
+  getMediaUrls,
   InsufficientCreditsError,
   listMusic,
   musicPreviewUrl,
   type BeatEditStyle,
+  type TrackAnalysis,
 } from "@/lib/api";
+import { MusicWindow } from "./MusicWindow";
 import type { MediaFile, MusicTrack } from "@/lib/types";
 import { MediaPicker, clockOf } from "@/components/media/MediaPicker";
 import { useShortPulseStore } from "@/lib/store";
@@ -83,6 +87,72 @@ export function BeatEditPanel() {
   }, []);
   useEffect(() => () => audioRef.current?.pause(), []);
 
+  // The chosen song, read for its beats and drop so its stretch can be
+  // picked. Re-read whenever the song changes; the window resets to the
+  // suggestion then, and when the length changes unless it was moved.
+  const [analysis, setAnalysis] = useState<{ key: string; result: TrackAnalysis | null } | null>(
+    null
+  );
+  const [musicStart, setMusicStart] = useState<number | null>(null);
+  const [startMoved, setStartMoved] = useState(false);
+  const [songSrc, setSongSrc] = useState<string | null>(null);
+  const songKey =
+    musicSource === "library"
+      ? `t:${trackId}`
+      : pickedSong
+        ? `m:${pickedSong.id}`
+        : musicFile
+          ? `f:${musicFile.name}:${musicFile.size}`
+          : "";
+  useEffect(() => {
+    if (!songKey) return;
+    let live = true;
+    let objectUrl: string | null = null;
+    const source =
+      musicSource === "library"
+        ? { trackId }
+        : pickedSong
+          ? { mediaId: pickedSong.id }
+          : { file: musicFile ?? undefined };
+    analyzeTrack(source)
+      .then((result) => {
+        if (!live) return;
+        setAnalysis({ key: songKey, result });
+        setStartMoved(false);
+        setMusicStart(result.suggested_starts[String(duration)] ?? null);
+      })
+      .catch(() => live && setAnalysis({ key: songKey, result: null }));
+    if (musicSource === "library") {
+      const url = musicPreviewUrl(trackId);
+      void Promise.resolve().then(() => live && setSongSrc(url));
+    }
+    else if (pickedSong)
+      getMediaUrls(pickedSong.id)
+        .then((urls) => live && setSongSrc(urls.url))
+        .catch(() => undefined);
+    else if (musicFile) {
+      objectUrl = URL.createObjectURL(musicFile);
+      const url = objectUrl;
+      // Through a microtask rather than straight in the effect body.
+      void Promise.resolve().then(() => live && setSongSrc(url));
+    }
+    return () => {
+      live = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+    // songKey stands for the three it is built from.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [songKey]);
+
+  // The reading belongs to the song chosen now, or to nothing.
+  const reading = analysis && analysis.key === songKey ? analysis.result : null;
+  const analyzing = songKey !== "" && analysis?.key !== songKey;
+
+  function chooseLength(seconds: number) {
+    setDuration(seconds);
+    if (reading && !startMoved) setMusicStart(reading.suggested_starts[String(seconds)] ?? null);
+  }
+
   function addClips(files: FileList | File[] | null) {
     if (!files) return;
     const videos = Array.from(files).filter((f) => f.type.startsWith("video/") || /\.(mp4|mov|m4v|webm|mkv)$/i.test(f.name));
@@ -125,6 +195,7 @@ export function BeatEditPanel() {
           clipMediaIds: pickedClips.map((f) => f.id),
           saveToFiles: keep,
           durationS: duration,
+          musicStartS: reading && musicStart !== null ? musicStart : undefined,
           style,
           title: (pickedClips[0]?.name ?? clips[0]?.name ?? "").replace(/\.[^.]+$/, ""),
         },
@@ -329,7 +400,29 @@ export function BeatEditPanel() {
               <p className="mt-2 text-xs text-white/35">{t("ownSongNotice")}</p>
             </div>
           )}
-          <p className="mt-2 text-xs text-white/40">{t("musicHint")}</p>
+          {reading && musicStart !== null ? (
+            <div className="mt-4">
+              <span className="mb-1.5 block text-xs font-medium text-white/60">{t("window.title")}</span>
+              <MusicWindow
+                analysis={reading}
+                lengthS={duration}
+                start={musicStart}
+                onStart={(seconds) => {
+                  setMusicStart(seconds);
+                  setStartMoved(true);
+                }}
+                audioSrc={songSrc}
+              />
+              <p className="mt-2 text-xs text-white/40">{t("window.hint")}</p>
+            </div>
+          ) : analyzing ? (
+            <p className="mt-3 flex items-center gap-2 text-xs text-white/40">
+              <Loader2 size={12} className="animate-spin" />
+              {t("window.reading")}
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-white/40">{t("musicHint")}</p>
+          )}
         </div>
 
         {/* Length and style. */}
@@ -341,7 +434,7 @@ export function BeatEditPanel() {
                 <button
                   key={seconds}
                   type="button"
-                  onClick={() => setDuration(seconds)}
+                  onClick={() => chooseLength(seconds)}
                   aria-pressed={duration === seconds}
                   className={clsx(
                     "rounded-lg border px-3 py-1.5 text-xs transition-colors",
