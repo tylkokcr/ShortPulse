@@ -61,3 +61,11 @@ def test_marks_round_trip_through_planning() -> None:
         plan_lines(_words("This model is specially made. It is warm"), 4, "en")
     )
     assert marked[0].starts_line
+
+
+def test_three_word_lines_still_avoid_a_weak_ending() -> None:
+    """Full three-word lines leave no slack to nudge a break, which is where
+    'THANKS TO THE' / 'REMOVABLE FUR COLLAR' survived."""
+    sentence = "Thanks to the removable fur collar, it offers a different use alternative."
+    for line in plan_lines(_words(sentence), 3, "en")[:-1]:
+        assert line[-1].text.lower() not in {"the", "a", "to", "of", "with"}

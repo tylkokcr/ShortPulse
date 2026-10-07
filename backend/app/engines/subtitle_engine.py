@@ -164,50 +164,54 @@ def _bare(text: str) -> str:
     return text.strip(".,!?;:…\"'“”«»()").lower()
 
 
-def _break_score(prev: Word, language: str) -> int:
-    """How good a place the end of `prev` is to end a line."""
-    text = prev.text.rstrip()
+def _ending_cost(last: Word, language: str) -> int:
+    """What it costs to end a line (not the sentence) on `last`."""
+    text = last.text.rstrip()
     if text.endswith(_CLAUSE_END):
-        return 3
-    weak = _WEAK_WORDS.get(language.split("-")[0].lower(), frozenset())
-    if _bare(text) in weak:
         return -3
-    return 0
+    weak = _WEAK_WORDS.get(language.split("-")[0].lower(), frozenset())
+    return 12 if _bare(text) in weak else 0
 
 
 def _plan_run(run: list[Word], max_per_line: int, language: str) -> list[list[Word]]:
     """Lines for one sentence (or one stretch between pauses).
 
-    As few lines as the limit allows, of about equal length — "4 + 1"
-    leaves a lone word on screen where "3 + 2" reads as two phrases — with
-    each break nudged a word either way toward a comma and away from
-    ending on an article or preposition.
+    Every way of breaking the run is priced and the cheapest kept: a line
+    costs something just for existing, more for being short ("4 + 1"
+    leaves a lone word where "3 + 2" reads as two phrases), less for
+    ending on a comma and a lot for ending on an article or preposition
+    ("THANKS TO THE" / "REMOVABLE FUR COLLAR"). Pricing the whole run
+    rather than nudging each break means a line can be added when the
+    words will not otherwise divide well — three-word styles have no
+    slack for a nudge, which is where the weak endings survived.
     """
     n = len(run)
     if n <= max_per_line:
         return [run]
-    count = -(-n // max_per_line)
+    inf = float("inf")
+    best = [inf] * (n + 1)
+    back = [0] * (n + 1)
+    best[0] = 0.0
+    for end in range(1, n + 1):
+        for length in range(1, min(max_per_line, end) + 1):
+            start = end - length
+            if best[start] == inf:
+                continue
+            cost = 4 + (max_per_line - length) ** 2
+            if length == 1:
+                cost += 3
+            if end < n:
+                cost += _ending_cost(run[end - 1], language)
+            if best[start] + cost < best[end]:
+                best[end] = best[start] + cost
+                back[end] = start
     lines: list[list[Word]] = []
-    start = 0
-    for j in range(1, count):
-        ideal = round(n * j / count)
-        best, best_score = None, None
-        for cut in (ideal - 1, ideal, ideal + 1):
-            length = cut - start
-            remaining = n - cut
-            lines_left = count - j
-            if not (1 <= length <= max_per_line):
-                continue
-            if not (lines_left <= remaining <= lines_left * max_per_line):
-                continue
-            score = _break_score(run[cut - 1], language) * 2 - abs(cut - ideal)
-            if best_score is None or score > best_score:
-                best, best_score = cut, score
-        cut = best if best is not None else min(start + max_per_line, n - (count - j))
-        lines.append(run[start:cut])
-        start = cut
-    lines.append(run[start:])
-    return [line for line in lines if line]
+    end = n
+    while end > 0:
+        start = back[end]
+        lines.append(run[start:end])
+        end = start
+    return lines[::-1]
 
 
 def plan_lines(words: list[Word], max_per_line: int, language: str = "en") -> list[list[Word]]:
