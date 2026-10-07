@@ -168,10 +168,21 @@ def _compilation_motion(shot_s: float = 1.2, total_s: float = 18.0) -> beat_edit
 
 
 def test_a_compilation_cut_is_found_and_motion_is_not():
-    diffs = np.full(200, 6.0) + np.sin(np.arange(200)) * 2  # a pan: busy, steady
-    diffs[50] = 60.0  # a cut
-    diffs[120] = 55.0  # another
-    assert beat_edit._source_cuts(diffs) == [51, 121]
+    # Colour make-up change per sample: a pan keeps it roughly steady...
+    changes = np.full(200, 0.12) + np.abs(np.sin(np.arange(200))) * 0.08
+    changes[50] = 1.4  # ...a cut replaces it
+    changes[120] = 1.1
+    assert beat_edit._source_cuts(changes) == [51, 121]
+
+
+def test_a_pan_does_not_read_as_cuts():
+    """Every pixel moves in a whip pan, but each region keeps its colours;
+    the histogram of a shifted frame is nearly the one it shifted from."""
+    rng = np.random.default_rng(0)
+    base = rng.integers(0, 255, size=(96, 200, 3), dtype=np.uint8)
+    frames = np.stack([base[:, i * 3 : i * 3 + 54] for i in range(40)])
+    changes = np.abs(np.diff(beat_edit._histograms(frames), axis=0)).sum(axis=1) / 9
+    assert beat_edit._source_cuts(changes) == []
 
 
 @pytest.mark.parametrize("style", ["energetic", "cinematic", "calm"])

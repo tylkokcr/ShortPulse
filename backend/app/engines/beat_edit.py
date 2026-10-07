@@ -232,18 +232,41 @@ class ClipMotion:
         return max(free, key=lambda s: s[1] - s[0]) if free else None
 
 
-def _source_cuts(diffs: np.ndarray) -> list[int]:
-    """Samples where the picture changes far more than around it: a cut,
-    not motion. A pan or a sprint raises the difference for many samples
-    in a row; a cut is one sample that towers over its neighbours."""
+def _histograms(frames: np.ndarray) -> np.ndarray:
+    """Per frame: a 3x3 grid of 8-bin colour histograms, normalised.
+
+    What changes at a cut and not in a pan. A camera whipping after the
+    ball moves every pixel — on a broadcast the plain frame difference
+    sits that high for whole seconds, and a cut stops standing out from
+    it — but each region keeps roughly the same colours. A cut replaces
+    them.
+    """
+    n, h, w, _ = frames.shape
+    rows, cols = h // 3, w // 3
+    out = np.empty((n, 9 * 24), dtype=np.float32)
+    for gy in range(3):
+        for gx in range(3):
+            block = frames[:, gy * rows : (gy + 1) * rows, gx * cols : (gx + 1) * cols]
+            for c in range(3):
+                values = (block[..., c] // 32).reshape(n, -1).astype(np.int64)
+                counts = np.stack([np.bincount(v, minlength=8) for v in values])
+                start = (gy * 3 + gx) * 24 + c * 8
+                out[:, start : start + 8] = counts / max(1, values.shape[1])
+    return out
+
+
+def _source_cuts(changes: np.ndarray, floor: float = 0.45) -> list[int]:
+    """Samples where the picture's make-up changes far more than around it:
+    a cut, not motion. `changes[i]` is the change between sample i and
+    i + 1; the result is the first sample of each new shot."""
     cuts: list[int] = []
-    n = len(diffs)
+    n = len(changes)
     for i in range(n):
         lo, hi = max(0, i - 12), min(n, i + 13)
-        neighbours = np.concatenate([diffs[lo:i], diffs[i + 1 : hi]])
+        neighbours = np.concatenate([changes[lo:i], changes[i + 1 : hi]])
         local = float(np.median(neighbours)) if len(neighbours) else 0.0
-        if diffs[i] > max(14.0, 3.5 * local):
-            cuts.append(i + 1)  # the first sample of the new shot
+        if changes[i] > max(floor, 3.0 * local):
+            cuts.append(i + 1)
     # One cut can register on two neighbouring samples; keep the first.
     return [c for k, c in enumerate(cuts) if k == 0 or c - cuts[k - 1] > 2]
 
@@ -267,13 +290,18 @@ def motion_profile(clip: Path, ffmpeg: str = "ffmpeg", ffprobe: str | None = Non
                 width, height = height, width
     raw = subprocess.run(
         [ffmpeg, "-nostdin", "-v", "error", "-i", str(clip), "-vf",
-         f"fps={_MOTION_FPS},scale={_MOTION_W}:{_MOTION_H},format=gray",
+         f"fps={_MOTION_FPS},scale={_MOTION_W}:{_MOTION_H},format=rgb24",
          "-f", "rawvideo", "-"],
         check=True, capture_output=True,
     ).stdout
-    frames = np.frombuffer(raw, dtype=np.uint8).reshape(-1, _MOTION_H, _MOTION_W).astype(np.float32)
+    rgb = np.frombuffer(raw, dtype=np.uint8).reshape(-1, _MOTION_H, _MOTION_W, 3)
+    frames = rgb.astype(np.float32).mean(axis=3)
     diffs = np.abs(np.diff(frames, axis=0)).mean(axis=(1, 2)) if len(frames) > 1 else np.zeros(1)
-    cuts = _source_cuts(diffs)
+    if len(rgb) > 1:
+        hist = _histograms(rgb)
+        cuts = _source_cuts(np.abs(np.diff(hist, axis=0)).sum(axis=1) / 9)
+    else:
+        cuts = []
     cleaned = diffs.copy()
     for c in cuts:
         i = c - 1
