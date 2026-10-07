@@ -224,10 +224,21 @@ export interface OutroConfig {
  *  only runs the captioning tail of the pipeline. */
 export type ProjectSource = "generated" | "upload" | "beat_edit";
 
+/** What was asked of a beat edit (backend BeatEditSpec). */
+export interface BeatEditSpec {
+  clip_count: number;
+  music_track_id?: string | null;
+  music_uploaded: boolean;
+  duration_s: number;
+  style: "energetic" | "cinematic" | "calm";
+  music_start_s?: number | null;
+}
+
 export interface ProjectConfig {
   id: string;
   topic: string;
   source: ProjectSource;
+  beat_edit?: BeatEditSpec | null;
   raw_script?: string | null;
   aspect_ratio: AspectRatio;
   fps: number;
@@ -360,6 +371,11 @@ export interface RenderTimings {
   visual_mode?: string;
   diffusion_device?: string;
   language?: string;
+  // Beat edits
+  tempo_bpm?: number;
+  cuts?: number;
+  style?: string;
+  music_start_s?: number;
 }
 
 /** GET /api/credits. `enabled: false` means self-hosted — hide the credit

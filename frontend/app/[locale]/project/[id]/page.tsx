@@ -14,6 +14,7 @@ import { TranscriptPanel } from "@/components/render/TranscriptPanel";
 import { StockCredits } from "@/components/render/StockCredits";
 import { EditPanel } from "@/components/render/EditPanel";
 import { PublishPanel } from "@/components/render/PublishPanel";
+import { BeatEditDetails } from "@/components/render/BeatEditDetails";
 import { getCredits, getProject, getStreamToken, regenerateScene, submitFeedback } from "@/lib/api";
 import { InsufficientCreditsError } from "@/lib/api";
 import type { Project } from "@/lib/types";
@@ -198,7 +199,9 @@ function Project({ id }: { id: string }) {
               ))}
             </div>
 
-            {tab === "scenes" ? (
+            {tab === "scenes" && project?.config.source === "beat_edit" && project.config.beat_edit ? (
+              <BeatEditDetails projectId={project.config.id} spec={project.config.beat_edit} />
+            ) : tab === "scenes" ? (
               <Card className="flex flex-col gap-4 p-4">
                 {!script ? (
                   <p className="text-sm text-white/40">

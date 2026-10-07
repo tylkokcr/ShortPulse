@@ -957,6 +957,19 @@
       },
       "beatEditNoScenes": "Ten montaż powstał z twoich klipów, więc nie ma wygenerowanych scen — użyj karty Edycja, żeby dodać na nim tekst.",
       "backToLibrary": "Biblioteka"
+    },
+    "beatDetails": {
+      "title": "Jak powstał ten montaż",
+      "style": "Styl",
+      "length": "Długość",
+      "song": "Utwór",
+      "ownSong": "Twój utwór",
+      "from": "Fragment utworu",
+      "auto": "wybrany automatycznie",
+      "clips": "Klipy",
+      "tempo": "Tempo",
+      "cuts": "Cięcia",
+      "note": "Aby wypróbować inny styl lub fragment utworu, zacznij nowy montaż — klipy wybierzesz z Moich plików."
     }
   },
   "tour": {

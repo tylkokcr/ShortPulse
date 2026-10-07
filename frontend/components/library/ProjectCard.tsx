@@ -26,6 +26,7 @@ export function ProjectCard({
   onDelete: (id: string) => void;
 }) {
   const t = useTranslations("app.library");
+  const tb = useTranslations("studio.beat");
   // Intl.RelativeTimeFormat through next-intl, so "2 days ago" is
   // "2 gün önce" in Turkish without a message key per unit.
   const formatter = useFormatter();
@@ -209,6 +210,9 @@ export function ProjectCard({
             {[
               made && formatter.relativeTime(made),
               project.duration_s != null && clock(project.duration_s),
+              // A beat edit's style, so tries of the same clips can be told
+              // apart from the grid.
+              project.config.beat_edit && tb(`styles.${project.config.beat_edit.style}.name`),
               project.config.aspect_ratio,
               project.credits_cost > 0 && t("credits", { count: project.credits_cost }),
             ]

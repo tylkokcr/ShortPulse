@@ -957,6 +957,19 @@
       },
       "beatEditNoScenes": "Dieser Edit wurde aus deinen Clips geschnitten und hat daher keine generierten Szenen — nutze den Tab Bearbeiten, um Text darüberzulegen.",
       "backToLibrary": "Bibliothek"
+    },
+    "beatDetails": {
+      "title": "So wurde dieser Edit gemacht",
+      "style": "Stil",
+      "length": "Länge",
+      "song": "Song",
+      "ownSong": "Dein eigener Song",
+      "from": "Teil des Songs",
+      "auto": "automatisch gewählt",
+      "clips": "Clips",
+      "tempo": "Tempo",
+      "cuts": "Schnitte",
+      "note": "Um einen anderen Stil oder Songteil zu probieren, starte einen neuen Edit — deine Clips kannst du aus Meinen Dateien wählen."
     }
   },
   "tour": {

@@ -957,6 +957,19 @@
       },
       "beatEditNoScenes": "Bu edit senin kliplerinden kesildi, bu yüzden üretilmiş sahnesi yok — üstüne yazı eklemek için Edit sekmesini kullan.",
       "backToLibrary": "Kütüphane"
+    },
+    "beatDetails": {
+      "title": "Bu edit nasıl yapıldı",
+      "style": "Stil",
+      "length": "Uzunluk",
+      "song": "Şarkı",
+      "ownSong": "Kendi şarkın",
+      "from": "Şarkının kısmı",
+      "auto": "otomatik seçildi",
+      "clips": "Klip",
+      "tempo": "Tempo",
+      "cuts": "Kesim",
+      "note": "Başka bir stil ya da şarkının başka bir kısmını denemek için yeni bir edit başlat — kliplerini Dosyalarım'dan seçebilirsin."
     }
   },
   "tour": {
