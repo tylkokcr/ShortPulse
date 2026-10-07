@@ -101,7 +101,14 @@ _UNAUTHENTICATED_PATHS = _PUBLIC_PATHS | {
 #
 # A pattern rather than a literal because the project id is in the path,
 # and it can never be covered by the exact-match set above.
-_MEDIA_PATHS = re.compile(r"^/api/projects/[^/]+/(download|poster|scenes/\d+/thumb)$")
+_MEDIA_PATHS = re.compile(
+    r"^/api/projects/[^/]+/(download|poster|scenes/\d+/thumb)$"
+    # A file in My files plays and shows its still the same way, and was
+    # caught by the same 401 the first day it was live. These two routes
+    # take nothing but a token, so there is no unauthenticated fallback
+    # to worry about behind them.
+    r"|^/api/media/[^/]+/(stream|poster)$"
+)
 
 # Where a platform sends the browser back after the user presses Allow.
 #
