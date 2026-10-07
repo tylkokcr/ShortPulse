@@ -32,7 +32,7 @@ import { Button } from "@/components/ui/Button";
  * one used, and the cuts land on the beat.
  */
 const MAX_CLIPS = 12;
-const DURATIONS = [10, 15, 30] as const;
+const DURATIONS = [10, 15, 30, 60] as const;
 const STYLES: { id: BeatEditStyle; icon: typeof Zap }[] = [
   { id: "energetic", icon: Zap },
   { id: "cinematic", icon: Film },
