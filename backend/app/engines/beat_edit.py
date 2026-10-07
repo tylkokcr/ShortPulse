@@ -170,6 +170,43 @@ def analyze_beats(audio: Path, ffmpeg: str = "ffmpeg") -> BeatGrid:
 _MOTION_FPS = 12
 _MOTION_W, _MOTION_H = 54, 96
 
+# Share of the frame the subject's movement covers, at the 75th percentile
+# of a few seconds: measured on labelled football footage, wide shots sat
+# at 0.000-0.010 and close-ups at 0.034-0.21.
+_WIDE_LEVEL = 0.012
+_CLOSE_LEVEL = 0.03
+
+
+def _phase_shift(a: np.ndarray, b: np.ndarray) -> tuple[int, int]:
+    """The whole-frame shift from a to b — the camera's movement."""
+    spectrum = np.fft.fft2(b) * np.conj(np.fft.fft2(a))
+    spectrum /= np.abs(spectrum) + 1e-6
+    peak = np.real(np.fft.ifft2(spectrum))
+    y, x = np.unravel_index(int(np.argmax(peak)), peak.shape)
+    if y > a.shape[0] // 2:
+        y -= a.shape[0]
+    if x > a.shape[1] // 2:
+        x -= a.shape[1]
+    return int(y), int(x)
+
+
+def _activity(frames: np.ndarray, cuts: list[int]) -> np.ndarray:
+    """Per sample, the share of the frame still changing once the camera's
+    own shift is undone. Taken at a cut from the sample before it."""
+    out = np.zeros(len(frames), dtype=np.float32)
+    cut_set = set(cuts)
+    for i in range(1, len(frames)):
+        if i in cut_set:
+            out[i] = out[i - 1]
+            continue
+        dy, dx = _phase_shift(frames[i - 1], frames[i])
+        moved = np.roll(np.roll(frames[i - 1], dy, axis=0), dx, axis=1)
+        diff = np.abs(frames[i] - moved)[3:-3, 3:-3]
+        out[i] = float((diff > 22).mean())
+    if len(out) > 1:
+        out[0] = out[1]
+    return out
+
 
 @dataclass
 class ClipMotion:
@@ -183,6 +220,12 @@ class ClipMotion:
     cuts: list[int] = field(default_factory=list)
     width: int = 0
     height: int = 0
+    # Per sample, the share of the frame that moves once the camera's own
+    # movement is taken out: the subject, not the pan. Small on a wide
+    # shot, where the players are small; large on a close-up.
+    activity: np.ndarray | None = None
+    _scales: np.ndarray | None = field(default=None, repr=False)
+    _windows: dict[int, np.ndarray] = field(default_factory=dict, repr=False)
 
     @property
     def landscape(self) -> bool:
@@ -197,16 +240,84 @@ class ClipMotion:
             if bounds[i + 1] > bounds[i]
         ]
 
-    def busiest(self, length_s: float, avoid: list[tuple[float, float]]) -> float | None:
-        """Start of the most active `length_s` stretch that sits inside one
-        of the clip's own shots and overlaps nothing in `avoid`; None if no
-        shot is long enough."""
+    def scale_at(self, index: int) -> str:
+        """"wide", "medium" or "close" around a sample, from how much of
+        the frame the subject's movement covers (see `activity`)."""
+        if self.activity is None or len(self.activity) == 0:
+            return "medium"
+        if self._scales is None:
+            # Once per clip: the planner asks for every candidate window of
+            # every cut, which on twelve minutes of footage is hundreds of
+            # thousands of questions about the same few thousand samples.
+            act = self.activity
+            k = 24
+            pad = np.pad(act, (k, k), mode="edge")
+            windows = np.lib.stride_tricks.sliding_window_view(pad, 2 * k + 1)
+            levels = np.percentile(windows, 75, axis=1)
+            self._scales = np.where(
+                levels >= _CLOSE_LEVEL, "close", np.where(levels <= _WIDE_LEVEL, "wide", "medium")
+            )
+        index = min(max(index, 0), len(self._scales) - 1)
+        return str(self._scales[index])
+
+    def _window_scores(self, n: int) -> np.ndarray:
+        cached = self._windows.get(n)
+        if cached is None:
+            cached = self._window_scores_uncached(n)
+            self._windows[n] = cached
+        return cached
+
+    def _window_scores_uncached(self, n: int) -> np.ndarray:
+        """Mean action over every window of n samples, each sample judged
+        against its own surroundings rather than against the whole clip.
+
+        Raw movement ranks every close-up above every wide shot — a player
+        filling the frame moves more pixels walking than a wide shot does
+        in a goal — so a long video gave up its close-ups first and its
+        wide shots never. Half of the score is how much a moment stands
+        out from the few seconds around it, which a wide shot's best
+        moment does as much as a close-up's.
+        """
+        raw = self.scores / (float(np.percentile(self.scores, 95)) or 1.0)
+        if self.activity is not None and len(self.activity) == len(self.scores):
+            act = self.activity
+            k = 6 * _MOTION_FPS
+            pad = np.pad(act, (k, k), mode="edge")
+            local = np.median(np.lib.stride_tricks.sliding_window_view(pad, 2 * k + 1), axis=1)
+            rel = act / (local + 0.01)
+            rel = rel / (float(np.percentile(rel, 95)) or 1.0)
+            per_sample = 0.5 * np.clip(raw, 0, 1.5) + 0.5 * np.clip(rel, 0, 1.5)
+        else:
+            per_sample = raw
+        return np.convolve(per_sample, np.ones(n), mode="valid") / n
+
+    def busiest(
+        self,
+        length_s: float,
+        avoid: list[tuple[float, float]],
+        prefer: str | tuple[str, ...] | None = None,
+        spread_s: float = 0.0,
+    ) -> float | None:
+        """Start of the best `length_s` stretch that sits inside one of the
+        clip's own shots and overlaps nothing in `avoid`; None if no shot
+        is long enough.
+
+        `prefer` favours a shot scale ("wide", "medium", "close") so an
+        edit can alternate them. `spread_s` pushes the choice away from
+        stretches already used, so twelve minutes of footage is drawn on
+        across its length instead of from its first good minute."""
         n = max(1, int(round(length_s * _MOTION_FPS)))
         if len(self.scores) < n:
             return None
-        sums = np.convolve(self.scores, np.ones(n), mode="valid")
+        sums = self._window_scores(n)
         margin = 0.04
-        best, best_sum = None, -math.inf
+        # The preferred sizes, in order, win whenever the clip has them,
+        # however little moves in them: an establishing wide shot scores
+        # near nothing on action and is still the right shot for the
+        # build-up. Without any of them, the best of anything.
+        order = (prefer,) if isinstance(prefer, str) else tuple(prefer or ())
+        rank = {size: i for i, size in enumerate(order)}
+        best: dict[int, tuple[float, float]] = {}
         for shot_start, shot_end in self.shots():
             first = int(math.ceil((shot_start + margin) * _MOTION_FPS))
             last = int(math.floor((shot_end - margin - length_s) * _MOTION_FPS))
@@ -217,9 +328,17 @@ class ClipMotion:
                     continue
                 if any(not (end <= a or start >= b) for a, b in avoid):
                     continue
-                if sums[index] > best_sum:
-                    best, best_sum = float(start), float(sums[index])
-        return best
+                score = float(sums[index])
+                if spread_s > 0 and avoid:
+                    gap = min(max(a - end, start - b, 0.0) for a, b in avoid)
+                    score *= 0.35 + 0.65 * min(1.0, gap / spread_s)
+                level = rank.get(self.scale_at(index + n // 2), len(order))
+                current = best.get(level)
+                if current is None or score > current[1]:
+                    best[level] = (float(start), score)
+        if not best:
+            return None
+        return best[min(best)][0]
 
     def longest_free_shot(self, avoid: list[tuple[float, float]]) -> tuple[float, float] | None:
         """The longest of the clip's shots not yet used — for a cut longer
@@ -288,13 +407,16 @@ def motion_profile(clip: Path, ffmpeg: str = "ffmpeg", ffprobe: str | None = Non
             rotation = next((int(float(p)) for p in parts[2:] if p.strip("-").isdigit()), 0)
             if abs(rotation) in (90, 270):
                 width, height = height, width
+    # Sampled in the clip's own shape, so a landscape frame is not squeezed
+    # into a portrait one before anything is measured on it.
+    aw, ah = (_MOTION_H, _MOTION_W) if width > height else (_MOTION_W, _MOTION_H)
     raw = subprocess.run(
         [ffmpeg, "-nostdin", "-v", "error", "-i", str(clip), "-vf",
-         f"fps={_MOTION_FPS},scale={_MOTION_W}:{_MOTION_H},format=rgb24",
+         f"fps={_MOTION_FPS},scale={aw}:{ah},format=rgb24",
          "-f", "rawvideo", "-"],
         check=True, capture_output=True,
     ).stdout
-    rgb = np.frombuffer(raw, dtype=np.uint8).reshape(-1, _MOTION_H, _MOTION_W, 3)
+    rgb = np.frombuffer(raw, dtype=np.uint8).reshape(-1, ah, aw, 3)
     frames = rgb.astype(np.float32).mean(axis=3)
     diffs = np.abs(np.diff(frames, axis=0)).mean(axis=(1, 2)) if len(frames) > 1 else np.zeros(1)
     if len(rgb) > 1:
@@ -311,6 +433,7 @@ def motion_profile(clip: Path, ffmpeg: str = "ffmpeg", ffprobe: str | None = Non
     return ClipMotion(
         path=clip, duration_s=len(frames) / _MOTION_FPS, scores=scores,
         cuts=cuts, width=width, height=height,
+        activity=_activity(frames, cuts) if len(frames) > 1 else None,
     )
 
 
@@ -352,7 +475,9 @@ class Style:
 
 
 STYLES: dict[str, Style] = {
-    "energetic": Style(2, 1, "punch", ("flash", "rgbsplit", "shake"), 0.5, "shake", "grade"),
+    # Two beats a cut after the drop, not one: at one, 120 BPM is a new
+    # shot every half second, which reads as noise rather than energy.
+    "energetic": Style(4, 2, "punch", ("flash", "rgbsplit", "shake"), 0.5, "shake", "grade"),
     # Long enough to read a move from start to finish: two bars before the
     # drop, one after — about four and two seconds at 120 BPM. At two and
     # one beats it was cutting every second, which reads as fast however
@@ -429,6 +554,7 @@ def plan_edit(
     # without frame interpolation, motion stutters.
     min_speed = 0.5
     queue = [(points[k], points[k + 1]) for k in range(len(points) - 1)]
+    last_scales: list[str] = []
     k = 0
     while queue:
         start, end = queue.pop(0)
@@ -445,7 +571,21 @@ def plan_edit(
             clip = order[turn % len(order)]
 
         source_len = length * speed
-        src = clip.busiest(source_len, used[clip.path])
+        # A mix of shot sizes, shaped by the music: wide and medium while it
+        # builds, the close-up on the drop, then close-ups broken up by wide
+        # ones. Never the same size three times running.
+        after = drop is not None and start >= drop - 0.01
+        prefer: tuple[str, ...]
+        if is_drop:
+            prefer = ("close", "medium")
+        elif after:
+            prefer = ("wide", "medium") if last_scales[-1:] == ["close"] else ("close", "medium")
+        else:
+            prefer = ("medium", "wide") if last_scales[-1:] == ["wide"] else ("wide", "medium")
+        if len(last_scales) >= 2 and last_scales[-1] == last_scales[-2] == prefer[0]:
+            prefer = ("medium", *[p for p in prefer if p != "medium"])
+        spread = max(2.0, min(30.0, clip.duration_s / max(1.0, len(points) * 1.2)))
+        src = clip.busiest(source_len, used[clip.path], prefer=prefer, spread_s=spread)
         if src is None:
             # No shot of this clip is long enough at this speed. Slow its
             # longest free shot to fill the cut if half speed is enough;
@@ -479,6 +619,7 @@ def plan_edit(
             effects.append("drift")
         k += 1
 
+        last_scales.append(clip.scale_at(int((src + source_len / 2) * _MOTION_FPS)))
         used[clip.path].append((src, src + source_len))
         cuts.append(
             Cut(

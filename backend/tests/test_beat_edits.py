@@ -200,3 +200,53 @@ def test_a_landscape_clip_is_marked_for_the_blurred_frame():
     assert all(cut.landscape for cut in plan.cuts)
     graph = beat_edit._segment_filter(plan.cuts[0])
     assert "boxblur" in graph and "overlay" in graph
+
+
+def _two_sizes(seconds: float = 120.0) -> beat_edit.ClipMotion:
+    """First half a wide shot (little of the frame moves, and not much),
+    second half a close-up (much of it, a lot)."""
+    rate = beat_edit._MOTION_FPS
+    n = int(seconds * rate)
+    half = n // 2
+    activity = np.concatenate([np.full(half, 0.004), np.full(n - half, 0.12)]).astype(np.float32)
+    scores = np.concatenate([np.full(half, 2.0), np.full(n - half, 20.0)])
+    return beat_edit.ClipMotion(
+        Path("match.mp4"), seconds, scores, cuts=[half], width=1920, height=1080, activity=activity
+    )
+
+
+def test_shot_size_is_read_from_how_much_of_the_frame_moves():
+    clip = _two_sizes()
+    assert clip.scale_at(10) == "wide"
+    assert clip.scale_at(len(clip.scores) - 10) == "close"
+
+
+def test_the_build_up_is_wide_and_the_drop_is_a_close_up():
+    """Raw movement would put the close-up everywhere: it moves ten times
+    as much. The wide shot still opens the edit."""
+    clip = _two_sizes()
+    grid = _grid(drop=20.0)
+    plan = beat_edit.plan_edit(grid, [clip], 20.0, "energetic")
+    half = clip.duration_s / 2
+    t = plan.music_start
+    sizes = []
+    for cut in plan.cuts:
+        sizes.append(("wide" if cut.source_start < half else "close", round(t, 2)))
+        t += cut.duration
+    before = [s for s, at in sizes if at < 20.0 - 0.01]
+    on_drop = [s for s, at in sizes if abs(at - 20.0) < 0.05]
+    assert before and all(s == "wide" for s in before)
+    assert on_drop == ["close"]
+
+
+def test_choices_are_spread_across_a_long_clip():
+    rate = beat_edit._MOTION_FPS
+    seconds = 600.0
+    n = int(seconds * rate)
+    # The busiest minute is the first; everything else is a little quieter.
+    scores = np.full(n, 10.0)
+    scores[: 60 * rate] = 12.0
+    clip = beat_edit.ClipMotion(Path("long.mp4"), seconds, scores, width=1920, height=1080)
+    plan = beat_edit.plan_edit(_grid(seconds=120.0), [clip], 30.0, "cinematic")
+    starts = sorted(c.source_start for c in plan.cuts)
+    assert starts[-1] - starts[0] > 300, starts
