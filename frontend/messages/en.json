@@ -18,7 +18,8 @@
     "expandRail": "Expand sidebar",
     "accent": "Accent",
     "language": "Language",
-    "creditsRemaining": "Credits remaining — click to top up"
+    "creditsRemaining": "Credits remaining — click to top up",
+    "files": "My files"
   },
   "howItWorks": {
     "eyebrow": "How it works",
@@ -1011,5 +1012,31 @@
       "name": "Pixel Art",
       "description": "Chunky 16-bit sprites, limited palette."
     }
+  },
+  "files": {
+    "title": "My files",
+    "intro": "Videos and songs you keep here can be used again from the studio without uploading them twice. Deleting one does not touch a video already made from it.",
+    "upload": "Upload files",
+    "usage": "{used} of {quota} used",
+    "uploading": "Uploading {name} — {pct}%",
+    "loading": "Loading...",
+    "loadFailed": "Could not load your files",
+    "uploadFailed": "Upload failed",
+    "emptyTitle": "Nothing kept yet",
+    "emptyBody": "Upload videos and songs here, or tick “Keep in My files” when you upload one in the studio.",
+    "videos": "Videos",
+    "songs": "Songs",
+    "delete": "Delete file",
+    "confirmDelete": "Click again to delete",
+    "close": "Close",
+    "pickVideos": "Choose from My files",
+    "pickSong": "Choose a song from My files",
+    "noVideos": "No videos in My files yet.",
+    "noSongs": "No songs in My files yet.",
+    "chosen": "{count, plural, =0 {Nothing chosen} one {# chosen} other {# chosen}}",
+    "useThese": "Use these",
+    "fromFiles": "Choose from My files",
+    "keep": "Keep in My files",
+    "keepHint": "So you can use it again without uploading it."
   }
 }

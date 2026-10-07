@@ -18,7 +18,8 @@
     "expandRail": "Seitenleiste ausklappen",
     "accent": "Akzentfarbe",
     "language": "Sprache",
-    "creditsRemaining": "Verbleibende Credits — zum Aufladen klicken"
+    "creditsRemaining": "Verbleibende Credits — zum Aufladen klicken",
+    "files": "Meine Dateien"
   },
   "howItWorks": {
     "eyebrow": "So funktioniert es",
@@ -1011,5 +1012,31 @@
       "name": "Pixel-Art",
       "description": "Klobige 16-Bit-Sprites, begrenzte Palette."
     }
+  },
+  "files": {
+    "title": "Meine Dateien",
+    "intro": "Videos und Songs, die du hier aufbewahrst, kannst du im Studio wiederverwenden, ohne sie erneut hochzuladen. Löschen ändert kein Video, das schon daraus entstanden ist.",
+    "upload": "Dateien hochladen",
+    "usage": "{used} von {quota} belegt",
+    "uploading": "{name} wird hochgeladen — {pct}%",
+    "loading": "Wird geladen...",
+    "loadFailed": "Deine Dateien konnten nicht geladen werden",
+    "uploadFailed": "Hochladen fehlgeschlagen",
+    "emptyTitle": "Noch nichts aufbewahrt",
+    "emptyBody": "Lade hier Videos und Songs hoch oder setze beim Hochladen im Studio „In Meinen Dateien behalten“.",
+    "videos": "Videos",
+    "songs": "Songs",
+    "delete": "Datei löschen",
+    "confirmDelete": "Zum Löschen erneut klicken",
+    "close": "Schließen",
+    "pickVideos": "Aus Meinen Dateien wählen",
+    "pickSong": "Song aus Meinen Dateien wählen",
+    "noVideos": "Noch keine Videos in Meinen Dateien.",
+    "noSongs": "Noch keine Songs in Meinen Dateien.",
+    "chosen": "{count, plural, =0 {Nichts gewählt} other {# gewählt}}",
+    "useThese": "Diese verwenden",
+    "fromFiles": "Aus Meinen Dateien wählen",
+    "keep": "In Meinen Dateien behalten",
+    "keepHint": "Damit du sie ohne erneutes Hochladen wiederverwenden kannst."
   }
 }

@@ -5,6 +5,7 @@ import {
   ArrowRight,
   Captions,
   FileVideo,
+  FolderOpen,
   Frame,
   Palette,
   Scissors,
@@ -15,7 +16,8 @@ import {
 import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import { useRouter } from "@/i18n/navigation";
-import { InsufficientCreditsError, uploadVideo } from "@/lib/api";
+import { getMediaUrls, InsufficientCreditsError, uploadVideo } from "@/lib/api";
+import { MediaPicker } from "@/components/media/MediaPicker";
 import { useShortPulseStore } from "@/lib/store";
 import { LANGUAGE_OPTIONS } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
@@ -25,7 +27,7 @@ import { CaptionPlacement } from "./CaptionPlacement";
 import { ClipTemplateSelector } from "./ClipTemplateSelector";
 import { FieldDisclosure } from "./FieldDisclosure";
 import { templateById, type ClipTemplate } from "@/lib/clipTemplates";
-import type { AspectRatio } from "@/lib/types";
+import type { AspectRatio, MediaFile } from "@/lib/types";
 import { CensorToggle } from "./CensorToggle";
 import { captionStyleFor, presetById } from "@/lib/captionStyles";
 import { UploadPreview } from "./UploadPreview";
@@ -110,6 +112,7 @@ export function UploadPanel({
   onAsideOpenChange?: (open: boolean) => void;
 }) {
   const t = useTranslations("studio.upload");
+  const tf = useTranslations("files");
   // The credit line and the free-install line are shared with the
   // generate tab, so they live one level up rather than twice.
   const ts = useTranslations("studio");
@@ -121,6 +124,12 @@ export function UploadPanel({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
+  // Or a video already in My files: sent as an id, played from its signed
+  // URL, never uploaded again.
+  const [picked, setPicked] = useState<MediaFile | null>(null);
+  const [pickedSrc, setPickedSrc] = useState<string | null>(null);
+  const [picking, setPicking] = useState(false);
+  const [keep, setKeep] = useState(true);
   const [dragging, setDragging] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -191,19 +200,38 @@ export function UploadPanel({
     // sitting on a stale length until the new header is read.
     setDurationMs(null);
     setWindowMs([0, 0]);
+    setPicked(null);
+    setPickedSrc(null);
     setFile(next);
   }
 
+  function pick(media: MediaFile) {
+    setError(null);
+    setFile(null);
+    setPicked(media);
+    setPickedSrc(null);
+    // The length is known without decoding anything, so the stretch
+    // control is there straight away rather than once the video loads.
+    const ms = media.duration_s ? Math.round(media.duration_s * 1000) : null;
+    setDurationMs(ms);
+    setWindowMs([0, ms ?? 0]);
+    getMediaUrls(media.id)
+      .then((urls) => setPickedSrc(urls.url))
+      .catch(() => undefined);
+  }
+
   async function handleUpload() {
-    if (!file) return;
+    if (!file && !picked) return;
     setError(null);
     setProgress(0);
     try {
       const project = await uploadVideo(
         file,
         {
+          mediaId: picked?.id,
+          saveToFiles: file !== null && keep,
           language: spokenLanguage,
-          title: file.name.replace(/\.[^.]+$/, ""),
+          title: (picked?.name ?? file?.name ?? "").replace(/\.[^.]+$/, ""),
           dubLanguage,
           captionLanguage: dubLanguage ? "" : captionLanguage,
           clipCount,
@@ -465,12 +493,14 @@ export function UploadPanel({
             onChange={(e) => choose(e.target.files?.[0] ?? null)}
           />
 
-          {file ? (
+          {file || picked ? (
             <>
               <FileVideo size={28} className="text-accent" />
               <div>
-                <p className="text-sm font-medium">{file.name}</p>
-                <p className="mt-0.5 font-mono text-xs text-white/40">{formatSize(file.size)}</p>
+                <p className="text-sm font-medium">{picked?.name ?? file?.name}</p>
+                <p className="mt-0.5 font-mono text-xs text-white/40">
+                  {formatSize(picked?.size_bytes ?? file?.size ?? 0)}
+                </p>
               </div>
               <p className="text-xs text-white/40">{t("pickAnother")}</p>
             </>
@@ -484,6 +514,37 @@ export function UploadPanel({
             </>
           )}
         </div>
+
+        <div className="-mt-2 flex flex-wrap items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => setPicking(true)}
+            disabled={uploading}
+            className="flex items-center gap-1.5 px-1 py-1 text-xs text-white/55 hover:text-white disabled:opacity-40"
+          >
+            <FolderOpen size={13} />
+            {tf("fromFiles")}
+          </button>
+          {/* Only for something being uploaded now — a picked file is
+              already kept. */}
+          {file && (
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-white/60">
+              <input
+                type="checkbox"
+                checked={keep}
+                onChange={(e) => setKeep(e.target.checked)}
+                className="accent-[rgb(var(--accent))]"
+              />
+              {tf("keep")}
+            </label>
+          )}
+        </div>
+        <MediaPicker
+          open={picking}
+          kind="video"
+          onClose={() => setPicking(false)}
+          onPick={(files) => files[0] && pick(files[0])}
+        />
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-white/70">{t("clips")}</label>
@@ -647,7 +708,7 @@ export function UploadPanel({
               })
             : ts("cost.free")}
         </p>
-        <Button onClick={handleUpload} disabled={!file || uploading} variant="gradient">
+        <Button onClick={handleUpload} disabled={(!file && !picked) || uploading} variant="gradient">
           {uploading ? (
             t("working")
           ) : (
@@ -666,9 +727,13 @@ export function UploadPanel({
 
       <UploadPreview
         file={file}
+        src={picked ? pickedSrc : null}
         aspectRatio={aspectRatio}
         captionPosition={draft.captionPosition}
         onDuration={(seconds) => {
+          // A picked file's length came with it; a preview that cannot
+          // read the header should not take that away.
+          if (picked && seconds === null) return;
           const ms = seconds === null ? null : Math.round(seconds * 1000);
           setDurationMs(ms);
           // Defaults to the whole file, so a user who never touches the

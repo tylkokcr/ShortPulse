@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Coins, Github, Library, Menu, Share2, Wand2, X } from "lucide-react";
+import { Coins, FolderOpen, Github, Library, Menu, Share2, Wand2, X } from "lucide-react";
 import clsx from "clsx";
 import { useTranslations } from "next-intl";
 import { AccentSwitcher } from "@/components/ui/AccentSwitcher";
@@ -101,6 +101,15 @@ export function MobileNav({ showLibrary }: { showLibrary: boolean }) {
                   icon={Library}
                   label={t("library")}
                   active={here("/library")}
+                  onNavigate={() => setOpen(false)}
+                />
+              )}
+              {showLibrary && (
+                <MobileLink
+                  href="/files"
+                  icon={FolderOpen}
+                  label={t("files")}
+                  active={here("/files")}
                   onNavigate={() => setOpen(false)}
                 />
               )}

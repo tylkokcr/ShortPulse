@@ -45,11 +45,14 @@ const BAR_CLASS: Record<SubtitleStyle["position"], string> = {
 
 export function UploadPreview({
   file,
+  src,
   aspectRatio,
   captionPosition,
   onDuration,
 }: {
   file: File | null;
+  /** A file from My files plays from its signed URL instead. */
+  src?: string | null;
   aspectRatio: AspectRatio;
   captionPosition: SubtitleStyle["position"];
   /** How long the chosen file is, once the browser has read its header.
@@ -58,17 +61,18 @@ export function UploadPreview({
   onDuration?: (seconds: number | null) => void;
 }) {
   const t = useTranslations("studio.uploadPreview");
-  const [url, setUrl] = useState<string | null>(null);
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!file) {
-      setUrl(null);
+      setObjectUrl(null);
       return;
     }
     const next = URL.createObjectURL(file);
-    setUrl(next);
+    setObjectUrl(next);
     return () => URL.revokeObjectURL(next);
   }, [file]);
+  const url = src ?? objectUrl;
 
   return (
     <div className="lg:sticky lg:top-6">

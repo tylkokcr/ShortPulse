@@ -518,3 +518,27 @@ export interface SocialPost {
   url: string | null;
   error: string | null;
 }
+
+/** A file kept in My files. */
+export interface MediaFile {
+  id: string;
+  kind: "video" | "audio";
+  name: string;
+  size_bytes: number;
+  duration_s: number | null;
+  width: number | null;
+  height: number | null;
+  created_at: string;
+}
+
+export interface MediaList {
+  files: MediaFile[];
+  used_bytes: number;
+  quota_bytes: number;
+}
+
+export interface MediaUrls {
+  url: string;
+  poster_url: string | null;
+  expires_at: number;
+}

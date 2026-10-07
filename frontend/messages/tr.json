@@ -18,7 +18,8 @@
     "expandRail": "Kenar çubuğunu genişlet",
     "accent": "Vurgu rengi",
     "language": "Dil",
-    "creditsRemaining": "Kalan kredi — yüklemek için tıkla"
+    "creditsRemaining": "Kalan kredi — yüklemek için tıkla",
+    "files": "Dosyalarım"
   },
   "howItWorks": {
     "eyebrow": "Nasıl çalışır",
@@ -1011,5 +1012,31 @@
       "name": "Piksel Sanatı",
       "description": "İri 16-bit karakterler, sınırlı renk paleti."
     }
+  },
+  "files": {
+    "title": "Dosyalarım",
+    "intro": "Burada sakladığın videoları ve şarkıları stüdyoda tekrar yüklemeden kullanabilirsin. Birini silmek, ondan yapılmış bir videoya dokunmaz.",
+    "upload": "Dosya yükle",
+    "usage": "{quota} alanın {used} kadarı dolu",
+    "uploading": "{name} yükleniyor — %{pct}",
+    "loading": "Yükleniyor...",
+    "loadFailed": "Dosyaların yüklenemedi",
+    "uploadFailed": "Yükleme başarısız",
+    "emptyTitle": "Henüz saklanan dosya yok",
+    "emptyBody": "Videolarını ve şarkılarını buraya yükle ya da stüdyoda yüklerken “Dosyalarıma kaydet”i işaretle.",
+    "videos": "Videolar",
+    "songs": "Şarkılar",
+    "delete": "Dosyayı sil",
+    "confirmDelete": "Silmek için tekrar tıkla",
+    "close": "Kapat",
+    "pickVideos": "Dosyalarımdan seç",
+    "pickSong": "Dosyalarımdan şarkı seç",
+    "noVideos": "Dosyalarında henüz video yok.",
+    "noSongs": "Dosyalarında henüz şarkı yok.",
+    "chosen": "{count, plural, =0 {Seçim yok} other {# seçildi}}",
+    "useThese": "Bunları kullan",
+    "fromFiles": "Dosyalarımdan seç",
+    "keep": "Dosyalarıma kaydet",
+    "keepHint": "Böylece tekrar yüklemeden yeniden kullanabilirsin."
   }
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { Film, Loader2, Music, Pause, Play, Plus, Scissors, Upload, X, Zap } from "lucide-react";
+import { Film, FolderOpen, Loader2, Music, Pause, Play, Plus, Scissors, Upload, X, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import {
@@ -12,7 +12,8 @@ import {
   musicPreviewUrl,
   type BeatEditStyle,
 } from "@/lib/api";
-import type { MusicTrack } from "@/lib/types";
+import type { MediaFile, MusicTrack } from "@/lib/types";
+import { MediaPicker, clockOf } from "@/components/media/MediaPicker";
 import { useShortPulseStore } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -42,12 +43,20 @@ const AUDIO_TYPES = "audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/aac,audio/
 
 export function BeatEditPanel() {
   const t = useTranslations("studio.beat");
+  const tf = useTranslations("files");
   const router = useRouter();
   const credits = useShortPulseStore((s) => s.credits);
   const clipInput = useRef<HTMLInputElement>(null);
   const musicInput = useRef<HTMLInputElement>(null);
 
   const [clips, setClips] = useState<File[]>([]);
+  // Clips and a song already in My files: sent as ids, never uploaded.
+  const [pickedClips, setPickedClips] = useState<MediaFile[]>([]);
+  const [pickedSong, setPickedSong] = useState<MediaFile | null>(null);
+  const [picking, setPicking] = useState<"video" | "audio" | null>(null);
+  // On by default: someone cutting clips to a song is likely to want them
+  // again, and re-uploading them is the cost this exists to remove.
+  const [keep, setKeep] = useState(true);
   const [dragging, setDragging] = useState(false);
   const [musicSource, setMusicSource] = useState<"library" | "own">("library");
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
@@ -77,7 +86,7 @@ export function BeatEditPanel() {
   function addClips(files: FileList | File[] | null) {
     if (!files) return;
     const videos = Array.from(files).filter((f) => f.type.startsWith("video/") || /\.(mp4|mov|m4v|webm|mkv)$/i.test(f.name));
-    setClips((current) => [...current, ...videos].slice(0, MAX_CLIPS));
+    setClips((current) => [...current, ...videos].slice(0, MAX_CLIPS - pickedClips.length));
     setError(null);
   }
 
@@ -95,8 +104,10 @@ export function BeatEditPanel() {
     audio.play().then(() => setPlaying(id)).catch(() => setPlaying(null));
   }
 
-  const hasMusic = musicSource === "library" ? Boolean(trackId) : Boolean(musicFile);
-  const ready = clips.length > 0 && hasMusic && progress === null;
+  const hasMusic =
+    musicSource === "library" ? Boolean(trackId) : Boolean(musicFile || pickedSong);
+  const clipCount = clips.length + pickedClips.length;
+  const ready = clipCount > 0 && hasMusic && progress === null;
   const price = credits?.enabled ? (credits.pricing?.["beat_edit"] ?? 1) : null;
 
   async function submit() {
@@ -109,10 +120,13 @@ export function BeatEditPanel() {
         clips,
         {
           musicTrackId: musicSource === "library" ? trackId : undefined,
-          musicFile: musicSource === "own" ? (musicFile ?? undefined) : undefined,
+          musicFile: musicSource === "own" && !pickedSong ? (musicFile ?? undefined) : undefined,
+          musicMediaId: musicSource === "own" ? pickedSong?.id : undefined,
+          clipMediaIds: pickedClips.map((f) => f.id),
+          saveToFiles: keep,
           durationS: duration,
           style,
-          title: clips[0]?.name.replace(/\.[^.]+$/, "") ?? "",
+          title: (pickedClips[0]?.name ?? clips[0]?.name ?? "").replace(/\.[^.]+$/, ""),
         },
         setProgress
       );
@@ -162,8 +176,34 @@ export function BeatEditPanel() {
               }}
             />
           </div>
-          {clips.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setPicking("video")}
+            className="mt-2 flex items-center gap-1.5 px-1 py-1 text-xs text-white/55 hover:text-white"
+          >
+            <FolderOpen size={13} />
+            {tf("fromFiles")}
+          </button>
+          {clipCount > 0 && (
             <ul className="mt-3 flex flex-col gap-1.5">
+              {pickedClips.map((file) => (
+                <li
+                  key={file.id}
+                  className="flex items-center gap-2.5 rounded-md border border-border bg-surface px-3 py-2 text-xs"
+                >
+                  <FolderOpen size={13} className="shrink-0 text-accent/70" />
+                  <span className="min-w-0 flex-1 truncate">{file.name}</span>
+                  <span className="shrink-0 font-mono text-[10px] text-white/35">{clockOf(file.duration_s)}</span>
+                  <button
+                    type="button"
+                    aria-label={t("remove")}
+                    onClick={() => setPickedClips((current) => current.filter((f) => f.id !== file.id))}
+                    className="shrink-0 rounded p-0.5 text-white/35 hover:bg-surface-hover hover:text-white/80"
+                  >
+                    <X size={13} />
+                  </button>
+                </li>
+              ))}
               {clips.map((clip, i) => (
                 <li
                   key={`${clip.name}-${i}`}
@@ -184,7 +224,7 @@ export function BeatEditPanel() {
                   </button>
                 </li>
               ))}
-              {clips.length < MAX_CLIPS && (
+              {clipCount < MAX_CLIPS && (
                 <li>
                   <button
                     type="button"
@@ -256,20 +296,35 @@ export function BeatEditPanel() {
             </div>
           ) : (
             <div>
-              <button
-                type="button"
-                onClick={() => musicInput.current?.click()}
-                className="flex w-full items-center gap-2.5 rounded-md border border-dashed border-border-strong px-3 py-3 text-left text-xs hover:border-white/30"
-              >
-                <Music size={14} className="shrink-0 text-white/50" />
-                <span className="min-w-0 flex-1 truncate">{musicFile ? musicFile.name : t("pickSong")}</span>
-              </button>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => musicInput.current?.click()}
+                  className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md border border-dashed border-border-strong px-3 py-3 text-left text-xs hover:border-white/30"
+                >
+                  <Music size={14} className="shrink-0 text-white/50" />
+                  <span className="min-w-0 flex-1 truncate">
+                    {pickedSong ? pickedSong.name : musicFile ? musicFile.name : t("pickSong")}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPicking("audio")}
+                  className="flex shrink-0 items-center justify-center gap-1.5 rounded-md border border-border px-3 py-3 text-xs text-white/60 hover:border-border-strong hover:text-white"
+                >
+                  <FolderOpen size={13} />
+                  {tf("fromFiles")}
+                </button>
+              </div>
               <input
                 ref={musicInput}
                 type="file"
                 accept={AUDIO_TYPES}
                 className="hidden"
-                onChange={(e) => setMusicFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => {
+                  setMusicFile(e.target.files?.[0] ?? null);
+                  setPickedSong(null);
+                }}
               />
               <p className="mt-2 text-xs text-white/35">{t("ownSongNotice")}</p>
             </div>
@@ -325,6 +380,23 @@ export function BeatEditPanel() {
           </div>
         </div>
 
+        {/* Only matters for what is being uploaded now; files picked from
+            My files are there already. */}
+        {(clips.length > 0 || (musicSource === "own" && musicFile && !pickedSong)) && (
+          <label className="flex cursor-pointer items-start gap-2.5 text-xs">
+            <input
+              type="checkbox"
+              checked={keep}
+              onChange={(e) => setKeep(e.target.checked)}
+              className="mt-0.5 accent-[rgb(var(--accent))]"
+            />
+            <span>
+              <span className="text-white/80">{tf("keep")}</span>
+              <span className="block text-white/40">{tf("keepHint")}</span>
+            </span>
+          </label>
+        )}
+
         {error && (
           <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
             {error}
@@ -350,6 +422,24 @@ export function BeatEditPanel() {
           </Button>
         </div>
       </Card>
+
+      <MediaPicker
+        open={picking !== null}
+        kind={picking ?? "video"}
+        multiple={picking === "video"}
+        exclude={pickedClips.map((f) => f.id)}
+        onClose={() => setPicking(null)}
+        onPick={(files) => {
+          if (picking === "audio") {
+            setPickedSong(files[0] ?? null);
+            setMusicFile(null);
+          } else {
+            setPickedClips((current) =>
+              [...current, ...files].slice(0, MAX_CLIPS - clips.length)
+            );
+          }
+        }}
+      />
 
       {/* What it will do, in order — the decisions it makes on its own. */}
       <Card className="flex flex-col gap-3 bg-surface-raised lg:sticky lg:top-6">

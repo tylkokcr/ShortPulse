@@ -18,7 +18,8 @@
     "expandRail": "Rozwiń panel boczny",
     "accent": "Kolor akcentu",
     "language": "Język",
-    "creditsRemaining": "Pozostałe kredyty — kliknij, by doładować"
+    "creditsRemaining": "Pozostałe kredyty — kliknij, by doładować",
+    "files": "Moje pliki"
   },
   "howItWorks": {
     "eyebrow": "Jak to działa",
@@ -1011,5 +1012,31 @@
       "name": "Pixel art",
       "description": "Wyraziste 16-bitowe sprite'y, ograniczona paleta."
     }
+  },
+  "files": {
+    "title": "Moje pliki",
+    "intro": "Filmy i utwory zapisane tutaj możesz użyć ponownie w studiu bez ponownego wgrywania. Usunięcie pliku nie zmienia filmu, który już z niego powstał.",
+    "upload": "Wgraj pliki",
+    "usage": "Zajęte {used} z {quota}",
+    "uploading": "Wgrywanie {name} — {pct}%",
+    "loading": "Ładowanie...",
+    "loadFailed": "Nie udało się wczytać plików",
+    "uploadFailed": "Wgrywanie nie powiodło się",
+    "emptyTitle": "Nic tu jeszcze nie ma",
+    "emptyBody": "Wgraj tu filmy i utwory albo zaznacz „Zapisz w Moich plikach” przy wgrywaniu w studiu.",
+    "videos": "Filmy",
+    "songs": "Utwory",
+    "delete": "Usuń plik",
+    "confirmDelete": "Kliknij ponownie, aby usunąć",
+    "close": "Zamknij",
+    "pickVideos": "Wybierz z Moich plików",
+    "pickSong": "Wybierz utwór z Moich plików",
+    "noVideos": "W Moich plikach nie ma jeszcze filmów.",
+    "noSongs": "W Moich plikach nie ma jeszcze utworów.",
+    "chosen": "{count, plural, =0 {Nic nie wybrano} one {Wybrano #} few {Wybrano #} many {Wybrano #} other {Wybrano #}}",
+    "useThese": "Użyj tych",
+    "fromFiles": "Wybierz z Moich plików",
+    "keep": "Zapisz w Moich plikach",
+    "keepHint": "Żeby użyć go ponownie bez wgrywania."
   }
 }

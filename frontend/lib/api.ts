@@ -143,14 +143,14 @@ export function createProject(config: Partial<ProjectConfig> & { topic: string }
  * Shared by the two endpoints that take files: a single video, and a
  * beat edit's clips and track.
  */
-async function postMultipart(
+async function postMultipart<T = Project>(
   path: string,
   form: FormData,
   onProgress?: (fraction: number) => void
-): Promise<Project> {
+): Promise<T> {
   const headers = await authHeaders();
 
-  return new Promise<Project>((resolve, reject) => {
+  return new Promise<T>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `${API_BASE}${path}`);
     for (const [key, value] of Object.entries(headers)) {
@@ -165,7 +165,7 @@ async function postMultipart(
 
     xhr.onload = () => {
       if (xhr.status === 201) {
-        resolve(JSON.parse(xhr.responseText) as Project);
+        resolve(JSON.parse(xhr.responseText) as T);
         return;
       }
       if (xhr.status === 402) {
@@ -197,8 +197,12 @@ async function postMultipart(
 }
 
 export async function uploadVideo(
-  file: File,
+  /** The video, or null when `mediaId` names one already in My files. */
+  file: File | null,
   options: {
+    mediaId?: string;
+    /** Keep the uploaded video in My files as well. */
+    saveToFiles?: boolean;
     language: string;
     title?: string;
     dubLanguage?: string;
@@ -227,7 +231,9 @@ export async function uploadVideo(
   onProgress?: (fraction: number) => void
 ): Promise<Project> {
   const form = new FormData();
-  form.append("file", file);
+  if (file) form.append("file", file);
+  if (options.mediaId) form.append("media_id", options.mediaId);
+  form.append("save_to_files", String(options.saveToFiles ?? false));
   form.append("language", options.language);
   form.append("title", options.title ?? "");
   // Empty means "no dub, just captions". `language` stays what the video
@@ -577,6 +583,11 @@ export async function createBeatEdit(
   options: {
     musicTrackId?: string;
     musicFile?: File;
+    /** Clips and a song already in My files, instead of uploading. */
+    clipMediaIds?: string[];
+    musicMediaId?: string;
+    /** Keep the uploaded clips and song in My files as well. */
+    saveToFiles?: boolean;
     durationS: number;
     style: BeatEditStyle;
     title?: string;
@@ -585,10 +596,38 @@ export async function createBeatEdit(
 ): Promise<Project> {
   const form = new FormData();
   for (const clip of clips) form.append("clips", clip);
-  if (options.musicFile) form.append("music", options.musicFile);
+  for (const id of options.clipMediaIds ?? []) form.append("clip_media_ids", id);
+  if (options.musicMediaId) form.append("music_media_id", options.musicMediaId);
+  else if (options.musicFile) form.append("music", options.musicFile);
   else form.append("music_track_id", options.musicTrackId ?? "");
+  form.append("save_to_files", String(options.saveToFiles ?? false));
   form.append("duration_s", String(options.durationS));
   form.append("style", options.style);
   form.append("title", options.title ?? "");
   return postMultipart("/beat-edits", form, onProgress);
+}
+
+// ---------------------------------------------------------------------------
+// My files
+// ---------------------------------------------------------------------------
+
+export async function listMedia(): Promise<import("./types").MediaList> {
+  return request("/media");
+}
+
+export async function uploadMedia(
+  file: File,
+  onProgress?: (fraction: number) => void
+): Promise<import("./types").MediaFile> {
+  const form = new FormData();
+  form.append("file", file);
+  return postMultipart<import("./types").MediaFile>("/media", form, onProgress);
+}
+
+export async function deleteMedia(id: string): Promise<void> {
+  await request(`/media/${id}`, { method: "DELETE" });
+}
+
+export async function getMediaUrls(id: string): Promise<import("./types").MediaUrls> {
+  return request(`/media/${id}/url`);
 }
