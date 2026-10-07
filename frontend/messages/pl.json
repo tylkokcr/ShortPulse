@@ -724,7 +724,20 @@
       "credits": "{count} kr.",
       "delete": "Usuń projekt",
       "confirmDelete": "Potwierdź usunięcie",
-      "deleteWarning": "Kliknij ponownie, aby usunąć. Film i jego pliki znikną na dobre."
+      "deleteWarning": "Kliknij ponownie, aby usunąć. Film i jego pliki znikną na dobre.",
+      "shelvesLabel": "Rodzaje filmów",
+      "shelves": {
+        "all": "Wszystkie",
+        "ai": "Shorty AI",
+        "uploads": "Wgrane filmy",
+        "edits": "Montaże"
+      },
+      "shelfEmpty": {
+        "all": "",
+        "ai": "Nie ma jeszcze filmów z tematu.",
+        "uploads": "Nie ma jeszcze wgranych filmów — tu trafiają napisy, dubbingi i klipy.",
+        "edits": "Nie ma jeszcze montaży — potnij klipy do utworu w studiu."
+      }
     },
     "connections": {
       "eyebrow": "Publikowanie",
@@ -931,7 +944,8 @@
         "insufficient": "Za mało kredytów — masz {balance}, a to kosztuje {required}.",
         "regenerate": "Nie udało się. Nic nie zostało pobrane; spróbuj ponownie."
       },
-      "beatEditNoScenes": "Ten montaż powstał z twoich klipów, więc nie ma wygenerowanych scen — użyj karty Edycja, żeby dodać na nim tekst."
+      "beatEditNoScenes": "Ten montaż powstał z twoich klipów, więc nie ma wygenerowanych scen — użyj karty Edycja, żeby dodać na nim tekst.",
+      "backToLibrary": "Biblioteka"
     }
   },
   "tour": {

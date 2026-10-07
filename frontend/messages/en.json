@@ -724,7 +724,20 @@
       "credits": "{count} cr",
       "delete": "Delete project",
       "confirmDelete": "Confirm delete",
-      "deleteWarning": "Click again to delete. The video and its files are removed for good."
+      "deleteWarning": "Click again to delete. The video and its files are removed for good.",
+      "shelvesLabel": "Kinds of video",
+      "shelves": {
+        "all": "All",
+        "ai": "AI shorts",
+        "uploads": "Uploaded videos",
+        "edits": "Edits"
+      },
+      "shelfEmpty": {
+        "all": "",
+        "ai": "No videos made from a topic yet.",
+        "uploads": "No uploaded videos yet — captions, dubs and clips land here.",
+        "edits": "No edits yet — cut your clips to a track from the studio."
+      }
     },
     "connections": {
       "eyebrow": "Publishing",
@@ -931,7 +944,8 @@
         "insufficient": "Not enough credits — you have {balance} and this costs {required}.",
         "regenerate": "That didn't work. Nothing was charged; try again."
       },
-      "beatEditNoScenes": "This edit was cut from your clips, so it has no generated scenes — use the Edit tab to add text over it."
+      "beatEditNoScenes": "This edit was cut from your clips, so it has no generated scenes — use the Edit tab to add text over it.",
+      "backToLibrary": "Library"
     }
   },
   "tour": {

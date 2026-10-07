@@ -724,7 +724,20 @@
       "credits": "{count} kr",
       "delete": "Projeyi sil",
       "confirmDelete": "Silmeyi onayla",
-      "deleteWarning": "Silmek için tekrar tıkla. Video ve dosyaları kalıcı olarak kaldırılır."
+      "deleteWarning": "Silmek için tekrar tıkla. Video ve dosyaları kalıcı olarak kaldırılır.",
+      "shelvesLabel": "Video türleri",
+      "shelves": {
+        "all": "Tümü",
+        "ai": "AI shortlar",
+        "uploads": "Yüklenen videolar",
+        "edits": "Edit'ler"
+      },
+      "shelfEmpty": {
+        "all": "",
+        "ai": "Henüz konudan üretilmiş video yok.",
+        "uploads": "Henüz yüklenen video yok — altyazı, seslendirme ve klipler burada toplanır.",
+        "edits": "Henüz edit yok — stüdyodan kliplerini bir şarkıya göre kes."
+      }
     },
     "connections": {
       "eyebrow": "Yayınlama",
@@ -931,7 +944,8 @@
         "insufficient": "Kredi yetmiyor — sende {balance} var, bu {required} tutuyor.",
         "regenerate": "Bu işe yaramadı. Hiçbir ücret alınmadı; tekrar dene."
       },
-      "beatEditNoScenes": "Bu edit senin kliplerinden kesildi, bu yüzden üretilmiş sahnesi yok — üstüne yazı eklemek için Edit sekmesini kullan."
+      "beatEditNoScenes": "Bu edit senin kliplerinden kesildi, bu yüzden üretilmiş sahnesi yok — üstüne yazı eklemek için Edit sekmesini kullan.",
+      "backToLibrary": "Kütüphane"
     }
   },
   "tour": {

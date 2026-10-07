@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, ListTree, Pencil, Scissors } from "lucide-react";
+import { ArrowLeft, ArrowRight, ListTree, Pencil, Plus, Scissors } from "lucide-react";
 import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import { Link } from "@/i18n/navigation";
@@ -146,13 +146,26 @@ function Project({ id }: { id: string }) {
       {/* The column gap the page's own <main> used to carry. The shell
           owns padding and width; stacking is still this page's business. */}
       <div className="flex flex-col gap-6">
-        <Link
-          href="/"
-          className="flex w-fit items-center gap-1.5 text-sm text-white/50 transition-colors hover:text-white"
-        >
-          <ArrowLeft size={14} />
-          {t("newVideo")}
-        </Link>
+        {/* Back goes to the library: that is where a finished video lives
+            and where someone opening one came from. It used to be the
+            only link and it went to the studio, so on a phone — no rail —
+            leaving a video meant starting a new one. */}
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            href="/library"
+            className="flex w-fit items-center gap-1.5 text-sm text-white/50 transition-colors hover:text-white"
+          >
+            <ArrowLeft size={14} />
+            {t("backToLibrary")}
+          </Link>
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-white/50 transition-colors hover:border-border-strong hover:text-white"
+          >
+            <Plus size={13} />
+            {t("newVideo")}
+          </Link>
+        </div>
 
         {/* An extraction has no video of its own — it has children. The
             whole page below assumes a player and a scene list, neither of

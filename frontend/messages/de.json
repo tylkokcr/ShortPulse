@@ -724,7 +724,20 @@
       "credits": "{count} Cr.",
       "delete": "Projekt löschen",
       "confirmDelete": "Löschen bestätigen",
-      "deleteWarning": "Noch einmal klicken zum Löschen. Das Video und seine Dateien sind dann endgültig weg."
+      "deleteWarning": "Noch einmal klicken zum Löschen. Das Video und seine Dateien sind dann endgültig weg.",
+      "shelvesLabel": "Arten von Videos",
+      "shelves": {
+        "all": "Alle",
+        "ai": "KI-Shorts",
+        "uploads": "Hochgeladene Videos",
+        "edits": "Edits"
+      },
+      "shelfEmpty": {
+        "all": "",
+        "ai": "Noch keine Videos aus einem Thema.",
+        "uploads": "Noch keine hochgeladenen Videos — Untertitel, Vertonungen und Clips landen hier.",
+        "edits": "Noch keine Edits — schneide deine Clips im Studio zu einem Song."
+      }
     },
     "connections": {
       "eyebrow": "Veröffentlichen",
@@ -931,7 +944,8 @@
         "insufficient": "Nicht genug Credits — du hast {balance}, das kostet {required}.",
         "regenerate": "Das hat nicht geklappt. Es wurde nichts berechnet; versuch es erneut."
       },
-      "beatEditNoScenes": "Dieser Edit wurde aus deinen Clips geschnitten und hat daher keine generierten Szenen — nutze den Tab Bearbeiten, um Text darüberzulegen."
+      "beatEditNoScenes": "Dieser Edit wurde aus deinen Clips geschnitten und hat daher keine generierten Szenen — nutze den Tab Bearbeiten, um Text darüberzulegen.",
+      "backToLibrary": "Bibliothek"
     }
   },
   "tour": {
