@@ -289,7 +289,20 @@ class ClipMotion:
             per_sample = 0.5 * np.clip(raw, 0, 1.5) + 0.5 * np.clip(rel, 0, 1.5)
         else:
             per_sample = raw
-        return np.convolve(per_sample, np.ones(n), mode="valid") / n
+        means = np.convolve(per_sample, np.ones(n), mode="valid") / n
+        if n < 4:
+            return means
+        # Where the peak falls inside the shot. A moment worth showing has
+        # a lead-in and a payoff — the run-up and then the kick — and a
+        # window that ends on its biggest movement cuts away at the strike,
+        # while one that starts on it begins after the thing happened.
+        # Peaks from 40% to 85% of the way through keep their score; the
+        # further outside that, the less they keep.
+        peaks = np.argmax(np.lib.stride_tricks.sliding_window_view(per_sample, n), axis=1)
+        position = peaks / (n - 1)
+        early = np.clip((0.4 - position) / 0.4, 0, 1)
+        late = np.clip((position - 0.85) / 0.15, 0, 1)
+        return means * (1.0 - 0.6 * np.maximum(early, late))
 
     def busiest(
         self,

@@ -250,3 +250,18 @@ def test_choices_are_spread_across_a_long_clip():
     plan = beat_edit.plan_edit(_grid(seconds=120.0), [clip], 30.0, "cinematic")
     starts = sorted(c.source_start for c in plan.cuts)
     assert starts[-1] - starts[0] > 300, starts
+
+
+def test_a_shot_keeps_its_payoff_inside_it():
+    """A free kick: a still run-up, then the strike. The shot should run
+    through the strike, not stop on it or start after it."""
+    rate = beat_edit._MOTION_FPS
+    n = 20 * rate
+    scores = np.full(n, 2.0)
+    strike = 10 * rate
+    scores[strike : strike + 6] = 30.0  # half a second of everything moving
+    clip = beat_edit.ClipMotion(Path("fk.mp4"), 20.0, scores, width=1920, height=1080)
+    start = clip.busiest(2.0, [])
+    assert start is not None
+    position = (strike / rate - start) / 2.0
+    assert 0.35 <= position <= 0.85, position
