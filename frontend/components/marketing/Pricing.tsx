@@ -31,9 +31,10 @@ const FALLBACK_PACKS: CreditPack[] = [
  *  rather than throwing on a missing message. */
 const LABELLED_PACKS = new Set(["starter", "creator", "studio"]);
 
-/** Cheapest real render (stock_media + short) costs 1 credit; the default
- *  fast_hybrid short costs 3. Quoting both keeps "how many videos" honest
- *  instead of advertising only the flattering number.
+/** Cheapest real render (stock_media + short) costs 2 credits; the default
+ *  fast_hybrid short costs 6 (`_MODE_COST` in services/credits.py, doubled
+ *  on 2026-10-07). Quoting both keeps "how many videos" honest instead of
+ *  advertising only the flattering number.
  *
  *  `standard` is dropped where fast_hybrid can't run at all — no diffusion
  *  stack and no image API — because quoting videos in a mode the
@@ -41,8 +42,8 @@ const LABELLED_PACKS = new Set(["starter", "creator", "studio"]);
  *  doesn't exist here. */
 function videosFor(credits: number, generatedStills: boolean) {
   return {
-    basic: credits,
-    standard: generatedStills ? Math.floor(credits / 3) : null,
+    basic: Math.floor(credits / 2),
+    standard: generatedStills ? Math.floor(credits / 6) : null,
   };
 }
 

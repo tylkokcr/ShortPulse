@@ -210,7 +210,7 @@
     "capabilities": {
       "transcript": "The transcript picks the moments — three were asked for here and two were there.",
       "window": "Only the stretch you choose is transcribed, so an hour of recording is not an hour of work.",
-      "cost": "Priced by what was read, not per clip: one credit every two minutes.",
+      "cost": "Priced by what was read, not per clip: one credit a minute.",
       "library": "Every clip lands as its own project — captions, frame and edits included."
     },
     "split": {
@@ -231,8 +231,8 @@
       "blurb": "Every new account, no card.",
       "credits": "{credits} credits on sign-up",
       "firstAiFree": "Your first AI-stills video free",
-      "thenStock": "Then stock-footage videos from 1 credit",
-      "stockOnly": "Stock-footage videos from 1 credit",
+      "thenStock": "Then stock-footage videos from 2 credits",
+      "stockOnly": "Stock-footage videos from 2 credits",
       "everyLanguage": "Every language",
       "noWatermark": "No watermark",
       "cta": "Start free"
@@ -265,7 +265,7 @@
       "cta": "Self-host it free"
     },
     "tariff": {
-      "stock": "1 credit = stock footage",
+      "stock": "2 credits = stock footage",
       "aiStills": "3 = AI stills",
       "localVideo": "10 = local text-to-video",
       "note": "{rates}, each ×2 for medium and ×3 for long. You're quoted the exact cost before a render starts."
@@ -307,7 +307,7 @@
       },
       "pricing": {
         "q": "How does pricing work?",
-        "a": "Credits, bought once. A render costs 1 credit with stock footage and 3 with AI stills, doubled for medium length and tripled for long. You see the exact cost before you start it. (Local text-to-video is 10, and only applies if you self-host — it is not offered here.)"
+        "a": "Credits, bought once. A render costs 2 credits with stock footage and 6 with AI stills, doubled for medium length and tripled for long. A beat edit is 3 credits up to 15 seconds, 5 up to 30 and 8 up to 60. You see the exact cost before you start it. (Local text-to-video is 20, and only applies if you self-host — it is not offered here.)"
       },
       "expiry": {
         "q": "Do credits expire?",
@@ -319,7 +319,7 @@
       },
       "freeTier": {
         "q": "Is there really a free tier?",
-        "a": "{credits} credits when you sign up, no card. One of your videos can use AI stills — that one is on us, so you see the paid mode before deciding anything — and the rest of the grant renders stock-footage videos at 1 credit each. Re-rolling a scene and further AI-stills renders need a credit pack."
+        "a": "{credits} credits when you sign up, no card. One of your videos can use AI stills — that one is on us, so you see the paid mode before deciding anything — and the rest of the grant renders stock-footage videos at 2 credits each, or beat edits and captioned uploads. Re-rolling a scene and further AI-stills renders need a credit pack."
       },
       "diy": {
         "q": "Can I run this myself instead?",
@@ -463,7 +463,7 @@
       "window": "Which part to use",
       "windowStart": "Start of the stretch",
       "windowEnd": "End of the stretch",
-      "windowHint": "Drag to pick the stretch to read. Only this part is transcribed, and it is what you pay for — 1 credit per {perCredit} minutes. At least {minutes} minutes.",
+      "windowHint": "Drag to pick the stretch to read. Only this part is transcribed, and it is what you pay for — 1 credit per {perCredit} min. At least {minutes} minutes.",
       "template": "Clip template",
       "templateHint": "Each one sets the frame the clips are cut to, together with the caption style and where it sits. Change any of it below.",
       "templateNeedsClips": "Captioning keeps the frame it was filmed in — pick a look with a different frame when you cut it into clips.",

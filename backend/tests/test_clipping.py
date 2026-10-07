@@ -206,11 +206,11 @@ def test_an_extraction_is_priced_by_the_stretch_it_reads():
 
     ten_minutes = _upload_config(clip_count=3, clip_from_s=0, clip_to_s=600)
 
-    assert credits.cost_for(ten_minutes) == 5
+    assert credits.cost_for(ten_minutes) == 10
     # And the clip count does not enter into it.
     assert credits.cost_for(
         _upload_config(clip_count=5, clip_from_s=0, clip_to_s=600)
-    ) == 5
+    ) == 10
 
 
 def test_the_price_is_of_the_window_not_of_the_position():
@@ -226,7 +226,7 @@ def test_the_price_is_of_the_window_not_of_the_position():
 
 @pytest.mark.parametrize(
     ("span_s", "expected"),
-    [(0, 1), (1, 1), (119, 1), (120, 1), (121, 2), (240, 2), (241, 3), (3600, 30)],
+    [(0, 1), (1, 1), (59, 1), (60, 1), (61, 2), (120, 2), (121, 3), (3600, 60)],
 )
 def test_the_rounding_boundaries(span_s, expected):
     """The panel quotes this number before the upload and the server
@@ -255,7 +255,7 @@ def test_clips_are_priced_ahead_of_the_dub_rate():
     from app.services import credits
 
     config = _upload_config(clip_count=2, dub_language="tr", clip_from_s=0, clip_to_s=600)
-    assert credits.cost_for(config) == 5
+    assert credits.cost_for(config) == 10
 
 
 def test_a_plain_upload_is_unchanged():

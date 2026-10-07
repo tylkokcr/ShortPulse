@@ -263,7 +263,7 @@ def test_a_wholesale_downgrade_is_worth_the_difference():
     asked = ProjectConfig(topic="t", visual_mode=VisualMode.FAST_HYBRID)
     delivered = asked.model_copy(update={"visual_mode": VisualMode.STOCK_MEDIA})
 
-    assert credits.cost_for(asked) - credits.cost_for(delivered) == 2
+    assert credits.cost_for(asked) - credits.cost_for(delivered) == 4
 
 
 def _scene(index: int, mode: VisualMode, *, outro: bool = False):
@@ -310,18 +310,17 @@ async def _corrections_for(scenes, requested=VisualMode.FAST_HYBRID) -> list[int
 
 async def test_every_scene_falling_back_re_prices_the_render():
     scenes = [_scene(i, VisualMode.STOCK_MEDIA) for i in range(3)]
-    assert await _corrections_for(scenes) == [2]
+    assert await _corrections_for(scenes) == [4]
 
 
-async def test_one_scene_in_six_falling_back_does_not():
+async def test_one_scene_in_six_falling_back_pays_back_a_credit():
     """The fallback doing its job on a video that is otherwise what was
-    ordered. The share is real but rounds to nothing, which is the same
-    outcome the old wholesale-only rule gave — deliberately, so the cheap
-    end of the scale did not change."""
+    ordered. At the old prices the share rounded to nothing; since they
+    doubled, a sixth of the four-credit gap rounds to one."""
     scenes = [_scene(0, VisualMode.STOCK_MEDIA)] + [
         _scene(i, VisualMode.FAST_HYBRID) for i in range(1, 6)
     ]
-    assert await _corrections_for(scenes) == []
+    assert await _corrections_for(scenes) == [1]
 
 
 async def test_half_the_scenes_falling_back_pays_back_a_share():
@@ -332,7 +331,7 @@ async def test_half_the_scenes_falling_back_pays_back_a_share():
     scenes = [_scene(i, VisualMode.STOCK_MEDIA) for i in range(3)] + [
         _scene(i, VisualMode.FAST_HYBRID) for i in range(3, 6)
     ]
-    assert await _corrections_for(scenes) == [1]
+    assert await _corrections_for(scenes) == [2]
 
 
 async def test_an_outro_card_is_not_mistaken_for_a_downgrade():

@@ -12,7 +12,7 @@ import { getPublicPricing } from "@/lib/api";
  * it doesn't — a marketing page that renders a blank where a number goes
  * is worse than one quoting a stale number.
  */
-export const SIGNUP_CREDITS = 5;
+export const SIGNUP_CREDITS = 50;
 
 /**
  * The grant this deployment actually hands out.

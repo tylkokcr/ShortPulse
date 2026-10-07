@@ -349,3 +349,20 @@ async def test_analysis_needs_a_song(beat_app):
     async with _client(app) as client:
         response = await client.post("/api/beat-edits/analyze")
     assert response.status_code == 422
+
+
+def test_a_beat_edit_is_priced_by_its_length():
+    from app.schemas.project import BeatEditSpec, ProjectConfig, ProjectSource
+    from app.services import credits
+
+    def cost(seconds: float | None) -> int:
+        spec = BeatEditSpec(clip_count=2, duration_s=seconds) if seconds else None
+        return credits.cost_for(
+            ProjectConfig(topic="x", source=ProjectSource.BEAT_EDIT, beat_edit=spec)
+        )
+
+    assert cost(10) == cost(15) == 3
+    assert cost(30) == 5
+    assert cost(60) == 8
+    # Stored before lengths were priced: the 15-second price.
+    assert cost(None) == 3

@@ -210,7 +210,7 @@
     "capabilities": {
       "transcript": "Das Transkript wählt die Momente — hier wurden drei angefragt, zwei waren da.",
       "window": "Nur der gewählte Abschnitt wird transkribiert; eine Stunde Aufnahme ist keine Stunde Arbeit.",
-      "cost": "Abgerechnet wird das Gelesene, nicht pro Clip: ein Credit je zwei Minuten.",
+      "cost": "Abgerechnet wird das Gelesene, nicht pro Clip: ein Credit pro Minute.",
       "library": "Jeder Clip wird ein eigenes Projekt — mit Untertiteln, Format und Bearbeitung."
     },
     "split": {
@@ -231,8 +231,8 @@
       "blurb": "Jedes neue Konto, ohne Karte.",
       "credits": "{credits} Credits bei der Anmeldung",
       "firstAiFree": "Dein erstes AI-Stills-Video gratis",
-      "thenStock": "Danach Videos mit Stockmaterial ab 1 Credit",
-      "stockOnly": "Videos mit Stockmaterial ab 1 Credit",
+      "thenStock": "Danach Videos mit Stockmaterial ab 2 Credits",
+      "stockOnly": "Videos mit Stockmaterial ab 2 Credits",
       "everyLanguage": "Alle Sprachen",
       "noWatermark": "Kein Wasserzeichen",
       "cta": "Kostenlos starten"
@@ -265,7 +265,7 @@
       "cta": "Kostenlos selbst betreiben"
     },
     "tariff": {
-      "stock": "1 Credit = Stockmaterial",
+      "stock": "2 Credits = Stockmaterial",
       "aiStills": "3 = AI stills",
       "localVideo": "10 = lokales Text-zu-Video",
       "note": "{rates}, jeweils ×2 bei mittlerer und ×3 bei langer Länge. Die genauen Kosten siehst du, bevor ein Render startet."
@@ -307,7 +307,7 @@
       },
       "pricing": {
         "q": "Wie funktioniert die Abrechnung?",
-        "a": "Credits, einmalig gekauft. Ein Render kostet 1 Credit mit Stockmaterial und 3 mit KI-Stills, bei mittlerer Länge verdoppelt und bei langer verdreifacht. Die genauen Kosten siehst du, bevor du startest. (Lokales Text-zu-Video kostet 10 und gilt nur beim Selbsthosten — hier wird es nicht angeboten.)"
+        "a": "Credits, einmalig gekauft. Ein Render kostet 2 Credits mit Stockmaterial und 6 mit KI-Stills, bei mittlerer Länge verdoppelt und bei langer verdreifacht. Ein Beat-Edit kostet 3 Credits bis 15 Sekunden, 5 bis 30 und 8 bis 60. Die genauen Kosten siehst du, bevor du startest. (Lokales Text-zu-Video kostet 20 und gilt nur beim Selbsthosten — hier wird es nicht angeboten.)"
       },
       "expiry": {
         "q": "Verfallen Credits?",
@@ -319,7 +319,7 @@
       },
       "freeTier": {
         "q": "Gibt es wirklich ein kostenloses Kontingent?",
-        "a": "{credits} Credits bei der Anmeldung, ohne Karte. Eines deiner Videos darf KI-Stills nutzen — das geht auf uns, damit du den bezahlten Modus siehst, bevor du dich entscheidest — der Rest des Guthabens rendert Videos mit Stockmaterial zu je 1 Credit. Eine Szene neu zu würfeln und weitere KI-Still-Renders brauchen ein Credit-Paket."
+        "a": "{credits} Credits bei der Anmeldung, ohne Karte. Eines deiner Videos darf KI-Stills nutzen — das geht auf uns, damit du den bezahlten Modus siehst, bevor du dich entscheidest — der Rest des Guthabens reicht für Videos mit Stockmaterial zu je 2 Credits, Beat-Edits oder untertitelte Uploads. Eine Szene neu zu würfeln und weitere KI-Still-Renders brauchen ein Credit-Paket."
       },
       "diy": {
         "q": "Kann ich das stattdessen selbst betreiben?",
@@ -463,7 +463,7 @@
       "window": "Welcher Teil verwendet wird",
       "windowStart": "Anfang des Abschnitts",
       "windowEnd": "Ende des Abschnitts",
-      "windowHint": "Zieh, um den Abschnitt zu wählen, der gelesen wird. Nur er wird transkribiert, und dafür zahlst du — 1 Credit je {perCredit} Minuten. Mindestens {minutes} Minuten.",
+      "windowHint": "Zieh, um den Abschnitt zu wählen, der gelesen wird. Nur er wird transkribiert, und dafür zahlst du — 1 Credit je {perCredit} Min. Mindestens {minutes} Minuten.",
       "template": "Clip-Vorlage",
       "templateHint": "Jede legt das Bildformat der Clips fest, zusammen mit dem Untertitelstil und seiner Position. Alles davon lässt sich unten ändern.",
       "templateNeedsClips": "Beim Untertiteln bleibt das Bild so, wie es gefilmt wurde — einen Look mit anderem Format gibt es nur beim Schneiden in Clips.",

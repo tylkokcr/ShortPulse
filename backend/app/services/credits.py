@@ -45,11 +45,16 @@ class InsufficientCredits(Exception):
 # fast_hybrid render, while stock_media skips that stage entirely and costs
 # roughly a sixth as much wall clock. Longer presets mean more scenes,
 # which scales close to linearly.
+#
+# Every price was doubled on 2026-10-07, when the signup grant went from 5
+# to 50: at one credit a video the grant would have been fifty free
+# renders, and a pack bought twice what it buys now. The ratios between
+# them — what actually tracks machine time — did not change.
 # ---------------------------------------------------------------------
 _MODE_COST = {
-    VisualMode.STOCK_MEDIA: 1,
-    VisualMode.FAST_HYBRID: 3,
-    VisualMode.AI_VIDEO: 10,
+    VisualMode.STOCK_MEDIA: 2,
+    VisualMode.FAST_HYBRID: 6,
+    VisualMode.AI_VIDEO: 20,
 }
 
 _LENGTH_MULTIPLIER = {
@@ -63,14 +68,14 @@ _LENGTH_MULTIPLIER = {
 # real cost is one Whisper pass and one ffmpeg pass. It isn't free, because
 # transcription is genuinely CPU-bound (a few seconds per minute of video),
 # but it is the cheapest thing the product does.
-AUTOCAPTION_COST = 1
+AUTOCAPTION_COST = 2
 
 # A dub is the autocaption pass plus a translation call and one synthesis
 # per sentence — more work than captions, and still nothing beside a
 # generated render, which pays for images. Two rather than one because the
 # syntheses are the slowest part of the whole upload path, and one credit
 # would price a five-minute job the same as a thirty-second one.
-DUB_COST = 2
+DUB_COST = 4
 
 
 # Pulling clips out of a long upload.
@@ -90,9 +95,9 @@ DUB_COST = 2
 # moments are actually in there. Paying for what was processed removes
 # that: the work is the reading, and the reading is what is charged.
 #
-# Two minutes to the credit, rounded up, never less than one — so the
+# A minute to the credit, rounded up, never less than one — so the
 # shortest legal window costs something and a part-minute is not free.
-CLIP_SECONDS_PER_CREDIT = 120
+CLIP_SECONDS_PER_CREDIT = 60
 
 
 # Re-rolling one scene's visual on a finished video.
@@ -104,7 +109,7 @@ CLIP_SECONDS_PER_CREDIT = 120
 # re-encode dominates and it costs the same on a stock scene as on a
 # generated one, which is why this is a flat price rather than a per-mode
 # one.
-REGENERATE_SCENE_COST = 1
+REGENERATE_SCENE_COST = 2
 
 
 def clip_cost(from_s: float, to_s: float | None) -> int:
@@ -127,16 +132,27 @@ def clip_cost(from_s: float, to_s: float | None) -> int:
 
 
 # A beat edit is ffmpeg over the user's own clips: no model, no stock
-# search, no transcription. Priced like a caption job, which is the
-# nearest thing in cost.
-BEAT_EDIT_COST = 1
+# search, no transcription — but every clip is profiled frame by frame and
+# every cut re-encoded, on up to two gigabytes of footage, and the time
+# that takes grows with the edit's length. So priced by length, by the
+# lengths the panel offers: up to 15 seconds, up to 30, up to 60.
+BEAT_EDIT_COSTS: tuple[tuple[float, int], ...] = ((15.0, 3), (30.0, 5), (60.0, 8))
+
+
+def beat_edit_cost(duration_s: float) -> int:
+    for longest, cost in BEAT_EDIT_COSTS:
+        if duration_s <= longest + 0.01:
+            return cost
+    return BEAT_EDIT_COSTS[-1][1]
 
 
 def cost_for(config: ProjectConfig) -> int:
     """Credits a render of this shape costs. Deterministic: the caller is
     quoted this before the render starts and charged exactly this."""
     if config.source == ProjectSource.BEAT_EDIT:
-        return BEAT_EDIT_COST
+        # A project stored without its spec is one from before edits had
+        # lengths to choose: 15 seconds, the length they all were.
+        return beat_edit_cost(config.beat_edit.duration_s if config.beat_edit else 15.0)
     if config.source == ProjectSource.UPLOAD:
         if config.clip_count:
             return clip_cost(config.clip_from_s, config.clip_to_s)
@@ -175,7 +191,7 @@ FREE_TIER_MODES: frozenset[VisualMode] = frozenset({VisualMode.STOCK_MEDIA})
 # One is enough to see the difference and cheap enough not to think about:
 # roughly two cents of hosted generation, against an impression that
 # decides whether they come back. The signup grant caps the rest by
-# itself — 10 credits does not stretch far at three a render.
+# itself, and the paid modes stay behind a purchase whatever it holds.
 FREE_TRIAL_GENERATED_VIDEOS = 1
 
 # Read by a customer in a disabled tile's tooltip, so it says what to do

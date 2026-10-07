@@ -153,7 +153,13 @@ class Settings(BaseSettings):
     # by, which is what the grant is for, while cutting the cost of an
     # abused signup by two thirds. Set a spend limit on the Replicate key
     # as well — this bounds one account, not the total.
-    signup_credit_grant: int = 5
+    #
+    # 50 since 2026-10-07, with every price doubled. What made a big grant
+    # dangerous no longer holds: the grant cannot buy a Replicate render
+    # (FREE_TIER_MODES — one generated video is on the house, the rest of
+    # the paid modes need a purchase), so a farmed account is stock
+    # searches and our own CPU, not an invoice.
+    signup_credit_grant: int = 50
     # Signs the short-lived tokens in video URLs. A <video> tag can't send
     # an Authorization header, so playback of an owned project needs the
     # credential in the URL — same shape as an S3 presigned link. Leave

@@ -178,7 +178,10 @@ export function BeatEditPanel() {
     musicSource === "library" ? Boolean(trackId) : Boolean(musicFile || pickedSong);
   const clipCount = clips.length + pickedClips.length;
   const ready = clipCount > 0 && hasMusic && progress === null;
-  const price = credits?.enabled ? (credits.pricing?.["beat_edit"] ?? 1) : null;
+  // Priced by length; a server from before that only knows the one price.
+  const price = credits?.enabled
+    ? (credits.pricing?.[`beat_edit:${duration}`] ?? credits.pricing?.["beat_edit"] ?? 1)
+    : null;
 
   async function submit() {
     if (!ready) return;

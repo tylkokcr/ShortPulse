@@ -210,7 +210,7 @@
     "capabilities": {
       "transcript": "Momenty wybiera transkrypcja — tu poproszono o trzy, a były dwa.",
       "window": "Transkrybowany jest tylko wybrany fragment, więc godzina nagrania to nie godzina pracy.",
-      "cost": "Płacisz za to, co odczytano, nie za klip: jeden kredyt na dwie minuty.",
+      "cost": "Liczy się to, co odczytano, a nie liczba klipów: jeden kredyt za minutę.",
       "library": "Każdy klip to osobny projekt — z napisami, kadrem i edycją."
     },
     "split": {
@@ -231,8 +231,8 @@
       "blurb": "Każde nowe konto, bez karty.",
       "credits": "{credits} kredytów przy rejestracji",
       "firstAiFree": "Pierwszy film w trybie AI stills gratis",
-      "thenStock": "Potem filmy ze stocku już od 1 kredytu",
-      "stockOnly": "Filmy ze stocku już od 1 kredytu",
+      "thenStock": "Potem filmy ze stocku już od 2 kredytów",
+      "stockOnly": "Filmy ze stocku już od 2 kredytów",
       "everyLanguage": "Wszystkie języki",
       "noWatermark": "Bez znaku wodnego",
       "cta": "Zacznij za darmo"
@@ -265,7 +265,7 @@
       "cta": "Uruchom u siebie za darmo"
     },
     "tariff": {
-      "stock": "1 kredyt = materiał stockowy",
+      "stock": "2 kredyty = materiał stockowy",
       "aiStills": "3 = AI stills",
       "localVideo": "10 = lokalny text-to-video",
       "note": "{rates}, każdy ×2 przy średniej i ×3 przy długiej. Dokładny koszt poznajesz przed startem renderu."
@@ -307,7 +307,7 @@
       },
       "pricing": {
         "q": "Jak działa cennik?",
-        "a": "Kredyty, kupowane jednorazowo. Render kosztuje 1 kredyt z materiałem stockowym i 3 z kadrami AI, podwójnie przy średniej długości i potrójnie przy długiej. Dokładny koszt widzisz przed startem. (Lokalne tekst-na-wideo kosztuje 10 i dotyczy wyłącznie własnego hostingu — tutaj nie jest oferowane.)"
+        "a": "Kredyty, kupowane jednorazowo. Render kosztuje 2 kredyty z materiałem stockowym i 6 z kadrami AI, podwójnie przy średniej długości i potrójnie przy długiej. Montaż do muzyki kosztuje 3 kredyty do 15 sekund, 5 do 30 i 8 do 60. Dokładny koszt widzisz przed startem. (Lokalne tekst-na-wideo kosztuje 20 i dotyczy wyłącznie własnego hostingu — tutaj nie jest oferowane.)"
       },
       "expiry": {
         "q": "Czy kredyty wygasają?",
@@ -319,7 +319,7 @@
       },
       "freeTier": {
         "q": "Czy naprawdę jest darmowy plan?",
-        "a": "{credits} kredytów przy rejestracji, bez karty. Jeden z twoich filmów może użyć kadrów AI — ten jest na nasz koszt, żebyś zobaczył tryb płatny, zanim cokolwiek zdecydujesz — a reszta puli renderuje filmy z materiałem stockowym po 1 kredycie. Ponowne wylosowanie sceny i kolejne rendery z kadrami AI wymagają pakietu kredytów."
+        "a": "{credits} kredytów przy rejestracji, bez karty. Jeden z twoich filmów może użyć kadrów AI — ten jest na nasz koszt, żebyś zobaczył tryb płatny, zanim cokolwiek zdecydujesz — a reszta puli wystarczy na filmy z materiałem stockowym po 2 kredyty, montaże do muzyki albo napisy do przesłanych nagrań. Ponowne wylosowanie sceny i kolejne rendery z kadrami AI wymagają pakietu kredytów."
       },
       "diy": {
         "q": "Czy mogę uruchomić to sam?",

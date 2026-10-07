@@ -210,7 +210,7 @@
     "capabilities": {
       "transcript": "Anları metin seçer — burada üç istendi, metinde iki tane vardı.",
       "window": "Yalnızca seçtiğin aralık deşifre edilir; bir saatlik kayıt bir saatlik iş değildir.",
-      "cost": "Kesit başına değil, okunan süre üzerinden: her iki dakikaya bir kredi.",
+      "cost": "Kesit başına değil, okunan süre üzerinden: her dakikaya bir kredi.",
       "library": "Her kesit kendi projesi olarak düşer — altyazısı, kadrajı ve düzenlemesiyle."
     },
     "split": {
@@ -231,8 +231,8 @@
       "blurb": "Her yeni hesap, kart istemeden.",
       "credits": "Kayıtta {credits} kredi",
       "firstAiFree": "İlk AI stills videon ücretsiz",
-      "thenStock": "Sonrası: 1 krediden başlayan stok görüntü videoları",
-      "stockOnly": "1 krediden başlayan stok görüntü videoları",
+      "thenStock": "Sonrası: 2 krediden başlayan stok görüntü videoları",
+      "stockOnly": "2 krediden başlayan stok görüntü videoları",
       "everyLanguage": "Bütün diller",
       "noWatermark": "Filigran yok",
       "cta": "Ücretsiz başla"
@@ -265,7 +265,7 @@
       "cta": "Ücretsiz kendin kur"
     },
     "tariff": {
-      "stock": "1 kredi = stok görüntü",
+      "stock": "2 kredi = stok görüntü",
       "aiStills": "3 = AI stills",
       "localVideo": "10 = yerel metinden videoya",
       "note": "{rates}; orta uzunlukta ×2, uzunda ×3. Render başlamadan önce kesin tutar sana bildirilir."
@@ -307,7 +307,7 @@
       },
       "pricing": {
         "q": "Fiyatlandırma nasıl işliyor?",
-        "a": "Kredi, bir kez satın alınır. Bir render stok görüntüyle 1 kredi, yapay zekâ kareleriyle 3; orta uzunlukta iki katı, uzunda üç katı. Başlamadan önce tam maliyeti görürsün. (Yerel metinden videoya 10 kredidir ve yalnızca kendin barındırırsan geçerlidir — burada sunulmuyor.)"
+        "a": "Kredi, bir kez satın alınır. Bir render stok görüntüyle 2 kredi, yapay zekâ kareleriyle 6; orta uzunlukta iki katı, uzunda üç katı. Beat edit 15 saniyeye kadar 3, 30 saniyeye kadar 5, 60 saniyeye kadar 8 kredidir. Başlamadan önce tam maliyeti görürsün. (Yerel metinden videoya 20 kredidir ve yalnızca kendin barındırırsan geçerlidir — burada sunulmuyor.)"
       },
       "expiry": {
         "q": "Krediler sona erer mi?",
@@ -319,7 +319,7 @@
       },
       "freeTier": {
         "q": "Gerçekten ücretsiz bir katman var mı?",
-        "a": "Kaydolduğunda {credits} kredi, kart istemeden. Videolarından biri yapay zekâ karelerini kullanabilir — o bizden, karar vermeden önce ücretli modu görürsün — kalan hak ise 1 kredilik stok görüntü videoları üretir. Sahneyi yeniden üretmek ve daha fazla yapay zekâ karesi için kredi paketi gerekir."
+        "a": "Kaydolduğunda {credits} kredi, kart istemeden. Videolarından biri yapay zekâ karelerini kullanabilir — o bizden, karar vermeden önce ücretli modu görürsün — kalan hak ise 2 kredilik stok görüntü videoları, beat edit'ler ya da altyazılı yüklemeler için kullanılır. Sahneyi yeniden üretmek ve daha fazla yapay zekâ karesi için kredi paketi gerekir."
       },
       "diy": {
         "q": "Bunu kendim çalıştırabilir miyim?",
@@ -463,7 +463,7 @@
       "window": "Hangi bölüm kullanılsın",
       "windowStart": "Bölümün başı",
       "windowEnd": "Bölümün sonu",
-      "windowHint": "Okunacak bölümü sürükleyerek seç. Yalnızca burası deşifre edilir ve ücret bunun üzerinden hesaplanır — her {perCredit} dakika için 1 kredi. En az {minutes} dakika.",
+      "windowHint": "Okunacak bölümü sürükleyerek seç. Yalnızca burası deşifre edilir ve ücret bunun üzerinden hesaplanır — her {perCredit} dakikaya 1 kredi. En az {minutes} dakika.",
       "template": "Klip şablonu",
       "templateHint": "Her biri kliplerin kesileceği kadrajı, altyazı stiliyle ve altyazının yeriyle birlikte ayarlar. Hepsini aşağıdan değiştirebilirsin.",
       "templateNeedsClips": "Altyazılama videoyu çekildiği kadrajda bırakır — farklı kadrajlı bir görünümü ancak kesitlere bölerken seçebilirsin.",

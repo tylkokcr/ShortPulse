@@ -86,9 +86,14 @@ def _pricing_table() -> dict[str, int]:
                 ProjectConfig(topic="quote", source=ProjectSource.UPLOAD, dub_language="tr")
             ),
             "upload:clip_seconds_per_credit": credits.CLIP_SECONDS_PER_CREDIT,
-            "beat_edit": credits.cost_for(
-                ProjectConfig(topic="quote", source=ProjectSource.BEAT_EDIT)
-            ),
+            # The length-less key is what a page from before lengths were
+            # priced reads; it is the 15-second price, which it then was.
+            "beat_edit": credits.beat_edit_cost(15.0),
+            **{
+                f"beat_edit:{int(longest)}": cost
+                for longest, cost in credits.BEAT_EDIT_COSTS
+            },
+            "beat_edit:10": credits.beat_edit_cost(10.0),
         }
     )
     return quotes
