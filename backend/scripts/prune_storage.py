@@ -39,6 +39,16 @@ from app.core.storage import discard_intermediates, discard_project_files  # noq
 from app.services import db  # noqa: E402
 
 
+def _is_project_id(name: str) -> bool:
+    import uuid
+
+    try:
+        uuid.UUID(name)
+    except ValueError:
+        return False
+    return True
+
+
 def _size(path: Path) -> int:
     return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
 
@@ -69,7 +79,10 @@ async def main() -> int:
         print(f"No storage directory at {root}")
         return 0
 
-    on_disk = {d.name: d for d in root.iterdir() if d.is_dir()}
+    # Project directories only: a project id is a UUID. Anything else under
+    # the root is not this script's to judge, and calling it an orphan
+    # would delete it.
+    on_disk = {d.name: d for d in root.iterdir() if d.is_dir() and _is_project_id(d.name)}
     if not on_disk:
         print("Nothing on disk.")
         return 0

@@ -21,6 +21,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 from pydantic import ValidationError
 
 from app.api.deps import billing_for, current_user_id, db_pool
+from app.api.routes.media import keep as keep_in_files
 from app.core.config import get_settings, project_dir
 from app.schemas.project import (
     AUTO_LANGUAGE,
@@ -33,7 +34,7 @@ from app.schemas.project import (
     ProjectSource,
     SubtitleStyle,
 )
-from app.services import clipping, credits, project_store, uploads
+from app.services import clipping, credits, media_store, project_store, uploads
 
 # Mirrors the schema's own bound. Duplicated so the refusal names the
 # limit instead of arriving as a pydantic field error about `le`.
@@ -137,7 +138,12 @@ def _resolve_window(
 @router.post("", response_model=Project, status_code=201)
 async def upload_video(
     request: Request,
-    file: UploadFile = File(...),
+    file: UploadFile | None = File(None),
+    # Instead of a file: one already in My files. See routes/media.py.
+    media_id: str = Form(""),
+    # Also keep the uploaded file in My files, so it need not be uploaded
+    # again. Ignored with media_id — it is already there.
+    save_to_files: bool = Form(False),
     # What is spoken. "auto" — the default — lets Whisper decide; a code
     # forces it. See AUTO_LANGUAGE.
     language: str = Form(AUTO_LANGUAGE),
@@ -304,7 +310,15 @@ async def upload_video(
     project_id = str(uuid.uuid4())
     paths = project_dir(project_id)
 
-    suffix = Path(file.filename or "").suffix.lower()
+    picked = None
+    if media_id.strip():
+        picked = await media_store.get_owned(media_id.strip(), user_id)
+        if picked is None or picked.kind != "video":
+            raise HTTPException(status_code=422, detail="That file isn't in your files.")
+    elif file is None:
+        raise HTTPException(status_code=422, detail="Choose a video to upload.")
+    source_name = picked.name if picked else (file.filename if file else "") or ""
+    suffix = picked.ext if picked else Path(source_name).suffix.lower()
     destination = uploads.source_path_for(paths, suffix)
 
     # Everything from here on can leave a file on disk that nothing will
@@ -315,7 +329,11 @@ async def upload_video(
     created = False
     try:
         try:
-            await uploads.save_stream(_chunks(file), destination)
+            if picked is not None:
+                media_store.link_into(picked, destination)
+            else:
+                assert file is not None
+                await uploads.save_stream(_chunks(file), destination)
             probed = await uploads.probe(destination, settings.ffprobe_binary)
         except uploads.UploadRejected as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -341,7 +359,7 @@ async def upload_video(
 
         config = ProjectConfig(
             id=project_id,
-            topic=title.strip() or (file.filename or "Uploaded video"),
+            topic=title.strip() or (source_name or "Uploaded video"),
             source=ProjectSource.UPLOAD,
             language=language,
             dub_language=dub or None,
@@ -420,6 +438,8 @@ async def upload_video(
         shutil.rmtree(paths, ignore_errors=True)
         raise
 
+    if save_to_files and picked is None:
+        await keep_in_files(destination, source_name, "video", user_id)
     await request.app.state.render_queue.submit(project)
     return project
 

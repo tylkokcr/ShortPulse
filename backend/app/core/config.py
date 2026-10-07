@@ -313,6 +313,15 @@ class Settings(BaseSettings):
         "http://localhost:3002",
     ]
     storage_root: Path = STORAGE_ROOT
+    # A user's own files ("My files"). Beside the projects, not inside
+    # them: everything directly under storage_root is a project directory,
+    # and prune_storage.py deletes the ones with no project row. Same
+    # volume, so a project can hard-link a file instead of copying it.
+    # None means storage_root's sibling, `media`.
+    media_root: Path | None = None
+    # Per account. The files are kept until deleted, so this is what stops
+    # one account filling the disk.
+    media_quota_mb: int = 2048
     max_concurrent_renders: int = 2
     # How long a finished project keeps the files a scene re-roll needs —
     # its per-scene voiceover and clips, roughly 3-7MB on top of the ~28MB
@@ -352,3 +361,10 @@ def project_dir(project_id: str) -> Path:
     for sub in ("audio", "visuals", "subtitles", "output", "source"):
         (path / sub).mkdir(parents=True, exist_ok=True)
     return path
+
+
+def media_root() -> Path:
+    settings = get_settings()
+    root = settings.media_root or settings.storage_root.parent / "media"
+    root.mkdir(parents=True, exist_ok=True)
+    return root

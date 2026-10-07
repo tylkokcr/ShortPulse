@@ -16,6 +16,7 @@ from app.api.routes import (
     art_styles,
     beat_edits,
     credits,
+    media,
     music,
     projects,
     render,
@@ -26,7 +27,7 @@ from app.api.routes import (
 )
 from app.core import monitoring, readiness
 from app.core.config import get_settings
-from app.services import db, project_store
+from app.services import db, media_store, project_store
 from app.services import social as social_platforms
 from app.services.media_tokens import MediaTokenSigner
 from app.services.publish_manager import PublishQueue, configure_queue, configure_signer
@@ -50,6 +51,7 @@ async def lifespan(app: FastAPI):
         pool = await db.connect(settings.database_url)
         await db.apply_migrations(pool)
     project_store.configure(pool)
+    media_store.configure(pool)
     app.state.db_pool = pool
 
     # Logged loudly rather than raised: refusing to boot would take a
@@ -140,6 +142,7 @@ app.include_router(art_styles.router)
 app.include_router(visual_modes.router)
 app.include_router(uploads.router)
 app.include_router(beat_edits.router)
+app.include_router(media.router)
 app.include_router(social.router)
 
 

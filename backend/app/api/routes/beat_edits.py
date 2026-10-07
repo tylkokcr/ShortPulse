@@ -16,6 +16,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 
 from app.api.deps import billing_for, current_user_id, db_pool
+from app.api.routes.media import keep as keep_in_files
 from app.api.routes.music import track_path_for
 from app.core.config import get_settings, project_dir
 from app.schemas.project import (
@@ -25,7 +26,7 @@ from app.schemas.project import (
     ProjectConfig,
     ProjectSource,
 )
-from app.services import beat_edits, credits, project_store, uploads
+from app.services import beat_edits, credits, media_store, project_store, uploads
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +41,15 @@ async def _chunks(file: UploadFile):
 @router.post("", response_model=Project, status_code=201)
 async def create_beat_edit(
     request: Request,
-    clips: list[UploadFile] = File(...),
+    clips: list[UploadFile] = File(default=[]),
     music: UploadFile | None = File(None),
     music_track_id: str = Form(""),
+    # Instead of uploading: files already in My files (routes/media.py).
+    # May be mixed with uploaded clips; the files come first.
+    clip_media_ids: list[str] = Form(default=[]),
+    music_media_id: str = Form(""),
+    # Keep the uploaded clips and song in My files too.
+    save_to_files: bool = Form(False),
     duration_s: float = Form(15.0),
     style: str = Form(BeatEditStyle.ENERGETIC.value),
     music_start_s: float | None = Form(None),
@@ -58,9 +65,22 @@ async def create_beat_edit(
     """
     settings = get_settings()
 
-    if not clips:
+    picked_clips = []
+    for media_id in (m.strip() for m in clip_media_ids if m.strip()):
+        media = await media_store.get_owned(media_id, user_id)
+        if media is None or media.kind != "video":
+            raise HTTPException(status_code=422, detail="One of those clips isn't in your files.")
+        picked_clips.append(media)
+    picked_music = None
+    if music_media_id.strip():
+        picked_music = await media_store.get_owned(music_media_id.strip(), user_id)
+        if picked_music is None or picked_music.kind != "audio":
+            raise HTTPException(status_code=422, detail="That song isn't in your files.")
+
+    total_clips = len(clips) + len(picked_clips)
+    if total_clips == 0:
         raise HTTPException(status_code=422, detail="Add at least one clip.")
-    if len(clips) > beat_edits.MAX_CLIPS:
+    if total_clips > beat_edits.MAX_CLIPS:
         raise HTTPException(
             status_code=422,
             detail={"error": "too_many_clips", "max": beat_edits.MAX_CLIPS},
@@ -74,10 +94,11 @@ async def create_beat_edit(
         ) from None
 
     track_id = music_track_id.strip() or None
-    if music is None and track_id is None:
+    chosen = sum(x is not None for x in (music, track_id, picked_music))
+    if chosen == 0:
         raise HTTPException(status_code=422, detail="Pick a track or upload your own.")
-    if music is not None and track_id is not None:
-        raise HTTPException(status_code=422, detail="Pick a track or upload one, not both.")
+    if chosen > 1:
+        raise HTTPException(status_code=422, detail="Pick one track, not several.")
     if track_id is not None:
         try:
             library_track = track_path_for(track_id)
@@ -92,7 +113,11 @@ async def create_beat_edit(
     created = False
     try:
         total = 0
-        for index, clip in enumerate(clips):
+        for index, media in enumerate(picked_clips):
+            media_store.link_into(media, beat_edits.clip_path(paths, index, media.ext))
+        kept: list[tuple[Path, str, str]] = []
+        for offset, clip in enumerate(clips):
+            index = len(picked_clips) + offset
             suffix = Path(clip.filename or "").suffix.lower()
             destination = beat_edits.clip_path(paths, index, suffix)
             try:
@@ -102,6 +127,7 @@ async def create_beat_edit(
                 raise HTTPException(
                     status_code=422, detail=f"{clip.filename or 'A clip'}: {exc}"
                 ) from exc
+            kept.append((destination, clip.filename or f"clip {index + 1}", "video"))
             if total > beat_edits.MAX_TOTAL_BYTES:
                 raise HTTPException(
                     status_code=422,
@@ -109,7 +135,11 @@ async def create_beat_edit(
                     f"{beat_edits.MAX_TOTAL_BYTES // (1024 * 1024)}MB together.",
                 )
 
-        if music is not None:
+        if picked_music is not None:
+            destination = beat_edits.music_path(paths, picked_music.ext)
+            media_store.link_into(picked_music, destination)
+            track_length = await beat_edits.probe_audio(destination, settings.ffprobe_binary)
+        elif music is not None:
             suffix = Path(music.filename or "").suffix.lower()
             destination = beat_edits.music_path(paths, suffix)
             try:
@@ -117,14 +147,15 @@ async def create_beat_edit(
                 track_length = await beat_edits.probe_audio(destination, settings.ffprobe_binary)
             except uploads.UploadRejected as exc:
                 raise HTTPException(status_code=422, detail=str(exc)) from exc
+            kept.append((destination, music.filename or "song", "audio"))
 
         if track_length < 5.0:
             raise HTTPException(status_code=422, detail="That track is too short to cut to.")
 
         spec = BeatEditSpec(
-            clip_count=len(clips),
+            clip_count=total_clips,
             music_track_id=track_id,
-            music_uploaded=music is not None,
+            music_uploaded=music is not None or picked_music is not None,
             # A video longer than the track would end in silence.
             duration_s=min(max(duration_s, 5.0), 60.0, track_length),
             style=chosen_style,
@@ -174,5 +205,8 @@ async def create_beat_edit(
         raise
 
     assert project is not None
+    if save_to_files:
+        for path, name, kind in kept:
+            await keep_in_files(path, name, kind, user_id)
     await request.app.state.render_queue.submit(project)
     return project
