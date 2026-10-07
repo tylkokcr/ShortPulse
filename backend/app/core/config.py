@@ -322,6 +322,12 @@ class Settings(BaseSettings):
     # Per account. The files are kept until deleted, so this is what stops
     # one account filling the disk.
     media_quota_mb: int = 2048
+    # One uploaded video. 200MB was too small for what people actually
+    # bring — ten minutes of 1080p from a phone, a compilation to cut —
+    # and a refusal after a long upload is the worst way to learn it.
+    max_upload_mb: int = 1024
+    # All the clips of one beat edit together.
+    max_beat_edit_mb: int = 2048
     max_concurrent_renders: int = 2
     # How long a finished project keeps the files a scene re-roll needs —
     # its per-scene voiceover and clips, roughly 3-7MB on top of the ~28MB

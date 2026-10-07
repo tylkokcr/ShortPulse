@@ -428,7 +428,7 @@
       "title": "A video you <accent>already have</accent>.",
       "intro": "Upload it and every spoken word gets timed and burned in — the same captions the generator produces, on your own footage. Or pick another language and it is spoken again over your picture.",
       "dropTitle": "Drop a video here",
-      "dropHint": "MP4, MOV, WebM or MKV · up to 200MB · needs an audio track",
+      "dropHint": "MP4, MOV, WebM or MKV · up to 1GB · needs an audio track",
       "pickAnother": "Click to pick a different file",
       "spokenLanguage": "Spoken language",
       "spokenLanguageHint": "Left on automatic, it listens first and captions in whatever is spoken. Pick one only if a short clip comes out in the wrong language.",

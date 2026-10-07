@@ -428,7 +428,7 @@
       "title": "Film, który <accent>już masz</accent>.",
       "intro": "Wgraj go, a każde wypowiedziane słowo zostanie zsynchronizowane i wypalone w obrazie — te same napisy, które tworzy generator, na twoim własnym materiale. Albo wybierz inny język, a lektor przeczyta tekst na nowo.",
       "dropTitle": "Upuść tutaj film",
-      "dropHint": "MP4, MOV, WebM lub MKV · do 200 MB · wymaga ścieżki dźwiękowej",
+      "dropHint": "MP4, MOV, WebM lub MKV · do 1 GB · wymaga ścieżki dźwiękowej",
       "pickAnother": "Kliknij, aby wybrać inny plik",
       "spokenLanguage": "Język mówiony",
       "spokenLanguageHint": "Na automacie najpierw słucha i dodaje napisy w języku, którym się mówi. Wybierz ręcznie tylko wtedy, gdy krótki klip wyjdzie w złym języku.",

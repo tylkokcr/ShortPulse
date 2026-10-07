@@ -23,9 +23,9 @@ const nextConfig = {
     // backend and never touches this, but a self-hosted install without
     // Caddy — and local development — goes through it, and every upload
     // past 10MB arrived cut off: a 200MB video, or a beat edit's clips.
-    // Sized to the largest body the backend accepts: a beat edit's 800MB
-    // of clips plus its track.
-    proxyClientMaxBodySize: "850mb",
+    // Sized to the largest body the backend accepts: a beat edit's 2GB of
+    // clips plus its track (MAX_BEAT_EDIT_MB).
+    proxyClientMaxBodySize: "2100mb",
   },
 
   async rewrites() {

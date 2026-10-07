@@ -428,7 +428,7 @@
       "title": "<accent>Elinde olan</accent> bir video.",
       "intro": "Yükle, konuşulan her kelime zamanlanıp görüntüye gömülsün — üretecin çıkardığı altyazıların aynısı, kendi çekimin üstünde. Ya da başka bir dil seç, görüntünün üstünde yeniden seslendirilsin.",
       "dropTitle": "Videoyu buraya bırak",
-      "dropHint": "MP4, MOV, WebM veya MKV · en fazla 200MB · ses kanalı gerekir",
+      "dropHint": "MP4, MOV, WebM veya MKV · en fazla 1GB · ses kanalı gerekir",
       "pickAnother": "Başka bir dosya seçmek için tıkla",
       "spokenLanguage": "Konuşulan dil",
       "spokenLanguageHint": "Otomatikte bırakırsan önce dinler ve hangi dil konuşuluyorsa o dilde altyazı yazar. Yalnızca kısa bir klip yanlış dilde çıkarsa elle seç.",

@@ -128,11 +128,11 @@ async def create_beat_edit(
                     status_code=422, detail=f"{clip.filename or 'A clip'}: {exc}"
                 ) from exc
             kept.append((destination, clip.filename or f"clip {index + 1}", "video"))
-            if total > beat_edits.MAX_TOTAL_BYTES:
+            if total > beat_edits.max_total_bytes():
                 raise HTTPException(
                     status_code=422,
                     detail=f"Clips come to more than "
-                    f"{beat_edits.MAX_TOTAL_BYTES // (1024 * 1024)}MB together.",
+                    f"{beat_edits.max_total_bytes() // (1024 * 1024)}MB together.",
                 )
 
         if picked_music is not None:

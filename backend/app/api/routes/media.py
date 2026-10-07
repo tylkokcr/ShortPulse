@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/media", tags=["media"])
 
-_VIDEO_CAP = uploads.MAX_UPLOAD_BYTES
 _AUDIO_CAP = beat_edits.MAX_MUSIC_BYTES
 
 
@@ -171,7 +170,8 @@ async def upload_media(
     )
     media_root()  # make sure the directory exists
     used = await media_store.used_bytes(user_id)
-    cap = min(_VIDEO_CAP if kind == "video" else _AUDIO_CAP, max(0, _quota_bytes() - used))
+    per_file = uploads.max_upload_bytes() if kind == "video" else _AUDIO_CAP
+    cap = min(per_file, max(0, _quota_bytes() - used))
     if cap <= 0:
         raise HTTPException(status_code=422, detail="Your files are full. Delete some to make room.")
     try:

@@ -16,9 +16,16 @@ from pathlib import Path
 from app.services.uploads import ALLOWED_SUFFIXES, UploadRejected
 
 MAX_CLIPS = 12
-# Per file the upload cap applies (uploads.MAX_UPLOAD_BYTES); across the
-# whole edit, this. Twelve phone clips at a minute each fit comfortably.
-MAX_TOTAL_BYTES = 800 * 1024 * 1024
+# Per file the upload cap applies (uploads.max_upload_bytes); across the
+# whole edit, MAX_BEAT_EDIT_MB.
+
+
+def max_total_bytes() -> int:
+    from app.core.config import get_settings
+
+    return get_settings().max_beat_edit_mb * 1024 * 1024
+
+
 MAX_MUSIC_BYTES = 30 * 1024 * 1024
 
 AUDIO_SUFFIXES = {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"}

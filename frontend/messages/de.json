@@ -428,7 +428,7 @@
       "title": "Ein Video, das du <accent>schon hast</accent>.",
       "intro": "Lade es hoch, und jedes gesprochene Wort wird getimt und eingebrannt — dieselben Untertitel, die der Generator erzeugt, auf deinem eigenen Material. Oder wähle eine andere Sprache, dann wird es über dein Bild neu gesprochen.",
       "dropTitle": "Video hier ablegen",
-      "dropHint": "MP4, MOV, WebM oder MKV · bis 200 MB · braucht eine Tonspur",
+      "dropHint": "MP4, MOV, WebM oder MKV · bis 1 GB · braucht eine Tonspur",
       "pickAnother": "Klicken, um eine andere Datei zu wählen",
       "spokenLanguage": "Gesprochene Sprache",
       "spokenLanguageHint": "Auf automatisch hört es zuerst zu und untertitelt in der Sprache, die gesprochen wird. Wähle nur dann selbst, wenn ein kurzer Clip in der falschen Sprache herauskommt.",

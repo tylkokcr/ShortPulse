@@ -46,7 +46,7 @@ import { SettingsDrawer } from "./SettingsDrawer";
  * Once accepted it becomes an ordinary project, so this hands off to the
  * same project page and the same progress socket.
  */
-const MAX_BYTES = 200 * 1024 * 1024;
+const MAX_BYTES = 1024 * 1024 * 1024;
 
 /**
  * The shortest stretch clips can come out of, mirroring the server's
@@ -192,7 +192,7 @@ export function UploadPanel({
     // Checked here as well as on the server so a 200MB upload isn't sent
     // over a phone connection just to be refused at the end of it.
     if (next.size > MAX_BYTES) {
-      setError(`That file is ${formatSize(next.size)}. The limit is 200MB.`);
+      setError(`That file is ${formatSize(next.size)}. The limit is 1GB.`);
       return;
     }
     // Belongs to the old file. Cleared here rather than in an effect so

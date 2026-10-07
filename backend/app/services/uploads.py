@@ -30,7 +30,11 @@ logger = logging.getLogger(__name__)
 # Roughly a 10-minute 1080p phone recording. The product makes short-form
 # video; anything much larger is a misunderstanding of what it does, and
 # the cost of finding that out is a full upload plus a Whisper pass.
-MAX_UPLOAD_BYTES = 200 * 1024 * 1024
+def max_upload_bytes() -> int:
+    """The per-file cap, from settings (MAX_UPLOAD_MB)."""
+    from app.core.config import get_settings
+
+    return get_settings().max_upload_mb * 1024 * 1024
 
 # Read size for the streaming copy. Large enough not to syscall per
 # kilobyte, small enough that the cap is enforced promptly.
@@ -71,7 +75,7 @@ def source_path_for(
     return project_dir_path / "source" / f"{name}{suffix}"
 
 
-async def save_stream(chunks, destination: Path, max_bytes: int = MAX_UPLOAD_BYTES) -> int:
+async def save_stream(chunks, destination: Path, max_bytes: int | None = None) -> int:
     """Stream an upload to disk, enforcing the cap as it goes.
 
     Returns the number of bytes written. Raises UploadRejected — having
@@ -79,6 +83,8 @@ async def save_stream(chunks, destination: Path, max_bytes: int = MAX_UPLOAD_BYT
     cannot fill the disk by lying about Content-Length or by sending a
     chunked body with no length at all.
     """
+    if max_bytes is None:
+        max_bytes = max_upload_bytes()
     destination.parent.mkdir(parents=True, exist_ok=True)
     written = 0
     try:
