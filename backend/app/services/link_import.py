@@ -2,8 +2,9 @@
 
 Two kinds of link, with very different standing:
 
-* **A file the user already has somewhere** — Google Drive, Dropbox, or a
-  plain link to a video file. Fetching it is no different from the user
+* **A file the user already has somewhere** — Google Drive, Dropbox,
+  OneDrive (personal and work), Box, or a plain link to a video
+  file. Fetching it is no different from the user
   uploading it, just without pushing a gigabyte up a phone connection.
 
 * **A YouTube video.** YouTube offers no API for downloading a video, its
@@ -28,6 +29,7 @@ its addresses are public (`_check_public`).
 from __future__ import annotations
 
 import asyncio
+import base64
 import ipaddress
 import logging
 import re
@@ -101,6 +103,26 @@ def classify(raw: str) -> Link:
         query["dl"] = ["1"]
         rebuilt = "&".join(f"{k}={v[0]}" for k, v in query.items())
         return Link("direct", urlunparse(parsed._replace(query=rebuilt)), name)
+    # OneDrive (personal): any share link, encoded into the shares API,
+    # which answers with the file itself.
+    if host in ("1drv.ms", "onedrive.live.com"):
+        token = base64.urlsafe_b64encode(url.encode()).decode().rstrip("=")
+        return Link(
+            "direct", f"https://api.onedrive.com/v1.0/shares/u!{token}/root/content", "OneDrive video"
+        )
+    # OneDrive for work and SharePoint: the share link downloads when asked.
+    if host.endswith(".sharepoint.com"):
+        query = parse_qs(parsed.query)
+        query["download"] = ["1"]
+        rebuilt = "&".join(f"{k}={v[0]}" for k, v in query.items())
+        return Link("direct", urlunparse(parsed._replace(query=rebuilt)), name)
+    # Box: a /s/<name> share link is served raw under /shared/static/<name>.
+    if host == "app.box.com" or host.endswith(".app.box.com") or host.endswith(".box.com"):
+        match = re.match(r"/s/([A-Za-z0-9]+)", parsed.path)
+        if match:
+            return Link(
+                "direct", f"https://{host}/shared/static/{match.group(1)}", "Box video"
+            )
     return Link("direct", url, name)
 
 

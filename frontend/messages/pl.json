@@ -712,7 +712,7 @@
     },
     "link": {
       "label": "Albo wklej link",
-      "placeholder": "Link z Google Drive, Dropbox, YouTube albo do pliku wideo",
+      "placeholder": "Link z Google Drive, Dropbox, OneDrive, Box albo do pliku wideo",
       "fetch": "Pobierz",
       "fetching": "Pobieranie…",
       "rights": "To moje wideo albo mam zgodę na jego użycie.",

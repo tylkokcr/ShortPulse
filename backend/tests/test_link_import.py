@@ -37,6 +37,23 @@ def test_share_links_are_rewritten_to_the_file():
     assert dropbox.url.endswith("dl=1") and "dl=0" not in dropbox.url
 
 
+def test_onedrive_and_box_share_links_are_rewritten_to_the_file():
+    import base64
+
+    personal = "https://1drv.ms/v/s!AkxYz123abc"
+    link = link_import.classify(personal)
+    token = base64.urlsafe_b64encode(personal.encode()).decode().rstrip("=")
+    assert link.url == f"https://api.onedrive.com/v1.0/shares/u!{token}/root/content"
+    work = link_import.classify(
+        "https://contoso-my.sharepoint.com/:v:/g/personal/ann_contoso_com/EaBcD?e=xyz"
+    )
+    assert "download=1" in work.url and "e=xyz" in work.url
+    box = link_import.classify("https://app.box.com/s/abc123def456")
+    assert box.url == "https://app.box.com/shared/static/abc123def456"
+    company = link_import.classify("https://acme.app.box.com/s/zz99")
+    assert company.url == "https://acme.app.box.com/shared/static/zz99"
+
+
 @pytest.mark.parametrize("url", ["file:///etc/passwd", "ftp://host/x.mp4", "not a link", ""])
 def test_anything_but_a_web_link_is_refused(url):
     with pytest.raises(UploadRejected):
@@ -124,8 +141,8 @@ async def test_a_link_that_is_not_a_video_fails_and_leaves_nothing(media_app, mo
     assert not any((tmp_path / "media").glob("*.mp4"))
 
 
-async def test_a_youtube_video_expires_and_its_projects_are_never_posted(  # noqa: F811
-    media_app, monkeypatch, tmp_path
+async def test_a_youtube_video_expires_and_its_projects_are_never_posted(
+    media_app, monkeypatch, tmp_path  # noqa: F811
 ):
     from datetime import UTC, datetime, timedelta
 

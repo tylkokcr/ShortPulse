@@ -712,7 +712,7 @@
     },
     "link": {
       "label": "Or paste a link",
-      "placeholder": "Google Drive, Dropbox, YouTube or a video file link",
+      "placeholder": "Google Drive, Dropbox, OneDrive, Box or a video file link",
       "fetch": "Bring in",
       "fetching": "Bringing in…",
       "rights": "This is my video, or I have permission to use it.",

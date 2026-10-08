@@ -712,7 +712,7 @@
     },
     "link": {
       "label": "Ya da link yapıştır",
-      "placeholder": "Google Drive, Dropbox, YouTube ya da video dosyası linki",
+      "placeholder": "Google Drive, Dropbox, OneDrive, Box ya da video dosyası linki",
       "fetch": "Getir",
       "fetching": "Getiriliyor…",
       "rights": "Bu benim videom ya da kullanma iznim var.",
