@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import clsx from "clsx";
 import { Languages, Music2, Volume2, VolumeX } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/Badge";
 
 /**
@@ -20,8 +20,9 @@ import { Badge } from "@/components/ui/Badge";
  *   pitch — the same footage, three edits.
  * - The caption demo is a Piper narration over stock octopus footage, run
  *   through the upload pipeline once per language with caption
- *   translation. Turkish is not here yet: the local model's Turkish was
- *   not good enough to put on a landing page, and the hosted one makes it.
+ *   translation. English, German and Spanish were made locally; Turkish
+ *   on the live service, because the local model's Turkish was not good
+ *   enough to put on a landing page and the hosted one's is.
  *
  * Videos live in public/showcase and, like public/examples, are not in git
  * (see public/examples/README.md for getting them onto the server).
@@ -43,6 +44,7 @@ const SOURCES = [
 
 const LANGUAGES = [
   { code: "en", label: "English" },
+  { code: "tr", label: "Türkçe" },
   { code: "de", label: "Deutsch" },
   { code: "es", label: "Español" },
 ] as const;
@@ -105,7 +107,13 @@ export function NewShowcase() {
   const t = useTranslations("showcase");
   const tb = useTranslations("studio.beat");
   const [style, setStyle] = useState<Style>("energetic");
-  const [language, setLanguage] = useState<Language>("en");
+  // Opens in the visitor's own language when there is a render of it —
+  // a Turkish visitor reading Turkish captions over English speech is
+  // the feature, shown before any button is pressed.
+  const locale = useLocale();
+  const [language, setLanguage] = useState<Language>(
+    LANGUAGES.find((l) => l.code === locale)?.code ?? "en"
+  );
   const [beatMuted, setBeatMuted] = useState(true);
   const [captionMuted, setCaptionMuted] = useState(true);
   const captionVideo = useRef<HTMLVideoElement>(null);
