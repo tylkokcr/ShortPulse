@@ -1191,7 +1191,10 @@ async def _extract_clips(
                 "Subject tracking is unavailable (see requirements-vision.txt); "
                 "clips will be centre-cropped"
             )
-        if source_size and reframe.is_available():
+        # A clip chosen from the picture keeps the whole of the action in
+        # a blurred frame rather than following a speaker it does not have.
+        fill = moment.from_picture
+        if source_size and reframe.is_available() and not fill:
             with timings.stage(f"clip_{index}_track"):
                 track = await reframe.track_subject(
                     source,
@@ -1221,6 +1224,7 @@ async def _extract_clips(
                 settings.ffmpeg_binary,
                 source_size=source_size,
                 subject=subject or None,
+                fill=fill,
             )
 
         # A copy of the parent's settings with the clip's own identity: same

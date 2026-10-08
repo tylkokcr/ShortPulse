@@ -753,6 +753,7 @@ async def cut_clip(
     *,
     source_size: tuple[int, int] | None = None,
     subject: list[reframe.Sample] | None = None,
+    fill: bool = False,
 ) -> Path:
     """Copy one stretch of a video out into a file of its own.
 
@@ -780,13 +781,30 @@ async def cut_clip(
     it. `services.reframe` finds where they are, and the path it returns
     is driven into the crop here. Absent — no detector installed, or
     nothing found in the footage — this is exactly what it always was.
+
+    `fill` frames a landscape source whole-ish instead: three quarters of
+    its width sharp in the middle, the rest of the frame the same picture
+    blurred and darkened — the beat edit's framing. For clips chosen from
+    the picture (a match reel, an animation), where there is no speaker to
+    follow and a centre crop cuts the action, or the character, in half.
     """
     # scale-to-fill then crop, the same pair `_prepare_video_clip` uses:
     # `increase` makes the short edge reach the target and lets the long
     # one overhang. The crop then takes the middle of what overhangs, or
     # follows the subject across it when there is one to follow.
     script_path: Path | None = None
-    if target and subject and source_size:
+    wider = bool(source_size and target and source_size[0] * target[1] > source_size[1] * target[0])
+    if target and fill and wider:
+        width, height = target
+        sharp = int(width * 4 / 3) // 2 * 2
+        chain = (
+            "split[s1][s2];"
+            f"[s1]scale={width}:{height}:force_original_aspect_ratio=increase,"
+            f"crop={width}:{height},boxblur=20:2,eq=brightness=-0.12:saturation=0.8[bg];"
+            f"[s2]scale={sharp}:-2,crop={width}:ih[fg];"
+            "[bg][fg]overlay=(W-w)/2:(H-h)/2,setsar=1"
+        )
+    elif target and subject and source_size:
         scaled = scaled_size(source_size, target)
         script = reframe.sendcmd_script(subject, scaled[0], target[0])
         # Beside the clip it belongs to, and removed once ffmpeg has read

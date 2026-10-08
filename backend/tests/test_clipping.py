@@ -711,3 +711,32 @@ def test_picture_moments_top_up_around_the_ones_the_transcript_gave():
     extra = clipping.visual_moments(motion, 2, avoid=[spoken])
     assert len(extra) == 2 and all(m.from_picture for m in extra)
     assert all(m.end_s <= spoken[0] or m.start_s >= spoken[1] for m in extra)
+
+
+async def test_a_picture_clip_from_landscape_keeps_the_action_in_a_blurred_frame(tmp_path):
+    """A centre crop of a wide shot cuts the action in half; the fill keeps
+    most of the width sharp and puts the same picture, blurred, around it."""
+    import shutil
+    import subprocess
+
+    from app.engines import render_engine
+    from tests.test_uploads import FFMPEG
+
+    if shutil.which(FFMPEG) is None and not Path(FFMPEG).exists():
+        pytest.skip("needs ffmpeg")
+    source = tmp_path / "wide.mp4"
+    subprocess.run([FFMPEG, "-nostdin", "-v", "error", "-y", "-f", "lavfi", "-i",
+                    "testsrc2=size=640x360:rate=25:duration=3", "-pix_fmt", "yuv420p", str(source)],
+                   check=True)
+    out = tmp_path / "clip.mp4"
+    await render_engine.cut_clip(
+        source, out, 0.5, 2.5, (360, 640), FFMPEG, source_size=(640, 360), fill=True
+    )
+    frame = subprocess.run(
+        [FFMPEG, "-nostdin", "-v", "error", "-ss", "1", "-i", str(out), "-frames:v", "1",
+         "-vf", "format=gray", "-f", "rawvideo", "-"],
+        capture_output=True, check=True,
+    ).stdout
+    assert len(frame) == 360 * 640  # the target size
+    top = frame[: 360 * 40]  # a band above the sharp picture
+    assert sum(top) / len(top) > 8, "the space above is black, not the blurred picture"
