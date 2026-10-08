@@ -65,6 +65,10 @@ class Moment:
     title: str
     #: Why the model picked it. Shown to the user, never acted on.
     reason: str
+    #: Chosen from the motion in the picture rather than the transcript —
+    #: see `visual_moments`. Such a clip is captioned only if it turns out
+    #: to be spoken.
+    from_picture: bool = False
 
     @property
     def duration_s(self) -> float:
@@ -276,3 +280,139 @@ async def pick_moments(
         source_s,
     )
     return moments
+
+
+# ---------------------------------------------------------------------------
+# Videos with nothing to read
+#
+# A skills compilation, a match highlight, a dance: music with a few
+# words of commentary in it, if that. Whisper over music does not come
+# back empty — it repeats one line for minutes on end ("The gesture of
+# desolation of Luca Pira…" ten times over a seven-minute Neymar reel) —
+# and a model asked to find complete thoughts in that rightly finds none.
+# Every such upload ended "nothing held together" and a refund, for a
+# video that plainly has moments in it. They are just not spoken.
+#
+# So when the transcript is mostly not speech, the moments are chosen
+# from the picture instead: the busiest stretches, cut on the video's own
+# shot changes, by the same motion profile the beat edit reads.
+# ---------------------------------------------------------------------------
+
+# Below this share of the stretch actually spoken, the transcript is not
+# what the video is about. A podcast is 70-90% speech, a talking-head
+# video more; the Neymar reel came out at under 15% once the repeated
+# hallucinations were taken out.
+MIN_SPEECH_SHARE = 0.3
+
+# Below this, speech is a part of the video rather than the whole of it —
+# commentary over a match, a vlog with music between the talking. When
+# the transcript gives fewer moments than were asked for, the rest come
+# from the picture. A podcast sits well above it and is left alone: there
+# a short answer means the talk had no more moments, and the busiest
+# stretches of two people sitting still would not be any.
+FRAGMENTED_SPEECH_SHARE = 0.6
+
+# What a clip cut from the picture aims for: long enough for a few moves,
+# well under every platform's ceiling.
+VISUAL_CLIP_S = 30.0
+# How far a clip's ends may move to land on a shot change of the source.
+_SNAP_S = 4.0
+
+
+def _spoken_seconds(segments: list[Segment]) -> float:
+    """Seconds of real speech: each line counted once, and only lines
+    spoken at a speaking pace. A hallucinated line repeats, and one laid
+    over thirty seconds of music has a handful of words in all of it."""
+    seen: set[str] = set()
+    total = 0.0
+    for segment in segments:
+        text = " ".join(segment.text.lower().split()).strip(" .…")
+        length = (segment.end_ms - segment.start_ms) / 1000
+        if not text or text in seen or length <= 0:
+            continue
+        seen.add(text)
+        words = len(segment.words) or len(text.split())
+        if words / length < 0.8:
+            continue
+        total += length
+    return total
+
+
+def speech_share(segments: list[Segment], span_s: float) -> float:
+    return _spoken_seconds(segments) / span_s if span_s > 0 else 0.0
+
+
+def speech_is_thin(segments: list[Segment], span_s: float) -> bool:
+    """Whether this stretch is too little speech for the transcript to be
+    what clips are chosen by. See the section note above."""
+    if span_s <= 0:
+        return True
+    return _spoken_seconds(segments) / span_s < MIN_SPEECH_SHARE
+
+
+def visual_moments(
+    motion,
+    wanted: int,
+    from_s: float = 0.0,
+    to_s: float | None = None,
+    length_s: float = VISUAL_CLIP_S,
+    avoid: list[tuple[float, float]] | None = None,
+) -> list[Moment]:
+    """The `wanted` busiest stretches of about `length_s` between `from_s`
+    and `to_s`, not overlapping, each moved to start and end on one of the
+    video's own shot changes where one is near.
+
+    `motion` is a beat_edit.ClipMotion; the score per sample is the same
+    half raw movement, half movement relative to its surroundings that
+    the beat edit ranks shots by, so a wide shot of a goal counts as much
+    as a close-up of a celebration.
+    """
+    import numpy as np
+
+    from app.engines import beat_edit
+
+    rate = beat_edit._MOTION_FPS
+    end_limit = min(to_s if to_s is not None else motion.duration_s, motion.duration_s)
+    span = end_limit - from_s
+    if span < MIN_CLIP_S:
+        return []
+    length_s = min(length_s, max(MIN_CLIP_S, span / max(1, wanted)))
+    n = int(length_s * rate)
+    per_sample = motion._window_scores(1)
+    if len(per_sample) < n:
+        return []
+    means = np.convolve(per_sample, np.ones(n), mode="valid") / n
+    cuts = [c / rate for c in motion.cuts]
+
+    def snap(t: float, lo: float, hi: float) -> float:
+        near = [c for c in cuts if abs(c - t) <= _SNAP_S and lo <= c <= hi]
+        return min(near, key=lambda c: abs(c - t)) if near else t
+
+    first = int(from_s * rate)
+    last = int((end_limit - length_s) * rate)
+    order = sorted(range(max(0, first), min(last, len(means) - 1) + 1), key=lambda i: -means[i])
+    taken = list(avoid or [])
+    out: list[Moment] = []
+    for index in order:
+        start = index / rate
+        end = start + length_s
+        if any(start < b + 2.0 and end > a - 2.0 for a, b in taken):
+            continue
+        start = snap(start, from_s, end_limit)
+        end = snap(start + length_s, start + MIN_CLIP_S, min(end_limit, start + MAX_CLIP_S))
+        if end - start < MIN_CLIP_S or any(start < b and end > a for a, b in taken):
+            continue
+        taken.append((start, end))
+        out.append(
+            Moment(
+                start_s=round(start, 2),
+                end_s=round(end, 2),
+                title=f"Highlight at {int(start // 60)}:{int(start % 60):02d}",
+                reason="Chosen from the picture: the video has too little speech to read.",
+                from_picture=True,
+            )
+        )
+        if len(out) >= wanted:
+            break
+    out.sort(key=lambda moment: moment.start_s)
+    return out

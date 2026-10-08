@@ -810,20 +810,22 @@ async def run_upload_pipeline(
                     "into. Upload it for captions instead."
                 )
 
-        if not words:
-            raise RuntimeError(
-                f"No speech was found {_window_note(config)}, so there is "
-                "nothing to caption."
-            )
-
         # 1a. Clips ------------------------------------------------------------
         #
         # An extraction never gets past here: it has no video of its own to
         # render. It cuts, hands each cut to this same function as an
         # ordinary upload, and finishes holding nothing but their ids.
+        # Ahead of the no-speech refusal below: a video with nothing said
+        # in it still has moments, chosen from the picture.
         if config.clip_count:
             await _extract_clips(project, segments, settings, timings, submit)
             return
+
+        if not words:
+            raise RuntimeError(
+                f"No speech was found {_window_note(config)}, so there is "
+                "nothing to caption."
+            )
 
         # 1b. Dub -------------------------------------------------------------
         voice_track: Path | None = None
@@ -993,6 +995,36 @@ async def run_upload_pipeline(
         )
 
 
+async def _finish_uncaptioned(config: ProjectConfig, source: Path, settings: Settings) -> None:
+    """Complete a cut as it is: no transcription, no captions burned in.
+    Empty captions are stored so the editor still opens and text can be
+    added by hand."""
+    paths = project_dir(config.id)
+    final_path = paths / "output" / "final.mp4"
+    final_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, final_path)
+    try:
+        duration_s: float | None = round(
+            (await uploads.probe(final_path, settings.ffprobe_binary)).duration_s, 2
+        )
+    except Exception:  # noqa: BLE001 - a missing length is cosmetic
+        duration_s = None
+    await render_engine.extract_poster(
+        final_path,
+        paths / "output" / "poster.jpg",
+        ffmpeg_binary=settings.ffmpeg_binary,
+        ffprobe_binary=settings.ffprobe_binary,
+    )
+    await project_store.update_project(
+        config.id,
+        status=ProjectStatus.COMPLETE,
+        output_path=str(final_path),
+        captions=CaptionTrack(words=[], style=config.subtitles),
+        duration_s=duration_s,
+        error=None,
+    )
+
+
 async def _extract_clips(
     project: Project,
     segments: list,
@@ -1031,10 +1063,53 @@ async def _extract_clips(
         message="Reading the transcript for the moments worth posting...",
     )
 
-    with timings.stage("clip_selection"):
-        moments = await clipping.pick_moments(
-            segments, config.llm, config.clip_count or 3, config.clip_guidance
+    wanted = config.clip_count or 3
+    window = _clip_window(config)
+    try:
+        source_s = (await uploads.probe(source, settings.ffprobe_binary)).duration_s
+    except Exception:  # noqa: BLE001 - the window, or the transcript, still bounds it
+        source_s = (segments[-1].end_ms / 1000) if segments else 0.0
+    from_s, to_s = (window[0], window[0] + window[1]) if window else (0.0, source_s)
+
+    # Speech first, when there is enough of it to be what the video is
+    # about. A highlights reel, a dance, anything set to music is chosen
+    # from the picture instead — and so is a reel of commentary where the
+    # model, rightly, found no line that stands on its own. See
+    # clipping's note on videos with nothing to read.
+    moments: list[clipping.Moment] = []
+    share = clipping.speech_share(segments, to_s - from_s)
+    logger.info(
+        "Extraction %s: %.0f%% of %.0fs is speech", project_id, share * 100, to_s - from_s
+    )
+    if share >= clipping.MIN_SPEECH_SHARE:
+        with timings.stage("clip_selection"):
+            moments = await clipping.pick_moments(
+                segments, config.llm, wanted, config.clip_guidance
+            )
+    if len(moments) < wanted and share < clipping.FRAGMENTED_SPEECH_SHARE:
+        from app.engines import beat_edit
+
+        await _emit(
+            project_id,
+            stage=RenderStage.SCRIPT_GENERATION,
+            progress_pct=25,
+            message="Finding the rest of the moments in the picture...",
         )
+        with timings.stage("clip_selection_visual"):
+            motion = await asyncio.to_thread(
+                beat_edit.motion_profile, source, settings.ffmpeg_binary, settings.ffprobe_binary
+            )
+            moments = sorted(
+                moments
+                + clipping.visual_moments(
+                    motion,
+                    wanted - len(moments),
+                    from_s,
+                    to_s,
+                    avoid=[(m.start_s, m.end_s) for m in moments],
+                ),
+                key=lambda m: m.start_s,
+            )
 
     if not moments:
         # Not an error. The transcript was read and nothing in it stood up
@@ -1156,6 +1231,17 @@ async def _extract_clips(
             child_config.id, source_path=str(child_source)
         )
         child_ids.append(child_config.id)
+
+        # A clip chosen from the picture is often music under the action.
+        # Captioning it would burn in what Whisper invents over music, so
+        # unless this stretch is really spoken it is finished as cut.
+        inside = [
+            s for s in segments
+            if s.start_ms / 1000 >= moment.start_s and s.end_ms / 1000 <= moment.end_s
+        ]
+        if moment.from_picture and clipping.speech_is_thin(inside, moment.duration_s):
+            await _finish_uncaptioned(child_config, child_source, settings)
+            continue
 
         if submit is not None:
             await submit(child)

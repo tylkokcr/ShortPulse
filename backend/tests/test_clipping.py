@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from app.schemas.project import LLMConfig, Segment
@@ -603,3 +605,98 @@ def test_shifting_by_nothing_is_the_whole_source_case():
     segments = _transcript(3)
 
     assert shift_segments(segments, 0) == segments
+
+
+def _seg(start: float, end: float, text: str, words: int | None = None):
+    from app.schemas.project import Segment, Word
+
+    count = words if words is not None else len(text.split())
+    step = (end - start) / max(count, 1)
+    return Segment(
+        start_ms=int(start * 1000),
+        end_ms=int(end * 1000),
+        text=text,
+        words=[
+            Word(
+                text="w",
+                start_ms=int((start + i * step) * 1000),
+                end_ms=int((start + (i + 1) * step) * 1000),
+            )
+            for i in range(count)
+        ],
+    )
+
+
+def test_music_with_one_line_repeated_over_it_is_thin_speech():
+    """What Whisper made of a seven-minute Neymar reel: a line or two of
+    commentary, then one sentence repeated over the music for minutes."""
+    from app.services import clipping
+
+    hallucinated = "The gesture of desolation of Luca Pira, who hits Neymar's hand."
+    segments = [_seg(20.9, 23.7, "Lauren wants to play it out from the back.")] + [
+        _seg(100.0 + k * 30, 128.0 + k * 30, hallucinated) for k in range(10)
+    ]
+    assert clipping.speech_is_thin(segments, 420.0)
+
+
+def test_a_talk_is_not_thin_speech():
+    from app.services import clipping
+
+    segments = [_seg(k * 3.0, k * 3.0 + 2.8, f"sentence number {k} of the talk") for k in range(100)]
+    assert not clipping.speech_is_thin(segments, 300.0)
+
+
+def test_moments_from_the_picture_are_the_busiest_and_land_on_shot_changes():
+    import numpy as np
+
+    from app.engines import beat_edit
+    from app.services import clipping
+
+    rate = beat_edit._MOTION_FPS
+    seconds = 300.0
+    n = int(seconds * rate)
+    scores = np.full(n, 1.0)
+    scores[int(100 * rate) : int(130 * rate)] = 10.0  # the action
+    cuts = [int(t * rate) for t in range(5, 300, 7)]  # a shot change every 7s
+    motion = beat_edit.ClipMotion(Path("reel.mp4"), seconds, scores, cuts=cuts)
+
+    moments = clipping.visual_moments(motion, 3)
+    assert len(moments) == 3
+    busiest = max(moments, key=lambda m: min(m.end_s, 130) - max(m.start_s, 100))
+    assert busiest.start_s < 110 and busiest.end_s > 120
+    # The video's own start is a shot start too.
+    cut_times = {0.0} | {round(c / rate, 2) for c in cuts}
+    for m in moments:
+        assert clipping.MIN_CLIP_S <= m.duration_s <= clipping.MAX_CLIP_S
+        assert round(m.start_s, 2) in cut_times
+    spans = sorted((m.start_s, m.end_s) for m in moments)
+    assert all(a[1] <= b[0] for a, b in zip(spans, spans[1:], strict=False))
+
+
+def test_moments_from_the_picture_stay_inside_the_window():
+    import numpy as np
+
+    from app.engines import beat_edit
+    from app.services import clipping
+
+    rate = beat_edit._MOTION_FPS
+    scores = np.random.default_rng(1).random(int(600 * rate))
+    motion = beat_edit.ClipMotion(Path("long.mp4"), 600.0, scores)
+    for m in clipping.visual_moments(motion, 3, from_s=200.0, to_s=320.0):
+        assert 200.0 <= m.start_s and m.end_s <= 320.0
+
+
+def test_picture_moments_top_up_around_the_ones_the_transcript_gave():
+    import numpy as np
+
+    from app.engines import beat_edit
+    from app.services import clipping
+
+    rate = beat_edit._MOTION_FPS
+    scores = np.full(int(300 * rate), 1.0)
+    scores[int(100 * rate) : int(130 * rate)] = 10.0
+    motion = beat_edit.ClipMotion(Path("reel.mp4"), 300.0, scores)
+    spoken = (95.0, 140.0)  # already taken, from the transcript
+    extra = clipping.visual_moments(motion, 2, avoid=[spoken])
+    assert len(extra) == 2 and all(m.from_picture for m in extra)
+    assert all(m.end_s <= spoken[0] or m.start_s >= spoken[1] for m in extra)
