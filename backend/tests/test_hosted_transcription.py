@@ -147,3 +147,17 @@ def test_which_transcriptions_go_to_the_api(monkeypatch, provider, key, seconds,
     monkeypatch.setattr(settings, "transcription_provider", provider)
     monkeypatch.setattr(settings, "openai_api_key", key)
     assert render_manager._hosted_transcription(settings, seconds) is hosted
+
+
+def test_words_take_the_sentences_punctuation():
+    data = {
+        "segments": [{"start": 0.0, "end": 3.0, "text": " Hoş geldin, hocam. Nasılsın?"}],
+        "words": [
+            {"word": "Hoş", "start": 0.0, "end": 0.3},
+            {"word": "geldin", "start": 0.3, "end": 0.7},
+            {"word": "hocam", "start": 0.8, "end": 1.2},
+            {"word": "Nasılsın", "start": 1.5, "end": 2.0},
+        ],
+    }
+    [segment] = audio_engine._segments_from_verbose(data, 0.0)
+    assert [w.text for w in segment.words] == ["Hoş", "geldin,", "hocam.", "Nasılsın?"]

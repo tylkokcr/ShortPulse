@@ -348,6 +348,34 @@ _LANGUAGE_NAMES = {
 }
 
 
+def _bare(token: str) -> str:
+    return re.sub(r"[^\w]", "", token.lower())
+
+
+def _punctuate(words: list[Word], sentence: str) -> list[Word]:
+    """The API's words come without punctuation and the sentence with it;
+    captions drawn from the words alone had no full stops and capitals in
+    the middle of lines. Each word takes the sentence's spelling of itself,
+    matched in order, so "geldin" becomes "geldin." where the sentence ends.
+    A word the sentence does not have is left as it came."""
+    tokens = sentence.split()
+    out: list[Word] = []
+    at = 0
+    for word in words:
+        target = _bare(word.text)
+        found = None
+        for k in range(at, min(at + 4, len(tokens))):
+            if _bare(tokens[k]) == target:
+                found = k
+                break
+        if found is None:
+            out.append(word)
+            continue
+        out.append(word.model_copy(update={"text": tokens[found]}))
+        at = found + 1
+    return out
+
+
 def _segments_from_verbose(data: dict, offset_s: float) -> list[Segment]:
     """The API's segments and words, put back together: it returns them as
     two separate lists, each word timed but not assigned to a sentence."""
@@ -372,6 +400,7 @@ def _segments_from_verbose(data: dict, offset_s: float) -> list[Segment]:
             index += 1
         if not inside:
             continue
+        inside = _punctuate(inside, str(seg.get("text", "")))
         out.append(
             Segment(
                 text=str(seg.get("text", "")).strip(),
