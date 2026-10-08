@@ -79,10 +79,31 @@ async def test_a_moment_over_the_ceiling_is_trimmed_to_a_sentence_boundary(monke
     assert moment.end_s % 5 == 0
 
 
-async def test_a_moment_under_the_floor_is_dropped(monkeypatch):
-    """Two segments is ten seconds, and there is no point to be made in
-    ten seconds."""
+async def test_a_moment_under_the_floor_is_grown_to_it(monkeypatch):
+    """Two segments is ten seconds. The line that lands was found; the
+    sentences after it carry the clip to the floor, ending on one."""
     _answer(monkeypatch, [{"first": 0, "last": 1, "title": "Too short"}])
+
+    [moment] = await clipping.pick_moments(_transcript(), CONFIG)
+    assert moment.start_s == 0.0 and moment.end_s == 15.0
+
+
+async def test_fast_talk_picked_a_line_at_a_time_still_makes_clips(monkeypatch):
+    """A podcast in segments of a second and a half, and a model picking
+    single lines: before, every one was under the floor and the run ended
+    with nothing."""
+    _answer(
+        monkeypatch,
+        [{"first": i, "last": i, "title": f"line {i}"} for i in (10, 120, 300)],
+    )
+    moments = await clipping.pick_moments(_transcript(400, 1.5), CONFIG, wanted=3)
+    assert len(moments) == 3
+    assert all(m.duration_s >= clipping.MIN_CLIP_S for m in moments)
+
+
+async def test_a_moment_too_short_at_the_very_end_is_dropped(monkeypatch):
+    """Nothing after it to grow into."""
+    _answer(monkeypatch, [{"first": 58, "last": 59, "title": "Too short"}])
 
     assert await clipping.pick_moments(_transcript(), CONFIG) == []
 
@@ -148,7 +169,7 @@ async def test_fewer_good_moments_than_asked_for_is_a_real_answer(monkeypatch):
         monkeypatch,
         [
             {"first": 0, "last": 4, "title": "Good"},
-            {"first": 10, "last": 11, "title": "Too short"},
+            {"first": 58, "last": 59, "title": "Too short"},
             {"first": 900, "last": 950, "title": "Invented"},
         ],
     )

@@ -123,13 +123,16 @@ def _validate(
 ) -> list[Moment]:
     """Turn what the model said into moments that exist.
 
-    Everything here is a rejection rather than a repair, with one
-    exception. A model that names a range slightly too long is doing the
-    task correctly and overshooting, so the end is pulled back to the
-    last segment that fits; a model that names a range too short, or
-    backwards, or outside the transcript, is not doing the task, and
-    guessing what it meant would put a cut in the video on the strength
-    of a guess.
+    Everything here is a rejection rather than a repair, with two
+    exceptions, one each way. A model that names a range slightly too
+    long is doing the task correctly and overshooting, so the end is
+    pulled back to the last segment that fits. A range too short is
+    grown by the sentences after it until it is long enough: in fast
+    talk — a podcast transcribed into 1838 segments of a second or two —
+    a model picks the line that lands and stops there, and every one of
+    them came in under the floor and was thrown away. A range backwards
+    or outside the transcript is not doing the task, and guessing what
+    it meant would put a cut in the video on the strength of a guess.
     """
     if not isinstance(raw_moments, list):
         logger.warning("clip selection returned %s, not a list", type(raw_moments).__name__)
@@ -158,6 +161,14 @@ def _validate(
         # clip still ends on a sentence boundary rather than mid-word.
         while last > first and (segments[last].end_ms / 1000) - start_s > MAX_CLIP_S:
             last -= 1
+        # Undershoot is grown from the end, the mirror of the trim above,
+        # so the clip still finishes on a sentence boundary.
+        while (
+            (segments[last].end_ms / 1000) - start_s < MIN_CLIP_S
+            and last + 1 < len(segments)
+            and (segments[last + 1].end_ms / 1000) - start_s <= MAX_CLIP_S
+        ):
+            last += 1
         end_s = segments[last].end_ms / 1000
 
         if end_s - start_s < MIN_CLIP_S:
@@ -265,13 +276,26 @@ async def pick_moments(
         if asked
         else ""
     )
+    # The scale of this transcript, said outright. Segment lengths vary
+    # tenfold between a lecture and a fast podcast, and a model judging
+    # "30 seconds" by eye from the numbers picks two lines of quick talk.
+    per_segment = max(source_s / max(len(segments), 1), 0.5)
+    shortest = max(1, round(MIN_CLIP_S / per_segment))
+    typical = (max(shortest, round(25 / per_segment)), max(shortest, round(60 / per_segment)))
     prompt = (
         f"Find up to {wanted} moments, each between {int(MIN_CLIP_S)} and "
-        f"{int(MAX_CLIP_S)} seconds long.{wish}\n\n{_numbered_transcript(segments)}"
+        f"{int(MAX_CLIP_S)} seconds long. Segments here average {per_segment:.1f}s, "
+        f"so a moment is at least {shortest} consecutive segments and usually "
+        f"{typical[0]}-{typical[1]}.{wish}\n\n{_numbered_transcript(segments)}"
     )
 
     parsed = await script_engine.complete_json(config, SYSTEM_PROMPT, prompt)
     moments = _validate(parsed.get("moments"), segments, wanted)
+    if not moments:
+        # What the model actually said, when none of it survived — the only
+        # way to tell "nothing worth clipping" from "answered in a shape
+        # the validator could not use" after the fact.
+        logger.info("clip selection kept nothing; the model answered: %.600s", parsed)
 
     logger.info(
         "clip selection kept %d of %s moments from %.0fs of transcript",
