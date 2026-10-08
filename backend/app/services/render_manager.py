@@ -995,6 +995,24 @@ async def run_upload_pipeline(
         )
 
 
+async def _return_unfound_clips(project_id: str, missing: int) -> None:
+    """Give back the per-clip part of the price for clips asked for and not
+    found (credits.CLIP_EACH_COST). The clips that were cut are real, so
+    this is a price correction, not a refund — see correct_charge."""
+    pool = db.optional_pool()
+    if pool is None or missing <= 0:
+        return
+    try:
+        await credits.correct_charge(
+            pool,
+            project_id,
+            missing * credits.CLIP_EACH_COST,
+            note=f"{missing} of the clips asked for were not found",
+        )
+    except Exception:  # noqa: BLE001 - a missed correction must not lose the clips
+        logger.exception("Could not return the unfound clips' credits for %s", project_id)
+
+
 async def _finish_uncaptioned(config: ProjectConfig, source: Path, settings: Settings) -> None:
     """Complete a cut as it is: no transcription, no captions burned in.
     Empty captions are stored so the editor still opens and text can be
@@ -1121,6 +1139,9 @@ async def _extract_clips(
             "Nothing in that video held together as a clip on its own. "
             "Your credits have been returned."
         )
+
+    if len(moments) < wanted:
+        await _return_unfound_clips(project_id, wanted - len(moments))
 
     paths = project_dir(project_id)
     child_ids: list[str] = []

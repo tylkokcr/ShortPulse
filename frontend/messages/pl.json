@@ -210,7 +210,7 @@
     "capabilities": {
       "transcript": "Momenty wybiera transkrypcja — tu poproszono o trzy, a były dwa.",
       "window": "Transkrybowany jest tylko wybrany fragment, więc godzina nagrania to nie godzina pracy.",
-      "cost": "Liczy się to, co odczytano, a nie liczba klipów: jeden kredyt za minutę.",
+      "cost": "Płacisz za odczytany fragment i za każdy klip: kredyt za minutę plus cena napisów za klip. Za klipy, których nie znaleziono, kredyty wracają.",
       "library": "Każdy klip to osobny projekt — z napisami, kadrem i edycją."
     },
     "split": {
@@ -463,7 +463,7 @@
       "window": "Który fragment wykorzystać",
       "windowStart": "Początek fragmentu",
       "windowEnd": "Koniec fragmentu",
-      "windowHint": "Przeciągnij, aby wybrać fragment do odczytania. Tylko on jest transkrybowany i za niego płacisz — 1 kredyt za każde {perCredit} min. Co najmniej {minutes} min.",
+      "windowHint": "Przeciągnij, aby wybrać fragment do odczytania. Tylko on jest transkrybowany — 1 kredyt za każde {perCredit} min plus {perClip} za klip. Co najmniej {minutes} min.",
       "template": "Szablon klipu",
       "templateHint": "Każdy ustawia kadr, do którego tniemy klipy, razem ze stylem napisów i ich położeniem. Wszystko zmienisz poniżej.",
       "templateNeedsClips": "Dodawanie napisów zostawia kadr taki, w jakim nagrano — styl z innym kadrem wybierzesz tylko przy cięciu na klipy.",

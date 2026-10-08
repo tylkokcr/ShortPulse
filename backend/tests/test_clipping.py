@@ -199,20 +199,31 @@ def _upload_config(**kwargs):
     return ProjectConfig(topic="x", source=ProjectSource.UPLOAD, **kwargs)
 
 
-def test_an_extraction_is_priced_by_the_stretch_it_reads():
-    """Per clip until the uploader could choose a stretch. The reading is
-    the work — one Whisper pass that scales with the source, against cuts
-    that are short re-encodes — so the reading is what is charged, and
-    asking for five clips and getting two no longer costs five."""
+def test_an_extraction_is_priced_by_the_read_and_by_each_clip():
+    """The read is the transcription, which scales with the source; each
+    clip is a caption job of its own on the queue. Both are paid for."""
     from app.services import credits
 
-    ten_minutes = _upload_config(clip_count=3, clip_from_s=0, clip_to_s=600)
+    def cost(clips: int) -> int:
+        return credits.cost_for(_upload_config(clip_count=clips, clip_from_s=0, clip_to_s=600))
 
-    assert credits.cost_for(ten_minutes) == 10
-    # And the clip count does not enter into it.
-    assert credits.cost_for(
-        _upload_config(clip_count=5, clip_from_s=0, clip_to_s=600)
-    ) == 10
+    assert cost(3) == 10 + 3 * credits.CLIP_EACH_COST
+    assert cost(5) - cost(3) == 2 * credits.CLIP_EACH_COST
+
+
+async def test_clips_asked_for_and_not_found_are_given_back(monkeypatch):
+    from app.services import credits, db, render_manager
+
+    paid: list[int] = []
+
+    async def correct(pool, project_id, amount, *, note=None):
+        paid.append(amount)
+        return amount
+
+    monkeypatch.setattr(db, "optional_pool", lambda: object())
+    monkeypatch.setattr(credits, "correct_charge", correct)
+    await render_manager._return_unfound_clips("p", 2)
+    assert paid == [2 * credits.CLIP_EACH_COST]
 
 
 def test_the_price_is_of_the_window_not_of_the_position():
@@ -257,7 +268,7 @@ def test_clips_are_priced_ahead_of_the_dub_rate():
     from app.services import credits
 
     config = _upload_config(clip_count=2, dub_language="tr", clip_from_s=0, clip_to_s=600)
-    assert credits.cost_for(config) == 10
+    assert credits.cost_for(config) == 10 + 2 * credits.CLIP_EACH_COST
 
 
 def test_a_plain_upload_is_unchanged():

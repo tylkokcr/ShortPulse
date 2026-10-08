@@ -91,6 +91,7 @@ def _pricing_table() -> dict[str, int]:
                 ProjectConfig(topic="quote", source=ProjectSource.UPLOAD, dub_language="tr")
             ),
             "upload:clip_seconds_per_credit": credits.CLIP_SECONDS_PER_CREDIT,
+            "upload:clip_each": credits.CLIP_EACH_COST,
             # The length-less key is what a page from before lengths were
             # priced reads; it is the 15-second price, which it then was.
             "beat_edit": credits.beat_edit_cost(15.0),

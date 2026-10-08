@@ -210,7 +210,7 @@
     "capabilities": {
       "transcript": "Anları metin seçer — burada üç istendi, metinde iki tane vardı.",
       "window": "Yalnızca seçtiğin aralık deşifre edilir; bir saatlik kayıt bir saatlik iş değildir.",
-      "cost": "Kesit başına değil, okunan süre üzerinden: her dakikaya bir kredi.",
+      "cost": "Okunan süre artı her kesit: dakikaya bir kredi, kesit başına da bir altyazı işi kadar. Bulunamayan kesitlerin kredisi geri verilir.",
       "library": "Her kesit kendi projesi olarak düşer — altyazısı, kadrajı ve düzenlemesiyle."
     },
     "split": {
@@ -463,7 +463,7 @@
       "window": "Hangi bölüm kullanılsın",
       "windowStart": "Bölümün başı",
       "windowEnd": "Bölümün sonu",
-      "windowHint": "Okunacak bölümü sürükleyerek seç. Yalnızca burası deşifre edilir ve ücret bunun üzerinden hesaplanır — her {perCredit} dakikaya 1 kredi. En az {minutes} dakika.",
+      "windowHint": "Okunacak bölümü sürükleyerek seç. Yalnızca burası deşifre edilir — her {perCredit} dakikaya 1 kredi, artı kesit başına {perClip}. En az {minutes} dakika.",
       "template": "Klip şablonu",
       "templateHint": "Her biri kliplerin kesileceği kadrajı, altyazı stiliyle ve altyazının yeriyle birlikte ayarlar. Hepsini aşağıdan değiştirebilirsin.",
       "templateNeedsClips": "Altyazılama videoyu çekildiği kadrajda bırakır — farklı kadrajlı bir görünümü ancak kesitlere bölerken seçebilirsin.",

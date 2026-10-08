@@ -96,10 +96,13 @@ function formatSize(bytes: number): string {
 function clipPrice(
   windowMs: [number, number],
   durationMs: number | null,
-  secondsPerCredit: number
+  secondsPerCredit: number,
+  clips: number,
+  perClip: number
 ): number {
   const spanMs = durationMs === null ? 0 : Math.max(windowMs[1] - windowMs[0], 0);
-  return Math.max(1, Math.ceil(spanMs / 1000 / secondsPerCredit));
+  // The read, then each clip asked for — `credits.extraction_cost`.
+  return Math.max(1, Math.ceil(spanMs / 1000 / secondsPerCredit)) + clips * perClip;
 }
 
 export function UploadPanel({
@@ -182,8 +185,10 @@ export function UploadPanel({
   // move together or the panel promises a number the server will not
   // charge.
   const secondsPerCredit = credits?.pricing?.["upload:clip_seconds_per_credit"] ?? 120;
+  // Absent from a server older than per-clip pricing, which charged none.
+  const perClip = credits?.pricing?.["upload:clip_each"] ?? 0;
   const price = clipCount
-    ? clipPrice(windowMs, durationMs, secondsPerCredit)
+    ? clipPrice(windowMs, durationMs, secondsPerCredit, clipCount, perClip)
     : (credits?.pricing?.[dubLanguage ? "upload:dub" : "upload:caption"] ?? 1);
 
   function choose(next: File | null) {
@@ -396,6 +401,7 @@ export function UploadPanel({
               {t("windowHint", {
                 minutes: Math.round(MIN_WINDOW_MS / 60000),
                 perCredit: Math.round(secondsPerCredit / 60),
+                perClip,
               })}
             </p>
           </div>

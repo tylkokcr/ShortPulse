@@ -100,6 +100,18 @@ DUB_COST = 4
 # shortest legal window costs something and a part-minute is not free.
 CLIP_SECONDS_PER_CREDIT = 60
 
+# And each clip on top, at the price of a caption job — because that is
+# what each one is: a cut that goes back on the queue and is transcribed
+# and burned in like any upload. Reading alone was the whole price until
+# 2026-10-08, and five clips cost the machine five jobs for the price of
+# one read.
+#
+# Charged for the clips asked for, before the run, so the quote is the
+# charge; a run that finds fewer gives the difference back afterwards
+# (render_manager._extract_clips). Paying for clips not delivered was the
+# unfairness the per-read price fixed, and this keeps it fixed.
+CLIP_EACH_COST = AUTOCAPTION_COST
+
 
 # Re-rolling one scene's visual on a finished video.
 #
@@ -132,6 +144,16 @@ def clip_cost(from_s: float, to_s: float | None) -> int:
     return max(1, ceil(span / CLIP_SECONDS_PER_CREDIT))
 
 
+def extraction_cost(config: ProjectConfig) -> int:
+    """The read, plus every clip asked for (see CLIP_EACH_COST). A project
+    stored before windows existed keeps the one price it was made at."""
+    if config.clip_to_s is None:
+        return AUTOCAPTION_COST
+    return clip_cost(config.clip_from_s, config.clip_to_s) + CLIP_EACH_COST * (
+        config.clip_count or 0
+    )
+
+
 # A beat edit is ffmpeg over the user's own clips: no model, no stock
 # search, no transcription — but every clip is profiled frame by frame and
 # every cut re-encoded, on up to two gigabytes of footage, and the time
@@ -156,7 +178,7 @@ def cost_for(config: ProjectConfig) -> int:
         return beat_edit_cost(config.beat_edit.duration_s if config.beat_edit else 15.0)
     if config.source == ProjectSource.UPLOAD:
         if config.clip_count:
-            return clip_cost(config.clip_from_s, config.clip_to_s)
+            return extraction_cost(config)
         return DUB_COST if config.dub_language else AUTOCAPTION_COST
     mode = VisualMode(config.visual_mode)
     length = VideoLength(config.video_length)

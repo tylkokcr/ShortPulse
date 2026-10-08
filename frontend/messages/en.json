@@ -210,7 +210,7 @@
     "capabilities": {
       "transcript": "The transcript picks the moments — three were asked for here and two were there.",
       "window": "Only the stretch you choose is transcribed, so an hour of recording is not an hour of work.",
-      "cost": "Priced by what was read, not per clip: one credit a minute.",
+      "cost": "Priced by what was read, plus each clip: one credit a minute, and the price of a caption job per clip. Clips that aren't found are given back.",
       "library": "Every clip lands as its own project — captions, frame and edits included."
     },
     "split": {
@@ -463,7 +463,7 @@
       "window": "Which part to use",
       "windowStart": "Start of the stretch",
       "windowEnd": "End of the stretch",
-      "windowHint": "Drag to pick the stretch to read. Only this part is transcribed, and it is what you pay for — 1 credit per {perCredit} min. At least {minutes} minutes.",
+      "windowHint": "Drag to pick the stretch to read. Only this part is transcribed — 1 credit per {perCredit} min, plus {perClip} per clip. At least {minutes} minutes.",
       "template": "Clip template",
       "templateHint": "Each one sets the frame the clips are cut to, together with the caption style and where it sits. Change any of it below.",
       "templateNeedsClips": "Captioning keeps the frame it was filmed in — pick a look with a different frame when you cut it into clips.",
