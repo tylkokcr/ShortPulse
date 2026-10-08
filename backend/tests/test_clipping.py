@@ -79,13 +79,59 @@ async def test_a_moment_over_the_ceiling_is_trimmed_to_a_sentence_boundary(monke
     assert moment.end_s % 5 == 0
 
 
-async def test_a_moment_under_the_floor_is_grown_to_it(monkeypatch):
-    """Two segments is ten seconds. The line that lands was found; the
-    sentences after it carry the clip to the floor, ending on one."""
+def _sentences(count: int = 60, seconds_each: float = 5.0) -> list[Segment]:
+    return [
+        Segment(
+            text=f"Sentence number {i} is here.",
+            start_ms=round(i * seconds_each * 1000),
+            end_ms=round((i + 1) * seconds_each * 1000),
+        )
+        for i in range(count)
+    ]
+
+
+async def test_a_moment_under_the_floor_is_grown_to_a_sentence_end(monkeypatch):
+    """Two segments is ten seconds. A clip cut at the floor stopped just
+    before its point, so it is carried on to about twenty seconds and the
+    end of a sentence."""
     _answer(monkeypatch, [{"first": 0, "last": 1, "title": "Too short"}])
 
-    [moment] = await clipping.pick_moments(_transcript(), CONFIG)
-    assert moment.start_s == 0.0 and moment.end_s == 15.0
+    [moment] = await clipping.pick_moments(_sentences(), CONFIG)
+    assert moment.start_s == 0.0 and moment.end_s == 25.0
+
+
+async def test_a_grown_moment_does_not_stop_on_a_trailing_sentence(monkeypatch):
+    """ "Kaybedince..." is not where a thought lands."""
+    segments = _sentences()
+    segments[4] = segments[4].model_copy(update={"text": "Ama kaybedince..."})
+    _answer(monkeypatch, [{"first": 0, "last": 1, "title": "Too short"}])
+
+    [moment] = await clipping.pick_moments(segments, CONFIG)
+    assert moment.end_s == 30.0
+
+
+async def test_a_line_number_off_by_a_few_is_put_right_by_its_quote(monkeypatch):
+    """Over 1838 numbered lines a model found the right story and named a
+    line a dozen away; the words it quoted put the clip where it belongs."""
+    segments = _sentences(200)
+    segments[120] = segments[120].model_copy(update={"text": "Arda Turan hoş geldin hocam."})
+    segments[127] = segments[127].model_copy(update={"text": "Bu yüzden şampiyon olduk."})
+    _answer(
+        monkeypatch,
+        [{"first": 108, "last": 115, "first_words": "Arda Turan hoş geldin",
+          "last_words": "bu yüzden şampiyon olduk", "title": "Hoş geldin"}],
+    )
+    [moment] = await clipping.pick_moments(segments, CONFIG)
+    assert moment.start_s == 600.0 and moment.end_s == 640.0
+
+
+async def test_a_quote_that_matches_nothing_nearby_leaves_the_number(monkeypatch):
+    _answer(
+        monkeypatch,
+        [{"first": 10, "last": 15, "first_words": "words nobody ever said here"}],
+    )
+    [moment] = await clipping.pick_moments(_sentences(), CONFIG)
+    assert moment.start_s == 50.0
 
 
 async def test_fast_talk_picked_a_line_at_a_time_still_makes_clips(monkeypatch):

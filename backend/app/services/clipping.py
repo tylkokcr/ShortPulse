@@ -22,7 +22,9 @@ hallucination into an out-of-range index, which is checkable.
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass
+from difflib import SequenceMatcher
 
 from app.engines import script_engine
 from app.schemas.project import LLMConfig, Segment
@@ -95,9 +97,14 @@ timestamp.
 - A moment must end where the thought lands, not on a trailing "and so".
 - Do not pick overlapping moments.
 - Prefer fewer good moments over filling the quota with weak ones.
+- Copy the first few words of the first segment and the last few words \
+of the last segment exactly as they are written in the list.
+- Write the title in the language the transcript is in.
 
 Return JSON of this exact shape:
 {"moments": [{"first": <segment number>, "last": <segment number>, \
+"first_words": "<first 3-6 words of segment first>", \
+"last_words": "<last 3-6 words of segment last>", \
 "title": "<six words or fewer>", "reason": "<one short sentence>"}]}"""
 
 
@@ -114,6 +121,47 @@ def _numbered_transcript(segments: list[Segment]) -> str:
         end = segment.end_ms / 1000
         lines.append(f"[{index}] {start:.1f}-{end:.1f}s  {segment.text}")
     return "\n".join(lines)
+
+
+# How far a quoted line is looked for around the number the model gave.
+# A model reading a list of 1838 numbered lines found the right story and
+# named a line 10 to 30 away from it — titles that did not match their clip.
+_SNAP_RADIUS = 40
+# Clips cut to the floor stopped short of the point ("Kaybedince..."); a
+# grown moment runs to about this and on to the end of a sentence.
+GROW_TARGET_S = 22.0
+
+
+def _norm(text: str) -> str:
+    return " ".join(re.sub(r"[^\w\s]", " ", text.lower()).split())
+
+
+def _snap(index: int, quote: object, segments: list[Segment], *, at_end: bool) -> int:
+    """The segment the model quoted, near the number it gave. The number
+    stands when there is no quote or nothing nearby matches it well."""
+    words = _norm(str(quote or ""))
+    if len(words) < 4:
+        return index
+    best, best_score = index, 0.0
+    low, high = max(0, index - _SNAP_RADIUS), min(len(segments), index + _SNAP_RADIUS + 1)
+    for i in range(low, high):
+        text = _norm(segments[i].text)
+        if not text:
+            continue
+        part = text[-len(words) - 8 :] if at_end else text[: len(words) + 8]
+        score = SequenceMatcher(None, words, part).ratio()
+        if words in text:
+            score = max(score, 0.9)
+        # Ties go to the number the model gave.
+        score -= abs(i - index) * 0.001
+        if score > best_score:
+            best, best_score = i, score
+    return best if best_score >= 0.6 else index
+
+
+def _ends_sentence(text: str) -> bool:
+    stripped = text.strip()
+    return bool(stripped) and stripped[-1] in ".!?" and not stripped.endswith("..")
 
 
 def _validate(
@@ -151,6 +199,10 @@ def _validate(
             logger.warning("clip selection entry had no usable index pair: %r", entry)
             continue
 
+        if 0 <= first < len(segments):
+            first = _snap(first, entry.get("first_words"), segments, at_end=False)
+        if 0 <= last < len(segments):
+            last = _snap(last, entry.get("last_words"), segments, at_end=True)
         if not (0 <= first <= last < len(segments)):
             logger.warning("clip selection named segments %s-%s, out of range", first, last)
             continue
@@ -163,12 +215,19 @@ def _validate(
             last -= 1
         # Undershoot is grown from the end, the mirror of the trim above,
         # so the clip still finishes on a sentence boundary.
-        while (
-            (segments[last].end_ms / 1000) - start_s < MIN_CLIP_S
-            and last + 1 < len(segments)
-            and (segments[last + 1].end_ms / 1000) - start_s <= MAX_CLIP_S
-        ):
-            last += 1
+        # Grown past the bare floor — to about GROW_TARGET_S and on to a
+        # sentence that ends — because a clip cut at twelve seconds stopped
+        # just before the point it was picked for.
+        if (segments[last].end_ms / 1000) - start_s < MIN_CLIP_S:
+            while last + 1 < len(segments) and (
+                segments[last + 1].end_ms / 1000
+            ) - start_s <= MAX_CLIP_S:
+                long_enough = (segments[last].end_ms / 1000) - start_s >= GROW_TARGET_S
+                if long_enough and _ends_sentence(segments[last].text):
+                    break
+                last += 1
+                if (segments[last].end_ms / 1000) - start_s >= GROW_TARGET_S * 2:
+                    break
         end_s = segments[last].end_ms / 1000
 
         if end_s - start_s < MIN_CLIP_S:
