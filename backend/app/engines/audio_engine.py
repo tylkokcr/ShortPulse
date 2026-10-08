@@ -257,6 +257,15 @@ def _get_whisper_model(model_size: str, device: str, compute_type: str):
     return _whisper_model_cache[cache_key]
 
 
+def _report(on_progress: Callable[[float], None] | None, at_s: float, total_s: float) -> None:
+    """How far through the audio Whisper is, 0 to 1. Its segments arrive
+    in order as a generator, so the end of the latest one is exactly how
+    much has been read — the one honest progress figure a long
+    transcription has, and on an hour of audio it is most of the wait."""
+    if on_progress is not None and total_s:
+        on_progress(min(max(at_s / total_s, 0.0), 1.0))
+
+
 def transcribe_segments(
     audio_path: Path,
     model_size: str = "small",
@@ -264,6 +273,7 @@ def transcribe_segments(
     compute_type: str = "int8",
     language: str | None = None,
     on_language: Callable[[str], None] | None = None,
+    on_progress: Callable[[float], None] | None = None,
 ) -> list[Segment]:
     """Transcribe into sentences, each carrying its own words.
 
@@ -288,6 +298,7 @@ def transcribe_segments(
 
     out: list[Segment] = []
     for segment in segments:
+        _report(on_progress, segment.end, info.duration)
         words = [
             Word(
                 text=word.word.strip(),
@@ -359,6 +370,7 @@ def transcribe_word_timestamps(
     compute_type: str = "int8",
     language: str | None = None,
     on_language: Callable[[str], None] | None = None,
+    on_progress: Callable[[float], None] | None = None,
 ) -> list[Word]:
     """Run faster-whisper on a rendered voiceover clip and return
     word-level timing. Runs synchronously (CPU/GPU-bound); call via
@@ -378,6 +390,7 @@ def transcribe_word_timestamps(
 
     words: list[Word] = []
     for segment in segments:
+        _report(on_progress, segment.end, info.duration)
         for word in segment.words or []:
             words.append(
                 Word(

@@ -59,6 +59,45 @@ from app.services.connection_manager import connection_manager
 logger = logging.getLogger(__name__)
 
 
+def _transcription_reporter(
+    project_id: str, low: float = 10.0, high: float = 25.0
+) -> Callable[[float], None]:
+    """A progress callback for Whisper, which runs in a worker thread.
+
+    Turns "this far through the audio" into progress on the socket, at
+    most every percent or five seconds, with the time left at the speed so
+    far. The clock starts at the first report, not at the call: loading the
+    model and detecting the language come first, take as long on a minute
+    of audio as on an hour, and counted in would make the first estimates
+    for a long file wildly pessimistic.
+    """
+    loop = asyncio.get_running_loop()
+    state = {"t0": 0.0, "f0": 0.0, "last_f": -1.0, "last_t": 0.0}
+
+    def report(fraction: float) -> None:
+        now = time.monotonic()
+        if state["last_f"] < 0:
+            state["t0"], state["f0"] = now, fraction
+        elif fraction - state["last_f"] < 0.01 and now - state["last_t"] < 5:
+            return
+        state["last_f"], state["last_t"] = fraction, now
+        read = fraction - state["f0"]
+        eta = (now - state["t0"]) / read * (1 - fraction) if read > 0.02 else None
+        progress = low + (high - low) * fraction
+        coroutine = _emit(
+            project_id,
+            stage=RenderStage.TRANSCRIPTION,
+            progress_pct=round(progress, 1),
+            message=f"Transcribing: {round(fraction * 100)}%",
+            phase="transcribing",
+            phase_fraction=round(fraction, 3),
+            eta_s=round(eta) if eta is not None else None,
+        )
+        loop.call_soon_threadsafe(asyncio.ensure_future, coroutine)
+
+    return report
+
+
 async def _settle_referral(project_id: str) -> None:
     """A finished video may be the first of a friend someone invited —
     see services/referrals. Never allowed to fail the render it follows."""
@@ -775,6 +814,7 @@ async def run_upload_pipeline(
                     settings.whisper_compute_type,
                     forced_language,
                     heard.append,
+                    _transcription_reporter(project_id),
                 )
                 # Back onto the original file's clock before anything
                 # reads them: `cut_clip` seeks into the source, not into
@@ -791,6 +831,7 @@ async def run_upload_pipeline(
                     settings.whisper_compute_type,
                     forced_language,
                     heard.append,
+                    _transcription_reporter(project_id),
                 )
 
         # Keep what was heard, before anything reads the language: the dub

@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import { getMediaUrl, getProject, subscribeToRenderProgress } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
-import type { Project, RenderStage } from "@/lib/types";
+import type { Project, RenderProgress, RenderStage } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Timeline } from "./Timeline";
@@ -70,6 +70,25 @@ function queueMessage(project: Project | null | undefined, t: Translator): strin
   const when = wait ? formatWait(wait, t) : "";
   if (ahead === 0) return t("queue.next", { when });
   return t("queue.ahead", { count: ahead, when });
+}
+
+/** "Transcribing: 40% · about 6 min left", in the reader's language —
+ *  the server sends the numbers rather than a sentence for this step,
+ *  because it is the one that can run for half an hour. */
+function phaseText(
+  progress: RenderProgress,
+  t: ReturnType<typeof useTranslations<"app.preview">>
+): string {
+  const pct = Math.round((progress.phase_fraction ?? 0) * 100);
+  const eta = progress.eta_s;
+  const left =
+    eta == null
+      ? ""
+      : eta < 60
+        ? t("left.underMinute")
+        : t("left.minutes", { count: Math.round(eta / 60) });
+  const parts = [t("transcribing", { pct }), left].filter(Boolean).join(" · ");
+  return eta != null && eta > 120 ? `${parts}\n${t("leaveNote")}` : parts;
 }
 
 export function RenderPreview({
@@ -210,12 +229,14 @@ export function RenderPreview({
             {renderProgress?.error ?? activeProject?.error ?? t("renderFailed")}
           </p>
         ) : (
-          <p className="p-4 text-center text-xs text-white/40">
+          <p className="whitespace-pre-line p-4 text-center text-xs text-white/40">
             {isDone
               ? // Render finished, but the signed URL is still being fetched.
                 // "Waiting to start" here would say the opposite of the truth.
                 t("loadingVideo")
-              : (renderProgress?.message ??
+              : renderProgress?.phase === "transcribing" && renderProgress.phase_fraction != null
+                ? phaseText(renderProgress, t)
+                : (renderProgress?.message ??
                 // "draft" means accepted but not yet picked up by a
                 // worker, which is a queue, not a stall — worth saying so
                 // when renders run two at a time.

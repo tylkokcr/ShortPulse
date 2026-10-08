@@ -477,7 +477,8 @@
       "captionLanguageSame": "Die gesprochene Sprache",
       "captionLanguageOnHint": "Die Stimme bleibt, wie sie ist; die Untertitel werden Satz für Satz übersetzt und erscheinen, während der jeweilige Satz gesprochen wird.",
       "captionLanguageOffHint": "Übersetze die Untertitel, um Zuschauer zu erreichen, die die Sprache nicht sprechen — der Ton bleibt unberührt.",
-      "captionLanguageWithDub": "Eine Vertonung wird in der Sprache untertitelt, in die sie vertont wird."
+      "captionLanguageWithDub": "Eine Vertonung wird in der Sprache untertitelt, in die sie vertont wird.",
+      "longRead": "{minutes} Minuten Audio zu lesen: Das dauert etwas (oft 15–30 Minuten pro Stunde). Du kannst die Seite verlassen; es erscheint danach in deiner Bibliothek."
     },
     "idea": "Die Idee",
     "groups": {
@@ -882,7 +883,13 @@
         "underMinute": ", unter einer Minute",
         "aboutMinute": ", etwa eine Minute",
         "aboutMinutes": ", etwa {count} Minuten"
-      }
+      },
+      "transcribing": "Transkription: {pct} %",
+      "left": {
+        "underMinute": "weniger als eine Minute übrig",
+        "minutes": "noch etwa {count} Min."
+      },
+      "leaveNote": "Du kannst die Seite verlassen — das Video ist danach in deiner Bibliothek."
     },
     "timeline": {
       "script_generation": "Skript",

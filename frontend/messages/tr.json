@@ -477,7 +477,8 @@
       "captionLanguageSame": "Konuşulan dil",
       "captionLanguageOnHint": "Ses olduğu gibi kalır; altyazılar cümle cümle çevrilir ve her cümle konuşulurken ekranda görünür.",
       "captionLanguageOffHint": "O dili bilmeyen izleyicilere ulaşmak için altyazıyı çevir — sese dokunulmaz.",
-      "captionLanguageWithDub": "Seslendirilen video, seslendirildiği dilde altyazılanır."
+      "captionLanguageWithDub": "Seslendirilen video, seslendirildiği dilde altyazılanır.",
+      "longRead": "Okunacak {minutes} dakikalık ses var: bu biraz sürer (bir saatlik ses için genelde 15–30 dakika). Sayfadan ayrılabilirsin; bitince kütüphanende görünür."
     },
     "idea": "Fikir",
     "groups": {
@@ -882,7 +883,13 @@
         "underMinute": ", bir dakikadan az",
         "aboutMinute": ", yaklaşık bir dakika",
         "aboutMinutes": ", yaklaşık {count} dakika"
-      }
+      },
+      "transcribing": "Deşifre ediliyor: %{pct}",
+      "left": {
+        "underMinute": "1 dakikadan az kaldı",
+        "minutes": "yaklaşık {count} dk kaldı"
+      },
+      "leaveNote": "Bu sayfadan ayrılabilirsin — bitince video kütüphanende olacak."
     },
     "timeline": {
       "script_generation": "Metin",

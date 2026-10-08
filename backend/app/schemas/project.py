@@ -643,5 +643,12 @@ class RenderProgress(BaseModel):
     output_path: str | None = None
     error: str | None = None
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    # A long step the client can describe in its own language: "transcribing"
+    # with `phase_fraction` how far through it is and `eta_s` the seconds
+    # left at the speed so far. None for everything else, which `message`
+    # describes.
+    phase: str | None = None
+    phase_fraction: float | None = None
+    eta_s: float | None = None
 
     model_config = ConfigDict(use_enum_values=True)

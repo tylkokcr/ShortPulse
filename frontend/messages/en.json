@@ -477,7 +477,8 @@
       "captionLanguageSame": "The language spoken",
       "captionLanguageOnHint": "The voice stays as it is; the captions are translated sentence by sentence and shown while each one is spoken.",
       "captionLanguageOffHint": "Translate the captions to reach viewers who don't speak the language — the audio is not touched.",
-      "captionLanguageWithDub": "A dub is captioned in the language it is dubbed into."
+      "captionLanguageWithDub": "A dub is captioned in the language it is dubbed into.",
+      "longRead": "{minutes} minutes of audio to read: this takes a while (often 15–30 minutes for an hour). You can leave the page; the clips appear in your library when they're done."
     },
     "idea": "The idea",
     "groups": {
@@ -882,7 +883,13 @@
         "underMinute": ", under a minute",
         "aboutMinute": ", about a minute",
         "aboutMinutes": ", about {count} minutes"
-      }
+      },
+      "transcribing": "Transcribing: {pct}%",
+      "left": {
+        "underMinute": "under a minute left",
+        "minutes": "about {count} min left"
+      },
+      "leaveNote": "You can leave this page — the video will be in your library when it's done."
     },
     "timeline": {
       "script_generation": "Script",

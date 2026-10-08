@@ -477,7 +477,8 @@
       "captionLanguageSame": "Język mówiony",
       "captionLanguageOnHint": "Głos zostaje bez zmian; napisy są tłumaczone zdanie po zdaniu i widoczne, gdy każde z nich pada.",
       "captionLanguageOffHint": "Przetłumacz napisy, żeby dotrzeć do widzów, którzy nie znają języka — dźwięk zostaje nietknięty.",
-      "captionLanguageWithDub": "Dubbing ma napisy w języku, na który jest dubbingowany."
+      "captionLanguageWithDub": "Dubbing ma napisy w języku, na który jest dubbingowany.",
+      "longRead": "Do odczytania {minutes} min dźwięku: to chwilę potrwa (zwykle 15–30 minut na godzinę). Możesz opuścić stronę; gotowe pojawi się w bibliotece."
     },
     "idea": "Pomysł",
     "groups": {
@@ -882,7 +883,13 @@
         "underMinute": ", poniżej minuty",
         "aboutMinute": ", około minuty",
         "aboutMinutes": ", około {count} min"
-      }
+      },
+      "transcribing": "Transkrypcja: {pct}%",
+      "left": {
+        "underMinute": "zostało mniej niż minutę",
+        "minutes": "zostało około {count} min"
+      },
+      "leaveNote": "Możesz opuścić tę stronę — wideo pojawi się w bibliotece, gdy będzie gotowe."
     },
     "timeline": {
       "script_generation": "Scenariusz",

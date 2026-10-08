@@ -464,6 +464,11 @@ export interface RenderProgress {
   output_path?: string | null;
   error?: string | null;
   updated_at: string;
+  /** A long step described by the client: "transcribing", with how far
+   *  through it is and the seconds left at the speed so far. */
+  phase?: string | null;
+  phase_fraction?: number | null;
+  eta_s?: number | null;
 }
 
 // --------------------------------------------------------------------------

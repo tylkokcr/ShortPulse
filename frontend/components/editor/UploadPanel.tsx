@@ -106,6 +106,9 @@ function clipPrice(
   return Math.max(1, Math.ceil(spanMs / 1000 / secondsPerCredit)) + clips * perClip;
 }
 
+/** Past this much audio, the panel says up front that it will take a while. */
+const LONG_READ_MS = 10 * 60 * 1000;
+
 export function UploadPanel({
   onAsideOpenChange,
 }: {
@@ -188,6 +191,8 @@ export function UploadPanel({
   const secondsPerCredit = credits?.pricing?.["upload:clip_seconds_per_credit"] ?? 120;
   // Absent from a server older than per-clip pricing, which charged none.
   const perClip = credits?.pricing?.["upload:clip_each"] ?? 0;
+  // How much audio Whisper will read: the window for clips, all of it otherwise.
+  const readMs = durationMs === null ? 0 : clipCount ? Math.max(windowMs[1] - windowMs[0], 0) : durationMs;
   const price = clipCount
     ? clipPrice(windowMs, durationMs, secondsPerCredit, clipCount, perClip)
     : (credits?.pricing?.[dubLanguage ? "upload:dub" : "upload:caption"] ?? 1);
@@ -717,6 +722,12 @@ export function UploadPanel({
               })
             : ts("cost.free")}
         </p>
+        {/* Long reads take a while; said before the click, not discovered after. */}
+        {readMs > LONG_READ_MS && (
+          <p className="-mt-1 text-xs leading-relaxed text-white/45">
+            {t("longRead", { minutes: Math.round(readMs / 60000) })}
+          </p>
+        )}
         <Button onClick={handleUpload} disabled={(!file && !picked) || uploading} variant="gradient">
           {uploading ? (
             t("working")
