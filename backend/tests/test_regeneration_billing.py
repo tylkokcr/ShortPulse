@@ -150,7 +150,7 @@ async def test_a_re_roll_costs_one_credit(pool, user, stub_work):
     response = await _regenerate(_build_app(pool, user), project.config.id)
 
     assert response.status_code == 200
-    assert await credits.balance(pool, user) == 19
+    assert await credits.balance(pool, user) == 20 - credits.REGENERATE_SCENE_COST
 
 
 async def test_re_rolling_the_same_scene_twice_charges_twice(pool, user, stub_work):
@@ -163,7 +163,7 @@ async def test_re_rolling_the_same_scene_twice_charges_twice(pool, user, stub_wo
     await _regenerate(app, project.config.id)
     await _regenerate(app, project.config.id)
 
-    assert await credits.balance(pool, user) == 18
+    assert await credits.balance(pool, user) == 20 - 2 * credits.REGENERATE_SCENE_COST
 
 
 async def test_the_charge_is_not_part_of_the_render_refund(pool, user, stub_work):
@@ -175,12 +175,12 @@ async def test_the_charge_is_not_part_of_the_render_refund(pool, user, stub_work
         pool, user, 9, project_id=project.config.id, idempotency_key=f"render:{project.config.id}"
     )
     await _regenerate(_build_app(pool, user), project.config.id)
-    assert await credits.balance(pool, user) == 10
+    assert await credits.balance(pool, user) == 20 - 9 - credits.REGENERATE_SCENE_COST
 
     refunded = await credits.refund_project(pool, project.config.id)
 
     assert refunded == 9
-    assert await credits.balance(pool, user) == 19
+    assert await credits.balance(pool, user) == 20 - credits.REGENERATE_SCENE_COST
 
 
 async def test_an_account_that_cannot_afford_it_is_told_before_anything_runs(
@@ -239,7 +239,7 @@ async def test_a_stock_re_roll_needs_no_purchase(pool, user, stub_work):
     response = await _regenerate(_build_app(pool, user), project.config.id)
 
     assert response.status_code == 200
-    assert await credits.balance(pool, user) == 19
+    assert await credits.balance(pool, user) == 20 - credits.REGENERATE_SCENE_COST
 
 
 # --- when it goes wrong --------------------------------------------------
@@ -286,7 +286,7 @@ async def test_a_retry_after_a_failure_charges_cleanly(pool, user, monkeypatch, 
     fail = False
     await _regenerate(app, project.config.id)
 
-    assert await credits.balance(pool, user) == 19
+    assert await credits.balance(pool, user) == 20 - credits.REGENERATE_SCENE_COST
 
 
 async def test_a_scene_that_does_not_exist_is_refused_before_charging(pool, user, stub_work):
@@ -344,4 +344,4 @@ async def test_two_at_once_on_one_project_is_refused_and_charged_once(
     assert {first_response.status_code, second_response.status_code} == {200, 409}
     busy = first_response if first_response.status_code == 409 else second_response
     assert busy.json()["detail"]["error"] == "busy"
-    assert await credits.balance(pool, user) == 19
+    assert await credits.balance(pool, user) == 20 - credits.REGENERATE_SCENE_COST

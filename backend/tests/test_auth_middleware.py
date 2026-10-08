@@ -131,8 +131,8 @@ async def test_a_valid_token_identifies_and_bills_the_right_user(pool, jwks, sig
         )
 
     assert created.status_code == 201
-    assert created.json()["credits_cost"] == 1  # stock_media short
-    assert await credits.balance(pool, user_id) == 19
+    assert created.json()["credits_cost"] == 2  # stock_media short
+    assert await credits.balance(pool, user_id) == 18
     assert len(queue.submitted) == 1
     assert await project_store.owner_of(created.json()["config"]["id"]) == user_id
 
@@ -288,7 +288,7 @@ async def test_a_returning_user_keeps_their_balance(pool, jwks, signer):
         await client.post("/api/projects", json=PAYLOAD, headers=_auth(token))
         body = (await client.get("/api/credits", headers=_auth(token))).json()
 
-    assert body["balance"] == 9  # 10 granted, one stock_media short spent
+    assert body["balance"] == 8  # 10 granted, one stock_media short spent
 
 
 async def test_two_users_sharing_an_email_both_work(pool, jwks, signer):

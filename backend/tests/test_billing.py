@@ -141,9 +141,9 @@ async def test_submitting_a_render_charges_the_user(pool, user):
         response = await client.post("/api/projects", json=_payload())
 
     assert response.status_code == 201
-    # fast_hybrid (3) x short (1)
-    assert response.json()["credits_cost"] == 3
-    assert await credits.balance(pool, user) == 17
+    # fast_hybrid (6) x short (1)
+    assert response.json()["credits_cost"] == 6
+    assert await credits.balance(pool, user) == 14
     assert len(queue.submitted) == 1
 
 
@@ -165,13 +165,13 @@ async def test_cost_scales_with_what_the_render_actually_costs(pool, user):
                           video_length=VideoLength.LONG.value),
         )
 
-    assert cheap.json()["credits_cost"] == 1
-    assert dear.json()["credits_cost"] == 30
-    assert await credits.balance(pool, user) == 100 - 1 - 30
+    assert cheap.json()["credits_cost"] == 2
+    assert dear.json()["credits_cost"] == 60
+    assert await credits.balance(pool, user) == 100 - 2 - 60
 
 
 async def test_render_is_refused_when_credits_run_out(pool, user):
-    await _fund(pool, user, 2)  # a fast_hybrid short costs 3
+    await _fund(pool, user, 2)  # a fast_hybrid short costs 6
     app, queue = _build_app(pool, user)
 
     async with _client(app) as client:
@@ -181,7 +181,7 @@ async def test_render_is_refused_when_credits_run_out(pool, user):
     detail = response.json()["detail"]
     assert detail["error"] == "insufficient_credits"
     assert detail["balance"] == 2
-    assert detail["required"] == 3
+    assert detail["required"] == 6
 
     # Nothing charged, nothing queued, and no half-created project left behind.
     assert await credits.balance(pool, user) == 2
@@ -242,10 +242,10 @@ async def test_credits_endpoint_reports_balance_and_history(pool, user):
         body = (await client.get("/api/credits")).json()
 
     assert body["enabled"] is True
-    assert body["balance"] == 9  # stock_media short costs 1
+    assert body["balance"] == 8  # stock_media short costs 2
     reasons = [e["reason"] for e in body["entries"]]
     assert reasons == ["render", "grant"]  # newest first
-    assert body["pricing"]["fast_hybrid:short"] == 3
+    assert body["pricing"]["fast_hybrid:short"] == 6
 
 
 # --- refunds -------------------------------------------------------------
@@ -257,7 +257,7 @@ async def test_a_failed_render_is_refunded(pool, user):
 
     async with _client(app) as client:
         project_id = (await client.post("/api/projects", json=_payload())).json()["config"]["id"]
-    assert await credits.balance(pool, user) == 17
+    assert await credits.balance(pool, user) == 14
 
     await render_manager._refund_failed_render(project_id, reason="ffmpeg exploded")
 
@@ -289,7 +289,7 @@ async def test_a_successful_render_is_not_refunded(pool, user):
     await project_store.update_project(
         project_id, status=ProjectStatus.COMPLETE, output_path="/tmp/final.mp4"
     )
-    assert await credits.balance(pool, user) == 17
+    assert await credits.balance(pool, user) == 14
 
 
 # --- crash recovery ------------------------------------------------------
@@ -307,7 +307,7 @@ async def test_renders_interrupted_by_a_restart_are_refunded_and_failed(pool, us
 
     # The state a killed worker leaves behind.
     await project_store.update_project(project_id, status=ProjectStatus.RENDERING)
-    assert await credits.balance(pool, user) == 17
+    assert await credits.balance(pool, user) == 14
 
     recovered = await render_manager.reconcile_interrupted_renders()
 
@@ -332,7 +332,7 @@ async def test_reconciler_leaves_finished_renders_alone(pool, user):
 
     project = await project_store.get_project(project_id)
     assert project.status == ProjectStatus.COMPLETE
-    assert await credits.balance(pool, user) == 17
+    assert await credits.balance(pool, user) == 14
 
 
 # --- ownership -----------------------------------------------------------
@@ -402,7 +402,7 @@ async def test_reconciler_does_not_steal_a_render_that_just_finished(pool, user,
     project = await project_store.get_project(project_id)
     assert project.status == ProjectStatus.COMPLETE, "reconciler overwrote a finished render"
     assert project.error is None, "finished render left carrying an interruption error"
-    assert await credits.balance(pool, user) == 17, "refunded a video the user actually got"
+    assert await credits.balance(pool, user) == 14, "refunded a video the user actually got"
 
 
 async def _returns(value):
