@@ -167,6 +167,17 @@ def _snap(index: int, quote: object, segments: list[Segment], *, at_end: bool) -
     return best if best_score >= 0.6 else index
 
 
+def _opening_words(text: str, start_s: float) -> str:
+    """A name for a clip the model gave none: how it opens, in the words
+    and language it is spoken in — not "Clip at 1:45" in English on a
+    Turkish podcast."""
+    words = text.split()
+    if not words:
+        return f"{int(start_s // 60)}:{int(start_s % 60):02d}"
+    head = " ".join(words[:7]).rstrip(",.;:!?")
+    return head + ("…" if len(words) > 7 else "")
+
+
 def _ends_sentence(text: str) -> bool:
     stripped = text.strip()
     return bool(stripped) and stripped[-1] in ".!?" and not stripped.endswith("..")
@@ -270,7 +281,7 @@ def _validate(
             Moment(
                 start_s=start_s,
                 end_s=end_s,
-                title=title or f"Clip at {int(start_s // 60)}:{int(start_s % 60):02d}",
+                title=title or _opening_words(segments[first].text, start_s),
                 reason=str(entry.get("reason") or "").strip()[:MAX_REASON_CHARS],
             )
         )
@@ -523,7 +534,9 @@ def visual_moments(
             Moment(
                 start_s=round(start, 2),
                 end_s=round(end, 2),
-                title=f"Highlight at {int(start // 60)}:{int(start % 60):02d}",
+                # The time alone: the caller prefixes the video's own name,
+                # which is the one title here in no particular language.
+                title=f"{int(start // 60)}:{int(start % 60):02d}",
                 reason="Chosen from the picture: the video has too little speech to read.",
                 from_picture=True,
             )

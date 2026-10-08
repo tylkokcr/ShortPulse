@@ -1385,7 +1385,11 @@ async def _extract_clips(
                 # forty-second clip should be read from 20:00 to 30:00.
                 "clip_from_s": 0,
                 "clip_to_s": None,
-                "topic": moment.title,
+                # A clip from the picture has only a time for a name; the
+                # source's own name in front says what it is a moment of.
+                "topic": f"{config.topic[:60]} · {moment.title}"
+                if moment.from_picture
+                else moment.title,
             }
         )
         child = await project_store.create_project(child_config, user_id=owner)

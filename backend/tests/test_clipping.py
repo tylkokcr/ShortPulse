@@ -890,3 +890,14 @@ def test_a_clip_inherits_its_part_of_the_transcript_on_its_own_clock(tmp_path):
     assert segment.start_ms == 0 and segment.end_ms == 2500
     assert segment.words[0].start_ms == 0 and segment.words[0].text == "Arda"
     assert render_manager._inherited_transcript(tmp_path / "nowhere") is None
+
+
+async def test_a_clip_the_model_did_not_name_is_named_by_how_it_opens(monkeypatch):
+    segments = _sentences()
+    segments[4] = segments[4].model_copy(
+        update={"text": "Arda Turan ülkemizin en büyük hitmakerlarından biridir, değil mi?"}
+    )
+    _answer(monkeypatch, [{"first": 4, "last": 11}])
+
+    [moment] = await clipping.pick_moments(segments, CONFIG)
+    assert moment.title == "Arda Turan ülkemizin en büyük hitmakerlarından biridir…"
