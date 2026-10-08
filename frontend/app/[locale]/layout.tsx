@@ -4,6 +4,7 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Archivo, JetBrains_Mono } from "next/font/google";
 import "../globals.css";
+import { ReferralCapture } from "@/components/referral/ReferralCapture";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ACCENT_BOOT_SCRIPT } from "@/components/ui/accentBoot";
 import { SESSION_BOOT_SCRIPT } from "@/components/auth/sessionBoot";
@@ -121,7 +122,10 @@ export default async function LocaleLayout({
       </head>
       <body className="font-sans">
         <NextIntlClientProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <ReferralCapture />
+            {children}
+          </AuthProvider>
         </NextIntlClientProvider>
       </body>
     </html>

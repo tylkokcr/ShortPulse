@@ -19,6 +19,7 @@ from app.api.routes import (
     media,
     music,
     projects,
+    referrals,
     render,
     social,
     uploads,
@@ -143,6 +144,7 @@ app.include_router(visual_modes.router)
 app.include_router(uploads.router)
 app.include_router(beat_edits.router)
 app.include_router(media.router)
+app.include_router(referrals.router)
 app.include_router(social.router)
 
 

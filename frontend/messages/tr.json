@@ -1065,5 +1065,13 @@
   "sale": {
     "lowest": "İndirimden önceki 30 günün en düşük fiyatı: {price}.",
     "ends": "Kampanya {date} tarihinde biter."
+  },
+  "invite": {
+    "title": "Arkadaşını davet et, {reward} kredi kazan",
+    "body": "Linkini paylaş. Bir arkadaşın bu linkle kaydolup ilk videosunu yaptığında hesabına {reward} kredi eklenir — en fazla {cap} arkadaş için.",
+    "copy": "Kopyala",
+    "copied": "Kopyalandı",
+    "progress": "{cap} arkadaştan {rewarded} tanesi için ödendi{waiting, plural, =0 {} other { · # arkadaşın ilk videosu bekleniyor}}",
+    "full": "{cap} arkadaşın hepsi için ödendi — yaydığın için teşekkürler."
   }
 }

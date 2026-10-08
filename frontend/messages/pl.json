@@ -1065,5 +1065,13 @@
   "sale": {
     "lowest": "Najniższa cena z 30 dni przed obniżką: {price}.",
     "ends": "Promocja kończy się {date}."
+  },
+  "invite": {
+    "title": "Zaproś znajomego, zdobądź {reward} kredytów",
+    "body": "Udostępnij swój link. Gdy znajomy zarejestruje się przez niego i zrobi pierwszy film, na twoje konto trafi {reward} kredytów — za maksymalnie {cap} znajomych.",
+    "copy": "Kopiuj",
+    "copied": "Skopiowano",
+    "progress": "Opłacono {rewarded} z {cap}{waiting, plural, =0 {} one { · # znajomy jeszcze bez pierwszego filmu} few { · # znajomych jeszcze bez pierwszego filmu} other { · # znajomych jeszcze bez pierwszego filmu}}",
+    "full": "Opłacono wszystkich {cap} — dzięki za polecenie."
   }
 }

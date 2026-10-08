@@ -1065,5 +1065,13 @@
   "sale": {
     "lowest": "Niedrigster Preis der letzten 30 Tage vor der Ermäßigung: {price}.",
     "ends": "Angebot endet am {date}."
+  },
+  "invite": {
+    "title": "Lade Freunde ein, erhalte {reward} Credits",
+    "body": "Teile deinen Link. Wenn sich ein Freund darüber anmeldet und sein erstes Video macht, bekommst du {reward} Credits — für bis zu {cap} Freunde.",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "progress": "{rewarded} von {cap} vergütet{waiting, plural, =0 {} one { · # Freund noch ohne erstes Video} other { · # Freunde noch ohne erstes Video}}",
+    "full": "Alle {cap} vergütet — danke fürs Weitersagen."
   }
 }

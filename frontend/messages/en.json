@@ -1065,5 +1065,13 @@
   "sale": {
     "lowest": "Lowest price in the 30 days before the reduction: {price}.",
     "ends": "Offer ends {date}."
+  },
+  "invite": {
+    "title": "Invite a friend, get {reward} credits",
+    "body": "Share your link. When a friend signs up through it and makes their first video, {reward} credits land in your account — for up to {cap} friends.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "progress": "{rewarded} of {cap} paid{waiting, plural, =0 {} one { · # friend yet to make their first video} other { · # friends yet to make their first video}}",
+    "full": "All {cap} paid — thanks for spreading the word."
   }
 }

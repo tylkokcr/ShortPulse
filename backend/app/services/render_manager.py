@@ -50,12 +50,30 @@ from app.services import (
     profanity,
     project_store,
     publish_manager,
+    referrals,
     reframe,
     uploads,
 )
 from app.services.connection_manager import connection_manager
 
 logger = logging.getLogger(__name__)
+
+
+async def _settle_referral(project_id: str) -> None:
+    """A finished video may be the first of a friend someone invited —
+    see services/referrals. Never allowed to fail the render it follows."""
+    pool = db.optional_pool()
+    if pool is None:
+        return
+    try:
+        project = await project_store.get_project(project_id)
+        if project is None or project.status != ProjectStatus.COMPLETE:
+            return
+        owner = await project_store.owner_of(project_id)
+        if owner:
+            await referrals.settle(pool, owner)
+    except Exception:  # noqa: BLE001 - a reward must not break the queue
+        logger.exception("Could not settle a referral after %s", project_id)
 
 
 async def _emit(project_id: str, **kwargs) -> None:
@@ -1424,6 +1442,7 @@ class RenderTaskQueue:
                     await run_upload_pipeline(project, self._settings, self.submit)
                 else:
                     await run_pipeline(project, self._settings)
+                await _settle_referral(project_id)
             finally:
                 self._running.discard(project_id)
                 self._queue.task_done()

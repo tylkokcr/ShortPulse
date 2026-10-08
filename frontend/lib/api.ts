@@ -3,6 +3,7 @@ import type {
   AspectRatio,
   ArtStyle,
   CreditSummary,
+  ReferralSummary,
   MusicTrack,
   CaptionTrack,
   Layout,
@@ -367,6 +368,17 @@ export function deleteProject(projectId: string): Promise<void> {
 
 export function getCredits(): Promise<CreditSummary> {
   return request<CreditSummary>("/credits");
+}
+
+export function getReferrals(): Promise<ReferralSummary> {
+  return request<ReferralSummary>("/referrals");
+}
+
+export function claimReferral(code: string): Promise<{ claimed: boolean }> {
+  return request<{ claimed: boolean }>("/referrals/claim", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
 }
 
 /**

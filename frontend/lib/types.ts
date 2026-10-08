@@ -421,6 +421,15 @@ export interface PublicPricing {
   signup_credits: number;
 }
 
+/** An account's invite link and how it has done (backend referrals). */
+export interface ReferralSummary {
+  code: string;
+  joined: number;
+  rewarded: number;
+  reward: number;
+  cap: number;
+}
+
 /** One-off purchase — nothing here renews, and credits never expire. */
 export interface CreditPack {
   id: string;

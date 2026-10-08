@@ -15,6 +15,7 @@ import { formatPrice } from "@/lib/money";
 import { SaleNote, SaleOff } from "@/components/ui/SalePrice";
 import { Badge } from "@/components/ui/Badge";
 import { AppShell } from "@/components/layout/AppShell";
+import { InviteCard } from "@/components/referral/InviteCard";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 
 /**
@@ -233,6 +234,8 @@ function Credits() {
           </div>
           </>
         )}
+
+        <InviteCard />
 
         <p className="mt-4 text-xs leading-relaxed text-white/30">
           {sold && t("stripe")}
