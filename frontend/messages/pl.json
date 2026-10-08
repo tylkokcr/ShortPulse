@@ -709,6 +709,17 @@
         "stop": "Zatrzymaj",
         "reset": "Wróć do sugestii"
       }
+    },
+    "link": {
+      "label": "Albo wklej link",
+      "placeholder": "Link z Google Drive, Dropbox, YouTube albo do pliku wideo",
+      "fetch": "Pobierz",
+      "fetching": "Pobieranie…",
+      "rights": "To moje wideo albo mam zgodę na jego użycie.",
+      "youtubeNote": "Filmy z YouTube są przechowywane przez dzień i nie można ich publikować z ShortPulse — pobierz to, co zrobisz, i opublikuj sam.",
+      "youtubeOff": "Linków z YouTube nie da się tu jeszcze pobrać. Pobierz film i wgraj plik.",
+      "busyHint": "Duże pliki zajmują kilka minut. Możesz tu poczekać.",
+      "failed": "Nie udało się pobrać tego linku."
     }
   },
   "app": {
@@ -904,7 +915,8 @@
       "errors": {
         "start": "Nie udało się rozpocząć publikowania",
         "approve": "Nie udało się zatwierdzić tego posta."
-      }
+      },
+      "fromYoutube": "To wideo powstało z linku do YouTube, więc nie można go opublikować z ShortPulse. Pobierz je powyżej i opublikuj sam."
     },
     "edit": {
       "notEditable": "Ten film wyrenderowano, zanim napisy stały się edytowalne. Wyrenderuj go ponownie, aby poprawić tekst.",

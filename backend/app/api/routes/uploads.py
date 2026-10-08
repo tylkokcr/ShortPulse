@@ -376,6 +376,9 @@ async def upload_video(
             # one would describe work that never happened.
             clip_from_s=window[0] if window else 0,
             clip_to_s=window[1] if window else None,
+            # A video fetched from a YouTube link is never posted back
+            # through our connections — see services/link_import.py.
+            source_origin="youtube" if picked is not None and picked.origin == "youtube" else None,
         )
 
         if subtitles.strip():

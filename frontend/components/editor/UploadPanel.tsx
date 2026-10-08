@@ -18,6 +18,7 @@ import clsx from "clsx";
 import { useRouter } from "@/i18n/navigation";
 import { getMediaUrls, InsufficientCreditsError, uploadVideo } from "@/lib/api";
 import { MediaPicker } from "@/components/media/MediaPicker";
+import { LinkImport } from "@/components/media/LinkImport";
 import { useShortPulseStore } from "@/lib/store";
 import { LANGUAGE_OPTIONS } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
@@ -551,6 +552,8 @@ export function UploadPanel({
           onClose={() => setPicking(false)}
           onPick={(files) => files[0] && pick(files[0])}
         />
+        {/* Or from a link: lands in My files and is picked, as if chosen there. */}
+        {!file && !picked && <LinkImport onImported={pick} disabled={uploading} />}
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-white/70">{t("clips")}</label>

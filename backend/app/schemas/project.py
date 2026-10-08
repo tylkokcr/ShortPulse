@@ -514,6 +514,13 @@ class ProjectConfig(BaseModel):
     # `pick_moments` for why the validator downstream is.
     clip_guidance: str = Field(default="", max_length=300)
 
+    # Where the source video came from when it was not the user's own
+    # upload: "youtube" for one fetched from a YouTube link. Such a project
+    # is never posted through our platform connections (routes/social.py,
+    # and services/link_import.py for why). Carried to extracted clips by
+    # the copy that makes them.
+    source_origin: str | None = None
+
     # The stretch of the source an extraction reads, in seconds from its
     # start. `clip_to_s` is None only on projects that predate this and on
     # a request that did not say — the upload route resolves it against

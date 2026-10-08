@@ -170,6 +170,9 @@ async def create_beat_edit(
             topic=title.strip() or "Beat edit",
             source=ProjectSource.BEAT_EDIT,
             beat_edit=spec,
+            # Any clip from a YouTube link makes the whole edit one that is
+            # never posted through our connections (services/link_import.py).
+            source_origin="youtube" if any(m.origin == "youtube" for m in picked_clips) else None,
         )
         # The track is the soundtrack; nothing is mixed under it, and the
         # editor must not add the default one when it re-burns.

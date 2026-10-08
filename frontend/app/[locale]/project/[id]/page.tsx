@@ -33,6 +33,7 @@ export default function ProjectPage(props: { params: Promise<{ id: string }> }) 
 
 function Project({ id }: { id: string }) {
   const t = useTranslations("app.project");
+  const tp = useTranslations("app.publish");
   const activeProject = useShortPulseStore((s) => s.activeProject);
   const bumpVideoVersion = useShortPulseStore((s) => s.bumpVideoVersion);
   const setCredits = useShortPulseStore((s) => s.setCredits);
@@ -259,7 +260,14 @@ function Project({ id }: { id: string }) {
             />
             {/* Only once there is a file to publish. Before that the panel
                 would be offering to post a video that does not exist. */}
-            {project?.status === "complete" && <PublishPanel project={project} />}
+            {project?.status === "complete" &&
+              (project.config.source_origin === "youtube" ? (
+                // Made from a video fetched off YouTube: not posted through
+                // our connections (backend services/link_import.py).
+                <Card className="p-4 text-xs leading-relaxed text-white/50">{tp("fromYoutube")}</Card>
+              ) : (
+                <PublishPanel project={project} />
+              ))}
           </div>
         </div>
         )}

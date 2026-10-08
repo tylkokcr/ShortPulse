@@ -332,6 +332,14 @@ class Settings(BaseSettings):
     # bring — ten minutes of 1080p from a phone, a compilation to cut —
     # and a refusal after a long upload is the worst way to learn it.
     max_upload_mb: int = 1024
+    # Fetching a video from a YouTube link (services/link_import.py). Off
+    # by default: whether YouTube lets this server download at all has to
+    # be tried on the server first, and turning it on is a decision about
+    # YouTube's terms, not only a technical one.
+    youtube_import_enabled: bool = False
+    # The longest video a link may bring in — an extraction reads at most
+    # a window of it, but the whole file is downloaded and stored.
+    link_import_max_s: float = 3 * 3600
     # All the clips of one beat edit together.
     max_beat_edit_mb: int = 2048
     max_concurrent_renders: int = 2

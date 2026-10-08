@@ -239,6 +239,9 @@ export interface ProjectConfig {
   topic: string;
   source: ProjectSource;
   beat_edit?: BeatEditSpec | null;
+  /** "youtube" when made from a video fetched off a YouTube link — never
+   *  posted through the platform connections. */
+  source_origin?: string | null;
   raw_script?: string | null;
   aspect_ratio: AspectRatio;
   fps: number;
@@ -558,6 +561,10 @@ export interface MediaFile {
   width: number | null;
   height: number | null;
   created_at: string;
+  /** Where it came from: uploaded, fetched from a link, or from YouTube. */
+  origin?: "upload" | "link" | "youtube";
+  /** Set on YouTube imports, which are kept for a day. */
+  expires_at?: string | null;
 }
 
 export interface MediaList {

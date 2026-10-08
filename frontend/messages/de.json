@@ -709,6 +709,17 @@
         "stop": "Stopp",
         "reset": "Zurück zum Vorschlag"
       }
+    },
+    "link": {
+      "label": "Oder Link einfügen",
+      "placeholder": "Link von Google Drive, Dropbox, YouTube oder zu einer Videodatei",
+      "fetch": "Holen",
+      "fetching": "Wird geholt…",
+      "rights": "Das ist mein Video, oder ich darf es verwenden.",
+      "youtubeNote": "Videos von YouTube werden einen Tag aufbewahrt und können nicht über ShortPulse veröffentlicht werden — lade herunter, was du machst, und poste es selbst.",
+      "youtubeOff": "YouTube-Links können hier noch nicht geholt werden. Lade das Video herunter und lade die Datei hoch.",
+      "busyHint": "Große Videos dauern ein paar Minuten. Du kannst hier warten.",
+      "failed": "Dieser Link konnte nicht geholt werden."
     }
   },
   "app": {
@@ -904,7 +915,8 @@
       "errors": {
         "start": "Veröffentlichen konnte nicht gestartet werden",
         "approve": "Der Beitrag ließ sich nicht freigeben."
-      }
+      },
+      "fromYoutube": "Dieses Video wurde aus einem YouTube-Link gemacht und kann daher nicht über ShortPulse veröffentlicht werden. Lade es oben herunter und poste es selbst."
     },
     "edit": {
       "notEditable": "Dieses Video wurde gerendert, bevor Untertitel bearbeitbar waren. Rendere es neu, um den Text zu korrigieren.",

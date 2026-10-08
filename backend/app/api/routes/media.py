@@ -8,8 +8,11 @@ signed URL and the stream route accepts only that signature.
 
 from __future__ import annotations
 
+import asyncio
 import logging
-from datetime import datetime
+import uuid
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
@@ -18,7 +21,7 @@ from pydantic import BaseModel
 from app.api.deps import current_user_id
 from app.core.config import get_settings, media_root
 from app.engines import render_engine
-from app.services import beat_edits, media_store, uploads
+from app.services import beat_edits, link_import, media_store, uploads
 from app.services.media_tokens import InvalidMediaToken
 
 logger = logging.getLogger(__name__)
@@ -37,6 +40,8 @@ class MediaOut(BaseModel):
     width: int | None
     height: int | None
     created_at: datetime
+    origin: str = "upload"
+    expires_at: datetime | None = None
 
 
 class MediaList(BaseModel):
@@ -61,6 +66,8 @@ def _out(media: media_store.MediaFile) -> MediaOut:
         width=media.width,
         height=media.height,
         created_at=media.created_at,
+        origin=media.origin,
+        expires_at=media.expires_at,
     )
 
 
@@ -142,6 +149,7 @@ async def keep(
 
 @router.get("", response_model=MediaList)
 async def list_media(user_id: str | None = Depends(current_user_id)) -> MediaList:
+    await media_store.prune_expired()
     files = await media_store.list_for(user_id)
     return MediaList(
         files=[_out(m) for m in files],
@@ -236,3 +244,146 @@ async def media_poster(media_id: str, request: Request, token: str = Query(...))
     return FileResponse(
         media.poster, media_type="image/jpeg", headers={"Cache-Control": "private, max-age=86400"}
     )
+
+
+# ---------------------------------------------------------------------------
+# From a link
+#
+# Fetching takes as long as the file is big — minutes for an hour of
+# 1080p — which is longer than a request should be held open behind the
+# proxy. So the call starts it and returns an id, and the client asks
+# after it. Kept in memory: the API runs one worker, and an import that a
+# restart cuts short is reported as failed, which is the truth.
+# ---------------------------------------------------------------------------
+
+# How long a YouTube import stays in My files. See link_import's note.
+YOUTUBE_KEEP = timedelta(days=1)
+_MAX_CONCURRENT = 2
+
+
+@dataclass
+class _Import:
+    id: str
+    user_id: str | None
+    status: str = "running"  # running | done | failed
+    media: MediaOut | None = None
+    error: str | None = None
+    started: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+
+_imports: dict[str, _Import] = {}
+_slots = asyncio.Semaphore(_MAX_CONCURRENT)
+
+
+class ImportIn(BaseModel):
+    url: str
+    # The user's statement that they may use this video. Required for every
+    # link, not only YouTube: a Drive link can be someone else's file too.
+    rights_confirmed: bool = False
+
+
+class ImportOut(BaseModel):
+    id: str
+    status: str
+    media: MediaOut | None = None
+    error: str | None = None
+
+
+def _out_import(job: _Import) -> ImportOut:
+    return ImportOut(id=job.id, status=job.status, media=job.media, error=job.error)
+
+
+async def _run_import(job: _Import, link: link_import.Link) -> None:
+    settings = get_settings()
+    media = media_store.MediaFile(
+        id=media_store.new_id(),
+        user_id=job.user_id,
+        kind="video",
+        name=link.name[:200],
+        ext=".mp4",
+        size_bytes=0,
+        origin="youtube" if link.kind == "youtube" else "link",
+        expires_at=datetime.now(UTC) + YOUTUBE_KEEP if link.kind == "youtube" else None,
+    )
+    try:
+        async with _slots:
+            media_root()
+            used = await media_store.used_bytes(job.user_id)
+            cap = min(uploads.max_upload_bytes(), max(0, _quota_bytes() - used))
+            if cap <= 0:
+                raise uploads.UploadRejected("Your files are full. Delete some to make room.")
+            if link.kind == "youtube":
+                title = await asyncio.to_thread(
+                    link_import.fetch_youtube,
+                    link.url,
+                    media.path,
+                    cap,
+                    settings.link_import_max_s,
+                    settings.ffmpeg_binary,
+                )
+                media.name = title
+            else:
+                await link_import.fetch_direct(link.url, media.path, cap)
+            media.size_bytes = media.path.stat().st_size
+            await describe(media)
+            if media.duration_s and media.duration_s > settings.link_import_max_s:
+                raise uploads.UploadRejected(
+                    f"That video is longer than {int(settings.link_import_max_s // 3600)} hours."
+                )
+            await media_store.add(media)
+        job.media = _out(media)
+        job.status = "done"
+    except uploads.UploadRejected as exc:
+        media_store.remove_files(media)
+        job.status, job.error = "failed", str(exc)
+    except Exception:
+        logger.exception("Import of %s failed", link.url)
+        media_store.remove_files(media)
+        job.status, job.error = "failed", "That video couldn't be brought in."
+
+
+@router.post("/import", response_model=ImportOut, status_code=202)
+async def import_media(
+    body: ImportIn, user_id: str | None = Depends(current_user_id)
+) -> ImportOut:
+    if not body.rights_confirmed:
+        raise HTTPException(
+            status_code=422, detail="Confirm that you have the rights to use this video."
+        )
+    try:
+        link = link_import.classify(body.url)
+    except uploads.UploadRejected as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if link.kind == "youtube" and not get_settings().youtube_import_enabled:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "youtube_disabled",
+                "message": (
+                    "YouTube links can't be imported here. Download the video and "
+                    "upload the file."
+                ),
+            },
+        )
+    if any(j.user_id == user_id and j.status == "running" for j in _imports.values()):
+        raise HTTPException(status_code=409, detail="One link is already being brought in.")
+    # Old finished jobs are forgotten; nobody polls an hour later.
+    cutoff = datetime.now(UTC) - timedelta(hours=1)
+    for stale in [k for k, j in _imports.items() if j.status != "running" and j.started < cutoff]:
+        _imports.pop(stale, None)
+    await media_store.prune_expired()
+
+    job = _Import(id=str(uuid.uuid4()), user_id=user_id)
+    _imports[job.id] = job
+    asyncio.get_running_loop().create_task(_run_import(job, link))
+    return _out_import(job)
+
+
+@router.get("/import/{import_id}", response_model=ImportOut)
+async def import_status(
+    import_id: str, user_id: str | None = Depends(current_user_id)
+) -> ImportOut:
+    job = _imports.get(import_id)
+    if job is None or job.user_id != user_id:
+        raise HTTPException(status_code=404, detail="No such import.")
+    return _out_import(job)

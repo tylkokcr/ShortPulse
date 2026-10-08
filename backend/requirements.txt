@@ -20,6 +20,10 @@ faster-whisper>=1.0
 # "open() got an unexpected keyword argument 'metadata_errors'". Lift this
 # once a faster-whisper release stops passing it.
 av>=11,<19
+# Importing a video from a YouTube link (services/link_import.py). Left
+# unpinned above a floor on purpose: YouTube changes its pages often and
+# only a current yt-dlp keeps up — rebuild the image to update it.
+yt-dlp>=2025.1
 # TTS>=0.22              # optional: Coqui XTTS-v2 voice cloning, uncomment to enable
 
 # --- Visual generation --------------------------------------------------

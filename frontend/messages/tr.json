@@ -709,6 +709,17 @@
         "stop": "Durdur",
         "reset": "Öneriye dön"
       }
+    },
+    "link": {
+      "label": "Ya da link yapıştır",
+      "placeholder": "Google Drive, Dropbox, YouTube ya da video dosyası linki",
+      "fetch": "Getir",
+      "fetching": "Getiriliyor…",
+      "rights": "Bu benim videom ya da kullanma iznim var.",
+      "youtubeNote": "YouTube'dan gelen videolar bir gün saklanır ve ShortPulse'tan paylaşılamaz — yaptığını indirip kendin paylaşırsın.",
+      "youtubeOff": "YouTube linkleri burada henüz getirilemiyor. Videoyu indirip dosyayı yükle.",
+      "busyHint": "Büyük videolar birkaç dakika sürer. Burada bekleyebilirsin.",
+      "failed": "Bu link getirilemedi."
     }
   },
   "app": {
@@ -904,7 +915,8 @@
       "errors": {
         "start": "Yayınlama başlatılamadı",
         "approve": "O gönderi onaylanamadı."
-      }
+      },
+      "fromYoutube": "Bu video bir YouTube linkinden yapıldı, o yüzden ShortPulse'tan paylaşılamaz. Yukarıdan indirip kendin paylaşabilirsin."
     },
     "edit": {
       "notEditable": "Bu video, altyazılar düzenlenebilir olmadan önce render edildi. Metni düzeltmek için yeniden render al.",

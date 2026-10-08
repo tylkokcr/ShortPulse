@@ -115,6 +115,7 @@ function serverReason(body: string): string | null {
     const detail = JSON.parse(body).detail;
     if (typeof detail === "string") return detail;
     if (detail && typeof detail.reason === "string") return detail.reason;
+    if (detail && typeof detail.message === "string") return detail.message;
   } catch {
     // Not JSON, or not shaped like an error we know.
   }
@@ -625,6 +626,25 @@ export async function createBeatEdit(
 // ---------------------------------------------------------------------------
 // My files
 // ---------------------------------------------------------------------------
+
+export interface MediaImport {
+  id: string;
+  status: "running" | "done" | "failed";
+  media: import("./types").MediaFile | null;
+  error: string | null;
+}
+
+/** Start bringing a video in from a link; poll `getMediaImport` after. */
+export function importMediaLink(url: string, rightsConfirmed: boolean): Promise<MediaImport> {
+  return request<MediaImport>("/media/import", {
+    method: "POST",
+    body: JSON.stringify({ url, rights_confirmed: rightsConfirmed }),
+  });
+}
+
+export function getMediaImport(id: string): Promise<MediaImport> {
+  return request<MediaImport>(`/media/import/${id}`);
+}
 
 export async function listMedia(): Promise<import("./types").MediaList> {
   return request("/media");

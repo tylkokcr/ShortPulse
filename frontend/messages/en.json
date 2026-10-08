@@ -709,6 +709,17 @@
         "stop": "Stop",
         "reset": "Back to the suggestion"
       }
+    },
+    "link": {
+      "label": "Or paste a link",
+      "placeholder": "Google Drive, Dropbox, YouTube or a video file link",
+      "fetch": "Bring in",
+      "fetching": "Bringing in…",
+      "rights": "This is my video, or I have permission to use it.",
+      "youtubeNote": "Videos from YouTube are kept for a day and can't be posted from ShortPulse — download what you make and post it yourself.",
+      "youtubeOff": "YouTube links can't be brought in here yet. Download the video and upload the file.",
+      "busyHint": "Large videos take a few minutes. You can wait here.",
+      "failed": "That link couldn't be brought in."
     }
   },
   "app": {
@@ -904,7 +915,8 @@
       "errors": {
         "start": "Couldn't start publishing",
         "approve": "Couldn't approve that post."
-      }
+      },
+      "fromYoutube": "This video was made from a YouTube link, so it can't be posted from ShortPulse. Download it above and post it yourself."
     },
     "edit": {
       "notEditable": "This video was rendered before captions became editable. Re-render it to correct the text.",

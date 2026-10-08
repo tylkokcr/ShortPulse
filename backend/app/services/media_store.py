@@ -17,6 +17,7 @@ from __future__ import annotations
 import os
 import shutil
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -41,6 +42,15 @@ class MediaFile:
     width: int | None = None
     height: int | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    # "upload", "link" (fetched from a link the user gave) or "youtube".
+    origin: str = "upload"
+    # When the file is deleted by itself; None keeps it. Set on YouTube
+    # imports (see migration 0013).
+    expires_at: datetime | None = None
+
+    @property
+    def expired(self) -> bool:
+        return self.expires_at is not None and self.expires_at <= datetime.now(UTC)
 
     @property
     def path(self) -> Path:
@@ -97,8 +107,11 @@ class _Memory:
         return self.rows.get(media_id)
 
     async def list(self, user_id: str | None) -> list[MediaFile]:
-        rows = [m for m in self.rows.values() if m.user_id == user_id]
+        rows = [m for m in self.rows.values() if m.user_id == user_id and not m.expired]
         return sorted(rows, key=lambda m: m.created_at, reverse=True)
+
+    async def expired(self) -> Sequence[MediaFile]:
+        return [m for m in self.rows.values() if m.expired]
 
     async def used_bytes(self, user_id: str | None) -> int:
         return sum(m.size_bytes for m in self.rows.values() if m.user_id == user_id)
@@ -108,7 +121,10 @@ class _Memory:
 
 
 class _Postgres:
-    _COLUMNS = "id, user_id, kind, name, ext, size_bytes, duration_s, width, height, created_at"
+    _COLUMNS = (
+        "id, user_id, kind, name, ext, size_bytes, duration_s, width, height, created_at, "
+        "origin, expires_at"
+    )
 
     def __init__(self, pool: asyncpg.Pool) -> None:
         self._pool = pool
@@ -126,17 +142,20 @@ class _Postgres:
             width=row["width"],
             height=row["height"],
             created_at=row["created_at"],
+            origin=row["origin"],
+            expires_at=row["expires_at"],
         )
 
     async def add(self, media: MediaFile) -> None:
         await self._pool.execute(
             """
             insert into media_files (id, user_id, kind, name, ext, size_bytes,
-                                     duration_s, width, height)
-            values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                                     duration_s, width, height, origin, expires_at)
+            values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             """,
             media.id, media.user_id, media.kind, media.name, media.ext,
             media.size_bytes, media.duration_s, media.width, media.height,
+            media.origin, media.expires_at,
         )
 
     async def get(self, media_id: str) -> MediaFile | None:
@@ -154,6 +173,7 @@ class _Postgres:
             f"""
             select {self._COLUMNS} from media_files
             where user_id is not distinct from $1
+              and (expires_at is null or expires_at > now())
             order by created_at desc
             """,
             user_id,
@@ -170,6 +190,12 @@ class _Postgres:
 
     async def delete(self, media_id: str) -> None:
         await self._pool.execute("delete from media_files where id = $1", media_id)
+
+    async def expired(self) -> Sequence[MediaFile]:
+        rows = await self._pool.fetch(
+            f"select {self._COLUMNS} from media_files where expires_at <= now()"
+        )
+        return [self._row(r) for r in rows]
 
 
 _store: _Memory | _Postgres = _Memory()
@@ -188,7 +214,7 @@ async def get_owned(media_id: str, user_id: str | None) -> MediaFile | None:
     """The file, if it exists and belongs to this user — None otherwise,
     for either reason, so a caller cannot probe someone else's ids."""
     media = await _store.get(media_id)
-    if media is None or media.user_id != user_id:
+    if media is None or media.user_id != user_id or media.expired:
         return None
     return media
 
@@ -204,3 +230,14 @@ async def used_bytes(user_id: str | None) -> int:
 async def delete(media: MediaFile) -> None:
     await _store.delete(media.id)
     remove_files(media)
+
+
+async def prune_expired() -> int:
+    """Delete every file past its `expires_at`, row and disk both. Cheap
+    when there are none, so it is called on the paths that list or add
+    files rather than from a timer that would need a home of its own.
+    Projects already made from one keep their own linked copy."""
+    gone = await _store.expired()
+    for media in gone:
+        await delete(media)
+    return len(gone)

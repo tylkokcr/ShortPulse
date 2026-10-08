@@ -352,6 +352,20 @@ async def publish_now(
         raise HTTPException(status_code=404, detail="Project not found")
     if not project.output_path:
         raise HTTPException(status_code=409, detail="This project has no finished video yet")
+    if project.config.source_origin == "youtube":
+        # Made from a video fetched off YouTube: posting it back through
+        # YouTube's own API (or anyone's) is the one use that puts the
+        # app's platform access at risk. The user can still download it.
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "imported_from_youtube",
+                "message": (
+                    "Videos made from a YouTube link can't be posted from here. "
+                    "Download it and post it yourself."
+                ),
+            },
+        )
 
     connection = await social_store.load_for_publish(
         pool, body.connection_id, request.app.state.token_cipher
