@@ -366,3 +366,34 @@ def test_a_beat_edit_is_priced_by_its_length():
     assert cost(60) == 8
     # Stored before lengths were priced: the 15-second price.
     assert cost(None) == 3
+
+
+@pytest.mark.skipif(shutil.which(FFMPEG) is None, reason="needs ffmpeg")
+def test_an_edit_ends_on_black_and_silence(tmp_path):
+    import subprocess
+
+    clip = tmp_path / "clip.mp4"
+    music = tmp_path / "music.wav"
+    subprocess.run([FFMPEG, "-nostdin", "-v", "error", "-y", "-f", "lavfi", "-i",
+                    "testsrc=size=640x360:rate=30:duration=4", "-pix_fmt", "yuv420p", str(clip)], check=True)
+    subprocess.run([FFMPEG, "-nostdin", "-v", "error", "-y", "-f", "lavfi", "-i",
+                    "sine=frequency=440:duration=6", str(music)], check=True)
+    plan = beat_edit.EditPlan(
+        music_start=0.0, duration=3.0,
+        cuts=[beat_edit.Cut(clip, 0.0, 1.5, landscape=True), beat_edit.Cut(clip, 2.0, 1.5, landscape=True)],
+    )
+    out = beat_edit.render_edit(plan, music, tmp_path / "edit.mp4", tmp_path / "work", FFMPEG)
+
+    last = subprocess.run(
+        [FFMPEG, "-nostdin", "-v", "error", "-sseof", "-0.1", "-i", str(out), "-frames:v", "1",
+         "-vf", "scale=32:18,format=gray", "-f", "rawvideo", "-"],
+        capture_output=True, check=True,
+    ).stdout
+    assert last and sum(last) / len(last) < 12, "the last frame is not black"
+    tail = subprocess.run(
+        [FFMPEG, "-nostdin", "-v", "info", "-sseof", "-0.15", "-i", str(out), "-vn",
+         "-af", "volumedetect", "-f", "null", "-"],
+        capture_output=True, text=True, check=True,
+    ).stderr
+    peak = float(tail.split("max_volume:")[1].split("dB")[0])
+    assert peak < -25, f"the music is still playing at the end ({peak} dB)"

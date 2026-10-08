@@ -1087,7 +1087,9 @@
     "captions": {
       "title": "Jedno wideo, napisy w dowolnym języku",
       "body": "Wgraj raz, wybierz język napisów. Słowa są tłumaczone i zgrane z głosem — dźwięk zostaje twój.",
-      "language": "Napisy"
+      "language": "Napisy",
+      "in": "1 wideo, mówione po angielsku",
+      "voice": "Napisy"
     },
     "soundOn": "Włącz dźwięk",
     "soundOff": "Wyłącz dźwięk",

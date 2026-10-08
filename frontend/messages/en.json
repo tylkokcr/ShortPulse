@@ -1087,7 +1087,9 @@
     "captions": {
       "title": "One video, captions in any language",
       "body": "Upload once, pick the language the captions should be in. The words are translated and timed to the voice — the audio stays yours.",
-      "language": "Captions"
+      "language": "Captions",
+      "in": "1 video, spoken in English",
+      "voice": "Captions"
     },
     "soundOn": "Turn sound on",
     "soundOff": "Turn sound off",

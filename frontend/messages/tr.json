@@ -1087,7 +1087,9 @@
     "captions": {
       "title": "Tek video, her dilde altyazı",
       "body": "Bir kez yükle, altyazının hangi dilde olacağını seç. Kelimeler çevrilir ve sese göre zamanlanır — ses senin kalır.",
-      "language": "Altyazı"
+      "language": "Altyazı",
+      "in": "1 video, İngilizce konuşuluyor",
+      "voice": "Altyazı"
     },
     "soundOn": "Sesi aç",
     "soundOff": "Sesi kapat",

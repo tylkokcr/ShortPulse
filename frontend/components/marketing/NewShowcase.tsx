@@ -42,11 +42,21 @@ const SOURCES = [
   "09_skateboard",
 ];
 
+// Only renders whose translation reads right. German and Spanish were
+// first made with the local model and came out wrong in ways a native
+// speaker sees at once ("cuando un pulpo nata"), so they wait for renders
+// from the live service, as Turkish was made.
 const LANGUAGES = [
-  { code: "en", label: "English" },
-  { code: "tr", label: "Türkçe" },
-  { code: "de", label: "Deutsch" },
-  { code: "es", label: "Español" },
+  {
+    code: "en",
+    label: "English",
+    text: "An octopus has three hearts. Two of them pump blood through its gills. The third keeps the rest of its body alive. But when an octopus swims, that third heart stops beating. Which is why it would rather crawl.",
+  },
+  {
+    code: "tr",
+    label: "Türkçe",
+    text: "Bir ahtapotun üç kalbi vardır. İkisi, kanı solungaçlarından pompalıyor. Üçüncü kalp ise vücudunun geri kalanını canlı tutuyor. Ama bir ahtapot yüzdüğünde, o üçüncü kalp atmayı durdurur. Bu yüzden sürünmeyi tercih eder.",
+  },
 ] as const;
 type Language = (typeof LANGUAGES)[number]["code"];
 
@@ -57,7 +67,7 @@ const FOOTAGE = [
 
 function Phone({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative mx-auto aspect-[9/16] w-full max-w-[240px] overflow-hidden rounded-[22px] border border-border-strong bg-black shadow-2xl shadow-black/60 sm:max-w-[260px]">
+    <div className="relative aspect-[9/16] w-[150px] shrink-0 overflow-hidden rounded-[22px] border border-border-strong bg-black shadow-2xl shadow-black/60 sm:w-[210px]">
       {children}
     </div>
   );
@@ -89,6 +99,52 @@ function Chip({
   );
 }
 
+function InputLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="font-mono text-[10px] uppercase tracking-widest text-white/35">{children}</span>
+  );
+}
+
+function Feature({
+  icon: Icon,
+  title,
+  body,
+  input,
+  phone,
+  controlLabel,
+  controls,
+}: {
+  icon: typeof Music2;
+  title: string;
+  body: string;
+  input: React.ReactNode;
+  phone: React.ReactNode;
+  controlLabel: string;
+  controls: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-start gap-3 lg:min-h-[88px]">
+        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent/15 text-accent">
+          <Icon size={16} />
+        </span>
+        <div className="flex flex-col gap-1">
+          <h3 className="text-base font-semibold">{title}</h3>
+          <p className="text-sm leading-relaxed text-white/50">{body}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-4 sm:gap-6">
+        <div className="flex min-w-0 flex-1 flex-col gap-2">{input}</div>
+        {phone}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-xs text-white/40">{controlLabel}</span>
+        {controls}
+      </div>
+    </div>
+  );
+}
+
 function SoundToggle({ muted, onToggle }: { muted: boolean; onToggle: () => void }) {
   const t = useTranslations("showcase");
   return (
@@ -114,6 +170,7 @@ export function NewShowcase() {
   const [language, setLanguage] = useState<Language>(
     LANGUAGES.find((l) => l.code === locale)?.code ?? "en"
   );
+  const current = LANGUAGES.find((l) => l.code === language) ?? LANGUAGES[0];
   const [beatMuted, setBeatMuted] = useState(true);
   const [captionMuted, setCaptionMuted] = useState(true);
   const captionVideo = useRef<HTMLVideoElement>(null);
@@ -136,24 +193,17 @@ export function NewShowcase() {
         <p className="max-w-xl text-sm text-white/50">{t("sub")}</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-8">
-        {/* Beat edit */}
-        <div className="flex flex-col gap-5">
-          <div className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent/15 text-accent">
-              <Music2 size={16} />
-            </span>
-            <div className="flex flex-col gap-1">
-              <h3 className="text-base font-semibold">{t("beat.title")}</h3>
-              <p className="text-sm leading-relaxed text-white/50">{t("beat.body")}</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-[1fr_auto] items-center gap-4 sm:gap-6">
-            <div className="flex flex-col gap-2">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-white/35">
-                {t("beat.in")}
-              </span>
+      {/* Two columns built the same way, so they read as a pair: what the
+          feature is, what goes in beside what comes out (the phone, the
+          same size on both sides), and the one control under it. */}
+      <div className="grid grid-cols-1 gap-14 lg:grid-cols-2 lg:gap-10">
+        <Feature
+          icon={Music2}
+          title={t("beat.title")}
+          body={t("beat.body")}
+          input={
+            <>
+              <InputLabel>{t("beat.in")}</InputLabel>
               <div className="grid grid-cols-3 gap-1.5">
                 {SOURCES.map((name) => (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -166,57 +216,60 @@ export function NewShowcase() {
                   />
                 ))}
               </div>
-              <span className="mt-1 flex items-center gap-1.5 text-[11px] text-white/40">
+              <span className="flex items-center gap-1.5 text-[11px] text-white/40">
                 <Music2 size={11} /> Winning Spirit · 123 BPM
               </span>
-            </div>
-            <div className="w-[150px] sm:w-[200px]">
-              <Phone>
-                <video
-                  key={style}
-                  src={`/showcase/beat-${style}.mp4`}
-                  poster={`/showcase/beat-${style}.jpg`}
-                  autoPlay
-                  loop
-                  muted={beatMuted}
-                  playsInline
-                  preload="metadata"
-                  className="h-full w-full object-cover"
-                />
-                <SoundToggle muted={beatMuted} onToggle={() => setBeatMuted((m) => !m)} />
-              </Phone>
-            </div>
-          </div>
+            </>
+          }
+          phone={
+            <Phone>
+              <video
+                key={style}
+                src={`/showcase/beat-${style}.mp4`}
+                poster={`/showcase/beat-${style}.jpg`}
+                autoPlay
+                loop
+                muted={beatMuted}
+                playsInline
+                preload="metadata"
+                className="h-full w-full object-cover"
+              />
+              <SoundToggle muted={beatMuted} onToggle={() => setBeatMuted((m) => !m)} />
+            </Phone>
+          }
+          controlLabel={t("beat.style")}
+          controls={STYLES.map((s) => (
+            <Chip key={s} active={style === s} onClick={() => setStyle(s)}>
+              {tb(`styles.${s}.name`)}
+            </Chip>
+          ))}
+        />
 
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-1 text-xs text-white/40">{t("beat.style")}</span>
-            {STYLES.map((s) => (
-              <Chip key={s} active={style === s} onClick={() => setStyle(s)}>
-                {tb(`styles.${s}.name`)}
-              </Chip>
-            ))}
-          </div>
-        </div>
-
-        {/* Caption translation */}
-        <div className="flex flex-col gap-5">
-          <div className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent/15 text-accent">
-              <Languages size={16} />
-            </span>
-            <div className="flex flex-col gap-1">
-              <h3 className="text-base font-semibold">{t("captions.title")}</h3>
-              <p className="text-sm leading-relaxed text-white/50">{t("captions.body")}</p>
-            </div>
-          </div>
-
-          <div className="w-[200px] self-center sm:w-[240px]">
+        <Feature
+          icon={Languages}
+          title={t("captions.title")}
+          body={t("captions.body")}
+          input={
+            <>
+              <InputLabel>{t("captions.in")}</InputLabel>
+              <blockquote
+                key={language}
+                className="animate-fade-up rounded-md border border-border bg-black/30 p-3 text-[13px] leading-relaxed text-white/75"
+              >
+                {current.text}
+              </blockquote>
+              <span className="flex items-center gap-1.5 text-[11px] text-white/40">
+                <Languages size={11} /> {t("captions.voice")} · {current.label}
+              </span>
+            </>
+          }
+          phone={
             <Phone>
               <video
                 ref={captionVideo}
                 key={language}
                 src={`/showcase/octo-${language}.mp4`}
-                poster="/showcase/octo.jpg"
+                poster={`/showcase/octo-${language}.jpg`}
                 autoPlay
                 loop
                 muted={captionMuted}
@@ -229,17 +282,14 @@ export function NewShowcase() {
               />
               <SoundToggle muted={captionMuted} onToggle={() => setCaptionMuted((m) => !m)} />
             </Phone>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <span className="mr-1 text-xs text-white/40">{t("captions.language")}</span>
-            {LANGUAGES.map((l) => (
-              <Chip key={l.code} active={language === l.code} onClick={() => pickLanguage(l.code)}>
-                {l.label}
-              </Chip>
-            ))}
-          </div>
-        </div>
+          }
+          controlLabel={t("captions.language")}
+          controls={LANGUAGES.map((l) => (
+            <Chip key={l.code} active={language === l.code} onClick={() => pickLanguage(l.code)}>
+              {l.label}
+            </Chip>
+          ))}
+        />
       </div>
 
       <p className="mt-10 text-xs leading-relaxed text-white/30">

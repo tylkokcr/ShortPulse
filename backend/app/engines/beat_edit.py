@@ -761,6 +761,10 @@ def plan_edit(
 # ---------------------------------------------------------------------------
 
 
+# How long the end of an edit takes to go to black and silence.
+FADE_OUT_S = 1.5
+
+
 def _segment_filter(cut: Cut) -> str:
     """The filter graph for one cut, its clock starting at zero."""
     timing = f"setpts={1 / cut.speed:.4f}*(PTS-STARTPTS),fps={FPS}"
@@ -855,12 +859,21 @@ def render_edit(plan: EditPlan, music: Path, output: Path, work: Path, ffmpeg: s
          str(listing), "-c", "copy", str(joined)],
         check=True,
     )
-    fade_at = max(0.0, plan.duration - 1.0)
+    # The ending: picture and music go out together — to black and to
+    # silence over the same stretch — so the edit finishes rather than
+    # stops, and loops cleanly where it is played on repeat. The video is
+    # re-encoded for it; the cuts were joined by stream copy, and a fade
+    # cannot be.
+    fade_s = min(FADE_OUT_S, plan.duration / 4)
+    fade_at = max(0.0, plan.duration - fade_s)
     subprocess.run(
         [ffmpeg, "-nostdin", "-v", "error", "-y", "-i", str(joined), "-ss",
          f"{plan.music_start:.3f}", "-t", f"{plan.duration:.3f}", "-i", str(music),
-         "-filter_complex", f"[1:a]afade=t=out:st={fade_at:.3f}:d=1[a]",
-         "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+         "-filter_complex",
+         f"[0:v]fade=t=out:st={fade_at:.3f}:d={fade_s:.3f}:color=black[v];"
+         f"[1:a]afade=t=out:st={fade_at:.3f}:d={fade_s:.3f}[a]",
+         "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "veryfast",
+         "-crf", "19", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
          "-shortest", "-movflags", "+faststart", str(output)],
         check=True,
     )

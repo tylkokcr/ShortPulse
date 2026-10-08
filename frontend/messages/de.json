@@ -1087,7 +1087,9 @@
     "captions": {
       "title": "Ein Video, Untertitel in jeder Sprache",
       "body": "Einmal hochladen, Sprache der Untertitel wählen. Die Wörter werden übersetzt und auf die Stimme getimt — der Ton bleibt deiner.",
-      "language": "Untertitel"
+      "language": "Untertitel",
+      "in": "1 Video, auf Englisch gesprochen",
+      "voice": "Untertitel"
     },
     "soundOn": "Ton an",
     "soundOff": "Ton aus",
