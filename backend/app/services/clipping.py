@@ -129,7 +129,13 @@ def _numbered_transcript(segments: list[Segment]) -> str:
 _SNAP_RADIUS = 40
 # Clips cut to the floor stopped short of the point ("Kaybedince..."); a
 # grown moment runs to about this and on to the end of a sentence.
-GROW_TARGET_S = 22.0
+GROW_TARGET_S = 30.0
+# What a clip aims for: long enough for a story with its end, short enough
+# to hold someone scrolling. Chosen on the live service after clips of
+# 16-23 seconds read as fragments of a 46-minute podcast.
+TARGET_CLIP_S = (30.0, 45.0)
+# The furthest a short pick is grown in search of a sentence that ends.
+_GROW_LIMIT_S = 50.0
 
 
 def _norm(text: str) -> str:
@@ -214,11 +220,10 @@ def _validate(
         while last > first and (segments[last].end_ms / 1000) - start_s > MAX_CLIP_S:
             last -= 1
         # Undershoot is grown from the end, the mirror of the trim above,
-        # so the clip still finishes on a sentence boundary.
-        # Grown past the bare floor — to about GROW_TARGET_S and on to a
-        # sentence that ends — because a clip cut at twelve seconds stopped
-        # just before the point it was picked for.
-        if (segments[last].end_ms / 1000) - start_s < MIN_CLIP_S:
+        # so the clip still finishes on a sentence boundary: to
+        # GROW_TARGET_S and on to a sentence that ends, because a clip cut
+        # short stopped just before the point it was picked for.
+        if (segments[last].end_ms / 1000) - start_s < GROW_TARGET_S:
             while last + 1 < len(segments) and (
                 segments[last + 1].end_ms / 1000
             ) - start_s <= MAX_CLIP_S:
@@ -226,7 +231,7 @@ def _validate(
                 if long_enough and _ends_sentence(segments[last].text):
                     break
                 last += 1
-                if (segments[last].end_ms / 1000) - start_s >= GROW_TARGET_S * 2:
+                if (segments[last].end_ms / 1000) - start_s >= _GROW_LIMIT_S:
                     break
         end_s = segments[last].end_ms / 1000
 
@@ -340,12 +345,16 @@ async def pick_moments(
     # "30 seconds" by eye from the numbers picks two lines of quick talk.
     per_segment = max(source_s / max(len(segments), 1), 0.5)
     shortest = max(1, round(MIN_CLIP_S / per_segment))
-    typical = (max(shortest, round(25 / per_segment)), max(shortest, round(60 / per_segment)))
+    typical = (
+        max(shortest, round(TARGET_CLIP_S[0] / per_segment)),
+        max(shortest, round(TARGET_CLIP_S[1] / per_segment)),
+    )
     prompt = (
-        f"Find up to {wanted} moments, each between {int(MIN_CLIP_S)} and "
-        f"{int(MAX_CLIP_S)} seconds long. Segments here average {per_segment:.1f}s, "
-        f"so a moment is at least {shortest} consecutive segments and usually "
-        f"{typical[0]}-{typical[1]}.{wish}\n\n{_numbered_transcript(segments)}"
+        f"Find up to {wanted} moments, each {int(TARGET_CLIP_S[0])} to "
+        f"{int(TARGET_CLIP_S[1])} seconds long (never under {int(MIN_CLIP_S)} or over "
+        f"{int(MAX_CLIP_S)}). Segments here average {per_segment:.1f}s, so a moment "
+        f"is usually {typical[0]}-{typical[1]} consecutive segments."
+        f"{wish}\n\n{_numbered_transcript(segments)}"
     )
 
     parsed = await script_engine.complete_json(config, SYSTEM_PROMPT, prompt)
@@ -397,7 +406,7 @@ FRAGMENTED_SPEECH_SHARE = 0.6
 
 # What a clip cut from the picture aims for: long enough for a few moves,
 # well under every platform's ceiling.
-VISUAL_CLIP_S = 30.0
+VISUAL_CLIP_S = 38.0
 # How far a clip's ends may move to land on a shot change of the source.
 _SNAP_S = 4.0
 

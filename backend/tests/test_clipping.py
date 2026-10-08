@@ -39,12 +39,12 @@ CONFIG = LLMConfig()
 async def test_seconds_come_from_the_transcript_not_the_model(monkeypatch):
     """The model names segments; the clock comes from Whisper. A model
     that also volunteered timestamps must not be believed over them."""
-    _answer(monkeypatch, [{"first": 4, "last": 8, "title": "A point", "start_s": 999}])
+    _answer(monkeypatch, [{"first": 4, "last": 10, "title": "A point", "start_s": 999}])
 
     [moment] = await clipping.pick_moments(_transcript(), CONFIG)
 
     assert moment.start_s == 20.0
-    assert moment.end_s == 45.0
+    assert moment.end_s == 55.0
 
 
 async def test_an_index_outside_the_transcript_is_dropped(monkeypatch):
@@ -90,24 +90,36 @@ def _sentences(count: int = 60, seconds_each: float = 5.0) -> list[Segment]:
     ]
 
 
-async def test_a_moment_under_the_floor_is_grown_to_a_sentence_end(monkeypatch):
-    """Two segments is ten seconds. A clip cut at the floor stopped just
-    before its point, so it is carried on to about twenty seconds and the
-    end of a sentence."""
+async def test_a_short_moment_is_grown_to_the_target_and_a_sentence_end(monkeypatch):
+    """Two segments is ten seconds. A clip cut short stopped just before its
+    point, so it is carried on to thirty seconds and the end of a sentence."""
     _answer(monkeypatch, [{"first": 0, "last": 1, "title": "Too short"}])
 
     [moment] = await clipping.pick_moments(_sentences(), CONFIG)
-    assert moment.start_s == 0.0 and moment.end_s == 25.0
+    assert moment.start_s == 0.0 and moment.end_s == 30.0
+
+
+async def test_the_model_is_asked_for_thirty_to_forty_five_seconds(monkeypatch):
+    seen: list[str] = []
+
+    async def spy(config, system, prompt):
+        seen.append(prompt)
+        return {"moments": []}
+
+    monkeypatch.setattr(clipping.script_engine, "complete_json", spy)
+    await clipping.pick_moments(_transcript(400, 1.5), CONFIG)
+    assert "30 to 45 seconds" in seen[0]
+    assert "usually 20-30 consecutive segments" in seen[0]
 
 
 async def test_a_grown_moment_does_not_stop_on_a_trailing_sentence(monkeypatch):
     """ "Kaybedince..." is not where a thought lands."""
     segments = _sentences()
-    segments[4] = segments[4].model_copy(update={"text": "Ama kaybedince..."})
+    segments[5] = segments[5].model_copy(update={"text": "Ama kaybedince..."})
     _answer(monkeypatch, [{"first": 0, "last": 1, "title": "Too short"}])
 
     [moment] = await clipping.pick_moments(segments, CONFIG)
-    assert moment.end_s == 30.0
+    assert moment.end_s == 35.0
 
 
 async def test_a_line_number_off_by_a_few_is_put_right_by_its_quote(monkeypatch):
