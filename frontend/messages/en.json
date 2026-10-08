@@ -327,7 +327,7 @@
       },
       "local": {
         "q": "Is it genuinely local?",
-        "a": "When you self-host, yes: scripting, voiceover, transcription, image generation and rendering all run on your machine, and the one stage that reaches the network is stock footage from Pexels. This hosted service is the trade-off — it has no GPU, so scripts come from OpenAI and AI stills from Replicate. Voiceover, captions and rendering still happen on our server, and the code is the same either way."
+        "a": "When you self-host, yes: scripting, voiceover, transcription, image generation and rendering all run on your machine, and the one stage that reaches the network is stock footage from Pexels. This hosted service is the trade-off — it has no GPU, so scripts come from OpenAI, AI stills from Replicate, and the speech in uploads longer than three minutes is transcribed by OpenAI. Voiceover, shorter captions and rendering still happen on our server, and the code is the same either way."
       },
       "roughEdges": {
         "q": "What are the rough edges?",
@@ -478,7 +478,7 @@
       "captionLanguageOnHint": "The voice stays as it is; the captions are translated sentence by sentence and shown while each one is spoken.",
       "captionLanguageOffHint": "Translate the captions to reach viewers who don't speak the language — the audio is not touched.",
       "captionLanguageWithDub": "A dub is captioned in the language it is dubbed into.",
-      "longRead": "{minutes} minutes of audio to read: this takes a while (often 15–30 minutes for an hour). You can leave the page; the clips appear in your library when they're done."
+      "longRead": "{minutes} minutes of audio to read: this can take a few minutes. You can leave the page; the clips appear in your library when they're done."
     },
     "idea": "The idea",
     "groups": {

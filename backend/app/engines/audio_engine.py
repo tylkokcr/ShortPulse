@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import logging
 import re
+import subprocess
+import tempfile
 from collections.abc import Callable
 from pathlib import Path
 
@@ -322,6 +324,118 @@ def transcribe_segments(
                 words=words,
             )
         )
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Hosted transcription (OpenAI Whisper API)
+# ---------------------------------------------------------------------------
+
+_OPENAI_TRANSCRIBE_URL = "https://api.openai.com/v1/audio/transcriptions"
+# The API takes files of at most 25MB. Twenty minutes of 32kbps mono MP3 is
+# under 5MB, so a chunk never comes near it, and a failed chunk costs a
+# twentieth of an hour to retry rather than the whole file.
+_CHUNK_S = 1200
+
+# verbose_json names the language in English ("turkish"); the rest of the
+# app speaks ISO 639-1.
+_LANGUAGE_NAMES = {
+    "english": "en", "turkish": "tr", "spanish": "es", "french": "fr", "german": "de",
+    "portuguese": "pt", "arabic": "ar", "russian": "ru", "italian": "it", "japanese": "ja",
+    "chinese": "zh", "polish": "pl", "dutch": "nl", "korean": "ko", "hindi": "hi",
+    "ukrainian": "uk", "swedish": "sv", "greek": "el", "romanian": "ro", "czech": "cs",
+    "indonesian": "id", "persian": "fa", "hebrew": "he", "azerbaijani": "az",
+}
+
+
+def _segments_from_verbose(data: dict, offset_s: float) -> list[Segment]:
+    """The API's segments and words, put back together: it returns them as
+    two separate lists, each word timed but not assigned to a sentence."""
+    words = [
+        Word(
+            text=str(w.get("word", "")).strip(),
+            start_ms=round((float(w["start"]) + offset_s) * 1000),
+            end_ms=round((float(w["end"]) + offset_s) * 1000),
+        )
+        for w in data.get("words") or []
+        if str(w.get("word", "")).strip()
+    ]
+    out: list[Segment] = []
+    index = 0
+    for seg in data.get("segments") or []:
+        start_ms = round((float(seg["start"]) + offset_s) * 1000)
+        end_ms = round((float(seg["end"]) + offset_s) * 1000)
+        inside: list[Word] = []
+        while index < len(words) and words[index].start_ms < end_ms:
+            if words[index].start_ms >= start_ms - 300:
+                inside.append(words[index])
+            index += 1
+        if not inside:
+            continue
+        out.append(
+            Segment(
+                text=str(seg.get("text", "")).strip(),
+                start_ms=min(start_ms, inside[0].start_ms),
+                end_ms=max(end_ms, inside[-1].end_ms),
+                words=inside,
+            )
+        )
+    return out
+
+
+def transcribe_segments_openai(
+    audio_path: Path,
+    api_key: str,
+    ffmpeg_binary: str = "ffmpeg",
+    language: str | None = None,
+    on_language: Callable[[str], None] | None = None,
+    on_progress: Callable[[float], None] | None = None,
+) -> list[Segment]:
+    """`transcribe_segments`, done by the OpenAI Whisper API. Blocking; run
+    it in a thread. Raises on any failure, so the caller can fall back to
+    the local model rather than fail the render."""
+    import httpx
+
+    with tempfile.TemporaryDirectory() as work:
+        pattern = Path(work) / "part_%03d.mp3"
+        subprocess.run(
+            [ffmpeg_binary, "-nostdin", "-v", "error", "-y", "-i", str(audio_path), "-vn",
+             "-ac", "1", "-ar", "16000", "-c:a", "libmp3lame", "-b:a", "32k",
+             "-f", "segment", "-segment_time", str(_CHUNK_S), "-reset_timestamps", "1",
+             str(pattern)],
+            check=True, capture_output=True,
+        )
+        parts = sorted(Path(work).glob("part_*.mp3"))
+        if not parts:
+            raise RuntimeError("No audio to transcribe")
+        out: list[Segment] = []
+        offset = 0.0
+        heard: str | None = None
+        with httpx.Client(timeout=httpx.Timeout(600.0, connect=20.0)) as client:
+            for n, part in enumerate(parts):
+                fields: dict[str, str | list[str]] = {
+                    "model": "whisper-1",
+                    "response_format": "verbose_json",
+                    "timestamp_granularities[]": ["segment", "word"],
+                }
+                if language:
+                    fields["language"] = language
+                response = client.post(
+                    _OPENAI_TRANSCRIBE_URL,
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    data=fields,
+                    files={"file": (part.name, part.read_bytes(), "audio/mpeg")},
+                )
+                response.raise_for_status()
+                data = response.json()
+                if heard is None and data.get("language"):
+                    heard = _LANGUAGE_NAMES.get(str(data["language"]).lower(), str(data["language"])[:2])
+                out.extend(_segments_from_verbose(data, offset))
+                offset += float(data.get("duration") or _CHUNK_S)
+                if on_progress is not None:
+                    on_progress((n + 1) / len(parts))
+    if on_language is not None:
+        on_language(language or heard or "en")
     return out
 
 

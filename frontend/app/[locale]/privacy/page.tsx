@@ -127,9 +127,12 @@ export default function Privacy() {
             identifies you.
           </li>
           <li>
-            <strong className="text-white">OpenAI</strong> — receives the topic or script to
-            write the scene breakdown from, on the hosted service. Self-hosted installs use a
-            local model and send nothing.
+            <strong className="text-white">OpenAI</strong> — on the hosted service, receives
+            the topic or script to write the scene breakdown from; the transcript of an
+            uploaded video when you translate its captions, dub it or cut clips from it; and
+            the audio of an uploaded video longer than three minutes, which it transcribes.
+            Under OpenAI&apos;s API terms that data is not used to train its models.
+            Self-hosted installs use a local model and send nothing.
           </li>
           <li>
             <strong className="text-white">Replicate</strong> — receives one image prompt per

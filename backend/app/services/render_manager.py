@@ -11,6 +11,7 @@ import logging
 import shutil
 import time
 import uuid
+from collections import deque
 from collections.abc import Awaitable, Callable
 from contextlib import contextmanager
 from pathlib import Path
@@ -38,6 +39,7 @@ from app.schemas.project import (
     Scene,
     SceneAudio,
     SceneVisual,
+    Segment,
     VideoLength,
     VisualMode,
 )
@@ -57,6 +59,59 @@ from app.services import (
 from app.services.connection_manager import connection_manager
 
 logger = logging.getLogger(__name__)
+
+
+def _hosted_transcription(settings: Settings, audio_s: float) -> bool:
+    provider = (settings.transcription_provider or "local").lower()
+    if provider == "openai":
+        return bool(settings.openai_api_key)
+    if provider == "auto":
+        return bool(settings.openai_api_key) and audio_s >= settings.hosted_transcription_min_s
+    return False
+
+
+async def _transcribe(
+    audio: Path,
+    settings: Settings,
+    whisper_model: str,
+    language: str | None,
+    heard: list[str],
+    project_id: str,
+) -> list[Segment]:
+    """Sentences with their words, from the API or from this machine —
+    see `Settings.transcription_provider`. The API failing for any reason
+    falls back to the local model: slower, but the render finishes."""
+    reporter = _transcription_reporter(project_id)
+    try:
+        audio_s = (await render_engine.probe_duration_ms(audio, settings.ffprobe_binary)) / 1000
+    except Exception:  # noqa: BLE001 - unmeasurable: let the provider setting decide
+        audio_s = settings.hosted_transcription_min_s
+    if _hosted_transcription(settings, audio_s):
+        try:
+            return await asyncio.to_thread(
+                audio_engine.transcribe_segments_openai,
+                audio,
+                settings.openai_api_key or "",
+                settings.ffmpeg_binary,
+                language,
+                heard.append,
+                reporter,
+            )
+        except Exception:  # noqa: BLE001 - fall back rather than fail the render
+            logger.exception(
+                "Hosted transcription failed for %s; reading it here instead", project_id
+            )
+            heard.clear()
+    return await asyncio.to_thread(
+        audio_engine.transcribe_segments,
+        audio,
+        whisper_model,
+        settings.whisper_device,
+        settings.whisper_compute_type,
+        language,
+        heard.append,
+        reporter,
+    )
 
 
 def _transcription_reporter(
@@ -806,15 +861,8 @@ async def run_upload_pipeline(
                             window[1],
                             settings.ffmpeg_binary,
                         )
-                segments = await asyncio.to_thread(
-                    audio_engine.transcribe_segments,
-                    listen_to,
-                    whisper_model,
-                    settings.whisper_device,
-                    settings.whisper_compute_type,
-                    forced_language,
-                    heard.append,
-                    _transcription_reporter(project_id),
+                segments = await _transcribe(
+                    listen_to, settings, whisper_model, forced_language, heard, project_id
                 )
                 # Back onto the original file's clock before anything
                 # reads them: `cut_clip` seeks into the source, not into
@@ -823,16 +871,10 @@ async def run_upload_pipeline(
                     segments = audio_engine.shift_segments(segments, window[0])
                 words = [word for segment in segments for word in segment.words]
             else:
-                words = await asyncio.to_thread(
-                    audio_engine.transcribe_word_timestamps,
-                    source,
-                    whisper_model,
-                    settings.whisper_device,
-                    settings.whisper_compute_type,
-                    forced_language,
-                    heard.append,
-                    _transcription_reporter(project_id),
+                spoken = await _transcribe(
+                    source, settings, whisper_model, forced_language, heard, project_id
                 )
+                words = [word for segment in spoken for word in segment.words]
 
         # Keep what was heard, before anything reads the language: the dub
         # translates from it, the clips inherit it and the editor shows it.
@@ -1504,6 +1546,30 @@ _LENGTH_UNITS = {
 }
 
 
+# More audio to read than this makes a job heavy (see RenderTaskQueue).
+HEAVY_READ_S = 300.0
+
+
+async def _is_heavy(project: Project, settings: Settings) -> bool:
+    """Whether a job reads enough audio to hold a worker for long: an
+    extraction over a long window, or a caption or dub of a long video.
+    Beat edits and generated videos are light — their time does not grow
+    with anything a user uploads at an hour long."""
+    config = project.config
+    if config.source != ProjectSource.UPLOAD:
+        return False
+    window = _clip_window(config)
+    if window is not None:
+        return window[1] > HEAVY_READ_S
+    if not project.source_path:
+        return False
+    try:
+        probed = await uploads.probe(Path(project.source_path), settings.ffprobe_binary)
+    except Exception:  # noqa: BLE001 - unreadable here fails later, where it is reported
+        return False
+    return probed.duration_s > HEAVY_READ_S
+
+
 class RenderTaskQueue:
     """Bounded async worker pool so heavy renders don't all fight for the
     same GPU/CPU at once. Projects submitted beyond `max_concurrent`
@@ -1520,13 +1586,22 @@ class RenderTaskQueue:
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
-        self._queue: asyncio.Queue[Project] = asyncio.Queue()
+        # Two lanes, light and heavy, each first in first out. A heavy job
+        # (an hour of audio to read) took a worker for half an hour, and with
+        # two workers two of them stopped every caption and edit behind them.
+        # Now a free worker takes light work first, and heavy work never
+        # holds every worker: one is always left for the light lane.
+        self._light: deque[Project] = deque()
+        self._heavy: deque[Project] = deque()
+        self._ready = asyncio.Condition()
+        self._running_heavy = 0
         self._workers: list[asyncio.Task] = []
-        # Ids in the order they will be started. asyncio.Queue exposes no
-        # way to ask where something is, and reaching into its internal
-        # deque would break the moment it changed.
-        self._waiting: list[str] = []
         self._running: set[str] = set()
+
+    @property
+    def _waiting(self) -> list[str]:
+        """Ids in the order they will most likely start: light, then heavy."""
+        return [p.config.id for p in (*self._light, *self._heavy)]
 
     def waiting_ahead_of(self, project_id: str) -> int | None:
         """How many renders will start before this one, or None.
@@ -1561,24 +1636,32 @@ class RenderTaskQueue:
             worker.cancel()
         self._workers.clear()
 
+    def _heavy_limit(self) -> int:
+        return max(1, self._settings.max_concurrent_renders - 1)
+
     async def submit(self, project: Project) -> None:
-        # Recorded before the put, so a position is available from the
-        # moment the request that queued it returns. The other order leaves
-        # a window where the project exists, the page is already polling,
-        # and the queue says it has never heard of it.
-        self._waiting.append(project.config.id)
-        await self._queue.put(project)
+        # Classified before it is queued, and queued before this returns,
+        # so a position is available from the moment the request that
+        # queued it does.
+        heavy = await _is_heavy(project, self._settings)
+        async with self._ready:
+            (self._heavy if heavy else self._light).append(project)
+            self._ready.notify_all()
+
+    async def _next(self) -> tuple[Project, bool]:
+        async with self._ready:
+            while True:
+                if self._light:
+                    return self._light.popleft(), False
+                if self._heavy and self._running_heavy < self._heavy_limit():
+                    self._running_heavy += 1
+                    return self._heavy.popleft(), True
+                await self._ready.wait()
 
     async def _worker_loop(self) -> None:
         while True:
-            project = await self._queue.get()
+            project, heavy = await self._next()
             project_id = project.config.id
-            # No longer waiting: it is being rendered, and a position of
-            # "0 ahead" would be a different and wrong statement.
-            try:
-                self._waiting.remove(project_id)
-            except ValueError:  # pragma: no cover - defensive
-                pass
             self._running.add(project_id)
             try:
                 # Uploads and generated projects share this queue on
@@ -1597,4 +1680,7 @@ class RenderTaskQueue:
                 await _settle_referral(project_id)
             finally:
                 self._running.discard(project_id)
-                self._queue.task_done()
+                if heavy:
+                    async with self._ready:
+                        self._running_heavy -= 1
+                        self._ready.notify_all()

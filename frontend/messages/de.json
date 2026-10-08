@@ -327,7 +327,7 @@
       },
       "local": {
         "q": "Ist es wirklich lokal?",
-        "a": "Beim Selbsthosten ja: Skript, Voiceover, Transkription, Bildgenerierung und Rendering laufen alle auf deinem Rechner, und die einzige Stufe, die ins Netz geht, ist Stockmaterial von Pexels. Der gehostete Dienst ist der Kompromiss — er hat keine GPU, deshalb kommen Skripte von OpenAI und KI-Stills von Replicate. Voiceover, Untertitel und Rendering passieren weiterhin auf unserem Server, und der Code ist in beiden Fällen derselbe."
+        "a": "Beim Selbsthosten ja: Skript, Sprecher, Transkription, Bilderzeugung und Rendern laufen auf deinem Rechner, und die einzige Stufe, die ins Netz geht, ist Stockmaterial von Pexels. Der gehostete Dienst ist der Kompromiss — er hat keine GPU, daher kommen Skripte von OpenAI, KI-Stills von Replicate, und die Sprache in Uploads über drei Minuten transkribiert OpenAI. Sprecher, kürzere Untertitel und Rendern laufen weiter auf unserem Server, und der Code ist derselbe."
       },
       "roughEdges": {
         "q": "Wo sind die rauen Kanten?",
@@ -478,7 +478,7 @@
       "captionLanguageOnHint": "Die Stimme bleibt, wie sie ist; die Untertitel werden Satz für Satz übersetzt und erscheinen, während der jeweilige Satz gesprochen wird.",
       "captionLanguageOffHint": "Übersetze die Untertitel, um Zuschauer zu erreichen, die die Sprache nicht sprechen — der Ton bleibt unberührt.",
       "captionLanguageWithDub": "Eine Vertonung wird in der Sprache untertitelt, in die sie vertont wird.",
-      "longRead": "{minutes} Minuten Audio zu lesen: Das dauert etwas (oft 15–30 Minuten pro Stunde). Du kannst die Seite verlassen; es erscheint danach in deiner Bibliothek."
+      "longRead": "{minutes} Minuten Audio zu lesen: Das kann ein paar Minuten dauern. Du kannst die Seite verlassen; es erscheint danach in deiner Bibliothek."
     },
     "idea": "Die Idee",
     "groups": {

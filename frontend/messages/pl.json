@@ -327,7 +327,7 @@
       },
       "local": {
         "q": "Czy to naprawdę działa lokalnie?",
-        "a": "Przy własnym hostingu tak: scenariusz, lektor, transkrypcja, generowanie obrazów i renderowanie działają na twoim komputerze, a jedynym etapem sięgającym do sieci są materiały stockowe z Pexels. Usługa hostowana to kompromis — nie ma GPU, więc scenariusze pochodzą z OpenAI, a kadry AI z Replicate. Lektor, napisy i renderowanie nadal dzieją się na naszym serwerze, a kod jest w obu przypadkach ten sam."
+        "a": "Przy własnym hostingu tak: scenariusz, lektor, transkrypcja, generowanie obrazów i renderowanie działają na twojej maszynie, a jedyny etap, który wychodzi do sieci, to materiały stockowe z Pexels. Usługa hostowana to kompromis — nie ma GPU, więc scenariusze pochodzą z OpenAI, kadry AI z Replicate, a mowę w nagraniach dłuższych niż trzy minuty transkrybuje OpenAI. Lektor, krótsze napisy i renderowanie nadal odbywają się na naszym serwerze, a kod jest ten sam."
       },
       "roughEdges": {
         "q": "Gdzie są słabe punkty?",
@@ -478,7 +478,7 @@
       "captionLanguageOnHint": "Głos zostaje bez zmian; napisy są tłumaczone zdanie po zdaniu i widoczne, gdy każde z nich pada.",
       "captionLanguageOffHint": "Przetłumacz napisy, żeby dotrzeć do widzów, którzy nie znają języka — dźwięk zostaje nietknięty.",
       "captionLanguageWithDub": "Dubbing ma napisy w języku, na który jest dubbingowany.",
-      "longRead": "Do odczytania {minutes} min dźwięku: to chwilę potrwa (zwykle 15–30 minut na godzinę). Możesz opuścić stronę; gotowe pojawi się w bibliotece."
+      "longRead": "Do odczytania {minutes} min dźwięku: to może potrwać kilka minut. Możesz opuścić stronę; gotowe pojawi się w bibliotece."
     },
     "idea": "Pomysł",
     "groups": {

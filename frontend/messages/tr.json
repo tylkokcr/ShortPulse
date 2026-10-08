@@ -327,7 +327,7 @@
       },
       "local": {
         "q": "Gerçekten yerel mi?",
-        "a": "Kendin barındırdığında evet: senaryo, seslendirme, deşifre, görsel üretimi ve render kendi makinende çalışır, ağa çıkan tek aşama Pexels'ten gelen stok görüntü. Barındırılan servis ise takas: GPU'su yok, bu yüzden senaryolar OpenAI'dan, yapay zekâ kareleri Replicate'ten gelir. Seslendirme, altyazı ve render yine bizim sunucumuzda olur ve kod iki durumda da aynıdır."
+        "a": "Kendin barındırırsan evet: senaryo, seslendirme, deşifre, görsel üretimi ve render tamamen kendi makinende çalışır; ağa çıkan tek aşama Pexels'ten stok görüntüdür. Barındırılan servis bunun takası — GPU'su yok, bu yüzden senaryolar OpenAI'den, yapay zekâ kareleri Replicate'ten gelir ve üç dakikadan uzun yüklemelerdeki konuşmayı OpenAI deşifre eder. Seslendirme, kısa altyazılar ve render yine bizim sunucumuzda yapılır; kod her iki durumda da aynı."
       },
       "roughEdges": {
         "q": "Pürüzler neler?",
@@ -478,7 +478,7 @@
       "captionLanguageOnHint": "Ses olduğu gibi kalır; altyazılar cümle cümle çevrilir ve her cümle konuşulurken ekranda görünür.",
       "captionLanguageOffHint": "O dili bilmeyen izleyicilere ulaşmak için altyazıyı çevir — sese dokunulmaz.",
       "captionLanguageWithDub": "Seslendirilen video, seslendirildiği dilde altyazılanır.",
-      "longRead": "Okunacak {minutes} dakikalık ses var: bu biraz sürer (bir saatlik ses için genelde 15–30 dakika). Sayfadan ayrılabilirsin; bitince kütüphanende görünür."
+      "longRead": "Okunacak {minutes} dakikalık ses var: bu birkaç dakika sürebilir. Sayfadan ayrılabilirsin; bitince kütüphanende görünür."
     },
     "idea": "Fikir",
     "groups": {

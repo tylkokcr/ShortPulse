@@ -38,6 +38,16 @@ class Settings(BaseSettings):
     # takes longer to write the script than the rest of the render takes to
     # produce the video.
     openai_api_key: str | None = None
+    # Who transcribes an upload: "local" (faster-whisper on this machine),
+    # "openai" (the Whisper API), or "auto" — the API when a key is set and
+    # there is enough audio for it to matter, this machine otherwise.
+    # Local Whisper on a 4-core VPS read a 46-minute podcast in about half
+    # an hour, at 330% CPU, with the render queue stopped behind it; the API
+    # reads it in a minute or two for about $0.28.
+    transcription_provider: str = "auto"
+    # Under this much audio "auto" stays local: a caption job of a minute
+    # takes seconds here and costs nothing.
+    hosted_transcription_min_s: float = 180.0
 
     # TTS / ASR
     whisper_model_size: str = "small"

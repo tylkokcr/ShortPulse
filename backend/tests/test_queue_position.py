@@ -176,3 +176,61 @@ async def test_an_app_without_a_queue_says_nothing(monkeypatch):
         body = (await client.get(f"/api/projects/{project.config.id}")).json()
 
     assert body["queue_ahead"] is None
+
+
+def _extraction(minutes: float):
+    from app.schemas.project import ProjectSource
+
+    return _project(source=ProjectSource.UPLOAD, clip_count=3, clip_from_s=0, clip_to_s=minutes * 60)
+
+
+async def test_a_short_job_goes_ahead_of_a_long_read(queue):
+    long_read = _extraction(46)
+    caption = _project()
+    await queue.submit(long_read)
+    await queue.submit(caption)
+    assert queue.waiting_ahead_of(caption.config.id) == 0
+    assert queue.waiting_ahead_of(long_read.config.id) == 1
+
+
+async def test_long_reads_never_take_every_worker(queue, monkeypatch):
+    """Two workers, two hour-long reads and then a caption: the caption
+    starts at once on the worker the reads are not allowed to take."""
+    from app.services import render_manager
+
+    started: list[str] = []
+    release = asyncio.Event()
+
+    async def fake_upload(project, settings, submit=None):
+        started.append(project.config.topic)
+        await release.wait()
+
+    async def fake_generated(project, settings):
+        started.append(project.config.topic)
+        await release.wait()
+
+    async def no_referral(project_id):
+        return None
+
+    monkeypatch.setattr(render_manager, "run_upload_pipeline", fake_upload)
+    monkeypatch.setattr(render_manager, "run_pipeline", fake_generated)
+    monkeypatch.setattr(render_manager, "_settle_referral", no_referral)
+
+    first, second = _extraction(60), _extraction(60)
+    first.config.topic, second.config.topic = "read-1", "read-2"
+    await queue.submit(first)
+    await queue.submit(second)
+    queue.start()
+    await asyncio.sleep(0.05)
+    assert started == ["read-1"]
+
+    caption = _project()
+    caption.config.topic = "caption"
+    await queue.submit(caption)
+    await asyncio.sleep(0.05)
+    assert started == ["read-1", "caption"]
+
+    release.set()
+    await asyncio.sleep(0.05)
+    assert "read-2" in started
+    await queue.stop()
