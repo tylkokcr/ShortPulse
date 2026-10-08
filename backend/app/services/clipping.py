@@ -136,6 +136,8 @@ GROW_TARGET_S = 30.0
 TARGET_CLIP_S = (30.0, 45.0)
 # The furthest a short pick is grown in search of a sentence that ends.
 _GROW_LIMIT_S = 50.0
+# Longer picks are brought back under this, to a sentence end.
+_SOFT_MAX_S = 60.0
 
 
 def _norm(text: str) -> str:
@@ -219,6 +221,16 @@ def _validate(
         # clip still ends on a sentence boundary rather than mid-word.
         while last > first and (segments[last].end_ms / 1000) - start_s > MAX_CLIP_S:
             last -= 1
+        # Past the target, back to the last sentence that ends within it:
+        # asked for 30-45 seconds, a model still named an 80-second range.
+        if (segments[last].end_ms / 1000) - start_s > _SOFT_MAX_S:
+            fits = [
+                k for k in range(first, last + 1)
+                if TARGET_CLIP_S[0] <= (segments[k].end_ms / 1000) - start_s <= _SOFT_MAX_S
+            ]
+            ending = [k for k in fits if _ends_sentence(segments[k].text)]
+            if ending or fits:
+                last = (ending or fits)[-1]
         # Undershoot is grown from the end, the mirror of the trim above,
         # so the clip still finishes on a sentence boundary: to
         # GROW_TARGET_S and on to a sentence that ends, because a clip cut
@@ -271,6 +283,17 @@ def _validate(
     return out
 
 
+def _title_language(code: str | None) -> str:
+    """The language titles are written in, named. "The language the
+    transcript is in" was not enough: on a Turkish podcast two titles of
+    three still came back English."""
+    from app.engines.audio_engine import _LANGUAGE_NAMES
+
+    names = {v: k for k, v in _LANGUAGE_NAMES.items()}
+    name = names.get((code or "").lower())
+    return f" Write every title in {name.capitalize()}." if name else ""
+
+
 def _tidy_guidance(guidance: str) -> str:
     """The uploader's sentence, made safe to put in a prompt.
 
@@ -288,6 +311,7 @@ async def pick_moments(
     config: LLMConfig,
     wanted: int = 3,
     guidance: str = "",
+    language: str | None = None,
 ) -> list[Moment]:
     """Choose up to `wanted` moments from a transcribed video.
 
@@ -354,7 +378,7 @@ async def pick_moments(
         f"{int(TARGET_CLIP_S[1])} seconds long (never under {int(MIN_CLIP_S)} or over "
         f"{int(MAX_CLIP_S)}). Segments here average {per_segment:.1f}s, so a moment "
         f"is usually {typical[0]}-{typical[1]} consecutive segments."
-        f"{wish}\n\n{_numbered_transcript(segments)}"
+        f"{_title_language(language)}{wish}\n\n{_numbered_transcript(segments)}"
     )
 
     parsed = await script_engine.complete_json(config, SYSTEM_PROMPT, prompt)

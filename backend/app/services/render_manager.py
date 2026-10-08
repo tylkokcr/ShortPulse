@@ -61,6 +61,31 @@ from app.services.connection_manager import connection_manager
 logger = logging.getLogger(__name__)
 
 
+_INHERITED_TRANSCRIPT = "transcript.json"
+
+
+def _hand_down_transcript(child_dir: Path, segments: list, start_s: float) -> None:
+    """Give a clip the part of the parent's transcript it contains, on the
+    clip's own clock, so its captions come from the same reading."""
+    if not segments:
+        return
+    shifted = audio_engine.shift_segments(segments, -start_s)
+    (child_dir / _INHERITED_TRANSCRIPT).write_text(
+        json.dumps([s.model_dump(mode="json") for s in shifted]), encoding="utf-8"
+    )
+
+
+def _inherited_transcript(paths: Path) -> list[Segment] | None:
+    path = paths / _INHERITED_TRANSCRIPT
+    if not path.is_file():
+        return None
+    try:
+        return [Segment.model_validate(s) for s in json.loads(path.read_text(encoding="utf-8"))]
+    except (ValueError, TypeError):
+        logger.warning("Unreadable handed-down transcript at %s; transcribing instead", path)
+        return None
+
+
 def _hosted_transcription(settings: Settings, audio_s: float) -> bool:
     provider = (settings.transcription_provider or "local").lower()
     if provider == "openai":
@@ -837,6 +862,7 @@ async def run_upload_pipeline(
         detect = config.language == AUTO_LANGUAGE
         forced_language = None if detect else config.language
         heard: list[str] = []
+        inherited = _inherited_transcript(paths)
         with timings.stage("transcription"):
             # faster-whisper decodes the container itself, so the mp4 goes
             # in directly — no separate audio extraction step.
@@ -851,7 +877,13 @@ async def run_upload_pipeline(
             # same single pass in either branch.
             # A caption translation needs them too, for the same reason a
             # dub does: a sentence is the unit that gets translated.
-            if dubbing_to or config.clip_count or captioning_to:
+            if inherited is not None:
+                # A clip cut from an extraction: its speech was transcribed
+                # with the whole video, and transcribing it again took two
+                # minutes a clip on a shared CPU to arrive at the same words.
+                segments = inherited
+                words = [word for segment in segments for word in segment.words]
+            elif dubbing_to or config.clip_count or captioning_to:
                 # An extraction may have been given a stretch to work on.
                 # Cutting the audio out first is what makes that stretch
                 # mean anything: Whisper reads the file it is handed from
@@ -1207,7 +1239,7 @@ async def _extract_clips(
     if share >= clipping.MIN_SPEECH_SHARE:
         with timings.stage("clip_selection"):
             moments = await clipping.pick_moments(
-                segments, config.llm, wanted, config.clip_guidance
+                segments, config.llm, wanted, config.clip_guidance, config.language
             )
     if len(moments) < wanted and share < clipping.FRAGMENTED_SPEECH_SHARE:
         from app.engines import beat_edit
@@ -1375,6 +1407,7 @@ async def _extract_clips(
         if moment.from_picture and clipping.speech_is_thin(inside, moment.duration_s):
             await _finish_uncaptioned(child_config, child_source, settings)
             continue
+        _hand_down_transcript(child_source.parent, inside, moment.start_s)
 
         if submit is not None:
             await submit(child)
