@@ -44,6 +44,8 @@ backend/app/storage/voice_previews/
 # frontend/public/examples/README.md); the .jpg posters stay tracked so a
 # fresh clone still renders the page with the right thumbnails.
 frontend/public/examples/*.mp4
+# The same rule, for the same reason, for the "new" showcase videos.
+frontend/public/showcase/*.mp4
 
 # Cloudflare wrangler's local cache. No wrangler project lives here — this
 # is what one run in the wrong directory leaves behind, and it holds the

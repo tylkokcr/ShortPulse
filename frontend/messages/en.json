@@ -126,7 +126,7 @@
       },
       "clips": {
         "title": "Long video in, clips out",
-        "detail": "A podcast or a talk goes in; the transcript picks the moments worth posting and each comes back captioned. Priced by the minutes read, not per clip."
+        "detail": "A podcast, a talk or a match reel goes in; the moments worth posting come back as clips — chosen from what is said, or from the picture when little is. Priced by the minutes read plus each clip."
       },
       "dub": {
         "title": "Dub into another language",
@@ -989,7 +989,7 @@
     },
     "clips": {
       "title": "Cut into clips",
-      "detail": "Drop in a podcast or a talk and the transcript picks the moments that stand on their own. Each lands in your library as its own captioned video.",
+      "detail": "A podcast, a talk or a match reel goes in; the moments worth posting come back as clips — chosen from what is said, or from the picture when little is. Priced by the minutes read plus each clip.",
       "alt": "The library with a source video and the four clips cut from it"
     },
     "edit": {
@@ -1073,5 +1073,24 @@
     "copied": "Copied",
     "progress": "{rewarded} of {cap} paid{waiting, plural, =0 {} one { · # friend yet to make their first video} other { · # friends yet to make their first video}}",
     "full": "All {cap} paid — thanks for spreading the word."
+  },
+  "showcase": {
+    "badge": "New",
+    "title": "Two things you haven't seen it do yet",
+    "sub": "Both of these came out of ShortPulse as they are. Press the buttons.",
+    "beat": {
+      "title": "Clips in, an edit cut to the beat out",
+      "body": "Drop in your clips and a song. It finds the beat and the drop, picks each clip's best moment and cuts on the beat — wide shots while it builds, the hit on the drop.",
+      "in": "9 clips + 1 song",
+      "style": "Style"
+    },
+    "captions": {
+      "title": "One video, captions in any language",
+      "body": "Upload once, pick the language the captions should be in. The words are translated and timed to the voice — the audio stays yours.",
+      "language": "Captions"
+    },
+    "soundOn": "Turn sound on",
+    "soundOff": "Turn sound off",
+    "credits": "Footage from Pexels, filmed by {names}. Music: “Winning Spirit” (Pixabay), “Calm Currents” by HoliznaCC0. Narration: Piper."
   }
 }

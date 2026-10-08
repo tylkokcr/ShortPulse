@@ -126,7 +126,7 @@
       },
       "clips": {
         "title": "Langes Video rein, Clips raus",
-        "detail": "Ein Podcast oder Vortrag geht rein; das Transkript wählt die Momente, die sich lohnen, und jeder kommt untertitelt zurück. Bezahlt wird nach gelesenen Minuten, nicht pro Clip."
+        "detail": "Ein Podcast, ein Vortrag oder ein Spielzusammenschnitt geht rein; die Momente, die sich lohnen, kommen als Clips zurück — gewählt nach dem Gesagten oder, wenn wenig gesprochen wird, nach dem Bild. Abgerechnet nach gelesenen Minuten plus pro Clip."
       },
       "dub": {
         "title": "In eine andere Sprache vertonen",
@@ -989,7 +989,7 @@
     },
     "clips": {
       "title": "In Clips schneiden",
-      "detail": "Wirf einen Podcast oder Vortrag hinein, und das Transkript wählt die Momente, die für sich stehen. Jeder landet als eigenes untertiteltes Video in deiner Bibliothek.",
+      "detail": "Ein Podcast, ein Vortrag oder ein Spielzusammenschnitt geht rein; die Momente, die sich lohnen, kommen als Clips zurück — gewählt nach dem Gesagten oder, wenn wenig gesprochen wird, nach dem Bild. Abgerechnet nach gelesenen Minuten plus pro Clip.",
       "alt": "Die Bibliothek mit einem Quellvideo und den vier daraus geschnittenen Clips"
     },
     "edit": {
@@ -1073,5 +1073,24 @@
     "copied": "Kopiert",
     "progress": "{rewarded} von {cap} vergütet{waiting, plural, =0 {} one { · # Freund noch ohne erstes Video} other { · # Freunde noch ohne erstes Video}}",
     "full": "Alle {cap} vergütet — danke fürs Weitersagen."
+  },
+  "showcase": {
+    "badge": "Neu",
+    "title": "Zwei Dinge, die du noch nicht gesehen hast",
+    "sub": "Beides kam genau so aus ShortPulse. Drück die Knöpfe.",
+    "beat": {
+      "title": "Clips rein, ein Edit im Takt raus",
+      "body": "Wirf deine Clips und einen Song rein. Es findet Beat und Drop, wählt den besten Moment jedes Clips und schneidet im Takt — weite Einstellungen im Aufbau, der Höhepunkt auf dem Drop.",
+      "in": "9 Clips + 1 Song",
+      "style": "Stil"
+    },
+    "captions": {
+      "title": "Ein Video, Untertitel in jeder Sprache",
+      "body": "Einmal hochladen, Sprache der Untertitel wählen. Die Wörter werden übersetzt und auf die Stimme getimt — der Ton bleibt deiner.",
+      "language": "Untertitel"
+    },
+    "soundOn": "Ton an",
+    "soundOff": "Ton aus",
+    "credits": "Material von Pexels, gefilmt von {names}. Musik: „Winning Spirit“ (Pixabay), „Calm Currents“ von HoliznaCC0. Sprecher: Piper."
   }
 }

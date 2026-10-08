@@ -33,6 +33,7 @@ import { WaveFloor } from "./WaveFloor";
 import { WordReveal } from "@/components/ui/WordReveal";
 import { CountUp } from "@/components/ui/CountUp";
 import { PhoneFrame } from "./PhoneFrame";
+import { NewShowcase } from "@/components/marketing/NewShowcase";
 import { Examples } from "./Examples";
 import { Pricing } from "./Pricing";
 import { BuiltOn } from "./BuiltOn";
@@ -179,6 +180,12 @@ export function Landing() {
           <PreviewMock />
         </div>
       </section>
+
+      {/* What is new, playing — the first thing below the fold, because it
+          is what someone who has seen tools like this has not seen yet. */}
+      <Reveal className="scroll-mt-20" id="new">
+        <NewShowcase />
+      </Reveal>
 
       {/* Examples — real renders, placed before any further claims */}
       <Reveal id="examples" className="scroll-mt-20">

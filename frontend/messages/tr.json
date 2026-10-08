@@ -126,7 +126,7 @@
       },
       "clips": {
         "title": "Uzun video girer, klipler çıkar",
-        "detail": "Bir podcast ya da konuşma verirsin; transkript paylaşmaya değer anları seçer, her biri altyazılı döner. Ücret klip başına değil, okunan dakikaya göre."
+        "detail": "Bir podcast, konuşma ya da maç derlemesi girer; paylaşmaya değer anlar klip olarak çıkar — söylenenden, konuşma azsa görüntüden seçilir. Okunan dakika artı kesit başına ücretlendirilir."
       },
       "dub": {
         "title": "Başka bir dilde seslendir",
@@ -989,7 +989,7 @@
     },
     "clips": {
       "title": "Kliplere böl",
-      "detail": "Bir podcast ya da konuşma yükle; transkript kendi başına ayakta duran anları seçer. Her biri kütüphanene altyazılı, ayrı bir video olarak düşer.",
+      "detail": "Bir podcast, konuşma ya da maç derlemesi girer; paylaşmaya değer anlar klip olarak çıkar — söylenenden, konuşma azsa görüntüden seçilir. Okunan dakika artı kesit başına ücretlendirilir.",
       "alt": "Kaynak video ve ondan kesilen dört klibin göründüğü kütüphane"
     },
     "edit": {
@@ -1073,5 +1073,24 @@
     "copied": "Kopyalandı",
     "progress": "{cap} arkadaştan {rewarded} tanesi için ödendi{waiting, plural, =0 {} other { · # arkadaşın ilk videosu bekleniyor}}",
     "full": "{cap} arkadaşın hepsi için ödendi — yaydığın için teşekkürler."
+  },
+  "showcase": {
+    "badge": "Yeni",
+    "title": "Daha önce görmediğin iki şey",
+    "sub": "İkisi de ShortPulse'tan olduğu gibi çıktı. Butonlara bas.",
+    "beat": {
+      "title": "Klipleri at, müziğe göre kesilmiş edit al",
+      "body": "Kliplerini ve bir şarkı ekle. Ritmi ve drop'u bulur, her klibin en iyi anını seçer ve vuruşa göre keser — yükselirken geniş açı, drop'ta en sert an.",
+      "in": "9 klip + 1 şarkı",
+      "style": "Stil"
+    },
+    "captions": {
+      "title": "Tek video, her dilde altyazı",
+      "body": "Bir kez yükle, altyazının hangi dilde olacağını seç. Kelimeler çevrilir ve sese göre zamanlanır — ses senin kalır.",
+      "language": "Altyazı"
+    },
+    "soundOn": "Sesi aç",
+    "soundOff": "Sesi kapat",
+    "credits": "Görüntüler Pexels'ten, çekenler: {names}. Müzik: “Winning Spirit” (Pixabay), HoliznaCC0'dan “Calm Currents”. Seslendirme: Piper."
   }
 }

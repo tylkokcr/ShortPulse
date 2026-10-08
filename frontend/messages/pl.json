@@ -126,7 +126,7 @@
       },
       "clips": {
         "title": "Długie wideo na wejściu, klipy na wyjściu",
-        "detail": "Wrzucasz podcast albo wystąpienie; transkrypcja wybiera momenty warte publikacji, każdy wraca z napisami. Cena za przeczytane minuty, nie za klip."
+        "detail": "Wchodzi podcast, wykład albo skrót meczu; momenty warte publikacji wracają jako klipy — wybrane z tego, co powiedziano, a gdy mowy jest mało, z obrazu. Płacisz za odczytane minuty plus za każdy klip."
       },
       "dub": {
         "title": "Dubbing na inny język",
@@ -989,7 +989,7 @@
     },
     "clips": {
       "title": "Potnij na klipy",
-      "detail": "Wrzuć podcast albo wystąpienie, a transkrypcja wybierze momenty, które bronią się same. Każdy trafia do biblioteki jako osobne wideo z napisami.",
+      "detail": "Wchodzi podcast, wykład albo skrót meczu; momenty warte publikacji wracają jako klipy — wybrane z tego, co powiedziano, a gdy mowy jest mało, z obrazu. Płacisz za odczytane minuty plus za każdy klip.",
       "alt": "Biblioteka z filmem źródłowym i czterema wyciętymi z niego klipami"
     },
     "edit": {
@@ -1073,5 +1073,24 @@
     "copied": "Skopiowano",
     "progress": "Opłacono {rewarded} z {cap}{waiting, plural, =0 {} one { · # znajomy jeszcze bez pierwszego filmu} few { · # znajomych jeszcze bez pierwszego filmu} other { · # znajomych jeszcze bez pierwszego filmu}}",
     "full": "Opłacono wszystkich {cap} — dzięki za polecenie."
+  },
+  "showcase": {
+    "badge": "Nowość",
+    "title": "Dwie rzeczy, których jeszcze nie widziałeś",
+    "sub": "Oba wyszły z ShortPulse dokładnie takie. Klikaj przyciski.",
+    "beat": {
+      "title": "Wrzucasz klipy, dostajesz montaż do rytmu",
+      "body": "Dodaj klipy i utwór. Znajduje rytm i drop, wybiera najlepszy moment każdego klipu i tnie na bit — szerokie ujęcia, gdy narasta, uderzenie na dropie.",
+      "in": "9 klipów + 1 utwór",
+      "style": "Styl"
+    },
+    "captions": {
+      "title": "Jedno wideo, napisy w dowolnym języku",
+      "body": "Wgraj raz, wybierz język napisów. Słowa są tłumaczone i zgrane z głosem — dźwięk zostaje twój.",
+      "language": "Napisy"
+    },
+    "soundOn": "Włącz dźwięk",
+    "soundOff": "Wyłącz dźwięk",
+    "credits": "Materiał z Pexels, nagrali: {names}. Muzyka: „Winning Spirit” (Pixabay), „Calm Currents” – HoliznaCC0. Lektor: Piper."
   }
 }

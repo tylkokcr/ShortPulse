@@ -27,9 +27,9 @@ const WINDOW = { from: 240, to: 450 };
  *
  * Three were asked for and two came back, which is left as it happened:
  * the transcript decides how many moments are actually in there, and
- * pretending otherwise would be inventing a third card. It is also the
- * reason an extraction is priced by the stretch it reads rather than per
- * clip — nobody pays for a third clip that was not there.
+ * pretending otherwise would be inventing a third card. It is also why
+ * the per-clip part of the price is given back for a clip not found —
+ * nobody pays for a third clip that was not there.
  */
 const CLIPS_ASKED = 3;
 const CLIPS = [
@@ -54,9 +54,10 @@ export function ClipShowcase() {
   const span = WINDOW.to - WINDOW.from;
   const left = (WINDOW.from / SOURCE_SECONDS) * 100;
   const width = (span / SOURCE_SECONDS) * 100;
-  // The published rate, and the arithmetic the panel runs: a part of two
-  // minutes is never free.
-  const credits = Math.max(1, Math.ceil(span / 120));
+  // What that run is charged today (credits.extraction_cost): a credit a
+  // minute read, plus a caption job's two for each clip that came back —
+  // the one asked for and not found is given back.
+  const credits = Math.max(1, Math.ceil(span / 60)) + CLIPS.length * 2;
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-16">
