@@ -889,7 +889,25 @@
         "underMinute": "zostało mniej niż minutę",
         "minutes": "zostało około {count} min"
       },
-      "leaveNote": "Możesz opuścić tę stronę — wideo pojawi się w bibliotece, gdy będzie gotowe."
+      "leaveNote": "Możesz opuścić tę stronę — wideo pojawi się w bibliotece, gdy będzie gotowe.",
+      "phases": {
+        "script": "Piszę podział na sceny...",
+        "voice": "Nagrywam lektora: scena {n} z {total}...",
+        "visuals": "Grafika: {n} z {total} scen...",
+        "visualsStart": "Tworzę grafikę dla {total} scen...",
+        "sceneClips": "Renderuję sceny i dopasowuję napisy...",
+        "sceneClip": "Renderuję scenę {n} z {total}...",
+        "beatAnalysis": "Szukam rytmu i najlepszego momentu każdego klipu...",
+        "beatCutting": "Tnę {shots} ujęć do {bpm} BPM...",
+        "listening": "Słucham wideo i synchronizuję każde słowo...",
+        "dubbing": "Tłumaczę {lines} zdań i nagrywam je...",
+        "captionTranslating": "Tłumaczę {lines} zdań na napisy...",
+        "captionBuilding": "Tworzę napisy z {words} słów...",
+        "burning": "Wtapiam napisy w wideo...",
+        "selecting": "Czytam transkrypcję i szukam momentów wartych publikacji...",
+        "selectingPicture": "Szukam momentów w obrazie...",
+        "cuttingClip": "Wycinam klip {n} z {total}..."
+      }
     },
     "timeline": {
       "script_generation": "Scenariusz",

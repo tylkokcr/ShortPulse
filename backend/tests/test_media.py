@@ -159,3 +159,18 @@ async def test_a_beat_edit_takes_clips_from_my_files(media_app, tmp_path):
         )
     assert response.status_code == 201, response.text
     assert response.json()["config"]["beat_edit"]["clip_count"] == 2
+
+
+async def test_the_same_upload_kept_twice_is_kept_once(media_app, tmp_path):
+    app, _ = media_app
+    video = _real_video(tmp_path / "in.mp4", seconds=1.0)
+    async with _client(app) as client:
+        for _ in range(2):
+            response = await client.post(
+                "/api/uploads",
+                files={"file": ("trip.mp4", video.read_bytes(), "video/mp4")},
+                data={"save_to_files": "true"},
+            )
+            assert response.status_code == 201, response.text
+        listing = (await client.get("/api/media")).json()
+    assert [f["name"] for f in listing["files"]] == ["trip.mp4"]

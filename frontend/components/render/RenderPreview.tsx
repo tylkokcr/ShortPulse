@@ -236,7 +236,10 @@ export function RenderPreview({
                 t("loadingVideo")
               : renderProgress?.phase === "transcribing" && renderProgress.phase_fraction != null
                 ? phaseText(renderProgress, t)
-                : (renderProgress?.message ??
+                : renderProgress?.phase && t.has(`phases.${renderProgress.phase}`)
+                  ? // The server's sentence is English; the phase is said here.
+                    t(`phases.${renderProgress.phase}`, renderProgress.phase_args ?? {})
+                  : (renderProgress?.message ??
                 // "draft" means accepted but not yet picked up by a
                 // worker, which is a queue, not a stall — worth saying so
                 // when renders run two at a time.

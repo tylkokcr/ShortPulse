@@ -889,7 +889,25 @@
         "underMinute": "weniger als eine Minute übrig",
         "minutes": "noch etwa {count} Min."
       },
-      "leaveNote": "Du kannst die Seite verlassen — das Video ist danach in deiner Bibliothek."
+      "leaveNote": "Du kannst die Seite verlassen — das Video ist danach in deiner Bibliothek.",
+      "phases": {
+        "script": "Szenenaufteilung wird geschrieben...",
+        "voice": "Sprecher wird aufgenommen: Szene {n} von {total}...",
+        "visuals": "Bilder: {n} von {total} Szenen...",
+        "visualsStart": "Bilder für {total} Szenen werden erstellt...",
+        "sceneClips": "Szenen werden gerendert und Untertitel getimt...",
+        "sceneClip": "Szene {n} von {total} wird gerendert...",
+        "beatAnalysis": "Beat und bester Moment jedes Clips werden gesucht...",
+        "beatCutting": "{shots} Einstellungen werden auf {bpm} BPM geschnitten...",
+        "listening": "Video wird angehört, jedes Wort getimt...",
+        "dubbing": "{lines} Zeilen werden übersetzt und gesprochen...",
+        "captionTranslating": "{lines} Zeilen werden für die Untertitel übersetzt...",
+        "captionBuilding": "Untertitel aus {words} Wörtern werden erstellt...",
+        "burning": "Untertitel werden ins Video eingebrannt...",
+        "selecting": "Transkript wird nach Momenten durchsucht, die sich lohnen...",
+        "selectingPicture": "Momente im Bild werden gesucht...",
+        "cuttingClip": "Clip {n} von {total} wird geschnitten..."
+      }
     },
     "timeline": {
       "script_generation": "Skript",

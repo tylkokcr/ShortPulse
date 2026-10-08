@@ -512,12 +512,20 @@ export function subscribeToRenderProgress(
 ): () => void {
   let socket: WebSocket | null = null;
   let closed = false;
+  let retry: number | null = null;
+  let attempt = 0;
 
   // The token has to be fetched first, so the socket opens a moment after
   // this returns. The cleanup flag covers a component that unmounts in
   // between — without it the socket would open with nobody listening and
   // never be closed.
-  (async () => {
+  //
+  // And it reconnects. A socket dropped by a proxy, a laptop lid or a
+  // phone switching networks used to stay dropped, and the page sat on
+  // the last stage it heard — "Transcribing: 33%" — for a render that had
+  // finished. The server replays the latest progress to a new socket, so
+  // a reconnect picks up exactly where things are.
+  const open = async () => {
     let query = "";
     try {
       const { token } = await getStreamToken(projectId);
@@ -529,13 +537,25 @@ export function subscribeToRenderProgress(
     if (closed) return;
 
     socket = new WebSocket(`${wsOrigin()}/ws/render/${projectId}${query}`);
+    socket.onopen = () => {
+      attempt = 0;
+    };
     socket.onmessage = (event) => {
       onProgress(JSON.parse(event.data) as RenderProgress);
     };
-  })();
+    socket.onclose = () => {
+      if (closed) return;
+      // 1s, 2s, 4s… up to 30s between tries.
+      const delay = Math.min(30_000, 1000 * 2 ** attempt);
+      attempt += 1;
+      retry = window.setTimeout(open, delay);
+    };
+  };
+  void open();
 
   return () => {
     closed = true;
+    if (retry) window.clearTimeout(retry);
     socket?.close();
   };
 }

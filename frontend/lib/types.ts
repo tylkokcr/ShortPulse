@@ -469,6 +469,8 @@ export interface RenderProgress {
   phase?: string | null;
   phase_fraction?: number | null;
   eta_s?: number | null;
+  /** The numbers in the phase's sentence, e.g. { n: 2, total: 4 }. */
+  phase_args?: Record<string, number | string> | null;
 }
 
 // --------------------------------------------------------------------------

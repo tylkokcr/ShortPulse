@@ -125,6 +125,11 @@ async def keep(
     a full shelf is no reason to refuse the render the user asked for.
     """
     size = source_path.stat().st_size
+    # The same file kept twice — uploaded again with "keep" ticked — is the
+    # one already there: My files had every one of them in pairs.
+    for existing in await media_store.list_for(user_id):
+        if existing.kind == kind and existing.size_bytes == size and existing.name == (name[:200] or "file"):
+            return existing
     if await media_store.used_bytes(user_id) + size > _quota_bytes():
         logger.info("Not keeping %s for %s: over quota", name, user_id)
         return None

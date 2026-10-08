@@ -308,6 +308,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             stage=RenderStage.SCRIPT_GENERATION,
             progress_pct=5,
             message="Generating scene breakdown with the LLM...",
+            phase="script",
         )
         with timings.stage("script"):
             script = await script_engine.generate_script(
@@ -357,6 +358,8 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                     stage=RenderStage.AUDIO_SYNTHESIS,
                     progress_pct=10 + (i / total_scenes) * 20,
                     message=f"Synthesizing voiceover for scene {i + 1}/{total_scenes}...",
+                    phase="voice",
+                    phase_args={"n": i + 1, "total": total_scenes},
                     current_scene=i + 1,
                     total_scenes=total_scenes,
                 )
@@ -428,6 +431,8 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 stage=RenderStage.VISUAL_GENERATION,
                 progress_pct=30 + (completed / total_scenes) * 35,
                 message=f"Visuals: {completed}/{total_scenes} scenes ({config.visual_mode})...",
+                phase="visuals",
+                phase_args={"n": completed, "total": total_scenes},
                 current_scene=completed,
                 total_scenes=total_scenes,
             )
@@ -438,6 +443,8 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 stage=RenderStage.VISUAL_GENERATION,
                 progress_pct=30,
                 message=f"Generating visuals for {total_scenes} scenes ({config.visual_mode})...",
+                phase="visualsStart",
+                phase_args={"total": total_scenes},
                 total_scenes=total_scenes,
             )
             await asyncio.gather(*(build_visual(scene) for scene in script.scenes))
@@ -461,6 +468,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             stage=RenderStage.SUBTITLE_GENERATION,
             progress_pct=68,
             message="Rendering scene clips and timing subtitles to them...",
+            phase="sceneClips",
         )
 
         async def on_scene_rendered(done: int, total: int) -> None:
@@ -469,6 +477,8 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 stage=RenderStage.ASSEMBLY,
                 progress_pct=70 + (done / total) * 25,
                 message=f"Rendering scene clip {done}/{total}...",
+                phase="sceneClip",
+                phase_args={"n": done, "total": total},
                 current_scene=done,
                 total_scenes=total,
             )
@@ -663,6 +673,7 @@ async def run_beat_edit_pipeline(project: Project, settings: Settings) -> None:
             stage=RenderStage.TRANSCRIPTION,
             progress_pct=10,
             message="Finding the beat and the busiest moments in each clip...",
+            phase="beatAnalysis",
         )
         with timings.stage("analysis"):
             grid = await asyncio.to_thread(beat_edit.analyze_beats, track, settings.ffmpeg_binary)
@@ -689,6 +700,8 @@ async def run_beat_edit_pipeline(project: Project, settings: Settings) -> None:
             stage=RenderStage.ASSEMBLY,
             progress_pct=40,
             message=f"Cutting {len(plan.cuts)} shots to {grid.tempo_bpm:.0f} BPM...",
+            phase="beatCutting",
+            phase_args={"shots": len(plan.cuts), "bpm": round(grid.tempo_bpm)},
         )
         final_path = paths / "output" / "final.mp4"
         final_path.parent.mkdir(parents=True, exist_ok=True)
@@ -810,6 +823,7 @@ async def run_upload_pipeline(
             stage=RenderStage.TRANSCRIPTION,
             progress_pct=10,
             message="Listening to the video and timing every word...",
+            phase="listening",
         )
         dubbing_to = config.dub_language
         captioning_to = config.caption_language
@@ -918,6 +932,8 @@ async def run_upload_pipeline(
                 stage=RenderStage.AUDIO_SYNTHESIS,
                 progress_pct=30,
                 message=f"Translating {len(segments)} lines and speaking them...",
+                phase="dubbing",
+                phase_args={"lines": len(segments)},
             )
             with timings.stage("dubbing"):
                 translations = await dubbing.translate_segments(
@@ -952,6 +968,8 @@ async def run_upload_pipeline(
                 stage=RenderStage.SUBTITLE_GENERATION,
                 progress_pct=35,
                 message=f"Translating {len(segments)} lines for the captions...",
+                phase="captionTranslating",
+                phase_args={"lines": len(segments)},
             )
             with timings.stage("caption_translation"):
                 translations = await dubbing.translate_segments(
@@ -966,6 +984,8 @@ async def run_upload_pipeline(
             stage=RenderStage.SUBTITLE_GENERATION,
             progress_pct=55,
             message=f"Building captions from {len(words)} words...",
+            phase="captionBuilding",
+            phase_args={"words": len(words)},
         )
         probed = await uploads.probe(source, settings.ffprobe_binary)
         with timings.stage("subtitles"):
@@ -1000,6 +1020,7 @@ async def run_upload_pipeline(
             stage=RenderStage.ASSEMBLY,
             progress_pct=70,
             message="Burning the captions into the video...",
+            phase="burning",
         )
         output_path = paths / "output" / "final.mp4"
         with timings.stage("ffmpeg_assembly"):
@@ -1162,6 +1183,7 @@ async def _extract_clips(
         stage=RenderStage.SCRIPT_GENERATION,
         progress_pct=25,
         message="Reading the transcript for the moments worth posting...",
+        phase="selecting",
     )
 
     wanted = config.clip_count or 3
@@ -1195,6 +1217,7 @@ async def _extract_clips(
             stage=RenderStage.SCRIPT_GENERATION,
             progress_pct=25,
             message="Finding the rest of the moments in the picture...",
+            phase="selectingPicture",
         )
         with timings.stage("clip_selection_visual"):
             motion = await asyncio.to_thread(
@@ -1255,6 +1278,8 @@ async def _extract_clips(
             stage=RenderStage.ASSEMBLY,
             progress_pct=30 + (index / len(moments)) * 60,
             message=f"Cutting clip {index + 1} of {len(moments)}...",
+            phase="cuttingClip",
+            phase_args={"n": index + 1, "total": len(moments)},
         )
 
         cut = paths / f"clip_{index}.mp4"

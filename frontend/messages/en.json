@@ -889,7 +889,25 @@
         "underMinute": "under a minute left",
         "minutes": "about {count} min left"
       },
-      "leaveNote": "You can leave this page — the video will be in your library when it's done."
+      "leaveNote": "You can leave this page — the video will be in your library when it's done.",
+      "phases": {
+        "script": "Writing the scene breakdown...",
+        "voice": "Recording the voiceover: scene {n} of {total}...",
+        "visuals": "Visuals: {n} of {total} scenes...",
+        "visualsStart": "Making visuals for {total} scenes...",
+        "sceneClips": "Rendering the scenes and timing the captions...",
+        "sceneClip": "Rendering scene {n} of {total}...",
+        "beatAnalysis": "Finding the beat and the best moment of each clip...",
+        "beatCutting": "Cutting {shots} shots to {bpm} BPM...",
+        "listening": "Listening to the video and timing every word...",
+        "dubbing": "Translating {lines} lines and speaking them...",
+        "captionTranslating": "Translating {lines} lines for the captions...",
+        "captionBuilding": "Building captions from {words} words...",
+        "burning": "Burning the captions into the video...",
+        "selecting": "Reading the transcript for the moments worth posting...",
+        "selectingPicture": "Finding moments in the picture...",
+        "cuttingClip": "Cutting clip {n} of {total}..."
+      }
     },
     "timeline": {
       "script_generation": "Script",

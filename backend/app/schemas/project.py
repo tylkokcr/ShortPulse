@@ -650,5 +650,8 @@ class RenderProgress(BaseModel):
     phase: str | None = None
     phase_fraction: float | None = None
     eta_s: float | None = None
+    # The numbers in a phase's sentence ("clip 2 of 4"), so the client can
+    # say it in the reader's language; `message` keeps the English for logs.
+    phase_args: dict[str, int | float | str] | None = None
 
     model_config = ConfigDict(use_enum_values=True)

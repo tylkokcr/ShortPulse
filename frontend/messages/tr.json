@@ -889,7 +889,25 @@
         "underMinute": "1 dakikadan az kaldı",
         "minutes": "yaklaşık {count} dk kaldı"
       },
-      "leaveNote": "Bu sayfadan ayrılabilirsin — bitince video kütüphanende olacak."
+      "leaveNote": "Bu sayfadan ayrılabilirsin — bitince video kütüphanende olacak.",
+      "phases": {
+        "script": "Sahne dökümü yazılıyor...",
+        "voice": "Seslendirme kaydediliyor: sahne {n}/{total}...",
+        "visuals": "Görseller: {n}/{total} sahne...",
+        "visualsStart": "{total} sahne için görseller hazırlanıyor...",
+        "sceneClips": "Sahneler render ediliyor, altyazılar zamanlanıyor...",
+        "sceneClip": "Sahne {n}/{total} render ediliyor...",
+        "beatAnalysis": "Ritim ve her klibin en iyi anı bulunuyor...",
+        "beatCutting": "{shots} sahne {bpm} BPM'e göre kesiliyor...",
+        "listening": "Video dinleniyor, her kelime zamanlanıyor...",
+        "dubbing": "{lines} satır çevrilip seslendiriliyor...",
+        "captionTranslating": "Altyazılar için {lines} satır çevriliyor...",
+        "captionBuilding": "{words} kelimeden altyazı oluşturuluyor...",
+        "burning": "Altyazılar videoya işleniyor...",
+        "selecting": "Transkript okunuyor, paylaşmaya değer anlar aranıyor...",
+        "selectingPicture": "Görüntüden anlar seçiliyor...",
+        "cuttingClip": "Kesit {n}/{total} kesiliyor..."
+      }
     },
     "timeline": {
       "script_generation": "Metin",
