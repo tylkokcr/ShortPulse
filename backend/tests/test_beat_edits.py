@@ -356,7 +356,7 @@ def test_a_beat_edit_is_priced_by_its_length():
 
 
 @pytest.mark.skipif(shutil.which(FFMPEG) is None, reason="needs ffmpeg")
-def test_an_edit_ends_on_black_and_silence(tmp_path):
+def test_an_edit_rises_out_of_and_ends_on_black_and_silence(tmp_path):
     import subprocess
 
     clip = tmp_path / "clip.mp4"
@@ -445,6 +445,23 @@ def test_an_edit_ends_on_black_and_silence(tmp_path):
     ).stderr
     peak = float(tail.split("max_volume:")[1].split("dB")[0])
     assert peak < -25, f"the music is still playing at the end ({peak} dB)"
+
+    first = subprocess.run(
+        [FFMPEG, "-nostdin", "-v", "error", "-i", str(out), "-frames:v", "1",
+         "-vf", "scale=32:18,format=gray", "-f", "rawvideo", "-"],
+        capture_output=True,
+        check=True,
+    ).stdout
+    assert first and sum(first) / len(first) < 12, "the first frame is not black"
+    head = subprocess.run(
+        [FFMPEG, "-nostdin", "-v", "info", "-t", "0.05", "-i", str(out), "-vn",
+         "-af", "volumedetect", "-f", "null", "-"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stderr
+    start = float(head.split("max_volume:")[1].split("dB")[0])
+    assert start < -15, f"the music starts at full volume ({start} dB)"
 
 
 def test_a_ramp_takes_the_source_its_speeds_add_up_to():

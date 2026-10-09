@@ -966,6 +966,9 @@ def plan_edit(
 
 # How long the end of an edit takes to go to black and silence.
 FADE_OUT_S = 1.5
+# How long the start takes to come up out of them: short, so the opening
+# shot and the first beat still land.
+FADE_IN_S = 0.8
 
 
 def _segment_filter(cut: Cut) -> str:
@@ -1172,13 +1175,16 @@ def render_edit(
          str(listing), "-c", "copy", str(joined)],
         check=True,
     )
-    # The ending: picture and music go out together — to black and to
-    # silence over the same stretch — so the edit finishes rather than
-    # stops, and loops cleanly where it is played on repeat. The video is
+    # Picture and music come up together out of black and silence, and go
+    # out together at the end over a longer stretch — so the edit starts and
+    # finishes rather than switching on and off, and loops cleanly where it
+    # is played on repeat. The title is drawn after the fades, so it glows
+    # over the dark opening instead of rising with it. The video is
     # re-encoded for it; the cuts were joined by stream copy, and a fade
     # cannot be.
     fade_s = min(FADE_OUT_S, plan.duration / 4)
     fade_at = max(0.0, plan.duration - fade_s)
+    fade_in = min(FADE_IN_S, plan.duration / 6)
     titled = title_ass(title, work / "title.ass", plan.duration) if title.strip() else None
     overlay = (
         f",ass='{_filter_path(titled)}':fontsdir='{_filter_path(FONTS_DIR)}'" if titled else ""
@@ -1187,8 +1193,10 @@ def render_edit(
         [ffmpeg, "-nostdin", "-v", "error", "-y", "-i", str(joined), "-ss",
          f"{plan.music_start:.3f}", "-t", f"{plan.duration:.3f}", "-i", str(music),
          "-filter_complex",
-         f"[0:v]fade=t=out:st={fade_at:.3f}:d={fade_s:.3f}:color=black{overlay}[v];"
-         f"[1:a]afade=t=out:st={fade_at:.3f}:d={fade_s:.3f}[a]",
+         f"[0:v]fade=t=in:st=0:d={fade_in:.3f}:color=black,"
+         f"fade=t=out:st={fade_at:.3f}:d={fade_s:.3f}:color=black{overlay}[v];"
+         f"[1:a]afade=t=in:st=0:d={fade_in:.3f},"
+         f"afade=t=out:st={fade_at:.3f}:d={fade_s:.3f}[a]",
          "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "veryfast",
          "-crf", "19", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
          "-shortest", "-movflags", "+faststart", str(output)],
