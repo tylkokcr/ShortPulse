@@ -204,6 +204,16 @@ _STILL_LEVEL = 0.012
 # against 0.13-0.47 for every shot of play around it, dark night matches
 # included.
 _FLAT_LEVEL = 0.6
+# A scenepack opens on its channel's promo — the player cut out over a
+# scrolling page of the channel's videos — then a "for editing only" card,
+# and closes on "like and subscribe" after one. The promo and the outro
+# are animated and full of edges, nothing measurable sets them apart from
+# play (stadium hoardings rule as many straight lines as a page of
+# thumbnails); the card beside them does. A card this near either end of
+# a video longer than `_FRAMED_MIN_S` marks everything outside it.
+_INTRO_S = 15.0
+_OUTRO_S = 25.0
+_FRAMED_MIN_S = 60.0
 # With a seed, the shot is drawn from up to this many of a clip's shots
 # scoring at least this share of the best — see ClipMotion.busiest.
 _VARIETY_POOL = 16
@@ -279,6 +289,7 @@ class ClipMotion:
     # `_FLAT_LEVEL` and `_flatness`).
     flat: np.ndarray | None = None
     _scales: np.ndarray | None = field(default=None, repr=False)
+    _framing: tuple[float, float] | None = field(default=None, repr=False)
     _windows: dict[int, np.ndarray] = field(default_factory=dict, repr=False)
 
     @property
@@ -402,6 +413,28 @@ class ClipMotion:
             and float(np.median(self.flat[a:b])) > _FLAT_LEVEL
         )
 
+    def framing(self) -> tuple[float, float]:
+        """Where the video's own content starts and ends: after a card in its
+        first `_INTRO_S`, before one in its last `_OUTRO_S` (see `_INTRO_S`);
+        the whole video when it has neither."""
+        if self._framing is None:
+            start, end = 0.0, self.duration_s
+            if self.duration_s > _FRAMED_MIN_S:
+                for a, b in self.shots():
+                    if not self.graphic(a, b):
+                        continue
+                    if a < _INTRO_S:
+                        start = max(start, b)
+                    elif b > self.duration_s - _OUTRO_S:
+                        end = min(end, a)
+            self._framing = (start, end)
+        return self._framing
+
+    def usable(self, start: float, end: float) -> bool:
+        """Footage, not a screen over it nor a channel's intro or outro."""
+        first, last = self.framing()
+        return first - 0.05 <= start and end <= last + 0.05 and not self.graphic(start, end)
+
     def focus_at(self, start: float, length_s: float) -> float:
         """Where across the frame a stretch's movement is, 0 to 1; the
         middle when nothing moves."""
@@ -456,7 +489,7 @@ class ClipMotion:
                     continue
                 if any(not (end <= a or start >= b) for a, b in avoid):
                     continue
-                if self.graphic(shot_start, shot_end):
+                if not self.usable(shot_start, shot_end):
                     break
                 score = float(sums[index])
                 if spread_s > 0 and avoid:
@@ -505,7 +538,7 @@ class ClipMotion:
         free = [
             (a, b)
             for a, b in self.shots()
-            if b - a > 0.2 and all(b <= x or a >= y for x, y in avoid) and not self.graphic(a, b)
+            if b - a > 0.2 and all(b <= x or a >= y for x, y in avoid) and self.usable(a, b)
         ]
         # A shot where something happens before a longer one where nothing does.
         return max(free, key=lambda s: (not self.still(s[0], s[1] - s[0]), s[1] - s[0])) if free else None
@@ -749,13 +782,13 @@ def _moments(clips: list[ClipMotion], look: Style) -> list[Moment]:
         shots = clip.shots()
         add = partial(_add_moment, out, clip, clip._window_scores(1))
 
-        # A run never takes in an end screen or a title card, as its own
-        # moment or as the tail of one.
-        graphic = [clip.graphic(a, b) for a, b in shots]
+        # A run never takes in an end screen, a title card or a channel's
+        # intro, as its own moment or as the tail of one.
+        unusable = [not clip.usable(a, b) for a, b in shots]
 
         for n, (a, _b) in enumerate(shots):
             for span in range(1, look.moment_shots + 1):
-                if n + span > len(shots) or graphic[n + span - 1]:
+                if n + span > len(shots) or unusable[n + span - 1]:
                     break
                 b = shots[n + span - 1][1]
                 if b - a > longest:

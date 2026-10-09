@@ -731,3 +731,30 @@ def test_an_end_screen_never_makes_it_into_an_edit():
             for cut in plan.cuts:
                 start, end = cut.source_start, cut.source_start + cut.duration * cut.speed
                 assert end <= 20.0 + 0.05 or start >= 28.0 - 0.05, (style, seed, start, end)
+
+
+def test_a_scenepacks_intro_before_its_card_is_left_out():
+    """A promo for the channel, then "for editing only", then the footage:
+    the promo moves like play does, the card beside it is what gives it
+    away. A short clip has no intro to skip."""
+    clip = _compilation_motion(shot_s=2.0, total_s=120.0)
+    rate = beat_edit._MOTION_FPS
+    n = len(clip.scores)
+    clip.scores[: 4 * rate] = 40.0  # the busiest thing in the video
+    clip.activity = np.full(n, 0.1, dtype=np.float32)
+    clip.flat = np.full(n, 0.2, dtype=np.float32)
+    card = slice(4 * rate, 6 * rate)
+    clip.activity[card] = 0.0
+    clip.flat[card] = 0.8
+    assert clip.framing() == (6.0, 120.0)
+    assert not clip.usable(0.0, 2.0) and clip.usable(6.0, 8.0)
+    for seed in range(4):
+        plan = beat_edit.plan_edit(_grid(seconds=120.0), [clip], 30.0, "energetic", seed=seed)
+        assert min(c.source_start for c in plan.cuts) >= 6.0 - 0.05
+
+    short = _compilation_motion(shot_s=2.0, total_s=30.0)
+    short.activity = np.full(len(short.scores), 0.1, dtype=np.float32)
+    short.flat = np.full(len(short.scores), 0.2, dtype=np.float32)
+    short.activity[card] = 0.0
+    short.flat[card] = 0.8
+    assert short.framing() == (0.0, 30.0)
