@@ -75,7 +75,10 @@
 		#     the web image is built with rather than written out again
 		#     here, because a policy that names a different host than the
 		#     bundle calls is a policy that blocks the app.
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.googleusercontent.com; media-src 'self' blob:; font-src 'self'; connect-src 'self' {$SUPABASE_ORIGIN:} {$WS_ORIGIN:ws://localhost:8080}; frame-src 'none'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		#   - Cloudflare Turnstile, the sign-in bot check, is a script and
+		#     the frame it draws in. Named only when the web image was built
+		#     with a site key; otherwise frames stay 'none'.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' {$TURNSTILE_ORIGIN:}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.googleusercontent.com; media-src 'self' blob:; font-src 'self'; connect-src 'self' {$SUPABASE_ORIGIN:} {$WS_ORIGIN:ws://localhost:8080}; frame-src {$TURNSTILE_ORIGIN:'none'}; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 
 		# Drop the framework fingerprint Next sets on every response.
 		-X-Powered-By

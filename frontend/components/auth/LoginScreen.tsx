@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { GoogleIcon, FacebookIcon } from "@/components/auth/ProviderIcons";
 import { useSignupCredits } from "@/lib/signupCredits";
+import { Turnstile } from "@/components/auth/Turnstile";
+import { TURNSTILE_SITE_KEY } from "@/lib/turnstile";
 
 /**
  * Supabase's auth errors are written for developers. Map the ones a user
@@ -162,6 +164,16 @@ export function LoginPanel({ className }: { className?: string }) {
   // a second flow.
   const [redirecting, setRedirecting] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // The bot check's token (see Turnstile). Each request spends it, so every
+  // attempt, failed or not, asks for a new one.
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const [captchaRound, setCaptchaRound] = useState(0);
+  const captchaMissing = Boolean(TURNSTILE_SITE_KEY) && !captcha;
+  const captchaToken = captcha ?? undefined;
+  const spendCaptcha = () => {
+    setCaptcha(null);
+    setCaptchaRound((n) => n + 1);
+  };
 
   // A failed link or a refused provider lands here rather than on a route
   // of its own, so the panel that starts sign-in is also the panel that
@@ -202,12 +214,13 @@ export function LoginPanel({ className }: { className?: string }) {
     const address = email.trim();
     setBusy("password");
     setError(null);
+    spendCaptcha();
 
     if (mode === "signup") {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: address,
         password,
-        options: { emailRedirectTo: window.location.origin },
+        options: { emailRedirectTo: window.location.origin, captchaToken },
       });
       if (signUpError) {
         setError(fromSupabase(signUpError.message));
@@ -222,6 +235,7 @@ export function LoginPanel({ className }: { className?: string }) {
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: address,
       password,
+      options: { captchaToken },
     });
     if (signInError) setError(fromSupabase(signInError.message));
     setBusy(null);
@@ -243,9 +257,10 @@ export function LoginPanel({ className }: { className?: string }) {
 
     setBusy("link");
     setError(null);
+    spendCaptcha();
     const { error: sendError } = await supabase.auth.signInWithOtp({
       email: address,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: window.location.origin, captchaToken },
     });
 
     if (sendError) {
@@ -276,8 +291,10 @@ export function LoginPanel({ className }: { className?: string }) {
 
     setBusy("reset");
     setError(null);
+    spendCaptcha();
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(address, {
       redirectTo: `${window.location.origin}/reset-password`,
+      captchaToken,
     });
 
     if (resetError) {
@@ -413,10 +430,11 @@ export function LoginPanel({ className }: { className?: string }) {
               placeholder={mode === "signup" ? t("passwordPlaceholderNew") : t("passwordPlaceholder")}
               className="rounded-lg border border-border bg-black/30 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:border-accent focus:outline-none"
             />
+            <Turnstile onToken={setCaptcha} round={captchaRound} />
             <Button
               type="submit"
               variant={oauthProviders.length > 0 ? "outline" : "gradient"}
-              disabled={busy !== null || redirecting !== null || !email.trim() || !password}
+              disabled={busy !== null || redirecting !== null || !email.trim() || !password || captchaMissing}
             >
               {busy === "password"
                 ? mode === "signup"
@@ -444,7 +462,7 @@ export function LoginPanel({ className }: { className?: string }) {
               <button
                 type="button"
                 onClick={sendReset}
-                disabled={busy !== null}
+                disabled={busy !== null || captchaMissing}
                 className="underline underline-offset-2 hover:text-white/70 disabled:opacity-50"
               >
                 {busy === "reset" ? t("busy.sending") : t("forgotPassword")}
@@ -460,7 +478,7 @@ export function LoginPanel({ className }: { className?: string }) {
           <button
             type="button"
             onClick={sendLink}
-            disabled={busy !== null || redirecting !== null}
+            disabled={busy !== null || redirecting !== null || captchaMissing}
             className="self-start text-xs text-white/40 underline underline-offset-2 hover:text-white/70 disabled:opacity-50"
           >
             {busy === "link" ? t("busy.sending") : t("emailLink")}

@@ -1,5 +1,6 @@
 import { LegalPage, OperatorFact, Section } from "@/components/legal/LegalPage";
 import { operator } from "@/lib/operator";
+import { TURNSTILE_SITE_KEY } from "@/lib/turnstile";
 
 export const metadata = { title: "Privacy — ShortPulse" };
 
@@ -16,7 +17,18 @@ export default function Privacy() {
         </p>
         <p>
           No analytics, no tracking pixels, no advertising identifiers, no third-party scripts
-          on the page.
+          on the page
+          {TURNSTILE_SITE_KEY ? (
+            <>
+              {" "}
+              — with one exception: the sign-in screen loads Cloudflare Turnstile, which checks
+              that whoever is signing in with an email address is a person and not a script. It
+              sets no cookies and is used for nothing else; Cloudflare&apos;s handling of it is
+              described in its own privacy policy.
+            </>
+          ) : (
+            "."
+          )}
         </p>
       </Section>
 

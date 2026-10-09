@@ -31,6 +31,9 @@ services:
       # connect-src of its own because ws:// is a different scheme
       # than the page's http://.
       WS_ORIGIN: ${PUBLIC_WS_ORIGIN:-ws://localhost:8080}
+      # Turnstile's origin, in the policy only when the web image is built
+      # with a site key for it.
+      TURNSTILE_ORIGIN: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:+https://challenges.cloudflare.com}
     restart: unless-stopped
 
   web:
@@ -44,6 +47,9 @@ services:
         # Sign-in providers. Empty means email links only, which is the
         # only thing a self-hosted install could offer anyway.
         NEXT_PUBLIC_OAUTH_PROVIDERS: ${NEXT_PUBLIC_OAUTH_PROVIDERS:-}
+        # Cloudflare Turnstile in front of email sign-in. Empty: no check,
+        # which is right for an install with no free credits to farm.
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
         # Named on the terms and privacy pages. Empty here: a self-hosted
         # install has no customers and nothing to answer for, and would
         # otherwise publish whoever wrote this file as its data controller.

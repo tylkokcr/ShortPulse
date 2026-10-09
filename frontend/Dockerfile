@@ -30,6 +30,11 @@ ARG NEXT_PUBLIC_WS_ORIGIN
 # hosted deployment turns them on one at a time as their paperwork clears.
 ARG NEXT_PUBLIC_OAUTH_PROVIDERS
 
+# Cloudflare Turnstile's site key, for the bot check on email sign-in
+# (components/auth/Turnstile.tsx). Public by design; the secret lives in
+# the Supabase dashboard. Empty means no check.
+ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
+
 # Who runs this install — printed on the terms and privacy pages, which
 # have to name a controller and a contact to be worth anything. Left
 # unset, those pages say the operator hasn't published them rather than
@@ -46,6 +51,7 @@ ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY \
     NEXT_PUBLIC_WS_ORIGIN=$NEXT_PUBLIC_WS_ORIGIN \
     NEXT_PUBLIC_OAUTH_PROVIDERS=$NEXT_PUBLIC_OAUTH_PROVIDERS \
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY \
     NEXT_PUBLIC_OPERATOR_NAME=$NEXT_PUBLIC_OPERATOR_NAME \
     NEXT_PUBLIC_OPERATOR_ADDRESS=$NEXT_PUBLIC_OPERATOR_ADDRESS \
     NEXT_PUBLIC_OPERATOR_EMAIL=$NEXT_PUBLIC_OPERATOR_EMAIL \
