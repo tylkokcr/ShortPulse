@@ -12,7 +12,13 @@ import pytest
 from app.services import link_import
 from app.services.uploads import UploadRejected
 from tests.test_media import media_app  # noqa: F401 - fixture
-from tests.test_uploads import _client, _real_video
+from tests.test_uploads import FFPROBE, _client, _real_video
+
+# The tests that fetch a real video need ffmpeg to make one; CI has none.
+needs_ffmpeg = pytest.mark.skipif(
+    shutil.which(FFPROBE) is None and not Path(FFPROBE).exists(),
+    reason=f"{FFPROBE} not available",
+)
 
 
 @pytest.mark.parametrize(
@@ -107,6 +113,7 @@ async def test_youtube_is_refused_unless_the_operator_turned_it_on(media_app, mo
     assert response.json()["detail"]["error"] == "youtube_disabled"
 
 
+@needs_ffmpeg
 async def test_a_linked_file_lands_in_my_files(media_app, monkeypatch, tmp_path):  # noqa: F811
     video = _real_video(tmp_path / "remote.mp4", seconds=1.0)
 
@@ -141,6 +148,7 @@ async def test_a_link_that_is_not_a_video_fails_and_leaves_nothing(media_app, mo
     assert not any((tmp_path / "media").glob("*.mp4"))
 
 
+@needs_ffmpeg
 async def test_a_youtube_video_expires_and_its_projects_are_never_posted(
     media_app, monkeypatch, tmp_path  # noqa: F811
 ):

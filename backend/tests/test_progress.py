@@ -36,7 +36,7 @@ async def test_a_page_opened_mid_render_gets_the_latest_progress_at_once():
         )
     )
     late = _Socket()
-    await manager.connect("p", late)  # type: ignore[arg-type]
+    await manager.connect("p", late)
     assert [m["phase_fraction"] for m in late.sent] == [0.53]
     assert late.sent[0]["eta_s"] == 240
 
@@ -47,7 +47,7 @@ async def test_a_finished_render_is_not_replayed():
         RenderProgress(project_id="p", stage=RenderStage.DONE, progress_pct=100, message="done")
     )
     late = _Socket()
-    await manager.connect("p", late)  # type: ignore[arg-type]
+    await manager.connect("p", late)
     assert late.sent == []
 
 
