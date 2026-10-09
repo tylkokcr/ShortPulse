@@ -252,8 +252,8 @@ export function Landing() {
               const Icon = FEATURE_ICONS[i];
               return (
               <Reveal key={key} delay={(i % 3) * 70} className="h-full">
-                <Card className="flex h-full flex-col gap-3">
-                  <Icon size={20} className="text-white/40" />
+                <Card className="surface-accent flex h-full flex-col gap-3">
+                  <Icon size={20} className="text-accent" />
                   <h3 className="text-sm font-semibold">{t(`features.${key}.title`)}</h3>
                   <p className="text-xs leading-relaxed text-white/50">{t(`features.${key}.detail`)}</p>
                 </Card>
@@ -313,7 +313,7 @@ export function Landing() {
       {/* Honesty / limitations */}
       <Reveal>
         <section className="mx-auto max-w-6xl px-6 py-16">
-          <Card className="flex flex-col gap-5 border-border-strong bg-surface-raised sm:flex-row sm:items-start sm:gap-8">
+          <Card className="surface-accent flex flex-col gap-5 border-border-strong bg-surface-raised sm:flex-row sm:items-start sm:gap-8">
             <div className="flex shrink-0 items-center gap-2 sm:w-56">
               <Server size={18} className="text-white/40" />
               <h3 className="text-sm font-semibold text-white/80">{t("limits.title")}</h3>
@@ -375,10 +375,15 @@ export function Landing() {
           is. Giving the outer two an equal flex basis fixes it at every
           width, because they then absorb the same share of the slack
           regardless of what they contain. */}
-      <footer className="border-t border-border/60 px-6 py-8">
+      <footer className="overflow-hidden border-t border-border/60 px-6 pt-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
-          <div className="flex justify-start sm:flex-1">
-            <LogoMark className="h-6 w-6 opacity-60" />
+          <div className="flex items-center justify-start gap-5 text-xs text-white/40 sm:flex-1">
+            <Link href="/terms" className="transition-colors hover:text-white/70">
+              {t("footer.terms")}
+            </Link>
+            <Link href="/privacy" className="transition-colors hover:text-white/70">
+              {t("footer.privacy")}
+            </Link>
           </div>
 
           <span className="text-center text-xs text-white/30">
@@ -398,14 +403,16 @@ export function Landing() {
           </div>
         </div>
 
-        <div className="mx-auto mt-5 flex max-w-6xl items-center justify-center gap-5 text-xs text-white/30">
-          <Link href="/terms" className="transition-colors hover:text-white/60">
-            {t("footer.terms")}
-          </Link>
-          <Link href="/privacy" className="transition-colors hover:text-white/60">
-            {t("footer.privacy")}
-          </Link>
-        </div>
+        {/* The name, set large enough to be the page's last image, and
+            fading into the ground at its foot so it reads as the floor of
+            the page, not as a heading. The header already names the site
+            for a screen reader. */}
+        <p
+          aria-hidden
+          className="footer-wordmark mt-8 select-none pb-2 text-center font-extrabold leading-[0.9] tracking-[-0.04em] text-[clamp(3.5rem,17vw,14.5rem)]"
+        >
+          ShortPulse
+        </p>
       </footer>
     </div>
   );

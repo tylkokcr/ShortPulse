@@ -5,7 +5,7 @@ export const metadata = { title: "Privacy — ShortPulse" };
 
 export default function Privacy() {
   return (
-    <LegalPage title="Privacy" updated="September 2026">
+    <LegalPage title="Privacy" updated="October 2026">
       <Section title="What is stored">
         <p>
           Your email address, because that is how you sign in. If you sign in with Google, also
@@ -17,6 +17,22 @@ export default function Privacy() {
         <p>
           No analytics, no tracking pixels, no advertising identifiers, no third-party scripts
           on the page.
+        </p>
+      </Section>
+
+      <Section title="Cookies and browser storage">
+        <p>
+          One cookie, <code>NEXT_LOCALE</code>, which remembers the language you chose. Your
+          browser&apos;s local storage holds your sign-in session (kept there by Supabase, so you
+          stay signed in) and a few settings: your accent colour, whether the sidebar and the
+          trends panel are open, the trends region, and an invite code you arrived with until you
+          sign up.
+        </p>
+        <p>
+          All of it is needed for the site to work the way you set it, none of it is read by
+          anyone else, and none of it follows you to other sites — which is why there is no
+          cookie banner to click through. Clearing your browser&apos;s site data removes it and
+          signs you out.
         </p>
       </Section>
 

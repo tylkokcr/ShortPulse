@@ -36,7 +36,7 @@ export function InviteCard() {
   }
 
   return (
-    <Card className="mt-8 flex flex-col gap-4">
+    <Card className="surface-accent mt-8 flex flex-col gap-4">
       <div className="flex items-start gap-3">
         <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent/15 text-accent">
           <Gift size={16} />

@@ -173,7 +173,7 @@ export function Pricing() {
               className={clsx(
                 "relative flex flex-col gap-4",
                 pack.popular
-                  ? "border-accent/50 bg-surface-raised shadow-lg shadow-accent/10"
+                  ? "surface-accent border-accent/50 bg-surface-raised shadow-lg shadow-accent/10"
                   : "bg-surface-raised"
               )}
             >

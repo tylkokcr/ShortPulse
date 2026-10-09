@@ -396,6 +396,31 @@ html[data-session="1"] [data-landing-boot] {
   );
 }
 
+/* The footer's large name: white at the top, through the accent, and out
+   into the ground before the baseline, so its foot has no edge. */
+.footer-wordmark {
+  background-image: linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 0.9) 12%,
+    rgb(var(--accent) / 0.7) 48%,
+    rgb(var(--accent) / 0) 88%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* surface-lit with the accent coming in from the top-right corner, the
+   way light off a coloured screen catches the edge of a frame. Keyed off
+   --accent like everything else coloured here, and low enough that the
+   card's text never sits on colour. After surface-lit so it wins where a
+   Card (which carries surface-lit) asks for it. */
+.surface-accent {
+  background-image:
+    radial-gradient(130% 90% at 100% 0%, rgb(var(--accent) / 0.14), transparent 60%),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.045), rgb(255 255 255 / 0) 55%);
+}
+
 /* ---------------------------------------------------------------------
  * Colour that moves.
  *

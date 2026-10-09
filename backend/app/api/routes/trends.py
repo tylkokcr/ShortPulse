@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import logging
+import re
+from collections import OrderedDict
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response
 from pydantic import BaseModel
 
 from app.api.deps import current_user_id
@@ -69,3 +72,39 @@ async def get_trends(
         trends=report.report.get("trends", []),
         songs=report.songs,
     )
+
+
+# A trend's example videos, served from here rather than linked from
+# YouTube: the page's CSP keeps images to this origin, and a visitor's
+# browser asking Google for them would hand it their address for every
+# card. Only an 11-character video id goes in, into a fixed URL, so this
+# fetches YouTube's thumbnails and nothing else.
+_VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
+_THUMBS: OrderedDict[str, bytes] = OrderedDict()
+_THUMBS_KEPT = 400  # about 15 kB each
+
+
+async def _fetch_thumbnail(video_id: str) -> bytes:
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            got = await client.get(f"https://i.ytimg.com/vi/{video_id}/mqdefault.jpg")
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502) from None
+    if got.status_code != 200 or not got.headers.get("content-type", "").startswith("image/"):
+        raise HTTPException(status_code=404)
+    return got.content
+
+
+@router.get("/thumb/{video_id}")
+async def thumbnail(video_id: str = Path(min_length=11, max_length=11)) -> Response:
+    if not _VIDEO_ID.match(video_id):
+        raise HTTPException(status_code=404)
+    image = _THUMBS.get(video_id)
+    if image is None:
+        image = await _fetch_thumbnail(video_id)
+        _THUMBS[video_id] = image
+        while len(_THUMBS) > _THUMBS_KEPT:
+            _THUMBS.popitem(last=False)
+    else:
+        _THUMBS.move_to_end(video_id)
+    return Response(image, media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"})

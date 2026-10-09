@@ -35,6 +35,35 @@ const STATUS_STYLE = {
 } as const;
 
 /**
+ * One example video. Served through the API (backend routes/trends.py):
+ * the CSP keeps images to this origin, and a visitor should not be sending
+ * Google a request per card. One that will not load is left out rather
+ * than shown as its alt text.
+ */
+function ExampleThumb({ id, title }: { id: string; title: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return (
+    <a
+      href={`https://www.youtube.com/watch?v=${id}`}
+      target="_blank"
+      rel="noreferrer"
+      title={title}
+      className="block w-1/3 overflow-hidden rounded border border-border bg-black/40 hover:border-border-strong"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/api/trends/thumb/${encodeURIComponent(id)}`}
+        alt=""
+        loading="lazy"
+        onError={() => setFailed(true)}
+        className="aspect-video w-full object-cover"
+      />
+    </a>
+  );
+}
+
+/**
  * What is catching on in a region, read from YouTube's charts and Apple's
  * most-played songs and grouped into trends by the server (backend
  * services/trends.py). In the topic studio an idea fills the topic; in the
@@ -94,7 +123,7 @@ export function TrendsPanel({ mode }: { mode: "generate" | "edit" }) {
   );
 
   return (
-    <section className="rounded-lg border border-border bg-surface/60">
+    <section className="surface-accent rounded-lg border border-border bg-surface/60">
       <div className="flex items-center justify-between gap-3 px-4 py-3">
         <button
           type="button"
@@ -159,17 +188,7 @@ export function TrendsPanel({ mode }: { mode: "generate" | "edit" }) {
                       {trend.examples.length > 0 && (
                         <div className="flex gap-1.5">
                           {trend.examples.map((v) => (
-                            <a
-                              key={v.id}
-                              href={`https://www.youtube.com/watch?v=${v.id}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              title={v.title}
-                              className="block w-1/3 overflow-hidden rounded border border-border hover:border-border-strong"
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={v.thumbnail ?? ""} alt={v.title} loading="lazy" className="aspect-video w-full object-cover" />
-                            </a>
+                            <ExampleThumb key={v.id} id={v.id} title={v.title} />
                           ))}
                         </div>
                       )}

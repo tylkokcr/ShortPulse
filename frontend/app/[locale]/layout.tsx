@@ -22,7 +22,8 @@ const archivo = Archivo({
   subsets: ["latin", "latin-ext"],
   variable: "--font-archivo",
   display: "swap",
-  weight: ["400", "500", "600", "700"],
+  // 800 for the footer's wordmark alone.
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const jetbrainsMono = JetBrains_Mono({

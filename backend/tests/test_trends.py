@@ -129,3 +129,29 @@ async def test_the_api_offers_only_its_regions(monkeypatch):
         assert (await client.get("/api/trends?region=TR")).status_code == 404
         monkeypatch.setattr(get_settings(), "youtube_api_key", "k")
         assert (await client.get("/api/trends?region=ZZ")).status_code == 422
+
+
+async def test_a_thumbnail_is_served_from_here_once_and_only_for_a_video_id(monkeypatch):
+    from fastapi import FastAPI
+
+    from app.api.routes import trends as route
+    from tests.test_uploads import _client
+
+    fetched: list[str] = []
+
+    async def fetch(video_id: str) -> bytes:
+        fetched.append(video_id)
+        return b"\xff\xd8jpeg"
+
+    monkeypatch.setattr(route, "_fetch_thumbnail", fetch)
+    route._THUMBS.clear()
+    app = FastAPI()
+    app.include_router(route.router)
+    async with _client(app) as client:
+        first = await client.get("/api/trends/thumb/aqz-KE-bpKQ")
+        again = await client.get("/api/trends/thumb/aqz-KE-bpKQ")
+        assert (await client.get("/api/trends/thumb/..%2F..%2Fetc")).status_code in (404, 422)
+        assert (await client.get("/api/trends/thumb/abc.def.ghi")).status_code == 404
+    assert first.status_code == 200 and first.headers["content-type"] == "image/jpeg"
+    assert again.content == b"\xff\xd8jpeg"
+    assert fetched == ["aqz-KE-bpKQ"]
