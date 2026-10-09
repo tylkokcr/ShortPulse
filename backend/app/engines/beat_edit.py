@@ -31,6 +31,8 @@ from pathlib import Path
 
 import numpy as np
 
+from app.core.config import FONTS_DIR
+
 logger = logging.getLogger(__name__)
 
 SAMPLE_RATE = 22050
@@ -1062,7 +1064,92 @@ def _segment_filter(cut: Cut) -> str:
     return graph + f",trim=duration={cut.duration:.3f},format=yuv420p[v]"
 
 
-def render_edit(plan: EditPlan, music: Path, output: Path, work: Path, ffmpeg: str = "ffmpeg") -> Path:
+# The opening title: when it starts, how fast its words type in, how long
+# it holds once complete, and how long it takes to go.
+TITLE_START_S = 0.25
+TITLE_WORD_S = 0.2
+TITLE_HOLD_S = 2.2
+TITLE_FADE_S = 0.35
+
+
+def _ass_text(text: str) -> str:
+    return text.replace("\\", "").replace("{", "(").replace("}", ")")
+
+
+def title_ass(text: str, path: Path, duration: float) -> Path | None:
+    """The opening title as an ASS file: bold white words with a warm glow,
+    each fading and popping in after the last, on one or two lines in the
+    top third, then the whole line fading out. None when there is no text.
+
+    Drawn by libass in the same pass as the closing fade, so it costs no
+    extra encode — and in the font the captions ship with."""
+    words = text.split()
+    if not words:
+        return None
+    # Two lines once it is long enough to need them, split near the middle.
+    if len(" ".join(words)) > 14 and len(words) > 1:
+        half = len(" ".join(words)) / 2
+        run, split_at = 0, 1
+        for n, w in enumerate(words[:-1], start=1):
+            run += len(w) + 1
+            if run >= half:
+                split_at = n
+                break
+        lines = [words[:split_at], words[split_at:]]
+    else:
+        lines = [words]
+    typed = TITLE_START_S + TITLE_WORD_S * len(words)
+    end = min(duration - 0.2, typed + TITLE_HOLD_S)
+    if end <= TITLE_START_S:
+        return None
+    pieces, n = [], 0
+    for line_no, line in enumerate(lines):
+        for word in line:
+            appear = int((TITLE_WORD_S * n) * 1000)
+            pieces.append(
+                "{\\alpha&HFF&\\fscx130\\fscy130"
+                f"\\t({appear},{appear + 160},\\alpha&H00&\\fscx100\\fscy100)}}"
+                f"{_ass_text(word)} "
+            )
+            n += 1
+        if line_no < len(lines) - 1:
+            pieces.append("\\N")
+
+    def clock(t: float) -> str:
+        return f"{int(t // 3600)}:{int(t % 3600 // 60):02d}:{t % 60:05.2f}"
+
+    fade_ms = int(TITLE_FADE_S * 1000)
+    body = "".join(pieces).rstrip()
+    path.write_text(
+        "[Script Info]\nScriptType: v4.00+\nPlayResX: 1080\nPlayResY: 1920\n"
+        "WrapStyle: 2\nScaledBorderAndShadow: yes\n\n"
+        "[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, "
+        "OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, "
+        "Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, "
+        "Encoding\n"
+        # White, a warm yellow glow (the outline, blurred), no box.
+        "Style: Title,Montserrat,120,&H00FFFFFF,&H00FFFFFF,&H0000C8FF,&H00000000,"
+        "-1,-1,0,0,100,100,2,0,1,7,0,8,70,70,520,1\n\n"
+        "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
+        f"Dialogue: 0,{clock(TITLE_START_S)},{clock(end)},Title,,0,0,0,,"
+        f"{{\\blur6\\fad(0,{fade_ms})}}{body}\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def _filter_path(path: Path) -> str:
+    return str(path).replace("\\", "/").replace(":", "\\:").replace("'", "\\'")
+
+
+def render_edit(
+    plan: EditPlan,
+    music: Path,
+    output: Path,
+    work: Path,
+    ffmpeg: str = "ffmpeg",
+    title: str = "",
+) -> Path:
     work.mkdir(parents=True, exist_ok=True)
     parts: list[Path] = []
     for i, cut in enumerate(plan.cuts):
@@ -1092,11 +1179,15 @@ def render_edit(plan: EditPlan, music: Path, output: Path, work: Path, ffmpeg: s
     # cannot be.
     fade_s = min(FADE_OUT_S, plan.duration / 4)
     fade_at = max(0.0, plan.duration - fade_s)
+    titled = title_ass(title, work / "title.ass", plan.duration) if title.strip() else None
+    overlay = (
+        f",ass='{_filter_path(titled)}':fontsdir='{_filter_path(FONTS_DIR)}'" if titled else ""
+    )
     subprocess.run(
         [ffmpeg, "-nostdin", "-v", "error", "-y", "-i", str(joined), "-ss",
          f"{plan.music_start:.3f}", "-t", f"{plan.duration:.3f}", "-i", str(music),
          "-filter_complex",
-         f"[0:v]fade=t=out:st={fade_at:.3f}:d={fade_s:.3f}:color=black[v];"
+         f"[0:v]fade=t=out:st={fade_at:.3f}:d={fade_s:.3f}:color=black{overlay}[v];"
          f"[1:a]afade=t=out:st={fade_at:.3f}:d={fade_s:.3f}[a]",
          "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "veryfast",
          "-crf", "19", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",

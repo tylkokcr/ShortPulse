@@ -709,7 +709,10 @@
         "play": "Odtwórz ten fragment",
         "stop": "Zatrzymaj",
         "reset": "Wróć do sugestii"
-      }
+      },
+      "overlayTitle": "Tytuł na wideo",
+      "overlayTitlePlaceholder": "np. NAJLEPSZE DRYBLINGI SEZONU",
+      "overlayTitleHint": "Opcjonalnie. Pojawia się słowo po słowie na początku, potem znika."
     },
     "link": {
       "label": "Albo wklej link",

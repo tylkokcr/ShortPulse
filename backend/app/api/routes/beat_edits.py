@@ -58,6 +58,7 @@ async def create_beat_edit(
     style: str = Form(BeatEditStyle.ENERGETIC.value),
     music_start_s: float | None = Form(None),
     title: str = Form(""),
+    overlay_title: str = Form("", max_length=60),
     user_id: str | None = Depends(current_user_id),
 ) -> Project:
     """Accept the clips and a track, then queue the edit.
@@ -164,6 +165,7 @@ async def create_beat_edit(
             duration_s=min(max(duration_s, 5.0), 60.0, track_length),
             style=chosen_style,
             music_start_s=music_start_s,
+            overlay_title=" ".join(overlay_title.split()),
         )
         config = ProjectConfig(
             id=project_id,

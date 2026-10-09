@@ -641,3 +641,45 @@ def test_an_action_shot_shows_the_whole_move():
     actions = [c for c in plan.cuts if not c.close_crop]
     assert actions and all(c.zoom == beat_edit.ACTION_ZOOM and c.ramp is None for c in actions)
     assert "crop=1080:ih:x=" in beat_edit._segment_filter(actions[0])
+
+
+async def test_an_overlay_title_is_stored_with_its_spaces_collapsed(beat_app, tmp_path):
+    app, _ = beat_app
+    from app.api.routes.music import available_tracks
+
+    async with _client(app) as client:
+        response = await client.post(
+            "/api/beat-edits",
+            files=_clips(tmp_path, 2),
+            data={
+                "music_track_id": available_tracks()[0].id,
+                "duration_s": "12",
+                "overlay_title": "  EN İYİ\n  ÇALIMLAR ",
+            },
+        )
+        too_long = await client.post(
+            "/api/beat-edits",
+            files=_clips(tmp_path, 2),
+            data={"music_track_id": available_tracks()[0].id, "duration_s": "12", "overlay_title": "x" * 61},
+        )
+    assert response.status_code == 201, response.text
+    assert response.json()["config"]["beat_edit"]["overlay_title"] == "EN İYİ ÇALIMLAR"
+    assert too_long.status_code == 422
+
+
+def test_a_title_types_itself_in_word_by_word_on_two_lines(tmp_path):
+    path = beat_edit.title_ass("NEYMAR'IN EN İYİ {ÇALIMLARI}", tmp_path / "t.ass", duration=30.0)
+    assert path is not None
+    text = path.read_text(encoding="utf-8")
+    dialogue = next(line for line in text.splitlines() if line.startswith("Dialogue:"))
+    # Each word fades in after the one before it.
+    assert dialogue.count("\\t(") == 4
+    assert "\\t(0,160," in dialogue and "\\t(600,760," in dialogue
+    assert "\\N" in dialogue
+    # Braces from the user cannot open an override block.
+    assert "(ÇALIMLARI)" in dialogue
+
+
+def test_no_title_without_text_or_room(tmp_path):
+    assert beat_edit.title_ass("   ", tmp_path / "a.ass", duration=30.0) is None
+    assert beat_edit.title_ass("HELLO", tmp_path / "b.ass", duration=0.3) is None

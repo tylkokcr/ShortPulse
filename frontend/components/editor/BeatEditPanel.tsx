@@ -68,6 +68,7 @@ export function BeatEditPanel() {
   const [musicFile, setMusicFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(15);
   const [style, setStyle] = useState<BeatEditStyle>("energetic");
+  const [overlayTitle, setOverlayTitle] = useState("");
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
@@ -200,7 +201,10 @@ export function BeatEditPanel() {
           durationS: duration,
           musicStartS: reading && musicStart !== null ? musicStart : undefined,
           style,
-          title: (pickedClips[0]?.name ?? clips[0]?.name ?? "").replace(/\.[^.]+$/, ""),
+          overlayTitle: overlayTitle.trim() || undefined,
+          title:
+            overlayTitle.trim() ||
+            (pickedClips[0]?.name ?? clips[0]?.name ?? "").replace(/\.[^.]+$/, ""),
         },
         setProgress
       );
@@ -474,6 +478,21 @@ export function BeatEditPanel() {
             </div>
             <p className="mt-1.5 text-xs text-white/40">{t(`styles.${style}.hint`)}</p>
           </div>
+        </div>
+
+        <div>
+          <label htmlFor="overlay-title" className="mb-1.5 block text-sm font-medium text-white/70">
+            {t("overlayTitle")}
+          </label>
+          <input
+            id="overlay-title"
+            value={overlayTitle}
+            maxLength={60}
+            onChange={(e) => setOverlayTitle(e.target.value)}
+            placeholder={t("overlayTitlePlaceholder")}
+            className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm placeholder:text-white/25 focus:border-accent focus:outline-none"
+          />
+          <p className="mt-1.5 text-xs text-white/40">{t("overlayTitleHint")}</p>
         </div>
 
         {/* Only matters for what is being uploaded now; files picked from

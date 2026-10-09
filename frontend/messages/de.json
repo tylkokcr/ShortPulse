@@ -709,7 +709,10 @@
         "play": "Diesen Teil abspielen",
         "stop": "Stopp",
         "reset": "Zurück zum Vorschlag"
-      }
+      },
+      "overlayTitle": "Titel im Video",
+      "overlayTitlePlaceholder": "z. B. SEINE BESTEN SKILLS DIESER SAISON",
+      "overlayTitleHint": "Optional. Erscheint am Anfang Wort für Wort und blendet dann aus."
     },
     "link": {
       "label": "Oder Link einfügen",

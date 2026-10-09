@@ -839,6 +839,7 @@ async def run_beat_edit_pipeline(project: Project, settings: Settings) -> None:
                 final_path,
                 paths / "work",
                 settings.ffmpeg_binary,
+                spec.overlay_title,
             )
         shutil.copyfile(final_path, beat_edits.base_path(paths))
         shutil.rmtree(paths / "work", ignore_errors=True)

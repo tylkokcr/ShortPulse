@@ -709,7 +709,10 @@
         "play": "Play this part",
         "stop": "Stop",
         "reset": "Back to the suggestion"
-      }
+      },
+      "overlayTitle": "Title on the video",
+      "overlayTitlePlaceholder": "e.g. HIS BEST SKILLS THIS SEASON",
+      "overlayTitleHint": "Optional. Types itself in over the opening, word by word, then fades."
     },
     "link": {
       "label": "Or paste a link",

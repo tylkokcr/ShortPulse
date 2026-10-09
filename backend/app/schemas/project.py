@@ -403,6 +403,9 @@ class BeatEditSpec(BaseModel):
     style: BeatEditStyle = BeatEditStyle.ENERGETIC
     # Where in the track the edit starts. None: around the drop.
     music_start_s: float | None = Field(default=None, ge=0.0)
+    # A line of text that types itself in over the opening, the way a fan
+    # edit names its moment ("LAMINE YAMAL TAKING PENALTY"). Empty: none.
+    overlay_title: str = Field(default="", max_length=60)
 
 
 # An uploaded video's `language` before Whisper has listened to it. Set by

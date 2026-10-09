@@ -626,6 +626,7 @@ export async function createBeatEdit(
     /** Where in the song the edit starts. Omitted: around the drop. */
     musicStartS?: number;
     title?: string;
+    overlayTitle?: string;
   },
   onProgress?: (fraction: number) => void
 ): Promise<Project> {
@@ -640,6 +641,7 @@ export async function createBeatEdit(
   if (options.musicStartS !== undefined) form.append("music_start_s", String(options.musicStartS));
   form.append("style", options.style);
   form.append("title", options.title ?? "");
+  if (options.overlayTitle) form.append("overlay_title", options.overlayTitle);
   return postMultipart("/beat-edits", form, onProgress);
 }
 

@@ -709,7 +709,10 @@
         "play": "Bu kısmı dinle",
         "stop": "Durdur",
         "reset": "Öneriye dön"
-      }
+      },
+      "overlayTitle": "Videodaki başlık",
+      "overlayTitlePlaceholder": "örn. BU SEZONUN EN İYİ ÇALIMLARI",
+      "overlayTitleHint": "İsteğe bağlı. Açılışta kelime kelime belirir, sonra söner."
     },
     "link": {
       "label": "Ya da link yapıştır",
