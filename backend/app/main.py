@@ -32,7 +32,7 @@ from app.services import db, media_store, project_store
 from app.services import social as social_platforms
 from app.services.media_tokens import MediaTokenSigner
 from app.services.publish_manager import PublishQueue, configure_queue, configure_signer
-from app.services.render_manager import RenderTaskQueue, reconcile_interrupted_renders
+from app.services.render_manager import RenderTaskQueue, resume_interrupted_renders
 from app.services.social_tokens import TokenCipher
 from app.services.supabase_auth import SupabaseTokenVerifier
 
@@ -60,14 +60,13 @@ async def lifespan(app: FastAPI):
     # same list is on /api/health for anything that wants to gate on it.
     readiness.log_at_startup(settings)
 
-    # Anything still marked `rendering` was abandoned when the previous
-    # process died. Refund and fail it before accepting new work, so the
-    # user isn't left paying for a render that will never finish.
-    await reconcile_interrupted_renders()
-
     render_queue = RenderTaskQueue(settings)
     render_queue.start()
     app.state.render_queue = render_queue
+    # What the previous process left unfinished — running, or waiting in
+    # its in-memory queue — goes back on this one's, rather than being
+    # failed by a deploy. See resume_interrupted_renders.
+    await resume_interrupted_renders(render_queue)
     app.state.settings = settings
     app.state.media_signer = MediaTokenSigner(
         settings.media_url_secret, ttl_s=settings.media_url_ttl_s
@@ -95,7 +94,9 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
-        await render_queue.stop()
+        # A deploy waits briefly for running renders before stopping them;
+        # what does not finish in time resumes on the next start.
+        await render_queue.stop(drain_s=settings.shutdown_drain_s)
         await publish_queue.stop()
         await db.disconnect()
 

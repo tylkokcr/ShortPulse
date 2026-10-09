@@ -31,6 +31,7 @@ class ProjectStore(Protocol):
     async def list_interrupted(self) -> list[str]: ...
     async def owner_of(self, project_id: str) -> str | None: ...
     async def fail_if_rendering(self, project_id: str, error: str) -> bool: ...
+    async def list_resumable(self, max_age_s: float = 86400) -> list[str]: ...
 
 
 class InMemoryProjectStore:
@@ -68,6 +69,10 @@ class InMemoryProjectStore:
     async def owner_of(self, project_id: str) -> str | None:
         # This backend only runs where there are no accounts.
         return None
+
+    async def list_resumable(self, max_age_s: float = 86400) -> list[str]:
+        # Nothing survives a restart here.
+        return []
 
     async def fail_if_rendering(self, project_id: str, error: str) -> bool:
         project = self._projects.get(project_id)
@@ -250,6 +255,22 @@ class PostgresProjectStore:
         )
         return [str(r["id"]) for r in rows]
 
+    async def list_resumable(self, max_age_s: float = 86400) -> list[str]:
+        """Projects a restart left unfinished: `rendering` (a worker was
+        on it) or `draft` (it was waiting in the queue, which lives in
+        memory and did not survive). Recent ones only, oldest first, so
+        they go back on the queue in the order they joined it."""
+        rows = await self._pool.fetch(
+            """
+            select id from projects
+            where status in ('rendering', 'draft')
+              and updated_at > now() - make_interval(secs => $1)
+            order by created_at
+            """,
+            max_age_s,
+        )
+        return [str(r["id"]) for r in rows]
+
     async def owner_of(self, project_id: str) -> str | None:
         owner = await self._pool.fetchval(
             "select user_id from projects where id = $1", project_id
@@ -331,3 +352,7 @@ async def owner_of(project_id: str) -> str | None:
 
 async def fail_if_rendering(project_id: str, error: str) -> bool:
     return await _store.fail_if_rendering(project_id, error)
+
+
+async def list_resumable(max_age_s: float = 86400) -> list[str]:
+    return await _store.list_resumable(max_age_s)

@@ -353,6 +353,10 @@ class Settings(BaseSettings):
     # All the clips of one beat edit together.
     max_beat_edit_mb: int = 2048
     max_concurrent_renders: int = 2
+    # On shutdown (a deploy), how long running renders are given to finish
+    # before they are stopped and left to resume on the next start. Short,
+    # because the API answers nothing while it waits.
+    shutdown_drain_s: float = 30.0
     # How long a finished project keeps the files a scene re-roll needs —
     # its per-scene voiceover and clips, roughly 3-7MB on top of the ~28MB
     # a finished project already occupies. After this, prune_storage.py

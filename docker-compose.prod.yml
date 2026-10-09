@@ -49,6 +49,10 @@ services:
 
   api:
     restart: always
+    # Longer than the API's own shutdown_drain_s (30s), so a deploy lets
+    # running renders finish instead of killing them at Docker's default
+    # of 10s. What still runs after that resumes when the API comes back.
+    stop_grace_period: 45s
     environment:
       # Derived rather than configured: the deployment serves one origin,
       # and it is this one. Set by hand in backend/.env it is a second

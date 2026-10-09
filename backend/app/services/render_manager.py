@@ -1400,6 +1400,10 @@ async def _extract_clips(
             child_config.id, source_path=str(child_source)
         )
         child_ids.append(child_config.id)
+        # Recorded as each one is made, so a restart in the middle of
+        # cutting resumes the clips already made rather than cutting the
+        # video again (see resume_interrupted_renders).
+        await project_store.update_project(project_id, clip_project_ids=list(child_ids))
 
         # A clip chosen from the picture is often music under the action.
         # Captioning it would burn in what Whisper invents over music, so
@@ -1577,6 +1581,69 @@ async def reconcile_interrupted_renders() -> int:
     return recovered
 
 
+# How many times one project is put back on the queue after a restart
+# before it is failed and refunded — a render that keeps dying with the
+# process may be what is killing it.
+MAX_RESUMES = 2
+_RESUMES_FILE = "resumes"
+
+
+async def resume_interrupted_renders(queue: RenderTaskQueue) -> int:
+    """Put back on the queue whatever a restart left unfinished.
+
+    A deploy restarts this process. Renders that were running, and
+    renders waiting in the queue — which lives in memory — used to be
+    failed and refunded, or for the waiting ones simply lost: a project
+    paid for and left a draft forever. Now each is started again from the
+    beginning. A project resumed MAX_RESUMES times already is failed and
+    refunded instead, the old behaviour.
+
+    An extraction that had already made some of its clips is not cut
+    again — that would make the same clips twice. It is finished with the
+    clips it has; they are resumed themselves, as projects of their own.
+    """
+    resumed = 0
+    for project_id in await project_store.list_resumable():
+        project = await project_store.get_project(project_id)
+        if project is None:
+            continue
+        marker = project_dir(project_id) / _RESUMES_FILE
+        try:
+            count = int(marker.read_text()) if marker.is_file() else 0
+        except ValueError:
+            count = 0
+        if count >= MAX_RESUMES:
+            await _give_up_after_restarts(project_id)
+            continue
+        if project.clip_project_ids:
+            await project_store.update_project(
+                project_id, status=ProjectStatus.COMPLETE, error=None
+            )
+            continue
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text(str(count + 1))
+        await project_store.update_project(project_id, status=ProjectStatus.DRAFT, error=None)
+        await queue.submit(project.model_copy(update={"status": ProjectStatus.DRAFT}))
+        resumed += 1
+    if resumed:
+        logger.warning("Resumed %d render(s) a restart left unfinished", resumed)
+    return resumed
+
+
+async def _give_up_after_restarts(project_id: str) -> None:
+    await project_store.update_project(
+        project_id,
+        status=ProjectStatus.FAILED,
+        error="Render was interrupted by server restarts. Your credits have been returned.",
+    )
+    pool = db.optional_pool()
+    if pool is not None:
+        try:
+            await credits.refund_project(pool, project_id, note="render interrupted by restarts")
+        except Exception:  # noqa: BLE001
+            logger.exception("Could not refund project %s after restarts", project_id)
+
+
 # Roughly how long a render takes on the machine that serves them, per
 # unit of length. Measured across twelve real renders on the 4-vCPU
 # production host: stock_media came in at 22-92s, fast_hybrid at 242-362s
@@ -1657,6 +1724,7 @@ class RenderTaskQueue:
         self._heavy: deque[Project] = deque()
         self._ready = asyncio.Condition()
         self._running_heavy = 0
+        self._draining = False
         self._workers: list[asyncio.Task] = []
         self._running: set[str] = set()
 
@@ -1693,7 +1761,20 @@ class RenderTaskQueue:
         for _ in range(self._settings.max_concurrent_renders):
             self._workers.append(asyncio.create_task(self._worker_loop()))
 
-    async def stop(self) -> None:
+    async def stop(self, drain_s: float = 0.0) -> None:
+        """Stop the workers — after letting what is running finish, for up
+        to `drain_s`. Nothing new is started meanwhile; what is still
+        running at the end is picked up again by `resume_interrupted_renders`
+        when the next process starts, so a deploy no longer fails it."""
+        self._draining = True
+        deadline = time.monotonic() + max(0.0, drain_s)
+        while self._running and time.monotonic() < deadline:
+            await asyncio.sleep(0.5)
+        if self._running:
+            logger.warning(
+                "Stopping with %d render(s) still running; they resume on the next start",
+                len(self._running),
+            )
         for worker in self._workers:
             worker.cancel()
         self._workers.clear()
@@ -1713,6 +1794,9 @@ class RenderTaskQueue:
     async def _next(self) -> tuple[Project, bool]:
         async with self._ready:
             while True:
+                if self._draining:
+                    await self._ready.wait()
+                    continue
                 if self._light:
                     return self._light.popleft(), False
                 if self._heavy and self._running_heavy < self._heavy_limit():
