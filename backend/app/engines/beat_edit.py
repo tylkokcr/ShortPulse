@@ -195,6 +195,10 @@ _CLOSE_LEVEL = 0.16
 # a still wide shot was the only "wide" a compilation had, so every edit
 # opened on the same wall waiting for a kick it then cut away from.
 _STILL_LEVEL = 0.012
+# With a seed, the shot is drawn from up to this many of a clip's shots
+# scoring at least this share of the best — see ClipMotion.busiest.
+_VARIETY_POOL = 16
+_VARIETY_FLOOR = 0.45
 # How far into a wide shot a landscape frame zooms, towards its movement:
 # at the plain blurred framing the players were specks.
 WIDE_ZOOM = 1.5
@@ -432,9 +436,14 @@ class ClipMotion:
         choices = sorted(best[min(best)].values(), key=lambda c: -c[1])
         if rng is None:
             return choices[0][0]
+        # A wide pool, weighted by how good each shot is. Picking among
+        # only the few nearly-best ones meant two edits of the same footage
+        # shared half their shots and opened on the same three; users saw
+        # "the same video again" on every retry.
         top = choices[0][1]
-        near = [c for c in choices if c[1] >= 0.7 * top][:8]
-        return rng.choice(near)[0]
+        pool = [c for c in choices if c[1] >= _VARIETY_FLOOR * top][:_VARIETY_POOL]
+        weights = [max(c[1], 1e-6) ** 2 for c in pool]
+        return rng.choices(pool, weights=weights, k=1)[0][0]
 
     def longest_free_shot(self, avoid: list[tuple[float, float]]) -> tuple[float, float] | None:
         """The longest of the clip's shots not yet used — for a cut longer
@@ -662,6 +671,9 @@ def plan_edit(
 
     used: dict[Path, list[tuple[float, float]]] = {c.path: [] for c in clips}
     order = sorted(clips, key=lambda c: -float(c.scores.mean()))
+    if rng is not None:
+        # The busiest clip first only when nobody asked for variety.
+        rng.shuffle(order)
     cuts: list[Cut] = []
     last: Path | None = None
     turn = 0
