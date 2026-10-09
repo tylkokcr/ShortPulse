@@ -92,7 +92,7 @@ async def test_a_report_is_written_once_and_reused_until_it_is_stale(monkeypatch
 
     async def analyse(snapshot, lang, llm, previous):
         calls["analyse"] += 1
-        return {"summary": "s", "trends": []}
+        return {"summary": "s", "trends": [], "version": trends.PROMPT_VERSION}
 
     monkeypatch.setattr(trends, "collect", collect)
     monkeypatch.setattr(trends, "analyse", analyse)
@@ -108,6 +108,10 @@ async def test_a_report_is_written_once_and_reused_until_it_is_stale(monkeypatch
     assert calls == {"collect": 1, "analyse": 1}
     await trends.get_report("TR", "en", settings)  # another language: another analysis
     assert calls == {"collect": 1, "analyse": 2}
+    # A report written by an older prompt is rewritten, fresh or not.
+    monkeypatch.setattr(trends, "PROMPT_VERSION", trends.PROMPT_VERSION + 1)
+    await trends.get_report("TR", "en", settings)
+    assert calls == {"collect": 1, "analyse": 3}
 
 
 async def test_the_api_offers_only_its_regions(monkeypatch):

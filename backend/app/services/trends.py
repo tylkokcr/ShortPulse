@@ -77,6 +77,9 @@ KEEP_SNAPSHOTS = timedelta(days=30)
 # How many of the fastest risers the model reads, and how many trends it
 # may return.
 _ANALYSE_TOP = 60
+# Bumped whenever the prompt changes, so reports written by the old one are
+# rewritten instead of being served for two more days.
+PROMPT_VERSION = 2
 _MAX_TRENDS = 8
 
 
@@ -178,22 +181,38 @@ async def collect(region: str, api_key: str, client: httpx.AsyncClient | None = 
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = """\
-You are a short-video strategist. You read what is rising on YouTube in one \
-country right now and say, plainly, which trends a creator could ride this \
-week and how.
+You are a short-video strategist for a tool that can make exactly two kinds \
+of video, and nothing else:
 
-A trend is a pattern shared by several of the risers — a subject, a person \
-or team, a format (POV, challenge, compilation, reaction, tutorial), or a \
-song — not one video. Skip anything that is only big because the channel is \
-big, and skip news and politics.
+1. "generate": a narrated 30-60 second short from a topic — a voiceover \
+over stock footage or AI-made stills, with captions. Good for facts, \
+explainers, stories, lists, history, curiosities, "did you know", \
+motivation. It cannot show real people, real matches, scenes from a series \
+or a film, or anyone's real footage.
+2. "edit": the user's own clips cut to music, beat by beat. Good for sports \
+moments and players, fan edits, travel, fitness, dance, gaming highlights, \
+cars — anything the user can have footage of.
+
+You read what is rising on YouTube in one country right now. Find the \
+trends a creator could ride with this tool this week. A trend is a pattern \
+shared by several risers — a subject, a person or team, a format, a song — \
+not one video.
+
+The rule that matters most: never suggest copying the trending thing \
+itself. Turn it into an angle the tool can actually make. A TV series \
+trending is not "make a video of the series" — it is a generate idea about \
+the real-world subject behind it ("5 facts about the 90s Istanbul \
+underworld"). A player trending is an edit idea ("his best skills this \
+season, cut to a rising song"). Drop a trend outright when no honest angle \
+exists: politics, news about private people, a song's own music video with \
+nothing around it, anything only big because the channel is big.
 
 For each trend give: a short name; its kind (topic, format, sound or \
 person); its status (rising if young videos are climbing fast, peak if it is \
-everywhere, fading if the videos are old and slowing); one or two sentences \
-on why it is working; the ids of up to three example videos from the list; \
-and three concrete short-video ideas. Say for each trend whether it suits \
-making a video from a topic ("generate"), editing one's own clips to music \
-("edit"), or both.
+everywhere, fading if the videos are old and slowing); one sentence on why \
+it is working; the ids of up to three example videos from the list; three \
+ideas, each one a ready-to-use topic or edit brief for this tool; and \
+whether the ideas suit "generate", "edit" or "both".
 
 Return JSON of this exact shape:
 {"summary": "<two sentences>", "trends": [{"name": "...", "kind": "...", \
@@ -259,7 +278,7 @@ def validate_report(raw: Any, snapshot: dict) -> dict:
         if len(trends) >= _MAX_TRENDS:
             break
     summary = str(raw.get("summary", "")).strip()[:500] if isinstance(raw, dict) else ""
-    return {"summary": summary, "trends": trends}
+    return {"summary": summary, "trends": trends, "version": PROMPT_VERSION}
 
 
 async def analyse(snapshot: dict, lang: str, llm: LLMConfig, previous: list[str]) -> dict:
@@ -394,6 +413,7 @@ async def get_report(region: str, lang: str, settings) -> Report | None:
         existing = await _store.report(region, lang)
         fresh = (
             existing is not None
+            and existing[2].get("version") == PROMPT_VERSION
             and datetime.now(UTC) - existing[0] < REPORT_MAX_AGE
             and (existing[1] == snapshot_id or datetime.now(UTC) - existing[0] < DATA_MAX_AGE)
         )
