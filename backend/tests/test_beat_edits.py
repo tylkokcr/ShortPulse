@@ -700,3 +700,34 @@ def test_a_title_types_itself_in_word_by_word_on_two_lines(tmp_path):
 def test_no_title_without_text_or_room(tmp_path):
     assert beat_edit.title_ass("   ", tmp_path / "a.ass", duration=30.0) is None
     assert beat_edit.title_ass("HELLO", tmp_path / "b.ass", duration=0.3) is None
+
+
+def test_flat_colour_reads_as_a_graphic_and_grain_does_not():
+    rng = np.random.default_rng(1)
+    dark_match = rng.normal(30, 4, size=(1, 96, 54)).astype(np.float32)
+    end_screen = np.full((1, 96, 54), 20.0, dtype=np.float32)
+    end_screen[0, 40:46, 10:44] = 230.0  # a line of text
+    assert beat_edit._flatness(dark_match)[0] < 0.3
+    assert beat_edit._flatness(end_screen)[0] > beat_edit._FLAT_LEVEL
+
+
+def test_an_end_screen_never_makes_it_into_an_edit():
+    """A compilation ending on "check out these videos": eight seconds where
+    nothing moves on flat colour. Scored as the busiest stretch of the clip,
+    it is still never cut in."""
+    clip = _compilation_motion(shot_s=2.0, total_s=60.0)
+    rate = beat_edit._MOTION_FPS
+    n = len(clip.scores)
+    screen = slice(20 * rate, 28 * rate)
+    clip.scores[screen] = 40.0
+    clip.activity = np.full(n, 0.1, dtype=np.float32)
+    clip.activity[screen] = 0.0
+    clip.flat = np.full(n, 0.2, dtype=np.float32)
+    clip.flat[screen] = 0.8
+    assert clip.graphic(20.0, 22.0) and not clip.graphic(18.0, 20.0)
+    for style in ("energetic", "cinematic", "calm"):
+        for seed in range(4):
+            plan = beat_edit.plan_edit(_grid(seconds=120.0), [clip], 30.0, style, seed=seed)
+            for cut in plan.cuts:
+                start, end = cut.source_start, cut.source_start + cut.duration * cut.speed
+                assert end <= 20.0 + 0.05 or start >= 28.0 - 0.05, (style, seed, start, end)

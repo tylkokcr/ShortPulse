@@ -198,6 +198,12 @@ _CLOSE_LEVEL = 0.16
 # a still wide shot was the only "wide" a compilation had, so every edit
 # opened on the same wall waiting for a kick it then cut away from.
 _STILL_LEVEL = 0.012
+# Share of a sample's pixels with no edge to their neighbours. A YouTube
+# end screen ("check out these videos"), a title card or a subscribe slate
+# is flat colour behind a few words: 0.75 on one that ended up in an edit,
+# against 0.13-0.47 for every shot of play around it, dark night matches
+# included.
+_FLAT_LEVEL = 0.6
 # With a seed, the shot is drawn from up to this many of a clip's shots
 # scoring at least this share of the best — see ClipMotion.busiest.
 _VARIETY_POOL = 16
@@ -269,6 +275,9 @@ class ClipMotion:
     activity: np.ndarray | None = None
     # Per sample, where across the frame the movement is (see `_activity`).
     focus: np.ndarray | None = None
+    # Per sample, the share of the picture that is flat colour (see
+    # `_FLAT_LEVEL` and `_flatness`).
+    flat: np.ndarray | None = None
     _scales: np.ndarray | None = field(default=None, repr=False)
     _windows: dict[int, np.ndarray] = field(default_factory=dict, repr=False)
 
@@ -373,6 +382,26 @@ class ClipMotion:
                 break
         return float(np.median(self.activity[a:b])) < _STILL_LEVEL
 
+    def graphic(self, start: float, end: float) -> bool:
+        """Whether a stretch is not footage but a screen laid over it: an end
+        screen, a title card, the black between a countdown's entries.
+        Nothing moves in it and it is mostly flat colour. Never shown — a
+        still shot of play is a weak choice, this is a wrong one.
+
+        Flatness alone, not where in the video it sits: "still, in the last
+        twenty seconds" also took a free kick being lined up at the end of a
+        goals countdown."""
+        if self.activity is None or len(self.activity) == 0:
+            return False
+        a = int(start * _MOTION_FPS)
+        b = max(a + 1, int(end * _MOTION_FPS))
+        if self.flat is None or len(self.flat) == 0:
+            return False
+        return (
+            float(np.median(self.activity[a:b])) < _STILL_LEVEL
+            and float(np.median(self.flat[a:b])) > _FLAT_LEVEL
+        )
+
     def focus_at(self, start: float, length_s: float) -> float:
         """Where across the frame a stretch's movement is, 0 to 1; the
         middle when nothing moves."""
@@ -427,6 +456,8 @@ class ClipMotion:
                     continue
                 if any(not (end <= a or start >= b) for a, b in avoid):
                     continue
+                if self.graphic(shot_start, shot_end):
+                    break
                 score = float(sums[index])
                 if spread_s > 0 and avoid:
                     gap = min(max(a - end, start - b, 0.0) for a, b in avoid)
@@ -474,7 +505,7 @@ class ClipMotion:
         free = [
             (a, b)
             for a, b in self.shots()
-            if b - a > 0.2 and all(b <= x or a >= y for x, y in avoid)
+            if b - a > 0.2 and all(b <= x or a >= y for x, y in avoid) and not self.graphic(a, b)
         ]
         # A shot where something happens before a longer one where nothing does.
         return max(free, key=lambda s: (not self.still(s[0], s[1] - s[0]), s[1] - s[0])) if free else None
@@ -501,6 +532,17 @@ def _histograms(frames: np.ndarray) -> np.ndarray:
                 start = (gy * 3 + gx) * 24 + c * 8
                 out[:, start : start + 8] = counts / max(1, values.shape[1])
     return out
+
+
+def _flatness(frames: np.ndarray) -> np.ndarray:
+    """Per grey frame, the share of pixels within a level or so of every
+    neighbour: flat colour. Footage has grain, grass and crowd in it even
+    when dark; a graphic does not."""
+    if frames.shape[1] < 2 or frames.shape[2] < 2:
+        return np.zeros(len(frames), dtype=np.float32)
+    across = np.abs(np.diff(frames, axis=2))[:, :-1, :]
+    down = np.abs(np.diff(frames, axis=1))[:, :, :-1]
+    return (np.maximum(across, down) < 1.5).mean(axis=(1, 2)).astype(np.float32)
 
 
 def _source_cuts(changes: np.ndarray, floor: float = 0.45) -> list[int]:
@@ -563,7 +605,7 @@ def motion_profile(clip: Path, ffmpeg: str = "ffmpeg", ffprobe: str | None = Non
     return ClipMotion(
         path=clip, duration_s=len(frames) / _MOTION_FPS, scores=scores,
         cuts=cuts, width=width, height=height,
-        activity=activity, focus=focus,
+        activity=activity, focus=focus, flat=_flatness(frames),
     )
 
 
@@ -707,9 +749,13 @@ def _moments(clips: list[ClipMotion], look: Style) -> list[Moment]:
         shots = clip.shots()
         add = partial(_add_moment, out, clip, clip._window_scores(1))
 
+        # A run never takes in an end screen or a title card, as its own
+        # moment or as the tail of one.
+        graphic = [clip.graphic(a, b) for a, b in shots]
+
         for n, (a, _b) in enumerate(shots):
             for span in range(1, look.moment_shots + 1):
-                if n + span > len(shots):
+                if n + span > len(shots) or graphic[n + span - 1]:
                     break
                 b = shots[n + span - 1][1]
                 if b - a > longest:
