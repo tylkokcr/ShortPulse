@@ -1131,5 +1131,27 @@
     "soundOn": "Włącz dźwięk",
     "soundOff": "Wyłącz dźwięk",
     "credits": "Materiał z Pexels, nagrali: {names}. Muzyka: „Winning Spirit” (Pixabay), „Calm Currents” – HoliznaCC0. Lektor: Piper."
+  },
+  "trends": {
+    "titleGenerate": "Co jest na czasie — pomysły na wideo",
+    "titleEdit": "Co jest na czasie — do montaży",
+    "region": "Region",
+    "loading": "Czytam, co rośnie… pierwsze spojrzenie na region trwa około 20 sekund.",
+    "failed": "Nie udało się teraz wczytać trendów.",
+    "use": "Użyj",
+    "songs": "Utwory rosnące w tym regionie",
+    "songsNote": "Dodaj utwór sam, jeśli masz prawo go użyć — lista pokazuje tylko, co się przyjmuje.",
+    "source": "Z list popularnych YouTube i najczęściej słuchanych Apple Music, {date}. Dane TikToka nie są dla nas dostępne, więc tam trendy mogą być trochę wcześniej.",
+    "status": {
+      "rising": "Rośnie",
+      "peak": "Na szczycie",
+      "fading": "Słabnie"
+    },
+    "kind": {
+      "topic": "Temat",
+      "format": "Format",
+      "sound": "Dźwięk",
+      "person": "Osoba"
+    }
   }
 }

@@ -5,6 +5,7 @@ Run with:  uvicorn app.main:app --reload --port 8000
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -22,6 +23,7 @@ from app.api.routes import (
     referrals,
     render,
     social,
+    trends,
     uploads,
     visual_modes,
     voices,
@@ -30,6 +32,7 @@ from app.core import monitoring, readiness
 from app.core.config import get_settings
 from app.services import db, media_store, project_store
 from app.services import social as social_platforms
+from app.services import trends as trend_service
 from app.services.media_tokens import MediaTokenSigner
 from app.services.publish_manager import PublishQueue, configure_queue, configure_signer
 from app.services.render_manager import RenderTaskQueue, resume_interrupted_renders
@@ -53,6 +56,7 @@ async def lifespan(app: FastAPI):
         await db.apply_migrations(pool)
     project_store.configure(pool)
     media_store.configure(pool)
+    trend_service.configure(pool)
     app.state.db_pool = pool
 
     # Logged loudly rather than raised: refusing to boot would take a
@@ -91,9 +95,19 @@ async def lifespan(app: FastAPI):
     app.state.publish_queue = publish_queue
     configure_queue(publish_queue)
 
+    # Collected in the background, only where there is a key to collect
+    # with; the section is hidden otherwise.
+    trend_loop = (
+        asyncio.create_task(trend_service.run_scheduler(settings))
+        if settings.youtube_api_key
+        else None
+    )
+
     try:
         yield
     finally:
+        if trend_loop is not None:
+            trend_loop.cancel()
         # A deploy waits briefly for running renders before stopping them;
         # what does not finish in time resumes on the next start.
         await render_queue.stop(drain_s=settings.shutdown_drain_s)
@@ -146,6 +160,7 @@ app.include_router(uploads.router)
 app.include_router(beat_edits.router)
 app.include_router(media.router)
 app.include_router(referrals.router)
+app.include_router(trends.router)
 app.include_router(social.router)
 
 

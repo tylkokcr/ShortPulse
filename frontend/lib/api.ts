@@ -709,3 +709,11 @@ export async function analyzeTrack(source: {
   if (source.file) form.append("music", source.file);
   return postMultipart<TrackAnalysis>("/beat-edits/analyze", form);
 }
+
+export function getTrendRegions(): Promise<{ enabled: boolean; regions: string[] }> {
+  return request("/trends/regions");
+}
+
+export function getTrends(region: string, lang: string): Promise<import("./types").TrendReport> {
+  return request(`/trends?region=${encodeURIComponent(region)}&lang=${encodeURIComponent(lang)}`);
+}

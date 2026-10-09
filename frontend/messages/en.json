@@ -1131,5 +1131,27 @@
     "soundOn": "Turn sound on",
     "soundOff": "Turn sound off",
     "credits": "Footage from Pexels, filmed by {names}. Music: “Winning Spirit” (Pixabay), “Calm Currents” by HoliznaCC0. Narration: Piper."
+  },
+  "trends": {
+    "titleGenerate": "What's trending — ideas for a video",
+    "titleEdit": "What's trending — for edits",
+    "region": "Region",
+    "loading": "Reading what's rising… the first look at a region takes about 20 seconds.",
+    "failed": "Trends couldn't be loaded just now.",
+    "use": "Use",
+    "songs": "Songs rising in this region",
+    "songsNote": "Add a song yourself if you have the rights to use it — the list only says what's catching on.",
+    "source": "From YouTube's popular charts and Apple Music's most played, {date}. TikTok has no data open to us, so trends there may run a little ahead.",
+    "status": {
+      "rising": "Rising",
+      "peak": "At its peak",
+      "fading": "Fading"
+    },
+    "kind": {
+      "topic": "Topic",
+      "format": "Format",
+      "sound": "Sound",
+      "person": "Person"
+    }
   }
 }

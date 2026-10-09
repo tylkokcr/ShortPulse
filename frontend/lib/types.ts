@@ -585,3 +585,36 @@ export interface MediaUrls {
   poster_url: string | null;
   expires_at: number;
 }
+
+// --------------------------------------------------------------------------
+// Trends (backend services/trends.py)
+// --------------------------------------------------------------------------
+
+export interface TrendExample {
+  id: string;
+  title: string;
+  channel: string;
+  thumbnail: string | null;
+  views: number;
+  views_per_hour: number;
+}
+
+export interface Trend {
+  name: string;
+  kind: "topic" | "format" | "sound" | "person";
+  status: "rising" | "peak" | "fading";
+  why: string;
+  ideas: string[];
+  fits: "generate" | "edit" | "both";
+  examples: TrendExample[];
+}
+
+export interface TrendReport {
+  region: string;
+  lang: string;
+  generated_at: string;
+  fetched_at: string;
+  summary: string;
+  trends: Trend[];
+  songs: { title: string; artist: string; url: string | null; artwork: string | null }[];
+}

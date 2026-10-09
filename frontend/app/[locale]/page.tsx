@@ -40,6 +40,7 @@ import { RenderSummary } from "@/components/editor/RenderSummary";
 import { UploadPanel } from "@/components/editor/UploadPanel";
 import { BeatEditPanel } from "@/components/editor/BeatEditPanel";
 import { StartFromExample, topicIsUntouched } from "@/components/editor/StartFromExample";
+import { TrendsPanel } from "@/components/trends/TrendsPanel";
 import { SettingsDrawer } from "@/components/editor/SettingsDrawer";
 import { SettingRow } from "@/components/editor/SettingRow";
 import { FieldDisclosure } from "@/components/editor/FieldDisclosure";
@@ -331,6 +332,9 @@ function CreateVideo() {
 
         {mode === "beat" && (
           <div className="animate-fade-up mt-8">
+            <div className="mb-6">
+              <TrendsPanel mode="edit" />
+            </div>
             <BeatEditPanel />
           </div>
         )}
@@ -339,6 +343,12 @@ function CreateVideo() {
             answer to anything. Once something is typed the row would be
             four videos sitting between the user and the button, offering
             to overwrite what they just wrote. */}
+        {mode === "generate" && (
+          <div className="animate-fade-up mt-8">
+            <TrendsPanel mode="generate" />
+          </div>
+        )}
+
         {mode === "generate" && topicIsUntouched(draft.topic) && (
           <div className="animate-fade-up mt-8">
             <StartFromExample />

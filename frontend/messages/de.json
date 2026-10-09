@@ -1131,5 +1131,27 @@
     "soundOn": "Ton an",
     "soundOff": "Ton aus",
     "credits": "Material von Pexels, gefilmt von {names}. Musik: „Winning Spirit“ (Pixabay), „Calm Currents“ von HoliznaCC0. Sprecher: Piper."
+  },
+  "trends": {
+    "titleGenerate": "Was gerade trendet — Ideen für ein Video",
+    "titleEdit": "Was gerade trendet — für Edits",
+    "region": "Region",
+    "loading": "Lese, was gerade steigt… der erste Blick auf eine Region dauert etwa 20 Sekunden.",
+    "failed": "Trends konnten gerade nicht geladen werden.",
+    "use": "Nutzen",
+    "songs": "Songs, die in dieser Region steigen",
+    "songsNote": "Füge einen Song selbst hinzu, wenn du ihn nutzen darfst — die Liste zeigt nur, was gerade ankommt.",
+    "source": "Aus den YouTube-Trends und den meistgespielten Songs von Apple Music, {date}. TikTok-Daten sind für uns nicht zugänglich, dort können Trends etwas früher sein.",
+    "status": {
+      "rising": "Steigt",
+      "peak": "Auf dem Höhepunkt",
+      "fading": "Lässt nach"
+    },
+    "kind": {
+      "topic": "Thema",
+      "format": "Format",
+      "sound": "Sound",
+      "person": "Person"
+    }
   }
 }

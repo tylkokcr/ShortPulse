@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     # takes longer to write the script than the rest of the render takes to
     # produce the video.
     openai_api_key: str | None = None
+    # The YouTube Data API key the trends section reads most-popular charts
+    # with (services/trends.py). Without one there is no trends section.
+    youtube_api_key: str | None = None
+    # Regions collected even when nobody has asked for them lately, so the
+    # first visitor of the day does not wait for a collection.
+    trends_default_regions: list[str] = ["TR", "US", "DE", "PL"]
     # Who transcribes an upload: "local" (faster-whisper on this machine),
     # "openai" (the Whisper API), or "auto" — the API when a key is set and
     # there is enough audio for it to matter, this machine otherwise.

@@ -1131,5 +1131,27 @@
     "soundOn": "Sesi aç",
     "soundOff": "Sesi kapat",
     "credits": "Görüntüler Pexels'ten, çekenler: {names}. Müzik: “Winning Spirit” (Pixabay), HoliznaCC0'dan “Calm Currents”. Seslendirme: Piper."
+  },
+  "trends": {
+    "titleGenerate": "Neler trend — video fikirleri",
+    "titleEdit": "Neler trend — edit'ler için",
+    "region": "Bölge",
+    "loading": "Yükselenler okunuyor… bir bölgeye ilk bakış yaklaşık 20 saniye sürer.",
+    "failed": "Trendler şu an yüklenemedi.",
+    "use": "Kullan",
+    "songs": "Bu bölgede yükselen şarkılar",
+    "songsNote": "Kullanma hakkın varsa şarkıyı kendin ekle — liste sadece neyin tuttuğunu gösterir.",
+    "source": "YouTube popüler listeleri ve Apple Music'in en çok dinlenenlerinden, {date}. TikTok verisi bize açık değil; oradaki trendler biraz önde olabilir.",
+    "status": {
+      "rising": "Yükseliyor",
+      "peak": "Zirvede",
+      "fading": "Düşüyor"
+    },
+    "kind": {
+      "topic": "Konu",
+      "format": "Format",
+      "sound": "Ses",
+      "person": "Kişi"
+    }
   }
 }
