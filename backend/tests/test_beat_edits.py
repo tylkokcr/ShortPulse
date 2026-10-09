@@ -232,9 +232,10 @@ def test_shot_size_is_read_from_how_much_of_the_frame_moves():
     assert clip.scale_at(len(clip.scores) - 10) == "close"
 
 
-def test_the_build_up_is_wide_and_the_drop_is_a_close_up():
+def test_close_and_wide_take_turns_and_the_drop_is_a_close_up():
     """Raw movement would put the close-up everywhere: it moves ten times
-    as much. The wide shot still opens the edit."""
+    as much. The edit opens on a close-up — a hook — then close and wide
+    take turns, and the drop is a close-up."""
     clip = _two_sizes()
     grid = _grid(drop=20.0)
     plan = beat_edit.plan_edit(grid, [clip], 20.0, "energetic")
@@ -244,9 +245,11 @@ def test_the_build_up_is_wide_and_the_drop_is_a_close_up():
     for cut in plan.cuts:
         sizes.append(("wide" if cut.source_start < half else "close", round(t, 2)))
         t += cut.duration
-    before = [s for s, at in sizes if at < 20.0 - 0.01]
+    names = [s for s, _ in sizes]
     on_drop = [s for s, at in sizes if abs(at - 20.0) < 0.05]
-    assert before and all(s == "wide" for s in before)
+    assert names[0] == "close"
+    assert "wide" in names and names.count("close") >= 2
+    assert all(not (a == b == c) for a, b, c in zip(names, names[1:], names[2:], strict=False))
     assert on_drop == ["close"]
 
 
@@ -581,3 +584,61 @@ def test_ramps_go_on_close_ups_not_wide_shots():
     assert ramped and all(c.source_start >= half for c in ramped)
     assert all(c.close_crop for c in plan.cuts if c.source_start >= half)
     assert not any(c.close_crop for c in plan.cuts if c.source_start < half)
+
+
+def test_another_try_leans_away_from_the_last_edits_shots():
+    rate = beat_edit._MOTION_FPS
+    seconds = 300.0
+    cuts = [int(t * rate) for t in range(4, 300, 4)]
+    scores = np.random.default_rng(5).random(int(seconds * rate)) + 1.0
+    clip = beat_edit.ClipMotion(Path("reel.mp4"), seconds, scores, cuts=cuts, width=1920, height=1080)
+    grid = _grid(seconds=120.0)
+    first = beat_edit.plan_edit(grid, [clip], 20.0, "energetic", seed=1)
+    used = [(c.source_start, c.source_start + c.duration * c.speed) for c in first.cuts]
+    again = beat_edit.plan_edit(grid, [clip], 20.0, "energetic", seed=2, history={clip.path: used})
+
+    def overlaps(c):
+        s, e = c.source_start, c.source_start + c.duration * c.speed
+        return any(not (e <= a or s >= b) for a, b in used)
+
+    assert sum(overlaps(c) for c in again.cuts) <= len(again.cuts) // 4
+
+
+async def test_a_close_up_without_a_face_goes_back_to_the_blurred_frame(monkeypatch):
+    from app.core.config import get_settings
+    from app.services import reframe, render_manager
+
+    plan = beat_edit.EditPlan(
+        0.0,
+        3.0,
+        [
+            beat_edit.Cut(Path("a.mp4"), 1.0, 1.0, landscape=True, close_crop=True, focus_x=0.2),
+            beat_edit.Cut(Path("a.mp4"), 5.0, 1.0, landscape=True, close_crop=True, focus_x=0.2),
+        ],
+    )
+    motion = [beat_edit.ClipMotion(Path("a.mp4"), 10.0, np.ones(120), width=1920, height=1080)]
+    answers = iter([[], [reframe.Sample(0.0, 0.7), reframe.Sample(0.3, 0.72)]])
+
+    async def track(*args, **kwargs):
+        return next(answers)
+
+    monkeypatch.setattr(reframe, "is_available", lambda: True)
+    monkeypatch.setattr(reframe, "track_subject", track)
+    await render_manager._frame_close_ups_on_faces(plan, motion, get_settings())
+    smear, face = plan.cuts
+    assert not smear.close_crop and smear.zoom == beat_edit.NEAR_ZOOM
+    assert face.close_crop and face.focus_x == 0.72
+
+
+def test_an_edit_is_remembered_by_its_footage(monkeypatch, tmp_path):
+    from app.core.config import get_settings
+    from app.services import render_manager
+
+    monkeypatch.setattr(get_settings(), "storage_root", tmp_path / "projects")
+    clip = tmp_path / "clip.mp4"
+    clip.write_bytes(b"x" * 5000)
+    copy = tmp_path / "same-footage-other-name.mp4"
+    copy.write_bytes(b"x" * 5000)
+    plan = beat_edit.EditPlan(0.0, 2.0, [beat_edit.Cut(clip, 3.0, 2.0)])
+    render_manager._remember_edit(plan, get_settings())
+    assert render_manager._edit_history([copy], get_settings()) == {copy: [(3.0, 5.0)]}

@@ -202,6 +202,10 @@ _VARIETY_FLOOR = 0.45
 # How far into a wide shot a landscape frame zooms, towards its movement:
 # at the plain blurred framing the players were specks.
 WIDE_ZOOM = 1.5
+# A close or medium shot with no face to crop to stays in the blurred
+# frame but closer than a wide one: the action fills it, and a whip pan in
+# the source still has its edges around it rather than filling the screen.
+NEAR_ZOOM = 1.9
 
 
 def _phase_shift(a: np.ndarray, b: np.ndarray) -> tuple[int, int]:
@@ -384,6 +388,7 @@ class ClipMotion:
         prefer: str | tuple[str, ...] | None = None,
         spread_s: float = 0.0,
         rng: random.Random | None = None,
+        used_before: list[tuple[float, float]] | None = None,
     ) -> float | None:
         """Start of the best `length_s` stretch that sits inside one of the
         clip's own shots and overlaps nothing in `avoid`; None if no shot
@@ -423,6 +428,11 @@ class ClipMotion:
                 if spread_s > 0 and avoid:
                     gap = min(max(a - end, start - b, 0.0) for a, b in avoid)
                     score *= 0.35 + 0.65 * min(1.0, gap / spread_s)
+                if used_before and any(not (end <= a or start >= b) for a, b in used_before):
+                    # Shown in one of the last edits of this footage: still
+                    # possible, much less likely, so another try is another
+                    # edit rather than the same strongest moments again.
+                    score *= 0.25
                 level = rank.get(self.scale_at(index + n // 2), len(order))
                 if level < len(order) and self.still(start, length_s):
                     # Right size, nothing in it: only if nothing else is left.
@@ -663,6 +673,7 @@ def plan_edit(
     style: str = "energetic",
     music_start: float | None = None,
     seed: int | None = None,
+    history: dict[Path, list[tuple[float, float]]] | None = None,
 ) -> EditPlan:
     """Which clip, which stretch and which effect sits on each beat.
 
@@ -745,22 +756,30 @@ def plan_edit(
             clip = order[turn % len(order)]
 
         source_len = length * speed
-        # A mix of shot sizes, shaped by the music: wide and medium while it
-        # builds, the close-up on the drop, then close-ups broken up by wide
-        # ones. Never the same size three times running.
-        after = drop is not None and start >= drop - 0.01
+        # A mix of shot sizes: a close-up to open and on the drop, close-ups
+        # and wide shots in turn everywhere else. Never the same size three
+        # times running.
         prefer: tuple[str, ...]
-        if is_drop:
+        if is_drop or not cuts:
+            # The drop, and the opening: the first second decides whether
+            # anyone watches the second, and a field of small players
+            # does not decide it. A close-up does.
             prefer = ("close", "medium")
-        elif after:
-            prefer = ("wide", "medium") if last_scales[-1:] == ["close"] else ("close", "medium")
         else:
-            prefer = ("medium", "wide") if last_scales[-1:] == ["wide"] else ("wide", "medium")
+            # Close and wide in turn, before the drop as after it: the
+            # build-up is tension — faces — broken by the field it is
+            # happening on. A close-up only keeps its full-frame crop on a
+            # face (render_manager), so this no longer fills the build-up
+            # with smears.
+            prefer = ("wide", "medium") if last_scales[-1:] == ["close"] else ("close", "medium")
         if len(last_scales) >= 2 and last_scales[-1] == last_scales[-2] == prefer[0]:
             prefer = ("medium", *[p for p in prefer if p != "medium"])
 
         spread = max(2.0, min(30.0, clip.duration_s / max(1.0, len(points) * 1.2)))
-        src = clip.busiest(source_len, used[clip.path], prefer=prefer, spread_s=spread, rng=rng)
+        src = clip.busiest(
+            source_len, used[clip.path], prefer=prefer, spread_s=spread, rng=rng,
+            used_before=(history or {}).get(clip.path),
+        )
         if src is None:
             # No shot of this clip is long enough at this speed. Slow its
             # longest free shot to fill the cut if half speed is enough;

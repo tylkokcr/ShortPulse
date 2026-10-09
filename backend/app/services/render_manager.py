@@ -95,32 +95,102 @@ def _hosted_transcription(settings: Settings, audio_s: float) -> bool:
     return False
 
 
+# How many of a clip's last edits are remembered (see _edit_history).
+_HISTORY_EDITS = 3
+
+
+def _footage_key(path: Path) -> str:
+    """The same footage under any name: its size and the hash of its first
+    and last megabyte. Re-uploading a file, or picking it from My files
+    again, is recognised; reading the whole of a 1GB file is not needed."""
+    import hashlib
+
+    size = path.stat().st_size
+    digest = hashlib.sha1(str(size).encode())
+    with path.open("rb") as f:
+        digest.update(f.read(1 << 20))
+        if size > 2 << 20:
+            f.seek(-(1 << 20), 2)
+            digest.update(f.read(1 << 20))
+    return digest.hexdigest()
+
+
+def _history_dir(settings: Settings) -> Path:
+    return Path(settings.storage_root).parent / "beat_history"
+
+
+def _edit_history(clips: list[Path], settings: Settings) -> dict[Path, list[tuple[float, float]]]:
+    """For each clip, the stretches its last few edits used — so another
+    try leans away from them (beat_edit.ClipMotion.busiest)."""
+    history: dict[Path, list[tuple[float, float]]] = {}
+    for clip in clips:
+        try:
+            path = _history_dir(settings) / f"{_footage_key(clip)}.json"
+            if path.is_file():
+                edits = json.loads(path.read_text())
+                history[clip] = [tuple(w) for edit in edits for w in edit]
+        except (OSError, ValueError):
+            continue
+    return history
+
+
+def _remember_edit(plan, settings: Settings) -> None:
+    by_clip: dict[Path, list[list[float]]] = {}
+    for cut in plan.cuts:
+        by_clip.setdefault(cut.clip, []).append(
+            [round(cut.source_start, 2), round(cut.source_start + cut.duration * cut.speed, 2)]
+        )
+    folder = _history_dir(settings)
+    for clip, windows in by_clip.items():
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+            path = folder / f"{_footage_key(clip)}.json"
+            edits = json.loads(path.read_text()) if path.is_file() else []
+            path.write_text(json.dumps((edits + [windows])[-_HISTORY_EDITS:]))
+        except (OSError, ValueError):
+            logger.warning("Could not remember the edit of %s", clip.name)
+
+
 async def _frame_close_ups_on_faces(plan, motion: list, settings: Settings) -> None:
     """Centre each close-up crop on the face in it, where there is one.
 
-    The planner frames a close-up on where the movement is, which on a
-    player turning or a crowd behind him is not his face. A face found in
-    the stretch the cut uses wins; none found leaves the planner's
-    framing. Best-effort and quick: a few frames a second of a second or
+    The planner marks a close-up where the movement fills the frame; only
+    a face found in the stretch the cut uses keeps it as a full-frame
+    crop, centred on that face. Without one it goes back to the blurred
+    frame, a little closer. Quick: a few frames a second of a second or
     two per cut.
     """
+    from app.engines import beat_edit
+
     if not reframe.is_available():
+        # No detector: no way to tell a face from a smear, so no crops.
+        for cut in plan.cuts:
+            if cut.close_crop:
+                cut.close_crop, cut.zoom = False, beat_edit.NEAR_ZOOM
         return
     sizes = {m.path: (m.width, m.height) for m in motion}
     for cut in plan.cuts:
         if not cut.close_crop or cut.clip not in sizes:
             continue
+        # Only a face earns the full-frame crop. Without one the planner's
+        # "close" was often a whip pan in the source — and a third of its
+        # width was a smear of shirt or advertising board.
+        found = False
         width, height = sizes[cut.clip]
         try:
             samples = await reframe.track_subject(
                 cut.clip, cut.source_start, max(cut.duration * cut.speed, 0.3),
                 width, height, settings.ffmpeg_binary,
             )
-        except Exception:  # noqa: BLE001 - the planner's framing stands
-            continue
-        if samples:
+        except Exception:  # noqa: BLE001 - treated as no face found
+            samples = []
+        if len(samples) >= 2:
             centres = sorted(s.centre for s in samples)
             cut.focus_x = centres[len(centres) // 2]
+            found = True
+        if not found:
+            cut.close_crop = False
+            cut.zoom = beat_edit.NEAR_ZOOM
 
 
 async def _transcribe(
@@ -746,8 +816,10 @@ async def run_beat_edit_pipeline(project: Project, settings: Settings) -> None:
                 # footage tried again, or in another style, is not the same
                 # twenty shots in the same order.
                 seed=uuid.UUID(project_id).int & 0xFFFFFFFF,
+                history=_edit_history(clips, settings),
             )
             await _frame_close_ups_on_faces(plan, motion, settings)
+            _remember_edit(plan, settings)
 
         await _emit(
             project_id,
