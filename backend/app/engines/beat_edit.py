@@ -26,6 +26,7 @@ import math
 import random
 import subprocess
 from dataclasses import dataclass, field
+from functools import partial
 from pathlib import Path
 
 import numpy as np
@@ -631,25 +632,173 @@ class Style:
     # The speed ramp, and how often a cut gets one (every nth eligible cut).
     ramp: tuple[tuple[float, float], ...] | None = None
     ramp_every: int = 0
+    # How long one moment runs on the timeline, and how many of the
+    # source's own consecutive shots it may span (a move and its replay).
+    moment_min_s: float = 1.4
+    moment_max_s: float = 3.2
+    moment_shots: int = 1
 
 
 STYLES: dict[str, Style] = {
-    # Two beats a cut after the drop, not one: at one, 120 BPM is a new
-    # shot every half second, which reads as noise rather than energy.
+    # Each cut is a whole moment — a move from its start to its end —
+    # rounded to the beats, never a beat-length slice of one. Energetic is
+    # the hits and the flashes, not the shortest cuts: at a cut every beat
+    # nobody could tell what had happened.
     "energetic": Style(
-        4, 2, "punch", ("flash", "rgbsplit", "shake"), 0.5, "shake", "grade",
-        close_crop_scales=("close", "medium"), ramp=RAMP_HARD, ramp_every=2,
+        4, 2, "punch", ("flash", "rgbsplit", "shake"), 0.75, "shake", "grade",
+        close_crop_scales=("close", "medium"),
+        moment_min_s=1.4, moment_max_s=3.2, moment_shots=1,
     ),
-    # Long enough to read a move from start to finish: two bars before the
-    # drop, one after — about four and two seconds at 120 BPM. At two and
-    # one beats it was cutting every second, which reads as fast however
-    # soft the grade.
     "cinematic": Style(
-        8, 4, "drift", ("softflash",), 0.5, None, "grade_film",
-        close_crop_scales=("close", "medium"), ramp=RAMP_SOFT, ramp_every=3,
+        8, 4, "drift", ("softflash",), 0.75, None, "grade_film",
+        close_crop_scales=("close", "medium"),
+        moment_min_s=2.2, moment_max_s=5.0, moment_shots=2,
     ),
-    "calm": Style(8, 8, "drift", (), 1.0, None, "grade_soft", close_crop_scales=("close",)),
+    "calm": Style(
+        8, 8, "drift", (), 1.0, None, "grade_soft", close_crop_scales=("close",),
+        moment_min_s=3.0, moment_max_s=6.5, moment_shots=3,
+    ),
 }
+
+
+# How close an action shot of a landscape source is framed: the whole move
+# in view, a little closer than the plain blurred frame.
+ACTION_ZOOM = 1.25
+# A moment is stretched or squeezed to the beats by at most this much.
+_SPEED_RANGE = (0.85, 1.2)
+
+
+@dataclass
+class Moment:
+    """One run of the source's own shots that reads as a single thing."""
+
+    index: int
+    clip: ClipMotion
+    start: float
+    end: float
+    score: float
+    close: bool
+
+    @property
+    def length(self) -> float:
+        return self.end - self.start
+
+
+def _add_moment(
+    out: list[Moment], clip: ClipMotion, per_sample: np.ndarray, a: float, b: float
+) -> None:
+    lo = int(a * _MOTION_FPS)
+    hi = max(lo + 1, int(b * _MOTION_FPS))
+    score = float(np.mean(per_sample[lo:hi])) if hi <= len(per_sample) else 0.0
+    middle = int((a + b) / 2 * _MOTION_FPS)
+    out.append(Moment(len(out), clip, a, b, score, clip.scale_at(middle) == "close"))
+
+
+def _moments(clips: list[ClipMotion], look: Style) -> list[Moment]:
+    """Every candidate moment: each of the clips' own shots, and runs of up
+    to `look.moment_shots` consecutive ones, long enough to be a moment
+    and not much longer than one. A shot far longer than a moment — a
+    single uncut video — is offered as overlapping stretches of it."""
+    out: list[Moment] = []
+    longest = look.moment_max_s * 1.4
+    for clip in clips:
+        shots = clip.shots()
+        add = partial(_add_moment, out, clip, clip._window_scores(1))
+
+        for n, (a, _b) in enumerate(shots):
+            for span in range(1, look.moment_shots + 1):
+                if n + span > len(shots):
+                    break
+                b = shots[n + span - 1][1]
+                if b - a > longest:
+                    if span == 1:
+                        step = look.moment_max_s / 2
+                        t = a
+                        while t + look.moment_max_s <= b:
+                            add(t, t + look.moment_max_s)
+                            t += step
+                    break
+                if b - a >= look.moment_min_s * 0.75:
+                    add(a, b)
+    return out
+
+
+def _pick_moment(
+    moments: list[Moment],
+    role: str,
+    taken: set[int],
+    used: dict[Path, list[tuple[float, float]]],
+    history: dict[Path, list[tuple[float, float]]],
+    last_clip: Path | None,
+    rng: random.Random | None,
+    spread: dict[Path, float] | None = None,
+) -> Moment | None:
+    """The moment for a role, from those not overlapping anything used.
+    The hero is the strongest action; others are drawn by weight with a
+    seed, so another edit of the same footage is another edit."""
+
+    def clear(m: Moment) -> bool:
+        return m.index not in taken and all(
+            m.end <= a or m.start >= b for a, b in used.get(m.clip.path, [])
+        )
+
+    def weight(m: Moment) -> float:
+        w = m.score
+        mine = used.get(m.clip.path, [])
+        if mine:
+            # Spread over the footage: a long video is drawn on across its
+            # length, not from its first good minute.
+            reach = (spread or {}).get(m.clip.path, 2.0)
+            gap = min(max(a - m.end, m.start - b, 0.0) for a, b in mine)
+            w *= 0.35 + 0.65 * min(1.0, gap / reach)
+        if any(not (m.end <= a or m.start >= b) for a, b in history.get(m.clip.path, [])):
+            w *= 0.25
+        if m.clip.path == last_clip and len({x.clip.path for x in moments}) > 1:
+            w *= 0.2
+        return w
+
+    pool = [m for m in moments if clear(m)]
+    if not pool:
+        return None
+    wanted_close = role == "reaction"
+    fitting = [m for m in pool if m.close == wanted_close] if role != "hero" else [
+        m for m in pool if not m.close
+    ]
+    pool = fitting or pool
+    ranked = sorted(pool, key=lambda m: -weight(m))
+    if role == "hero" or rng is None:
+        return ranked[0]
+    top = weight(ranked[0])
+    near = [m for m in ranked if weight(m) >= _VARIETY_FLOOR * top][:_VARIETY_POOL]
+    return rng.choices(near, weights=[max(weight(m), 1e-6) ** 2 for m in near], k=1)[0]
+
+
+def _fit_to_beats(
+    moment: Moment, period: float, look: Style, limit: int, is_drop: bool
+) -> tuple[int, float, float]:
+    """How many beats a moment takes, how much of it is read and at what
+    speed: the beat count nearest its length, within the style's range and
+    `limit`, played between 0.85x and 1.2x so it fills them exactly — the
+    hero on the drop a little slower."""
+    lo, hi = _SPEED_RANGE
+    if is_drop:
+        lo, hi = look.drop_speed * 0.9, look.drop_speed * 1.1 if look.drop_speed < 1 else hi
+    usable = moment.length - 0.08
+    min_b = max(1, math.ceil(look.moment_min_s / period - 0.15))
+    max_b = max(min_b, math.floor(look.moment_max_s / period + 0.15))
+    ideal = round(usable / (period * (lo + hi) / 2))
+    beats_n = min(max(ideal, min_b), max_b, max(1, limit))
+    # Never leave a sliver before the drop or the end: a beat or two left
+    # over is taken into this cut, or left as a whole moment's worth for
+    # the next one — not played as half a second of something.
+    rest = limit - beats_n
+    if 0 < rest < min_b:
+        beats_n = limit if limit <= max_b + min_b - 1 else limit - min_b
+    timeline_len = beats_n * period
+    # Stretched a little further than usual when it had to take the
+    # leftover beats, rather than cut short.
+    speed = min(max(usable / timeline_len, min(lo, 0.7)), hi)
+    return beats_n, timeline_len * speed, speed
 
 
 def default_start(grid: BeatGrid, target_s: float) -> float:
@@ -706,161 +855,106 @@ def plan_edit(
     downbeats = set(round(d, 3) for d in grid.downbeats)
     drop = grid.drop_s if grid.drop_s is not None and music_start < grid.drop_s < music_end else None
 
-    # At a fast tempo a cut on every beat is too fast to read.
     period = 60.0 / grid.tempo_bpm
-    after_step = look.beats_after_drop * (1 if period >= 0.42 else 2)
-    before_step = look.beats_before_drop
-    points: list[float] = []
-    i = 0
-    while i < len(timeline) - 1:
-        points.append(timeline[i])
-        after_drop = drop is not None and timeline[i] >= drop - 0.01
-        nxt = i + (after_step if after_drop else before_step)
-        # Never step over the drop: the drop always starts a cut.
-        if drop is not None and not after_drop:
-            drop_index = next((j for j, b in enumerate(timeline) if b >= drop - 0.01), None)
-            if drop_index is not None and i < drop_index < nxt:
-                nxt = drop_index
-        i = nxt
-    points.append(timeline[-1])
-
+    drop_index = (
+        next((j for j, b in enumerate(timeline) if b >= drop - 0.01), None) if drop is not None else None
+    )
+    moments = _moments(clips, look)
+    if not moments:
+        raise ValueError("None of those clips has a moment long enough to cut to.")
     used: dict[Path, list[tuple[float, float]]] = {c.path: [] for c in clips}
-    order = sorted(clips, key=lambda c: -float(c.scores.mean()))
-    if rng is not None:
-        # The busiest clip first only when nobody asked for variety.
-        rng.shuffle(order)
+    # How far apart a clip's moments are pushed: its length over the number
+    # of moments this edit will take from it, roughly.
+    expected = max(4.0, target_s / ((look.moment_min_s + look.moment_max_s) / 2))
+    reach = {
+        c.path: max(2.0, min(60.0, c.duration_s * len(clips) / (expected * 1.2))) for c in clips
+    }
+    taken: set[int] = set()
     cuts: list[Cut] = []
-    last: Path | None = None
-    turn = 0
-    beat_set = [b for b in timeline]
-    # The slowest a shot is stretched to fill a cut. Past half speed,
-    # without frame interpolation, motion stutters.
-    min_speed = 0.5
-    queue = [(points[k], points[k + 1]) for k in range(len(points) - 1)]
-    last_scales: list[str] = []
-    k = 0
-    ramped_turn = 0
-    while queue:
-        start, end = queue.pop(0)
-        length = end - start
-        if length < 0.08:
-            continue
-        is_drop = drop is not None and abs(start - drop) < 0.05
-        speed = look.drop_speed if is_drop else 1.0
-        ramp = None
-
-        # Every clip in turn, busiest first, never the same one twice running.
-        clip = order[turn % len(order)]
-        if clip.path == last and len(order) > 1:
-            turn += 1
-            clip = order[turn % len(order)]
-
-        source_len = length * speed
-        # A mix of shot sizes: a close-up to open and on the drop, close-ups
-        # and wide shots in turn everywhere else. Never the same size three
-        # times running.
-        prefer: tuple[str, ...]
-        if is_drop or not cuts:
-            # The drop, and the opening: the first second decides whether
-            # anyone watches the second, and a field of small players
-            # does not decide it. A close-up does.
-            prefer = ("close", "medium")
+    i = 0
+    last_clip: Path | None = None
+    since_reaction = 0
+    while i < len(timeline) - 1:
+        is_drop = drop_index is not None and i == drop_index
+        after = drop_index is not None and i >= drop_index
+        remaining = len(timeline) - 1 - i
+        # The story: a reaction to open, action building to the hero moment
+        # on the drop, action after it with a reaction now and then, and a
+        # reaction to close. A reaction is a close shot — a face, if one is
+        # found when it is framed — and an action shot shows the whole move.
+        if not cuts:
+            role = "reaction"
+        elif is_drop:
+            role = "hero"
+        elif remaining * period <= look.moment_max_s * 1.3:
+            # What is left is one moment's worth: the last cut, a reaction.
+            role = "reaction"
+        elif since_reaction >= (2 if after else 3):
+            role = "reaction"
         else:
-            # Close and wide in turn, before the drop as after it: the
-            # build-up is tension — faces — broken by the field it is
-            # happening on. A close-up only keeps its full-frame crop on a
-            # face (render_manager), so this no longer fills the build-up
-            # with smears.
-            prefer = ("wide", "medium") if last_scales[-1:] == ["close"] else ("close", "medium")
-        if len(last_scales) >= 2 and last_scales[-1] == last_scales[-2] == prefer[0]:
-            prefer = ("medium", *[p for p in prefer if p != "medium"])
-
-        spread = max(2.0, min(30.0, clip.duration_s / max(1.0, len(points) * 1.2)))
-        src = clip.busiest(
-            source_len, used[clip.path], prefer=prefer, spread_s=spread, rng=rng,
-            used_before=(history or {}).get(clip.path),
+            role = "action"
+        # How far this cut may run: to the drop, to the end, or a moment's
+        # longest.
+        limit = remaining
+        if drop_index is not None and i < drop_index:
+            limit = drop_index - i
+        moment = _pick_moment(
+            moments, role, taken, used, history or {}, last_clip, rng, reach,
         )
-        if src is None:
-            # No shot of this clip is long enough at this speed. Slow its
-            # longest free shot to fill the cut if half speed is enough;
-            # if not, the cut is longer than this footage can hold in one
-            # piece, so it becomes two cuts at the beat nearest its middle
-            # — a cut on the beat rather than one the source makes for us.
-            shot = clip.longest_free_shot(used[clip.path])
-            available = max(0.1, (shot[1] - shot[0] - 0.08) if shot else clip.duration_s - 0.1)
-            inside = [b for b in beat_set if start + 0.2 < b < end - 0.2]
-            if available / length < min_speed and inside:
-                middle = min(inside, key=lambda b: abs(b - (start + end) / 2))
-                queue[:0] = [(start, middle), (middle, end)]
-                continue
-            # No beat to split on: stretch further rather than cut mid-beat.
-            floor = min_speed if available / length >= min_speed else 0.25
-            ramp = None  # a stretched shot is slow already
-            speed = max(floor, min(speed, available / length))
-            source_len = length * speed
-            src = (shot[0] + 0.04) if shot else 0.0
-            if src + source_len > clip.duration_s:
-                src = max(0.0, clip.duration_s - source_len - 0.05)
-        turn += 1
+        if moment is None:
+            break
+        beats_n, source_len, speed = _fit_to_beats(moment, period, look, limit, is_drop)
+        end_i = min(i + beats_n, len(timeline) - 1)
+        length = timeline[end_i] - timeline[i]
+        if length < 0.08:
+            break
+        source_len = min(source_len, length * speed)
+        speed = source_len / length
+        # The end of the moment is kept: the source cut after its payoff, and
+        # so does this — a cut that ends early is the shot before the goal.
+        src = moment.end - 0.04 - source_len
+        if role == "reaction":
+            src = moment.start + max(0.0, (moment.length - source_len) / 2)
+        src = max(moment.start, src)
+        clip = moment.clip
+        taken.add(moment.index)
+        used[clip.path].append((src, src + source_len))
 
         effects: list[str] = [look.grade]
+        start_t = timeline[i]
         if is_drop:
             effects += list(look.drop_effects)
-        elif round(start, 3) in downbeats:
+        elif round(start_t, 3) in downbeats:
             effects.append(look.bar_effect)
-        elif look.after_drop_extra and drop is not None and start > drop and k % 3 == 0:
+        elif look.after_drop_extra and after and len(cuts) % 3 == 0:
             effects.append(look.after_drop_extra)
         else:
             effects.append("drift")
-        k += 1
 
         scale = clip.scale_at(int((src + source_len / 2) * _MOTION_FPS))
-        # The ramp goes where it reads, judged on the shot actually taken:
-        # a close or medium one, every so often. On a wide shot the slow
-        # piece is a field of small players drifting; on a close-up it is
-        # the moment. The drop has its own slow motion. A ramp reads more
-        # source than a plain cut, so it is only applied when that much
-        # more fits in the same shot.
-        if (
-            look.ramp
-            and look.ramp_every
-            and not is_drop
-            and speed == 1.0
-            and length >= _RAMP_MIN_S
-            and scale in ("close", "medium")
-        ):
-            if ramped_turn % look.ramp_every == 0:
-                need = length * ramp_speed(look.ramp)
-                if clip.fits(src, need, used[clip.path]):
-                    ramp = look.ramp
-                    speed = ramp_speed(ramp)
-                    source_len = need
-            ramped_turn += 1
-        last_scales.append(scale)
-        used[clip.path].append((src, src + source_len))
+        close_crop = clip.landscape and role == "reaction" and scale in look.close_crop_scales
         zoom, focus_x = 1.0, 0.5
-        close_crop = clip.landscape and scale in look.close_crop_scales
         if close_crop:
-            # Where the movement is; the render refines it to a face when
-            # one is found (render_manager), which is what a close-up of a
-            # player is framed on.
             focus_x = clip.focus_at(src, source_len)
-        elif clip.landscape and scale == "wide":
-            # Half way from the middle towards the movement: the camera
-            # already follows the ball, and the movement's centre is
-            # pulled about by players far from it.
-            zoom = WIDE_ZOOM
+        elif clip.landscape:
+            # The whole move in view, a little closer than the plain frame:
+            # what is happening has to be readable before it is pretty.
+            zoom = ACTION_ZOOM
             focus_x = 0.5 + 0.5 * (clip.focus_at(src, source_len) - 0.5)
         cuts.append(
             Cut(
                 clip=clip.path, source_start=src, duration=length, speed=speed,
                 effects=effects, landscape=clip.landscape, zoom=zoom, focus_x=focus_x,
-                close_crop=close_crop, ramp=ramp,
+                close_crop=close_crop,
             )
         )
-        last = clip.path
+        since_reaction = 0 if role == "reaction" else since_reaction + 1
+        last_clip = clip.path
+        i = end_i
 
-    return EditPlan(music_start=music_start, duration=points[-1] - points[0], cuts=cuts)
+    return EditPlan(
+        music_start=music_start, duration=timeline[i] - timeline[0], cuts=cuts
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -196,16 +196,6 @@ def test_a_pan_does_not_read_as_cuts():
     assert beat_edit._source_cuts(changes) == []
 
 
-@pytest.mark.parametrize("style", ["energetic", "cinematic", "calm"])
-def test_no_shot_of_the_edit_contains_a_cut_from_the_source(style):
-    clip = _compilation_motion()
-    plan = beat_edit.plan_edit(_grid(), [clip], 15.0, style)
-    source_cuts = [c / beat_edit._MOTION_FPS for c in clip.cuts]
-    for cut in plan.cuts:
-        start, end = cut.source_start, cut.source_start + cut.duration * cut.speed
-        assert not any(start + 0.05 < c < end - 0.05 for c in source_cuts), (style, start, end)
-
-
 def test_a_landscape_clip_is_marked_for_the_blurred_frame():
     plan = beat_edit.plan_edit(_grid(), [_compilation_motion()], 10.0, "calm")
     assert all(cut.landscape for cut in plan.cuts)
@@ -230,27 +220,6 @@ def test_shot_size_is_read_from_how_much_of_the_frame_moves():
     clip = _two_sizes()
     assert clip.scale_at(10) == "wide"
     assert clip.scale_at(len(clip.scores) - 10) == "close"
-
-
-def test_close_and_wide_take_turns_and_the_drop_is_a_close_up():
-    """Raw movement would put the close-up everywhere: it moves ten times
-    as much. The edit opens on a close-up — a hook — then close and wide
-    take turns, and the drop is a close-up."""
-    clip = _two_sizes()
-    grid = _grid(drop=20.0)
-    plan = beat_edit.plan_edit(grid, [clip], 20.0, "energetic")
-    half = clip.duration_s / 2
-    t = plan.music_start
-    sizes = []
-    for cut in plan.cuts:
-        sizes.append(("wide" if cut.source_start < half else "close", round(t, 2)))
-        t += cut.duration
-    names = [s for s, _ in sizes]
-    on_drop = [s for s, at in sizes if abs(at - 20.0) < 0.05]
-    assert names[0] == "close"
-    assert "wide" in names and names.count("close") >= 2
-    assert all(not (a == b == c) for a, b, c in zip(names, names[1:], names[2:], strict=False))
-    assert on_drop == ["close"]
 
 
 def test_choices_are_spread_across_a_long_clip():
@@ -318,15 +287,6 @@ def test_the_seed_varies_the_shots_and_none_keeps_them():
     assert len(starts) > 1
     again = [beat_edit.plan_edit(_grid(), [clip], 15.0, "cinematic") for _ in range(2)]
     assert [c.source_start for c in again[0].cuts] == [c.source_start for c in again[1].cuts]
-
-
-def test_a_wide_landscape_shot_is_shown_closer():
-    plan = beat_edit.plan_edit(_grid(), [_two_sizes()], 15.0, "energetic")
-    wide = [c for c in plan.cuts if c.source_start < 60.0]
-    close = [c for c in plan.cuts if c.source_start >= 60.0]
-    assert wide and all(c.zoom == beat_edit.WIDE_ZOOM for c in wide)
-    assert close and all(c.zoom == 1.0 for c in close)
-    assert "crop=1080:ih:x=" in beat_edit._segment_filter(wide[0])
 
 
 async def test_a_library_track_can_be_read_before_the_edit(beat_app):
@@ -576,16 +536,6 @@ def test_a_ramped_close_up_fills_the_frame_and_keeps_its_length(tmp_path):
     assert abs(frames - 2.0 * beat_edit.FPS) <= 1
 
 
-def test_ramps_go_on_close_ups_not_wide_shots():
-    clip = _two_sizes()
-    plan = beat_edit.plan_edit(_grid(), [clip], 20.0, "energetic", seed=3)
-    half = clip.duration_s / 2
-    ramped = [c for c in plan.cuts if c.ramp]
-    assert ramped and all(c.source_start >= half for c in ramped)
-    assert all(c.close_crop for c in plan.cuts if c.source_start >= half)
-    assert not any(c.close_crop for c in plan.cuts if c.source_start < half)
-
-
 def test_another_try_leans_away_from_the_last_edits_shots():
     rate = beat_edit._MOTION_FPS
     seconds = 300.0
@@ -642,3 +592,52 @@ def test_an_edit_is_remembered_by_its_footage(monkeypatch, tmp_path):
     plan = beat_edit.EditPlan(0.0, 2.0, [beat_edit.Cut(clip, 3.0, 2.0)])
     render_manager._remember_edit(plan, get_settings())
     assert render_manager._edit_history([copy], get_settings()) == {copy: [(3.0, 5.0)]}
+
+
+def _source_cut_times(clip):
+    return [c / beat_edit._MOTION_FPS for c in clip.cuts]
+
+
+def test_an_energetic_cut_is_one_whole_shot_of_the_source_and_keeps_its_end():
+    """Each cut is a moment from its start to its end. The source was cut
+    just after each payoff, so a cut keeps the end of its shot — the one
+    before cut early was the shot before the goal."""
+    clip = _compilation_motion(shot_s=2.0, total_s=120.0)
+    plan = beat_edit.plan_edit(_grid(seconds=120.0), [clip], 20.0, "energetic")
+    bounds = [0.0, *_source_cut_times(clip), clip.duration_s]
+    for cut in plan.cuts:
+        start, end = cut.source_start, cut.source_start + cut.duration * cut.speed
+        assert not any(start + 0.05 < c < end - 0.05 for c in bounds), (start, end)
+        if not cut.close_crop:
+            assert min(abs(end - b) for b in bounds) < 0.15, (start, end)
+
+
+def test_no_cut_is_a_sliver():
+    clip = _compilation_motion(shot_s=2.0, total_s=120.0)
+    for style, floor in (("energetic", 1.3), ("cinematic", 2.0), ("calm", 2.5)):
+        plan = beat_edit.plan_edit(_grid(seconds=120.0), [clip], 30.0, style, seed=4)
+        assert min(c.duration for c in plan.cuts) >= floor, style
+        assert abs(plan.duration - 30.0) < 0.6
+
+
+def test_the_story_opens_and_closes_on_a_reaction_and_the_drop_is_the_strongest_move():
+    clip = _two_sizes()
+    grid = _grid(drop=20.0)
+    plan = beat_edit.plan_edit(grid, [clip], 20.0, "energetic")
+    half = clip.duration_s / 2
+    t = plan.music_start
+    roles = []
+    for cut in plan.cuts:
+        roles.append(("close" if cut.source_start >= half else "action", round(t, 2), cut.speed))
+        t += cut.duration
+    assert roles[0][0] == "close" and roles[-1][0] == "close"
+    [drop] = [r for r in roles if abs(r[1] - 20.0) < 0.05]
+    assert drop[0] == "action" and drop[2] < 1.0
+
+
+def test_an_action_shot_shows_the_whole_move():
+    clip = _compilation_motion(shot_s=2.0, total_s=120.0)
+    plan = beat_edit.plan_edit(_grid(seconds=120.0), [clip], 20.0, "energetic")
+    actions = [c for c in plan.cuts if not c.close_crop]
+    assert actions and all(c.zoom == beat_edit.ACTION_ZOOM and c.ramp is None for c in actions)
+    assert "crop=1080:ih:x=" in beat_edit._segment_filter(actions[0])
