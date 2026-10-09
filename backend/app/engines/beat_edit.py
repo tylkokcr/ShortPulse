@@ -1082,7 +1082,8 @@ def _ass_text(text: str) -> str:
 def title_ass(text: str, path: Path, duration: float) -> Path | None:
     """The opening title as an ASS file: bold white words with a warm glow,
     each fading and popping in after the last, on one or two lines in the
-    top third, then the whole line fading out. None when there is no text.
+    top band, above where a close-up puts the face, then
+    the whole line fading out. None when there is no text.
 
     Drawn by libass in the same pass as the closing fade, so it costs no
     extra encode — and in the font the captions ship with."""
@@ -1132,7 +1133,7 @@ def title_ass(text: str, path: Path, duration: float) -> Path | None:
         "Encoding\n"
         # White, a warm yellow glow (the outline, blurred), no box.
         "Style: Title,Montserrat,120,&H00FFFFFF,&H00FFFFFF,&H0000C8FF,&H00000000,"
-        "-1,-1,0,0,100,100,2,0,1,7,0,8,70,70,520,1\n\n"
+        "-1,-1,0,0,100,100,2,0,1,7,0,8,70,70,250,1\n\n"
         "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
         f"Dialogue: 0,{clock(TITLE_START_S)},{clock(end)},Title,,0,0,0,,"
         f"{{\\blur6\\fad(0,{fade_ms})}}{body}\n",
