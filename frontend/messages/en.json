@@ -929,7 +929,6 @@
       "titlePlaceholder": "What this video is called",
       "fieldDescription": "Description",
       "stockNotice": "The stock footage credits are added to the description automatically — the licence requires them.",
-      "hashtags": "Hashtags: {tags}",
       "post": "Post",
       "approve": "Approve",
       "queued": "Queued",
@@ -939,9 +938,14 @@
       "view": "View",
       "errors": {
         "start": "Couldn't start publishing",
-        "approve": "Couldn't approve that post."
+        "approve": "Couldn't approve that post.",
+        "suggest": "Couldn't write a suggestion just now."
       },
-      "fromYoutube": "This video was made from a YouTube link, so it can't be posted from ShortPulse. Download it above and post it yourself."
+      "fromYoutube": "This video was made from a YouTube link, so it can't be posted from ShortPulse. Download it above and post it yourself.",
+      "suggest": "Suggest",
+      "fieldTags": "Hashtags",
+      "needsTitle": "Write a title to post here",
+      "tiktokCopied": "Title, description and hashtags copied — TikTok takes the video as a draft without text, so paste them there."
     },
     "edit": {
       "notEditable": "This video was rendered before captions became editable. Re-render it to correct the text.",

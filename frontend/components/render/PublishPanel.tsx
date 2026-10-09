@@ -8,14 +8,16 @@ import {
   Eye,
   Loader2,
   Send,
+  Sparkles,
 } from "lucide-react";
 import clsx from "clsx";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   approvePost,
   getProjectPosts,
   getSocialConnections,
   publishProject,
+  suggestPostCopy,
 } from "@/lib/api";
 import { Link } from "@/i18n/navigation";
 import type { Project, SocialConnection, SocialPost } from "@/lib/types";
@@ -35,6 +37,20 @@ import { Card } from "@/components/ui/Card";
  * editable: the model produced it so that the automatic path always has
  * something to post with, not because it gets the last word.
  */
+// The names a project gets when nobody named it, which are no title.
+const GENERIC_NAMES = new Set(["beat edit", "uploaded video"]);
+
+/** A project name as a starting title: a file name as words, a generic
+ *  name as nothing. */
+function readableName(topic: string): string {
+  const name = topic
+    .replace(/\.(mp4|mov|m4v|webm|mkv)$/i, "")
+    .replace(/\s*\(\d+\)$/, "")
+    .replace(/_+/g, " ")
+    .trim();
+  return GENERIC_NAMES.has(name.toLowerCase()) ? "" : name.slice(0, 100);
+}
+
 export function PublishPanel({ project }: { project: Project }) {
   const [connections, setConnections] = useState<SocialConnection[] | null>(null);
   const t = useTranslations("app.publish");
@@ -44,8 +60,12 @@ export function PublishPanel({ project }: { project: Project }) {
   const [error, setError] = useState<string | null>(null);
 
   const copy = project.script?.post;
-  const [title, setTitle] = useState(copy?.title ?? "");
+  const locale = useLocale();
+  const [title, setTitle] = useState(copy?.title ?? readableName(project.config.topic));
   const [description, setDescription] = useState(copy?.description ?? "");
+  const [tags, setTags] = useState((copy?.hashtags ?? []).map((h) => `#${h}`).join(" "));
+  const [suggesting, setSuggesting] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const projectId = project.config.id;
 
@@ -96,16 +116,50 @@ export function PublishPanel({ project }: { project: Project }) {
     );
   }
 
+  const hashtags = tags
+    .split(/[\s,]+/)
+    .map((h) => h.replace(/^#/, "").trim())
+    .filter(Boolean)
+    .slice(0, 15);
+
+  async function suggest() {
+    setSuggesting(true);
+    setError(null);
+    try {
+      const s = await suggestPostCopy(projectId, locale);
+      if (s.title) setTitle(s.title);
+      if (s.description) setDescription(s.description);
+      if (s.hashtags.length) setTags(s.hashtags.map((h) => `#${h}`).join(" "));
+    } catch {
+      setError(t("errors.suggest"));
+    } finally {
+      setSuggesting(false);
+    }
+  }
+
   async function post(connection: SocialConnection) {
     setBusy(connection.id);
     setError(null);
+    setCopied(false);
+    if (connection.platform === "tiktok") {
+      // TikTok takes the video as a draft in the app's inbox and no text
+      // with it (see backend social/tiktok.py), so the words go to the
+      // clipboard — written now, while the click still counts as one.
+      const text = [title.trim(), description.trim(), hashtags.map((h) => `#${h}`).join(" ")]
+        .filter(Boolean)
+        .join("\n\n");
+      navigator.clipboard
+        ?.writeText(text)
+        .then(() => setCopied(true))
+        .catch(() => undefined);
+    }
     try {
       await publishProject({
         project_id: projectId,
         connection_id: connection.id,
         title: title.trim(),
         description: description.trim(),
-        hashtags: copy?.hashtags ?? [],
+        hashtags,
       });
       await refresh();
     } catch (err) {
@@ -132,9 +186,20 @@ export function PublishPanel({ project }: { project: Project }) {
       <h3 className="text-sm font-semibold">{t("title")}</h3>
 
       <div className="flex flex-col gap-2">
-        <label className="text-xs font-medium text-white/50" htmlFor="post-title">
-          {t("fieldTitle")}
-        </label>
+        <div className="flex items-center justify-between gap-2">
+          <label className="text-xs font-medium text-white/50" htmlFor="post-title">
+            {t("fieldTitle")}
+          </label>
+          <button
+            type="button"
+            onClick={suggest}
+            disabled={suggesting}
+            className="flex items-center gap-1 rounded border border-border px-2 py-0.5 text-[11px] text-white/60 hover:border-accent hover:text-white disabled:opacity-50"
+          >
+            {suggesting ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+            {t("suggest")}
+          </button>
+        </div>
         <input
           id="post-title"
           value={title}
@@ -163,14 +228,20 @@ export function PublishPanel({ project }: { project: Project }) {
             {t("stockNotice")}
           </p>
         )}
-        {copy?.hashtags?.length ? (
-          <p className="text-xs text-white/30">
-            {t("hashtags", { tags: copy.hashtags.map((h) => `#${h}`).join(" ") })}
-          </p>
-        ) : null}
+        <label className="mt-1 text-xs font-medium text-white/50" htmlFor="post-tags">
+          {t("fieldTags")}
+        </label>
+        <input
+          id="post-tags"
+          value={tags}
+          onChange={(e) => setTags(e.target.value)}
+          placeholder="#futbol #edit"
+          className="rounded-lg border border-border bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-accent focus:outline-none"
+        />
       </div>
 
       {error && <p className="text-xs text-red-400">{error}</p>}
+      {copied && <p className="text-xs text-live">{t("tiktokCopied")}</p>}
 
       <div className="flex flex-col gap-2 border-t border-border pt-4">
         {connections.map((connection) => {
@@ -192,7 +263,10 @@ export function PublishPanel({ project }: { project: Project }) {
                 <Button
                   size="sm"
                   variant="secondary"
-                  disabled={busy !== null || !title.trim()}
+                  // TikTok takes no title (it goes to the clipboard); the
+                  // others need one, and say so rather than just greying out.
+                  disabled={busy !== null || (connection.platform !== "tiktok" && !title.trim())}
+                  title={connection.platform !== "tiktok" && !title.trim() ? t("needsTitle") : undefined}
                   onClick={() => post(connection)}
                 >
                   {busy === connection.id ? (

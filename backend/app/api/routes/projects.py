@@ -21,11 +21,13 @@ from app.core.config import get_settings, project_dir
 from app.core.storage import discard_project_files
 from app.engines import render_engine, visual_engine
 from app.schemas.project import (
+    AUTO_LANGUAGE,
     CaptionTrack,
     EditSpec,
     Layout,
     LLMConfig,
     LLMProvider,
+    PostCopy,
     Project,
     ProjectConfig,
     ProjectStatus,
@@ -38,6 +40,7 @@ from app.services import (
     credits,
     editing,
     feedback,
+    post_copy,
     project_lock,
     project_store,
     regeneration,
@@ -616,6 +619,38 @@ class FeedbackRequest(BaseModel):
     rating: Literal["up", "down"]
     reason: str | None = None
     note: str | None = Field(default=None, max_length=1000)
+
+
+class PostCopyRequest(BaseModel):
+    # The reader's language, used when the video's own is not known (a
+    # beat edit has no speech to detect one from).
+    lang: str = Field(default="en", min_length=2, max_length=5)
+
+
+@router.post("/{project_id}/post-copy", response_model=PostCopy)
+async def suggest_post_copy(
+    project_id: str,
+    body: PostCopyRequest,
+    user_id: str | None = Depends(current_user_id),
+) -> PostCopy:
+    """A title, description and hashtags for a video that has none — an
+    upload, a clip or a beat edit — written from what is said in it."""
+    project = await _visible_project(project_id, user_id)
+    settings = get_settings()
+    spoken = project.config.language
+    lang = spoken if spoken and spoken != AUTO_LANGUAGE else body.lang
+    llm = LLMConfig(
+        provider=LLMProvider(settings.llm_provider),
+        model=settings.llm_model,
+        base_url=settings.ollama_base_url,
+        api_key=settings.openai_api_key,
+        temperature=0.7,
+    )
+    try:
+        return await post_copy.suggest(project, lang, llm)
+    except Exception as exc:  # noqa: BLE001 - the model failing is a 503, not a 500
+        logger.exception("Post copy for %s failed", project_id)
+        raise HTTPException(status_code=503, detail="Couldn't write a suggestion just now.") from exc
 
 
 @router.post("/{project_id}/feedback", response_model=Project)

@@ -929,7 +929,6 @@
       "titlePlaceholder": "Bu videonun adı",
       "fieldDescription": "Açıklama",
       "stockNotice": "Stok görüntü künyeleri açıklamaya otomatik eklenir — lisans bunu gerektiriyor.",
-      "hashtags": "Etiketler: {tags}",
       "post": "Paylaş",
       "approve": "Onayla",
       "queued": "Sırada",
@@ -939,9 +938,14 @@
       "view": "Görüntüle",
       "errors": {
         "start": "Yayınlama başlatılamadı",
-        "approve": "O gönderi onaylanamadı."
+        "approve": "O gönderi onaylanamadı.",
+        "suggest": "Şu an öneri yazılamadı."
       },
-      "fromYoutube": "Bu video bir YouTube linkinden yapıldı, o yüzden ShortPulse'tan paylaşılamaz. Yukarıdan indirip kendin paylaşabilirsin."
+      "fromYoutube": "Bu video bir YouTube linkinden yapıldı, o yüzden ShortPulse'tan paylaşılamaz. Yukarıdan indirip kendin paylaşabilirsin.",
+      "suggest": "Öner",
+      "fieldTags": "Etiketler",
+      "needsTitle": "Burada paylaşmak için bir başlık yaz",
+      "tiktokCopied": "Başlık, açıklama ve etiketler panoya kopyalandı — TikTok videoyu metinsiz taslak olarak alıyor, orada yapıştır."
     },
     "edit": {
       "notEditable": "Bu video, altyazılar düzenlenebilir olmadan önce render edildi. Metni düzeltmek için yeniden render al.",

@@ -929,7 +929,6 @@
       "titlePlaceholder": "Jak nazywa się ten film",
       "fieldDescription": "Opis",
       "stockNotice": "Podpisy materiałów stockowych są dodawane do opisu automatycznie — wymaga tego licencja.",
-      "hashtags": "Hashtagi: {tags}",
       "post": "Opublikuj",
       "approve": "Zatwierdź",
       "queued": "W kolejce",
@@ -939,9 +938,14 @@
       "view": "Zobacz",
       "errors": {
         "start": "Nie udało się rozpocząć publikowania",
-        "approve": "Nie udało się zatwierdzić tego posta."
+        "approve": "Nie udało się zatwierdzić tego posta.",
+        "suggest": "Nie udało się teraz zaproponować tekstu."
       },
-      "fromYoutube": "To wideo powstało z linku do YouTube, więc nie można go opublikować z ShortPulse. Pobierz je powyżej i opublikuj sam."
+      "fromYoutube": "To wideo powstało z linku do YouTube, więc nie można go opublikować z ShortPulse. Pobierz je powyżej i opublikuj sam.",
+      "suggest": "Zaproponuj",
+      "fieldTags": "Hashtagi",
+      "needsTitle": "Wpisz tytuł, aby tu opublikować",
+      "tiktokCopied": "Tytuł, opis i hashtagi skopiowane — TikTok przyjmuje wideo jako szkic bez tekstu, więc wklej je tam."
     },
     "edit": {
       "notEditable": "Ten film wyrenderowano, zanim napisy stały się edytowalne. Wyrenderuj go ponownie, aby poprawić tekst.",

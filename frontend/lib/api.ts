@@ -717,3 +717,14 @@ export function getTrendRegions(): Promise<{ enabled: boolean; regions: string[]
 export function getTrends(region: string, lang: string): Promise<import("./types").TrendReport> {
   return request(`/trends?region=${encodeURIComponent(region)}&lang=${encodeURIComponent(lang)}`);
 }
+
+/** A title, description and hashtags written for a video that has none. */
+export function suggestPostCopy(
+  projectId: string,
+  lang: string
+): Promise<{ title: string; description: string; hashtags: string[] }> {
+  return request(`/projects/${projectId}/post-copy`, {
+    method: "POST",
+    body: JSON.stringify({ lang }),
+  });
+}

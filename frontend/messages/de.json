@@ -929,7 +929,6 @@
       "titlePlaceholder": "Wie dieses Video heißt",
       "fieldDescription": "Beschreibung",
       "stockNotice": "Die Credits für das Stockmaterial werden automatisch zur Beschreibung hinzugefügt — die Lizenz verlangt sie.",
-      "hashtags": "Hashtags: {tags}",
       "post": "Posten",
       "approve": "Freigeben",
       "queued": "In der Warteschlange",
@@ -939,9 +938,14 @@
       "view": "Ansehen",
       "errors": {
         "start": "Veröffentlichen konnte nicht gestartet werden",
-        "approve": "Der Beitrag ließ sich nicht freigeben."
+        "approve": "Der Beitrag ließ sich nicht freigeben.",
+        "suggest": "Gerade konnte kein Vorschlag geschrieben werden."
       },
-      "fromYoutube": "Dieses Video wurde aus einem YouTube-Link gemacht und kann daher nicht über ShortPulse veröffentlicht werden. Lade es oben herunter und poste es selbst."
+      "fromYoutube": "Dieses Video wurde aus einem YouTube-Link gemacht und kann daher nicht über ShortPulse veröffentlicht werden. Lade es oben herunter und poste es selbst.",
+      "suggest": "Vorschlagen",
+      "fieldTags": "Hashtags",
+      "needsTitle": "Schreib einen Titel, um hier zu posten",
+      "tiktokCopied": "Titel, Beschreibung und Hashtags kopiert — TikTok nimmt das Video als Entwurf ohne Text, füge sie dort ein."
     },
     "edit": {
       "notEditable": "Dieses Video wurde gerendert, bevor Untertitel bearbeitbar waren. Rendere es neu, um den Text zu korrigieren.",
