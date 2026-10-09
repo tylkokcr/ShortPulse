@@ -95,6 +95,34 @@ def _hosted_transcription(settings: Settings, audio_s: float) -> bool:
     return False
 
 
+async def _frame_close_ups_on_faces(plan, motion: list, settings: Settings) -> None:
+    """Centre each close-up crop on the face in it, where there is one.
+
+    The planner frames a close-up on where the movement is, which on a
+    player turning or a crowd behind him is not his face. A face found in
+    the stretch the cut uses wins; none found leaves the planner's
+    framing. Best-effort and quick: a few frames a second of a second or
+    two per cut.
+    """
+    if not reframe.is_available():
+        return
+    sizes = {m.path: (m.width, m.height) for m in motion}
+    for cut in plan.cuts:
+        if not cut.close_crop or cut.clip not in sizes:
+            continue
+        width, height = sizes[cut.clip]
+        try:
+            samples = await reframe.track_subject(
+                cut.clip, cut.source_start, max(cut.duration * cut.speed, 0.3),
+                width, height, settings.ffmpeg_binary,
+            )
+        except Exception:  # noqa: BLE001 - the planner's framing stands
+            continue
+        if samples:
+            centres = sorted(s.centre for s in samples)
+            cut.focus_x = centres[len(centres) // 2]
+
+
 async def _transcribe(
     audio: Path,
     settings: Settings,
@@ -719,6 +747,7 @@ async def run_beat_edit_pipeline(project: Project, settings: Settings) -> None:
                 # twenty shots in the same order.
                 seed=uuid.UUID(project_id).int & 0xFFFFFFFF,
             )
+            await _frame_close_ups_on_faces(plan, motion, settings)
 
         await _emit(
             project_id,

@@ -148,9 +148,20 @@ def test_a_steady_click_track_is_read_at_its_tempo(tmp_path):
 
     # A click every half second: 120 BPM.
     subprocess.run(
-        [FFMPEG, "-nostdin", "-v", "error", "-y", "-f", "lavfi", "-i",
-         "sine=frequency=1000:duration=0.03,apad=pad_dur=0.47,aloop=loop=59:size=22050",
-         "-t", "30", str(click)],
+        [
+            FFMPEG,
+            "-nostdin",
+            "-v",
+            "error",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=1000:duration=0.03,apad=pad_dur=0.47,aloop=loop=59:size=22050",
+            "-t",
+            "30",
+            str(click),
+        ],
         check=True,
     )
     grid = beat_edit.analyze_beats(click, FFMPEG)
@@ -278,8 +289,13 @@ def _setup_then_play(seconds: float = 60.0) -> beat_edit.ClipMotion:
     scores = np.full(n, 4.0)
     scores[:third] = 1.0
     return beat_edit.ClipMotion(
-        Path("wides.mp4"), seconds, scores, cuts=[third, 2 * third],
-        width=1920, height=1080, activity=activity,
+        Path("wides.mp4"),
+        seconds,
+        scores,
+        cuts=[third, 2 * third],
+        width=1920,
+        height=1080,
+        activity=activity,
     )
 
 
@@ -332,8 +348,18 @@ async def test_an_uploaded_song_is_read_and_not_kept(beat_app, tmp_path):
 
     song = tmp_path / "song.wav"
     subprocess.run(
-        [FFMPEG, "-nostdin", "-v", "error", "-y", "-f", "lavfi", "-i",
-         "sine=frequency=220:duration=20", str(song)],
+        [
+            FFMPEG,
+            "-nostdin",
+            "-v",
+            "error",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=220:duration=20",
+            str(song),
+        ],
         check=True,
     )
     async with _client(app) as client:
@@ -357,9 +383,7 @@ def test_a_beat_edit_is_priced_by_its_length():
 
     def cost(seconds: float | None) -> int:
         spec = BeatEditSpec(clip_count=2, duration_s=seconds) if seconds else None
-        return credits.cost_for(
-            ProjectConfig(topic="x", source=ProjectSource.BEAT_EDIT, beat_edit=spec)
-        )
+        return credits.cost_for(ProjectConfig(topic="x", source=ProjectSource.BEAT_EDIT, beat_edit=spec))
 
     assert cost(10) == cost(15) == 3
     assert cost(30) == 5
@@ -374,26 +398,186 @@ def test_an_edit_ends_on_black_and_silence(tmp_path):
 
     clip = tmp_path / "clip.mp4"
     music = tmp_path / "music.wav"
-    subprocess.run([FFMPEG, "-nostdin", "-v", "error", "-y", "-f", "lavfi", "-i",
-                    "testsrc=size=640x360:rate=30:duration=4", "-pix_fmt", "yuv420p", str(clip)], check=True)
-    subprocess.run([FFMPEG, "-nostdin", "-v", "error", "-y", "-f", "lavfi", "-i",
-                    "sine=frequency=440:duration=6", str(music)], check=True)
+    subprocess.run(
+        [
+            FFMPEG,
+            "-nostdin",
+            "-v",
+            "error",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc=size=640x360:rate=30:duration=4",
+            "-pix_fmt",
+            "yuv420p",
+            str(clip),
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            FFMPEG,
+            "-nostdin",
+            "-v",
+            "error",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=440:duration=6",
+            str(music),
+        ],
+        check=True,
+    )
     plan = beat_edit.EditPlan(
-        music_start=0.0, duration=3.0,
+        music_start=0.0,
+        duration=3.0,
         cuts=[beat_edit.Cut(clip, 0.0, 1.5, landscape=True), beat_edit.Cut(clip, 2.0, 1.5, landscape=True)],
     )
     out = beat_edit.render_edit(plan, music, tmp_path / "edit.mp4", tmp_path / "work", FFMPEG)
 
     last = subprocess.run(
-        [FFMPEG, "-nostdin", "-v", "error", "-sseof", "-0.1", "-i", str(out), "-frames:v", "1",
-         "-vf", "scale=32:18,format=gray", "-f", "rawvideo", "-"],
-        capture_output=True, check=True,
+        [
+            FFMPEG,
+            "-nostdin",
+            "-v",
+            "error",
+            "-sseof",
+            "-0.1",
+            "-i",
+            str(out),
+            "-frames:v",
+            "1",
+            "-vf",
+            "scale=32:18,format=gray",
+            "-f",
+            "rawvideo",
+            "-",
+        ],
+        capture_output=True,
+        check=True,
     ).stdout
     assert last and sum(last) / len(last) < 12, "the last frame is not black"
     tail = subprocess.run(
-        [FFMPEG, "-nostdin", "-v", "info", "-sseof", "-0.15", "-i", str(out), "-vn",
-         "-af", "volumedetect", "-f", "null", "-"],
-        capture_output=True, text=True, check=True,
+        [
+            FFMPEG,
+            "-nostdin",
+            "-v",
+            "info",
+            "-sseof",
+            "-0.15",
+            "-i",
+            str(out),
+            "-vn",
+            "-af",
+            "volumedetect",
+            "-f",
+            "null",
+            "-",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
     ).stderr
     peak = float(tail.split("max_volume:")[1].split("dB")[0])
     assert peak < -25, f"the music is still playing at the end ({peak} dB)"
+
+
+def test_a_ramp_takes_the_source_its_speeds_add_up_to():
+    assert abs(beat_edit.ramp_speed(beat_edit.RAMP_HARD) - (0.35 * 1.8 + 0.35 * 0.45 + 0.30 * 1.4)) < 1e-9
+
+
+@pytest.mark.skipif(shutil.which(FFMPEG) is None, reason="needs ffmpeg")
+def test_a_ramped_close_up_fills_the_frame_and_keeps_its_length(tmp_path):
+    """Fast, slow, fast — and still exactly the cut's length on the
+    timeline, or every cut after it would land off the beat."""
+    import subprocess
+
+    clip = tmp_path / "wide.mp4"
+    subprocess.run(
+        [
+            FFMPEG,
+            "-nostdin",
+            "-v",
+            "error",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=size=640x360:rate=30:duration=6",
+            "-pix_fmt",
+            "yuv420p",
+            str(clip),
+        ],
+        check=True,
+    )
+    ramp = beat_edit.RAMP_HARD
+    cut = beat_edit.Cut(
+        clip,
+        0.5,
+        2.0,
+        speed=beat_edit.ramp_speed(ramp),
+        effects=["grade"],
+        landscape=True,
+        close_crop=True,
+        focus_x=0.3,
+        ramp=ramp,
+    )
+    out = tmp_path / "cut.mp4"
+    subprocess.run(
+        [
+            FFMPEG,
+            "-nostdin",
+            "-v",
+            "error",
+            "-y",
+            "-ss",
+            "0.5",
+            "-t",
+            "3",
+            "-i",
+            str(clip),
+            "-filter_complex",
+            beat_edit._segment_filter(cut),
+            "-map",
+            "[v]",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "ultrafast",
+            str(out),
+        ],
+        check=True,
+    )
+    probe = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-count_frames",
+            "-show_entries",
+            "stream=width,height,nb_read_frames",
+            "-of",
+            "csv=p=0",
+            str(out),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    width, height, frames = (int(v) for v in probe.split(","))
+    assert (width, height) == (beat_edit.WIDTH, beat_edit.HEIGHT)
+    assert abs(frames - 2.0 * beat_edit.FPS) <= 1
+
+
+def test_ramps_go_on_close_ups_not_wide_shots():
+    clip = _two_sizes()
+    plan = beat_edit.plan_edit(_grid(), [clip], 20.0, "energetic", seed=3)
+    half = clip.duration_s / 2
+    ramped = [c for c in plan.cuts if c.ramp]
+    assert ramped and all(c.source_start >= half for c in ramped)
+    assert all(c.close_crop for c in plan.cuts if c.source_start >= half)
+    assert not any(c.close_crop for c in plan.cuts if c.source_start < half)

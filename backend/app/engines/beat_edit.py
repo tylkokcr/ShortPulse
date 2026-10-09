@@ -445,6 +445,16 @@ class ClipMotion:
         weights = [max(c[1], 1e-6) ** 2 for c in pool]
         return rng.choices(pool, weights=weights, k=1)[0][0]
 
+    def fits(self, start: float, length_s: float, avoid: list[tuple[float, float]]) -> bool:
+        """Whether `length_s` from `start` stays inside one of the clip's
+        own shots and clear of everything in `avoid`."""
+        end = start + length_s
+        if end > self.duration_s - 0.05:
+            return False
+        if any(not (end <= a or start >= b) for a, b in avoid):
+            return False
+        return any(a <= start and end <= b - 0.04 for a, b in self.shots())
+
     def longest_free_shot(self, avoid: list[tuple[float, float]]) -> tuple[float, float] | None:
         """The longest of the clip's shots not yet used — for a cut longer
         than any shot, which is then slowed to fill it."""
@@ -563,6 +573,29 @@ class Cut:
     # centred `focus_x` of the way across the source (0 is its left edge).
     zoom: float = 1.0
     focus_x: float = 0.5
+    # A landscape close-up or medium shot fills the vertical frame instead:
+    # cropped to a third of its width around the player (`focus_x`), the
+    # way a fan edit cuts a broadcast into a face. Wide shots keep the
+    # blurred frame, which keeps their context.
+    close_crop: bool = False
+    # A speed ramp across the cut: (share of the cut on the timeline, speed)
+    # pieces in order. `speed` above is then their average, which is what
+    # the stretch of source taken is measured by.
+    ramp: tuple[tuple[float, float], ...] | None = None
+
+
+# Fast into the moment, slow through it, quick out: the velocity edit. The
+# slow piece sits where the planner's windows put the peak (40-85% in).
+RAMP_HARD: tuple[tuple[float, float], ...] = ((0.35, 1.8), (0.35, 0.45), (0.30, 1.4))
+RAMP_SOFT: tuple[tuple[float, float], ...] = ((0.30, 1.4), (0.45, 0.55), (0.25, 1.15))
+# A ramp needs room: under this a cut is one beat of motion, and three
+# speeds in it read as a stutter.
+_RAMP_MIN_S = 0.9
+
+
+def ramp_speed(ramp: tuple[tuple[float, float], ...]) -> float:
+    """Seconds of source per second of timeline, over a whole ramp."""
+    return sum(share * speed for share, speed in ramp)
 
 
 @dataclass
@@ -583,18 +616,29 @@ class Style:
     drop_speed: float
     after_drop_extra: str | None  # every third cut after the drop
     grade: str
+    # Which shot sizes of a landscape source fill the frame (see Cut).
+    close_crop_scales: tuple[str, ...] = ()
+    # The speed ramp, and how often a cut gets one (every nth eligible cut).
+    ramp: tuple[tuple[float, float], ...] | None = None
+    ramp_every: int = 0
 
 
 STYLES: dict[str, Style] = {
     # Two beats a cut after the drop, not one: at one, 120 BPM is a new
     # shot every half second, which reads as noise rather than energy.
-    "energetic": Style(4, 2, "punch", ("flash", "rgbsplit", "shake"), 0.5, "shake", "grade"),
+    "energetic": Style(
+        4, 2, "punch", ("flash", "rgbsplit", "shake"), 0.5, "shake", "grade",
+        close_crop_scales=("close", "medium"), ramp=RAMP_HARD, ramp_every=2,
+    ),
     # Long enough to read a move from start to finish: two bars before the
     # drop, one after — about four and two seconds at 120 BPM. At two and
     # one beats it was cutting every second, which reads as fast however
     # soft the grade.
-    "cinematic": Style(8, 4, "drift", ("softflash",), 0.5, None, "grade_film"),
-    "calm": Style(8, 8, "drift", (), 1.0, None, "grade_soft"),
+    "cinematic": Style(
+        8, 4, "drift", ("softflash",), 0.5, None, "grade_film",
+        close_crop_scales=("close", "medium"), ramp=RAMP_SOFT, ramp_every=3,
+    ),
+    "calm": Style(8, 8, "drift", (), 1.0, None, "grade_soft", close_crop_scales=("close",)),
 }
 
 
@@ -684,6 +728,7 @@ def plan_edit(
     queue = [(points[k], points[k + 1]) for k in range(len(points) - 1)]
     last_scales: list[str] = []
     k = 0
+    ramped_turn = 0
     while queue:
         start, end = queue.pop(0)
         length = end - start
@@ -691,6 +736,7 @@ def plan_edit(
             continue
         is_drop = drop is not None and abs(start - drop) < 0.05
         speed = look.drop_speed if is_drop else 1.0
+        ramp = None
 
         # Every clip in turn, busiest first, never the same one twice running.
         clip = order[turn % len(order)]
@@ -712,6 +758,7 @@ def plan_edit(
             prefer = ("medium", "wide") if last_scales[-1:] == ["wide"] else ("wide", "medium")
         if len(last_scales) >= 2 and last_scales[-1] == last_scales[-2] == prefer[0]:
             prefer = ("medium", *[p for p in prefer if p != "medium"])
+
         spread = max(2.0, min(30.0, clip.duration_s / max(1.0, len(points) * 1.2)))
         src = clip.busiest(source_len, used[clip.path], prefer=prefer, spread_s=spread, rng=rng)
         if src is None:
@@ -729,6 +776,7 @@ def plan_edit(
                 continue
             # No beat to split on: stretch further rather than cut mid-beat.
             floor = min_speed if available / length >= min_speed else 0.25
+            ramp = None  # a stretched shot is slow already
             speed = max(floor, min(speed, available / length))
             source_len = length * speed
             src = (shot[0] + 0.04) if shot else 0.0
@@ -748,10 +796,37 @@ def plan_edit(
         k += 1
 
         scale = clip.scale_at(int((src + source_len / 2) * _MOTION_FPS))
+        # The ramp goes where it reads, judged on the shot actually taken:
+        # a close or medium one, every so often. On a wide shot the slow
+        # piece is a field of small players drifting; on a close-up it is
+        # the moment. The drop has its own slow motion. A ramp reads more
+        # source than a plain cut, so it is only applied when that much
+        # more fits in the same shot.
+        if (
+            look.ramp
+            and look.ramp_every
+            and not is_drop
+            and speed == 1.0
+            and length >= _RAMP_MIN_S
+            and scale in ("close", "medium")
+        ):
+            if ramped_turn % look.ramp_every == 0:
+                need = length * ramp_speed(look.ramp)
+                if clip.fits(src, need, used[clip.path]):
+                    ramp = look.ramp
+                    speed = ramp_speed(ramp)
+                    source_len = need
+            ramped_turn += 1
         last_scales.append(scale)
         used[clip.path].append((src, src + source_len))
         zoom, focus_x = 1.0, 0.5
-        if clip.landscape and scale == "wide":
+        close_crop = clip.landscape and scale in look.close_crop_scales
+        if close_crop:
+            # Where the movement is; the render refines it to a face when
+            # one is found (render_manager), which is what a close-up of a
+            # player is framed on.
+            focus_x = clip.focus_at(src, source_len)
+        elif clip.landscape and scale == "wide":
             # Half way from the middle towards the movement: the camera
             # already follows the ball, and the movement's centre is
             # pulled about by players far from it.
@@ -761,6 +836,7 @@ def plan_edit(
             Cut(
                 clip=clip.path, source_start=src, duration=length, speed=speed,
                 effects=effects, landscape=clip.landscape, zoom=zoom, focus_x=focus_x,
+                close_crop=close_crop, ramp=ramp,
             )
         )
         last = clip.path
@@ -779,12 +855,37 @@ FADE_OUT_S = 1.5
 
 def _segment_filter(cut: Cut) -> str:
     """The filter graph for one cut, its clock starting at zero."""
-    timing = f"setpts={1 / cut.speed:.4f}*(PTS-STARTPTS),fps={FPS}"
     cover = (
         f"scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase,"
         f"crop={WIDTH}:{HEIGHT},setsar=1"
     )
-    if cut.landscape:
+    if cut.ramp:
+        # Each piece of the ramp is its own stretch of source at its own
+        # speed, and the pieces are joined back into one clip.
+        pieces, labels, offset = [], [], 0.0
+        for n, (share, speed) in enumerate(cut.ramp):
+            source_s = share * cut.duration * speed
+            pieces.append(
+                f"[r{n}]trim=start={offset:.4f}:duration={source_s:.4f},"
+                f"setpts=(PTS-STARTPTS)/{speed:.4f}[p{n}]"
+            )
+            labels.append(f"[p{n}]")
+            offset += source_s
+        split = "".join(f"[r{n}]" for n in range(len(cut.ramp)))
+        timed = (
+            f"[0:v]setpts=PTS-STARTPTS,split={len(cut.ramp)}{split};"
+            + ";".join(pieces)
+            + f";{''.join(labels)}concat=n={len(cut.ramp)}:v=1:a=0,fps={FPS}[tv];"
+        )
+    else:
+        timed = f"[0:v]setpts={1 / cut.speed:.4f}*(PTS-STARTPTS),fps={FPS}[tv];"
+    if cut.landscape and cut.close_crop:
+        # A third of the width at full height, around the player.
+        x = f"min(max({cut.focus_x:.3f}*iw-{WIDTH}/2,0),iw-{WIDTH})"
+        framing = (
+            f"{timed}[tv]scale=-2:{HEIGHT},crop={WIDTH}:{HEIGHT}:x='{x}':y=0,setsar=1[framed];"
+        )
+    elif cut.landscape:
         # A landscape shot cropped to fill a vertical frame keeps a third
         # of its width: on a match broadcast that was legs, a referee and
         # an advertising board, with the player somewhere off the edge.
@@ -794,13 +895,13 @@ def _segment_filter(cut: Cut) -> str:
         wide = int(WIDTH * 4 / 3 * cut.zoom) // 2 * 2
         x = f"min(max({cut.focus_x:.3f}*iw-{WIDTH}/2,0),iw-{WIDTH})"
         framing = (
-            f"[0:v]{timing},split[s1][s2];"
+            f"{timed}[tv]split[s1][s2];"
             f"[s1]{cover},boxblur=20:2,eq=brightness=-0.12:saturation=0.8[bg];"
             f"[s2]scale={wide}:-2,crop={WIDTH}:ih:x='{x}',setsar=1[fg];"
             "[bg][fg]overlay=(W-w)/2:(H-h)/2,setsar=1[framed];"
         )
     else:
-        framing = f"[0:v]{timing},{cover}[framed];"
+        framing = f"{timed}[tv]{cover}[framed];"
     chain: list[str] = []
     frames = max(1, int(round(cut.duration * FPS)))
 
