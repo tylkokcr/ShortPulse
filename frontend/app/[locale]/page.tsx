@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Frame,
   FileText,
@@ -95,6 +95,10 @@ function CreateVideo() {
   const t = useTranslations("studio");
   const router = useRouter();
   const { draft, setDraft, toProjectConfig, credits } = useShortPulseStore();
+  const adoptUiLanguage = useShortPulseStore((s) => s.adoptUiLanguage);
+  const locale = useLocale();
+  // The video is made in the reader's language until they pick another.
+  useEffect(() => adoptUiLanguage(locale), [adoptUiLanguage, locale]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("generate");

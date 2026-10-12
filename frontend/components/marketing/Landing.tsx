@@ -18,6 +18,9 @@ import {
   Scissors,
   Languages,
   Send,
+  Clapperboard,
+  TrendingUp,
+  Link2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -74,9 +77,13 @@ const PIPELINE_KEYS = ["script", "voiceover", "captions", "visuals", "assemble"]
 
 // The three newest first: a visitor skimming this grid should learn that
 // it cuts clips, dubs and posts before learning that the music ducks.
-const FEATURE_ICONS = [Scissors, Languages, Send, Lock, Captions, Globe, Music, ImageIcon, Sparkles];
+const FEATURE_ICONS = [
+  Clapperboard, Scissors, Languages, Send, TrendingUp, Link2,
+  Lock, Captions, Globe, Music, ImageIcon, Sparkles,
+];
 const FEATURE_KEYS = [
-  "clips", "dub", "autopost", "local", "captions", "languages", "music", "stills", "outro",
+  "beat", "clips", "dub", "autopost", "trends", "links",
+  "local", "captions", "languages", "music", "stills", "outro",
 ] as const;
 
 const COMPARISON_KEYS = [

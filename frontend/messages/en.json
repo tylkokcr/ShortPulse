@@ -66,7 +66,7 @@
     "viewSource": "View source",
     "badge": "Open source · self-hosted or hosted",
     "headline": "Turn a topic into a <accent>ready-to-post</accent> vertical video.",
-    "sub": "Script, voiceover, word-synced captions, visuals and music — from a single topic. Or bring your own video to caption it, dub it, cut it into clips and post it to YouTube automatically. Pay per video or self-host it for nothing; no subscription either way.",
+    "sub": "Script, voiceover, word-synced captions, visuals and music — from a single topic. Or bring your own: caption or dub a video, cut a long one into clips, turn your clips into an edit cut to a song, and post to YouTube automatically. Pay per video or self-host it for nothing; no subscription either way.",
     "stats": {
       "languages": "languages",
       "artStyles": "art styles",
@@ -135,6 +135,18 @@
       "autopost": {
         "title": "Posts to YouTube for you",
         "detail": "Connect a channel once and every finished render can go out automatically. Instagram and Facebook are coming."
+      },
+      "beat": {
+        "title": "Clips in, an edit out",
+        "detail": "Drop in your clips and a song; it cuts them on the beat in one of three styles, keeps every move whole, zooms into the drop and can open on a title of yours."
+      },
+      "trends": {
+        "title": "What's rising, as ideas",
+        "detail": "Pick a region and see what is climbing on YouTube and in the charts this week, turned into topics and edits this studio can actually make."
+      },
+      "links": {
+        "title": "Bring it in from a link",
+        "detail": "Paste a Google Drive, Dropbox, OneDrive or Box share link instead of uploading — the file lands in My files, ready to caption, split or edit."
       }
     },
     "comparison": {
@@ -265,9 +277,9 @@
       "cta": "Self-host it free"
     },
     "tariff": {
-      "stock": "2 credits = stock footage",
-      "aiStills": "3 = AI stills",
-      "localVideo": "10 = local text-to-video",
+      "stock": "{n} credits = stock footage",
+      "aiStills": "{n} = AI stills",
+      "localVideo": "{n} = local text-to-video",
       "note": "{rates}, each ×2 for medium and ×3 for long. You're quoted the exact cost before a render starts."
     },
     "currencyNote": "Prices in {currency}. Cards from any country work — your bank converts at its own rate."
@@ -343,7 +355,8 @@
   "captionStyles": {
     "eyebrow": "Caption styles",
     "title": "The part that actually holds attention",
-    "sub": "Captions are timed per word by faster-whisper, so the active word highlights on the syllable it's spoken. Pick how that looks — size, colour, placement and how many words sit on screen at once."
+    "sub": "Captions are timed per word by faster-whisper, so the active word highlights on the syllable it's spoken. Pick how that looks — size, colour, placement and how many words sit on screen at once.",
+    "sample": "your words land on the beat"
   },
   "editor": {
     "eyebrow": "The editor",
@@ -1021,7 +1034,7 @@
   },
   "tour": {
     "eyebrow": "The whole studio",
-    "title": "Five jobs, one place to do them",
+    "title": "Six jobs, one place to do them",
     "sub": "Start from a topic or from footage you already have. These are screens of the app itself — pick a tab to see each part.",
     "new": "New",
     "create": {
@@ -1037,7 +1050,7 @@
     "clips": {
       "title": "Cut into clips",
       "detail": "A podcast, a talk or a match reel goes in; the moments worth posting come back as clips — chosen from what is said, or from the picture when little is. Priced by the minutes read plus each clip.",
-      "alt": "The library with a source video and the four clips cut from it"
+      "alt": "The library with a source video, the three clips cut from it, an edit and a captioned upload"
     },
     "edit": {
       "title": "Edit after the render",
@@ -1055,6 +1068,11 @@
       "autoTitle": "Post finished videos automatically",
       "autoOn": "Every render will be posted here as soon as it finishes.",
       "soon": "In progress"
+    },
+    "beat": {
+      "title": "Edit my clips",
+      "detail": "Drop in your clips and pick a song. It finds the beat and the drop, shows each move whole, zooms into the drop and can open on your own title.",
+      "alt": "The edit tab with clips chosen, a song's waveform with its drop marked, the style and an on-video title"
     }
   },
   "artStyleCatalog": {
@@ -1127,7 +1145,7 @@
     "sub": "Both of these came out of ShortPulse as they are. Press the buttons.",
     "beat": {
       "title": "Clips in, an edit cut to the beat out",
-      "body": "Drop in your clips and a song. It finds the beat and the drop, picks each clip's best moment and cuts on the beat — wide shots while it builds, the hit on the drop.",
+      "body": "Drop in your clips and a song. It finds the beat and the drop, shows every move from start to finish, rushes into the drop and opens on your title.",
       "in": "9 clips + 1 song",
       "style": "Style"
     },
@@ -1162,6 +1180,52 @@
       "format": "Format",
       "sound": "Sound",
       "person": "Person"
+    }
+  },
+  "captionPresetCatalog": {
+    "classic": {
+      "name": "Classic",
+      "description": "White with a gold active word. The default."
+    },
+    "punch": {
+      "name": "Punch",
+      "description": "Bigger, thicker, three words at a time."
+    },
+    "clean": {
+      "name": "Clean",
+      "description": "Sentence case, lighter outline, longer lines."
+    },
+    "spotlight": {
+      "name": "Spotlight",
+      "description": "Centred on screen — good over busy footage."
+    },
+    "block": {
+      "name": "Block",
+      "description": "White on a black strip, active word in orange."
+    },
+    "tape": {
+      "name": "Tape",
+      "description": "A red band with a yellow active word. Loud on purpose."
+    },
+    "news": {
+      "name": "News",
+      "description": "Sentence case in a dark band, centred. Quiet and legible."
+    },
+    "sticker": {
+      "name": "Sticker",
+      "description": "Big words on a white block, high on the frame."
+    },
+    "impact": {
+      "name": "Impact",
+      "description": "Tall condensed caps. Fits more per line and shouts."
+    },
+    "comic": {
+      "name": "Comic",
+      "description": "Hand-lettered, on a yellow block. Playful."
+    },
+    "marker": {
+      "name": "Marker",
+      "description": "Felt-tip handwriting. No Turkish — it has no ğ, ş or ı."
     }
   }
 }

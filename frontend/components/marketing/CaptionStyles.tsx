@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import clsx from "clsx";
 import { CAPTION_PRESETS } from "@/lib/captionStyles";
+import { useCaptionPresetText } from "@/lib/captionPresetText";
 import { Card } from "@/components/ui/Card";
 
 /**
@@ -24,6 +25,7 @@ import { Card } from "@/components/ui/Card";
  */
 export function CaptionStyles() {
   const t = useTranslations("captionStyles");
+  const presetText = useCaptionPresetText();
   const [activeId, setActiveId] = useState(CAPTION_PRESETS[0].id);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -39,7 +41,7 @@ export function CaptionStyles() {
   }, []);
 
   const active = CAPTION_PRESETS.find((p) => p.id === activeId) ?? CAPTION_PRESETS[0];
-  const words = ["captions", "that", "land", "on", "the", "beat"];
+  const words = t("sample").split(" ");
   const perLine = active.style.max_words_per_line;
   const lines: string[][] = [];
   for (let i = 0; i < words.length; i += perLine) lines.push(words.slice(i, i + perLine));
@@ -67,6 +69,7 @@ export function CaptionStyles() {
         <div className="flex flex-col gap-2">
           {CAPTION_PRESETS.map((preset) => {
             const selected = preset.id === activeId;
+            const text = presetText(preset);
             return (
               <button
                 key={preset.id}
@@ -84,9 +87,9 @@ export function CaptionStyles() {
                   style={{ backgroundColor: preset.previewHighlight }}
                 />
                 <span className="min-w-0">
-                  <span className="block text-sm font-medium">{preset.name}</span>
+                  <span className="block text-sm font-medium">{text.name}</span>
                   <span className="block truncate text-[11px] text-white/40">
-                    {preset.description}
+                    {text.description}
                   </span>
                 </span>
               </button>
@@ -132,7 +135,7 @@ export function CaptionStyles() {
                 <span key={li} className="block">
                   {line.map((word, wi) => (
                     <span
-                      key={word}
+                      key={`${word}-${wi}`}
                       style={{
                         // One highlighted word per line stands in for the
                         // moving karaoke cursor.

@@ -41,12 +41,22 @@ const LABELLED_PACKS = new Set(["starter", "creator", "studio"]);
  *  stack and no image API — because quoting videos in a mode the
  *  deployment refuses to sell is an advertisement for a product that
  *  doesn't exist here. */
-function videosFor(credits: number, generatedStills: boolean) {
+function videosFor(credits: number, generatedStills: boolean, rates: Rates) {
   return {
-    basic: Math.floor(credits / 2),
-    standard: generatedStills ? Math.floor(credits / 6) : null,
+    basic: Math.floor(credits / rates.stock),
+    standard: generatedStills ? Math.floor(credits / rates.stills) : null,
   };
 }
+
+/** What a short render costs in each mode — backend credits._MODE_COST,
+ *  read from the server's own table. They were written into the copy once,
+ *  and the copy kept quoting AI stills at 3 credits after they went to 6. */
+interface Rates {
+  stock: number;
+  stills: number;
+  local: number;
+}
+const FALLBACK_RATES: Rates = { stock: 2, stills: 6, local: 20 };
 
 export function Pricing() {
   const t = useTranslations("pricing");
@@ -73,6 +83,7 @@ export function Pricing() {
   // same reason as FALLBACK_PACKS: if the API is unreachable, a shop window
   // that stays up is better than one that empties itself.
   const [sold, setSold] = useState(true);
+  const [rates, setRates] = useState<Rates>(FALLBACK_RATES);
 
   useEffect(() => {
     // Not getCredits(): a visitor has no account, and a deployment with
@@ -89,6 +100,12 @@ export function Pricing() {
           setLocalVideo(pricing.modes.includes("ai_video"));
         }
         if (pricing.signup_credits) setSignupCredits(pricing.signup_credits);
+        const table = pricing.pricing ?? {};
+        setRates({
+          stock: table["stock_media:short"] || FALLBACK_RATES.stock,
+          stills: table["fast_hybrid:short"] || FALLBACK_RATES.stills,
+          local: table["ai_video:short"] || FALLBACK_RATES.local,
+        });
         setSold(Boolean(pricing.sold));
       })
       .catch(() => {
@@ -166,7 +183,7 @@ export function Pricing() {
           const labelled = LABELLED_PACKS.has(pack.id);
           const name = labelled ? t(`packs.${pack.id}.name`) : pack.id;
           const blurb = labelled ? t(`packs.${pack.id}.blurb`) : "";
-          const { basic, standard } = videosFor(pack.credits, generatedStills);
+          const { basic, standard } = videosFor(pack.credits, generatedStills, rates);
           return (
             <Card
               key={pack.id}
@@ -254,9 +271,9 @@ export function Pricing() {
       <p className="mt-4 font-mono text-[11px] text-white/30">
         {t("tariff.note", {
           rates: [
-            t("tariff.stock"),
-            generatedStills ? t("tariff.aiStills") : null,
-            localVideo ? t("tariff.localVideo") : null,
+            t("tariff.stock", { n: rates.stock }),
+            generatedStills ? t("tariff.aiStills", { n: rates.stills }) : null,
+            localVideo ? t("tariff.localVideo", { n: rates.local }) : null,
           ]
             .filter(Boolean)
             .join(" · "),

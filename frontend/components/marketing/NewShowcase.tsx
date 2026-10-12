@@ -17,7 +17,9 @@ import { Badge } from "@/components/ui/Badge";
  * - The beat edit is nine stock clips, each trimmed to its moment the way
  *   a user would before uploading, cut by the beat-edit engine to "Winning
  *   Spirit" in all three styles from the same seed. Switching style is the
- *   pitch — the same footage, three edits.
+ *   pitch — the same footage, three edits. Each opens on the optional
+ *   title, so there is one render per language (BEAT_LANGUAGES): a German
+ *   visitor reads "OHNE GRENZEN", not an English title on a German page.
  * - The caption demo is a Piper narration over stock octopus footage, run
  *   through the upload pipeline once per language with caption
  *   translation. English, German and Spanish were made locally; Turkish
@@ -28,6 +30,7 @@ import { Badge } from "@/components/ui/Badge";
  * (see public/examples/README.md for getting them onto the server).
  */
 const STYLES = ["energetic", "cinematic", "calm"] as const;
+const BEAT_LANGUAGES = ["en", "tr", "pl", "de"];
 type Style = (typeof STYLES)[number];
 
 const SOURCES = [
@@ -167,6 +170,7 @@ export function NewShowcase() {
   // a Turkish visitor reading Turkish captions over English speech is
   // the feature, shown before any button is pressed.
   const locale = useLocale();
+  const beatLanguage = BEAT_LANGUAGES.includes(locale) ? locale : "en";
   const [language, setLanguage] = useState<Language>(
     LANGUAGES.find((l) => l.code === locale)?.code ?? "en"
   );
@@ -224,9 +228,9 @@ export function NewShowcase() {
           phone={
             <Phone>
               <video
-                key={style}
-                src={`/showcase/beat-${style}.mp4`}
-                poster={`/showcase/beat-${style}.jpg`}
+                key={`${style}-${beatLanguage}`}
+                src={`/showcase/beat-${style}-${beatLanguage}.mp4`}
+                poster={`/showcase/beat-${style}-${beatLanguage}.jpg`}
                 autoPlay
                 loop
                 muted={beatMuted}

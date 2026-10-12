@@ -66,7 +66,7 @@
     "viewSource": "Quellcode ansehen",
     "badge": "Open Source · selbst hosten oder gehostet nutzen",
     "headline": "Aus einem Thema ein <accent>fertig postbares</accent> Hochformat-Video.",
-    "sub": "Skript, Voiceover, wortgenaue Untertitel, Bilder und Musik — aus einem einzigen Thema. Oder bring dein eigenes Video mit: untertiteln, in eine andere Sprache vertonen, in Clips schneiden und automatisch auf YouTube posten. Pro Video zahlen oder selbst hosten und nichts zahlen; ein Abo gibt es so oder so nicht.",
+    "sub": "Skript, Voiceover, wortgenaue Untertitel, Bilder und Musik — aus einem einzigen Thema. Oder bring dein eigenes Material mit: untertiteln oder vertonen, eine lange Aufnahme in Clips schneiden, aus deinen Clips ein Edit zum Song machen und automatisch auf YouTube posten. Pro Video zahlen oder selbst hosten und nichts zahlen; ein Abo gibt es so oder so nicht.",
     "stats": {
       "languages": "Sprachen",
       "artStyles": "Bildstile",
@@ -135,6 +135,18 @@
       "autopost": {
         "title": "Postet für dich auf YouTube",
         "detail": "Verbinde einmal einen Kanal, und jedes fertige Rendering kann automatisch rausgehen. Instagram und Facebook kommen."
+      },
+      "beat": {
+        "title": "Aus Clips ein Edit",
+        "detail": "Wirf Clips und einen Song hinein; es schneidet sie im Takt in einem von drei Stilen, zeigt jede Bewegung ganz, zoomt in den Drop und kann mit deinem Titel beginnen."
+      },
+      "trends": {
+        "title": "Was steigt — als Ideen",
+        "detail": "Wähle eine Region und sieh, was diese Woche auf YouTube und in den Charts steigt — übersetzt in Themen und Edits, die dieses Studio wirklich machen kann."
+      },
+      "links": {
+        "title": "Per Link holen",
+        "detail": "Statt hochzuladen, füge einen Freigabelink von Google Drive, Dropbox, OneDrive oder Box ein — die Datei landet in Meinen Dateien, bereit zum Untertiteln, Schneiden oder Editieren."
       }
     },
     "comparison": {
@@ -265,9 +277,9 @@
       "cta": "Kostenlos selbst betreiben"
     },
     "tariff": {
-      "stock": "2 Credits = Stockmaterial",
-      "aiStills": "3 = AI stills",
-      "localVideo": "10 = lokales Text-zu-Video",
+      "stock": "{n} Credits = Stockmaterial",
+      "aiStills": "{n} = AI stills",
+      "localVideo": "{n} = lokales Text-zu-Video",
       "note": "{rates}, jeweils ×2 bei mittlerer und ×3 bei langer Länge. Die genauen Kosten siehst du, bevor ein Render startet."
     },
     "currencyNote": "Preise in {currency}. Karten aus jedem Land funktionieren — deine Bank rechnet zu ihrem eigenen Kurs um."
@@ -343,7 +355,8 @@
   "captionStyles": {
     "eyebrow": "Untertitelstile",
     "title": "Der Teil, der die Aufmerksamkeit wirklich hält",
-    "sub": "Untertitel werden von faster-whisper pro Wort getimt, sodass das aktive Wort genau auf der gesprochenen Silbe hervorgehoben wird. Wähle, wie das aussieht — Größe, Farbe, Position und wie viele Wörter gleichzeitig zu sehen sind."
+    "sub": "Untertitel werden von faster-whisper pro Wort getimt, sodass das aktive Wort genau auf der gesprochenen Silbe hervorgehoben wird. Wähle, wie das aussieht — Größe, Farbe, Position und wie viele Wörter gleichzeitig zu sehen sind.",
+    "sample": "deine Worte treffen den Beat"
   },
   "editor": {
     "eyebrow": "Der Editor",
@@ -1021,7 +1034,7 @@
   },
   "tour": {
     "eyebrow": "Das ganze Studio",
-    "title": "Fünf Aufgaben, ein Ort dafür",
+    "title": "Sechs Aufgaben, ein Ort dafür",
     "sub": "Starte mit einem Thema oder mit Material, das du schon hast. Das sind Bildschirme der App selbst — wähle einen Tab, um jeden Teil zu sehen.",
     "new": "Neu",
     "create": {
@@ -1037,7 +1050,7 @@
     "clips": {
       "title": "In Clips schneiden",
       "detail": "Ein Podcast, ein Vortrag oder ein Spielzusammenschnitt geht rein; die Momente, die sich lohnen, kommen als Clips zurück — gewählt nach dem Gesagten oder, wenn wenig gesprochen wird, nach dem Bild. Abgerechnet nach gelesenen Minuten plus pro Clip.",
-      "alt": "Die Bibliothek mit einem Quellvideo und den vier daraus geschnittenen Clips"
+      "alt": "Die Bibliothek mit einem Quellvideo, den drei daraus geschnittenen Clips, einem Edit und einem untertitelten Upload"
     },
     "edit": {
       "title": "Nach dem Rendern bearbeiten",
@@ -1055,6 +1068,11 @@
       "autoTitle": "Fertige Videos automatisch posten",
       "autoOn": "Jeder Render wird hier gepostet, sobald er fertig ist.",
       "soon": "In Arbeit"
+    },
+    "beat": {
+      "title": "Meine Clips schneiden",
+      "detail": "Wirf deine Clips hinein und wähle einen Song. Es findet Beat und Drop, zeigt jede Bewegung ganz, zoomt in den Drop und kann mit deinem Titel beginnen.",
+      "alt": "Der Edit-Tab mit gewählten Clips, der Wellenform des Songs mit markiertem Drop, dem Stil und einem Titel im Video"
     }
   },
   "artStyleCatalog": {
@@ -1127,7 +1145,7 @@
     "sub": "Beides kam genau so aus ShortPulse. Drück die Knöpfe.",
     "beat": {
       "title": "Clips rein, ein Edit im Takt raus",
-      "body": "Wirf deine Clips und einen Song rein. Es findet Beat und Drop, wählt den besten Moment jedes Clips und schneidet im Takt — weite Einstellungen im Aufbau, der Höhepunkt auf dem Drop.",
+      "body": "Wirf deine Clips und einen Song hinein. Es findet Beat und Drop, zeigt jede Bewegung von Anfang bis Ende, zoomt in den Drop und beginnt mit deinem Titel.",
       "in": "9 Clips + 1 Song",
       "style": "Stil"
     },
@@ -1162,6 +1180,52 @@
       "format": "Format",
       "sound": "Sound",
       "person": "Person"
+    }
+  },
+  "captionPresetCatalog": {
+    "classic": {
+      "name": "Klassisch",
+      "description": "Weiß, das aktive Wort in Gold. Der Standard."
+    },
+    "punch": {
+      "name": "Wucht",
+      "description": "Größer, fetter, drei Wörter auf einmal."
+    },
+    "clean": {
+      "name": "Schlicht",
+      "description": "Normale Schreibung, feinere Kontur, längere Zeilen."
+    },
+    "spotlight": {
+      "name": "Spotlight",
+      "description": "Mittig im Bild — gut über unruhigem Material."
+    },
+    "block": {
+      "name": "Block",
+      "description": "Weiß auf schwarzem Streifen, aktives Wort in Orange."
+    },
+    "tape": {
+      "name": "Klebeband",
+      "description": "Ein rotes Band mit gelbem aktivem Wort. Absichtlich laut."
+    },
+    "news": {
+      "name": "Nachrichten",
+      "description": "Normale Schreibung in dunklem Band, mittig. Ruhig und gut lesbar."
+    },
+    "sticker": {
+      "name": "Sticker",
+      "description": "Große Wörter auf weißem Block, weit oben im Bild."
+    },
+    "impact": {
+      "name": "Impact",
+      "description": "Hohe, schmale Versalien. Passt mehr in eine Zeile und schreit."
+    },
+    "comic": {
+      "name": "Comic",
+      "description": "Handgeschrieben auf gelbem Block. Verspielt."
+    },
+    "marker": {
+      "name": "Marker",
+      "description": "Filzstift-Handschrift. Kein Türkisch — ohne ğ, ş und ı."
     }
   }
 }

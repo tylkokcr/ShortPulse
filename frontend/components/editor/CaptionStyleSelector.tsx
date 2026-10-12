@@ -5,9 +5,11 @@ import { CAPTION_PRESETS, type CaptionPreset } from "@/lib/captionStyles";
 import { CAPTION_FONT_VARS } from "@/lib/captionFonts";
 import { LANGUAGE_OPTIONS, type AspectRatio } from "@/lib/types";
 import { useShortPulseStore } from "@/lib/store";
+import { useCaptionPresetText } from "@/lib/captionPresetText";
 
 export function CaptionStyleSelector() {
   const { draft, setDraft } = useShortPulseStore();
+  const presetText = useCaptionPresetText();
   const languageLabel =
     LANGUAGE_OPTIONS.find((option) => option.code === draft.language)?.label ?? draft.language;
 
@@ -20,6 +22,7 @@ export function CaptionStyleSelector() {
     <div className={clsx("grid grid-cols-2 gap-3", CAPTION_FONT_VARS)}>
       {CAPTION_PRESETS.map((preset) => {
         const selected = draft.captionPreset === preset.id;
+        const text = presetText(preset);
         return (
           <button
             key={preset.id}
@@ -40,9 +43,9 @@ export function CaptionStyleSelector() {
           >
             <CaptionPreview preset={preset} />
             <div>
-              <div className="text-xs font-medium">{preset.name}</div>
+              <div className="text-xs font-medium">{text.name}</div>
               <div className="mt-0.5 text-[11px] leading-snug text-white/40">
-                {preset.description}
+                {text.description}
               </div>
               {/* Said here rather than discovered in the finished video.
                   The render substitutes a face that can draw the

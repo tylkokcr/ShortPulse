@@ -66,7 +66,7 @@
     "viewSource": "Zobacz kod",
     "badge": "Otwarty kod · hostuj sam lub korzystaj u nas",
     "headline": "Zamień temat w <accent>gotowy do publikacji</accent> film pionowy.",
-    "sub": "Scenariusz, lektor, napisy zsynchronizowane co do słowa, obrazy i muzyka — z jednego tematu. Albo przynieś własne wideo: dodaj napisy, zdubbinguj je, potnij na klipy i publikuj na YouTube automatycznie. Płać za film albo hostuj sam i nie płać nic; abonamentu nie ma w żadnym wariancie.",
+    "sub": "Scenariusz, lektor, napisy zsynchronizowane co do słowa, obrazy i muzyka — z jednego tematu. Albo przynieś własny materiał: dodaj napisy lub dubbing, potnij długie nagranie na klipy, zrób z klipów montaż pod piosenkę i publikuj na YouTube automatycznie. Płać za film albo hostuj sam i nie płać nic; abonamentu nie ma w żadnym wariancie.",
     "stats": {
       "languages": "języków",
       "artStyles": "stylów graficznych",
@@ -135,6 +135,18 @@
       "autopost": {
         "title": "Publikuje na YouTube za ciebie",
         "detail": "Połącz kanał raz, a każdy gotowy render może wychodzić automatycznie. Instagram i Facebook już wkrótce."
+      },
+      "beat": {
+        "title": "Z klipów montaż do muzyki",
+        "detail": "Wrzuć klipy i piosenkę; tnie je w rytm w jednym z trzech stylów, pokazuje każdy ruch w całości, wjeżdża w drop i może zacząć się twoim tytułem."
+      },
+      "trends": {
+        "title": "Co rośnie — jako pomysły",
+        "detail": "Wybierz region i zobacz, co w tym tygodniu rośnie na YouTube i na listach — zamienione w tematy i montaże, które to studio naprawdę zrobi."
+      },
+      "links": {
+        "title": "Dodaj z linku",
+        "detail": "Zamiast wgrywać, wklej link do udostępnienia z Google Drive, Dropbox, OneDrive lub Box — plik trafia do Moich plików, gotowy do napisów, cięcia lub montażu."
       }
     },
     "comparison": {
@@ -265,9 +277,9 @@
       "cta": "Uruchom u siebie za darmo"
     },
     "tariff": {
-      "stock": "2 kredyty = materiał stockowy",
-      "aiStills": "3 = AI stills",
-      "localVideo": "10 = lokalny text-to-video",
+      "stock": "{n, plural, one {# kredyt} few {# kredyty} many {# kredytów} other {# kredytu}} = materiał stockowy",
+      "aiStills": "{n} = AI stills",
+      "localVideo": "{n} = lokalny text-to-video",
       "note": "{rates}, każdy ×2 przy średniej i ×3 przy długiej. Dokładny koszt poznajesz przed startem renderu."
     },
     "currencyNote": "Ceny w {currency}. Karty z każdego kraju działają — przeliczenia dokonuje twój bank po własnym kursie."
@@ -343,7 +355,8 @@
   "captionStyles": {
     "eyebrow": "Style napisów",
     "title": "Część, która naprawdę utrzymuje uwagę",
-    "sub": "Napisy są mierzone co do słowa przez faster-whisper, więc aktywne słowo podświetla się dokładnie na wymawianej sylabie. Wybierz, jak to wygląda — rozmiar, kolor, położenie i ile słów widać naraz."
+    "sub": "Napisy są mierzone co do słowa przez faster-whisper, więc aktywne słowo podświetla się dokładnie na wymawianej sylabie. Wybierz, jak to wygląda — rozmiar, kolor, położenie i ile słów widać naraz.",
+    "sample": "twoje słowa trafiają w rytm"
   },
   "editor": {
     "eyebrow": "Edytor",
@@ -1021,7 +1034,7 @@
   },
   "tour": {
     "eyebrow": "Całe studio",
-    "title": "Pięć zadań, jedno miejsce",
+    "title": "Sześć zadań, jedno miejsce",
     "sub": "Zacznij od tematu albo od nagrania, które już masz. To ekrany samej aplikacji — wybierz kartę, żeby zobaczyć każdą część.",
     "new": "Nowe",
     "create": {
@@ -1037,7 +1050,7 @@
     "clips": {
       "title": "Potnij na klipy",
       "detail": "Wchodzi podcast, wykład albo skrót meczu; momenty warte publikacji wracają jako klipy — wybrane z tego, co powiedziano, a gdy mowy jest mało, z obrazu. Płacisz za odczytane minuty plus za każdy klip.",
-      "alt": "Biblioteka z filmem źródłowym i czterema wyciętymi z niego klipami"
+      "alt": "Biblioteka z filmem źródłowym, trzema wyciętymi z niego klipami, montażem i filmem z napisami"
     },
     "edit": {
       "title": "Edytuj po renderze",
@@ -1055,6 +1068,11 @@
       "autoTitle": "Publikuj gotowe filmy automatycznie",
       "autoOn": "Każdy render trafi tutaj, gdy tylko się skończy.",
       "soon": "W przygotowaniu"
+    },
+    "beat": {
+      "title": "Montaż z moich klipów",
+      "detail": "Wrzuć klipy i wybierz piosenkę. Znajduje rytm i drop, pokazuje każdy ruch w całości, wjeżdża w drop i może zacząć się twoim tytułem.",
+      "alt": "Karta montażu z wybranymi klipami, falą piosenki z zaznaczonym dropem, stylem i tytułem na wideo"
     }
   },
   "artStyleCatalog": {
@@ -1127,7 +1145,7 @@
     "sub": "Oba wyszły z ShortPulse dokładnie takie. Klikaj przyciski.",
     "beat": {
       "title": "Wrzucasz klipy, dostajesz montaż do rytmu",
-      "body": "Dodaj klipy i utwór. Znajduje rytm i drop, wybiera najlepszy moment każdego klipu i tnie na bit — szerokie ujęcia, gdy narasta, uderzenie na dropie.",
+      "body": "Dodaj klipy i piosenkę. Znajduje rytm i drop, pokazuje każdy ruch od początku do końca, wpada w drop z najazdem i zaczyna się twoim tytułem.",
       "in": "9 klipów + 1 utwór",
       "style": "Styl"
     },
@@ -1162,6 +1180,52 @@
       "format": "Format",
       "sound": "Dźwięk",
       "person": "Osoba"
+    }
+  },
+  "captionPresetCatalog": {
+    "classic": {
+      "name": "Klasyczny",
+      "description": "Biały tekst, aktywne słowo złote. Domyślny."
+    },
+    "punch": {
+      "name": "Mocny",
+      "description": "Większy, grubszy, trzy słowa naraz."
+    },
+    "clean": {
+      "name": "Czysty",
+      "description": "Zwykła pisownia, cieńszy kontur, dłuższe linie."
+    },
+    "spotlight": {
+      "name": "Reflektor",
+      "description": "Na środku ekranu — dobry na ruchliwym obrazie."
+    },
+    "block": {
+      "name": "Blok",
+      "description": "Biały na czarnym pasku, aktywne słowo pomarańczowe."
+    },
+    "tape": {
+      "name": "Taśma",
+      "description": "Czerwony pas z żółtym aktywnym słowem. Celowo głośny."
+    },
+    "news": {
+      "name": "Wiadomości",
+      "description": "Zwykła pisownia w ciemnym pasie, na środku. Spokojny i czytelny."
+    },
+    "sticker": {
+      "name": "Naklejka",
+      "description": "Duże słowa na białym bloku, wysoko w kadrze."
+    },
+    "impact": {
+      "name": "Impact",
+      "description": "Wysokie, wąskie wersaliki. Mieści więcej w linii i krzyczy."
+    },
+    "comic": {
+      "name": "Komiks",
+      "description": "Odręczne litery na żółtym bloku. Zabawny."
+    },
+    "marker": {
+      "name": "Marker",
+      "description": "Pismo flamastrem. Bez tureckiego — nie ma ğ, ş ani ı."
     }
   }
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import {
+  Clapperboard,
   Facebook,
   Hammer,
   Instagram,
@@ -13,7 +14,7 @@ import {
   Wand2,
   Youtube,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 /**
  * The whole app in one frame: what it does, one tab per job.
@@ -23,9 +24,9 @@ import { useTranslations } from "next-intl";
  * topic, dubbing, the editor, posting — to be guessed at. A visitor who
  * did not build this could not have told that it posts for you.
  *
- * Four of the five screens are captures of the running app at the same
- * size and crop, so switching tabs changes what is on the screen and not
- * the zoom. The fifth, posting, is drawn: the connections page needs a
+ * Five of the six screens are captures of the running app at the same
+ * size and crop, in each of the page's languages, so switching tabs
+ * changes what is on the screen and not the zoom. The fifth, posting, is drawn: the connections page needs a
  * signed-in account with a real channel behind it, and a capture of that
  * would be somebody's channel. The drawing uses the same parts as the
  * page — the row, the switch, the in-progress label — and says only what
@@ -36,12 +37,17 @@ import { useTranslations } from "next-intl";
  * would be taking the screen away from a person who is reading it.
  */
 const TABS = [
-  { key: "create", icon: Wand2, src: "/tour/create.jpg" },
-  { key: "dub", icon: Languages, src: "/tour/dub.jpg" },
-  { key: "clips", icon: Scissors, src: "/tour/library.jpg" },
-  { key: "edit", icon: PenLine, src: "/tour/edit.jpg" },
-  { key: "publish", icon: Send, src: null },
+  { key: "create", icon: Wand2, shot: "create" },
+  { key: "dub", icon: Languages, shot: "dub" },
+  { key: "clips", icon: Scissors, shot: "library" },
+  { key: "beat", icon: Clapperboard, shot: "beat" },
+  { key: "edit", icon: PenLine, shot: "edit" },
+  { key: "publish", icon: Send, shot: null },
 ] as const;
+
+/** The captures exist in each language the page is written in, so a
+ *  German visitor sees the German app (public/tour/<lang>/). */
+const SHOT_LANGUAGES = ["en", "tr", "pl", "de"];
 
 type TabKey = (typeof TABS)[number]["key"];
 
@@ -51,6 +57,8 @@ const STEP_MS = 6000;
 
 export function FeatureTour() {
   const t = useTranslations("tour");
+  const locale = useLocale();
+  const shotLanguage = SHOT_LANGUAGES.includes(locale) ? locale : "en";
   const [active, setActive] = useState<TabKey>("create");
   const [auto, setAuto] = useState(true);
   const [visible, setVisible] = useState(false);
@@ -130,7 +138,7 @@ export function FeatureTour() {
                   >
                     {t(`${tab.key}.title`)}
                   </span>
-                  {tab.key === "publish" || tab.key === "clips" || tab.key === "dub" ? (
+                  {tab.key === "beat" || tab.key === "clips" || tab.key === "publish" ? (
                     <span className="rounded border border-accent/40 px-1 font-mono text-[9px] uppercase tracking-wider text-accent">
                       {t("new")}
                     </span>
@@ -166,15 +174,15 @@ export function FeatureTour() {
             style={{ aspectRatio: `${SHOT.width} / ${SHOT.height}` }}
           >
             {/* All mounted, one shown: switching is a fade rather than a
-                load, and the four images are ~300KB together. */}
+                load; the five images are ~750KB together, lazily. */}
             {TABS.map((tab) =>
-              tab.src ? (
+              tab.shot ? (
                 // Captured at this size for this slot — see ClipShowcase
                 // on why these skip the image optimiser.
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   key={tab.key}
-                  src={tab.src}
+                  src={`/tour/${shotLanguage}/${tab.shot}.jpg`}
                   alt={t(`${tab.key}.alt`)}
                   width={SHOT.width}
                   height={SHOT.height}

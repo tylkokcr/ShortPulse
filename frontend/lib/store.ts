@@ -5,6 +5,7 @@ import {
   DEFAULT_MUSIC_CONFIG,
   DEFAULT_OUTRO_CONFIG,
   DEFAULT_VOICE_CONFIG,
+  LANGUAGE_OPTIONS,
   type CreditSummary,
   type LanguageCode,
   type Project,
@@ -58,6 +59,14 @@ interface ProjectDraft {
 interface ShortPulseState {
   draft: ProjectDraft;
   setDraft: (patch: Partial<ProjectDraft>) => void;
+  /** Whether the video language was picked by the person (the selector,
+   *  an example) rather than defaulted. Until it is, it follows the UI. */
+  languagePicked: boolean;
+  /** Make the reader's UI language the video language, unless they have
+   *  picked one or it is not a language the pipeline speaks. A Turkish
+   *  visitor typing a Turkish topic was getting an English video, and an
+   *  English caption preview beside it, by default. */
+  adoptUiLanguage: (locale: string) => void;
   toProjectConfig: () => Partial<ProjectConfig> & { topic: string };
 
   activeProject: Project | null;
@@ -104,7 +113,17 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
     outroText: "",
     aiVideoAcknowledged: false,
   },
-  setDraft: (patch) => set((state) => ({ draft: { ...state.draft, ...patch } })),
+  setDraft: (patch) =>
+    set((state) => ({
+      draft: { ...state.draft, ...patch },
+      languagePicked: state.languagePicked || patch.language !== undefined,
+    })),
+  languagePicked: false,
+  adoptUiLanguage: (locale) =>
+    set((state) => {
+      if (state.languagePicked || !LANGUAGE_OPTIONS.some((o) => o.code === locale)) return {};
+      return { draft: { ...state.draft, language: locale as LanguageCode } };
+    }),
   toProjectConfig: () => {
     const { draft } = get();
     return {

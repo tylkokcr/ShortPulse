@@ -66,7 +66,7 @@
     "viewSource": "Kaynak kodu gör",
     "badge": "Açık kaynak · kendin barındır ya da bizde çalıştır",
     "headline": "Bir konuyu <accent>paylaşmaya hazır</accent> dikey videoya çevir.",
-    "sub": "Senaryo, seslendirme, kelimesi kelimesine altyazı, görseller ve müzik — tek bir konudan. Ya da kendi videonu getir: altyazısını ekle, başka dilde seslendir, kliplere böl ve YouTube'a otomatik paylaş. Video başına öde ya da kendin barındırıp hiç ödeme; iki durumda da abonelik yok.",
+    "sub": "Senaryo, seslendirme, kelimesi kelimesine altyazı, görseller ve müzik — tek bir konudan. Ya da kendi görüntünü getir: videonu altyazıla ya da seslendir, uzun bir kaydı kliplere böl, kliplerinden şarkıya göre kesilmiş bir edit çıkar ve YouTube'a otomatik paylaş. Video başına öde ya da kendin barındırıp hiç ödeme; iki durumda da abonelik yok.",
     "stats": {
       "languages": "dil",
       "artStyles": "çizim stili",
@@ -135,6 +135,18 @@
       "autopost": {
         "title": "YouTube'a senin yerine paylaşır",
         "detail": "Kanalını bir kez bağla, biten her render otomatik yayınlanabilsin. Instagram ve Facebook geliyor."
+      },
+      "beat": {
+        "title": "Kliplerinden müzikli edit",
+        "detail": "Kliplerini ve bir şarkı at; üç stilden biriyle vuruşa göre keser, her hareketi bütün gösterir, drop'a zoom yapar ve istersen senin başlığınla açılır."
+      },
+      "trends": {
+        "title": "Yükselen trendler, fikir olarak",
+        "detail": "Bir bölge seç; o hafta YouTube'da ve listelerde yükselenleri, bu stüdyonun gerçekten yapabileceği konu ve edit fikirlerine çevrilmiş halde gör."
+      },
+      "links": {
+        "title": "Linkten getir",
+        "detail": "Yüklemek yerine Google Drive, Dropbox, OneDrive ya da Box paylaşım linkini yapıştır; dosya Dosyalarım'a düşer, altyazıya, bölmeye ya da edite hazır."
       }
     },
     "comparison": {
@@ -265,9 +277,9 @@
       "cta": "Ücretsiz kendin kur"
     },
     "tariff": {
-      "stock": "2 kredi = stok görüntü",
-      "aiStills": "3 = AI stills",
-      "localVideo": "10 = yerel metinden videoya",
+      "stock": "{n} kredi = stok görüntü",
+      "aiStills": "{n} = AI stills",
+      "localVideo": "{n} = yerel metinden videoya",
       "note": "{rates}; orta uzunlukta ×2, uzunda ×3. Render başlamadan önce kesin tutar sana bildirilir."
     },
     "currencyNote": "Fiyatlar {currency} cinsinden. Her ülkenin kartı çalışır — dönüşümü kendi bankan kendi kuruyla yapar."
@@ -343,7 +355,8 @@
   "captionStyles": {
     "eyebrow": "Altyazı stilleri",
     "title": "Dikkati asıl tutan kısım",
-    "sub": "Altyazılar faster-whisper ile kelime kelime zamanlanır, böylece aktif kelime söylendiği hecede vurgulanır. Bunun nasıl görüneceğini sen seç — boyut, renk, konum ve aynı anda ekranda kaç kelime duracağı."
+    "sub": "Altyazılar faster-whisper ile kelime kelime zamanlanır, böylece aktif kelime söylendiği hecede vurgulanır. Bunun nasıl görüneceğini sen seç — boyut, renk, konum ve aynı anda ekranda kaç kelime duracağı.",
+    "sample": "sözlerin ritme tam oturur"
   },
   "editor": {
     "eyebrow": "Editör",
@@ -1021,7 +1034,7 @@
   },
   "tour": {
     "eyebrow": "Stüdyonun tamamı",
-    "title": "Beş iş, hepsi tek yerde",
+    "title": "Altı iş, hepsi tek yerde",
     "sub": "Bir konudan ya da elindeki görüntüden başla. Bunlar uygulamanın kendi ekranları — her bölümü görmek için bir sekme seç.",
     "new": "Yeni",
     "create": {
@@ -1037,7 +1050,7 @@
     "clips": {
       "title": "Kliplere böl",
       "detail": "Bir podcast, konuşma ya da maç derlemesi girer; paylaşmaya değer anlar klip olarak çıkar — söylenenden, konuşma azsa görüntüden seçilir. Okunan dakika artı kesit başına ücretlendirilir.",
-      "alt": "Kaynak video ve ondan kesilen dört klibin göründüğü kütüphane"
+      "alt": "Kaynak video, ondan kesilen üç klip, bir edit ve altyazılı bir yüklemeyle kütüphane"
     },
     "edit": {
       "title": "Render'dan sonra düzenle",
@@ -1055,6 +1068,11 @@
       "autoTitle": "Biten videoları otomatik paylaş",
       "autoOn": "Her render biter bitmez buraya gönderilecek.",
       "soon": "Üzerinde çalışılıyor"
+    },
+    "beat": {
+      "title": "Kliplerimle edit",
+      "detail": "Kliplerini at, bir şarkı seç. Ritmi ve drop'u bulur, her hareketi bütün gösterir, drop'a zoom yapar ve istersen senin başlığınla açılır.",
+      "alt": "Klipleri seçilmiş, şarkının dalga formunda drop'u işaretli, stili ve videodaki başlığı girilmiş edit sekmesi"
     }
   },
   "artStyleCatalog": {
@@ -1127,7 +1145,7 @@
     "sub": "İkisi de ShortPulse'tan olduğu gibi çıktı. Butonlara bas.",
     "beat": {
       "title": "Klipleri at, müziğe göre kesilmiş edit al",
-      "body": "Kliplerini ve bir şarkı ekle. Ritmi ve drop'u bulur, her klibin en iyi anını seçer ve vuruşa göre keser — yükselirken geniş açı, drop'ta en sert an.",
+      "body": "Kliplerini ve bir şarkı ekle. Ritmi ve drop'u bulur, her hareketi başından sonuna gösterir, drop'a hızla dalar ve senin başlığınla açılır.",
       "in": "9 klip + 1 şarkı",
       "style": "Stil"
     },
@@ -1162,6 +1180,52 @@
       "format": "Format",
       "sound": "Ses",
       "person": "Kişi"
+    }
+  },
+  "captionPresetCatalog": {
+    "classic": {
+      "name": "Klasik",
+      "description": "Beyaz yazı, etkin kelime altın sarısı. Varsayılan."
+    },
+    "punch": {
+      "name": "Vurucu",
+      "description": "Daha büyük, daha kalın, aynı anda üç kelime."
+    },
+    "clean": {
+      "name": "Sade",
+      "description": "Normal yazım, ince kontur, uzun satırlar."
+    },
+    "spotlight": {
+      "name": "Spot",
+      "description": "Ekranın ortasında — kalabalık görüntüde iyi okunur."
+    },
+    "block": {
+      "name": "Blok",
+      "description": "Siyah şerit üstünde beyaz, etkin kelime turuncu."
+    },
+    "tape": {
+      "name": "Bant",
+      "description": "Kırmızı bant, etkin kelime sarı. Bilerek gürültülü."
+    },
+    "news": {
+      "name": "Haber",
+      "description": "Koyu bant içinde normal yazım, ortada. Sakin ve okunaklı."
+    },
+    "sticker": {
+      "name": "Çıkartma",
+      "description": "Beyaz blok üstünde iri kelimeler, karenin üst kısmında."
+    },
+    "impact": {
+      "name": "Manşet",
+      "description": "Uzun, dar büyük harfler. Satıra daha çok sığar, bağırır."
+    },
+    "comic": {
+      "name": "Çizgi roman",
+      "description": "Elle yazılmış, sarı blok üstünde. Oyunbaz."
+    },
+    "marker": {
+      "name": "Keçeli kalem",
+      "description": "Keçeli kalem el yazısı. Türkçe yok — ğ, ş ve ı harfleri yok."
     }
   }
 }
