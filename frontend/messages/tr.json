@@ -412,7 +412,10 @@
       "cancelled": "Giriş iptal edildi. Hiçbir şey olmadı — istediğin zaman tekrar dene.",
       "stale": "Bu giriş bağlantısı artık geçerli değil. Kendine yenisini gönder.",
       "generic": "Bu giriş bağlantısı çalışmadı. Kendine yenisini gönder."
-    }
+    },
+    "or": "veya",
+    "signIn": "Giriş yap",
+    "consent": "Devam ederek <terms>şartları</terms> ve <privacy>gizlilik politikasını</privacy> kabul etmiş olursun."
   },
   "studio": {
     "tabs": {

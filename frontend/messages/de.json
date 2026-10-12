@@ -412,7 +412,10 @@
       "cancelled": "Die Anmeldung wurde abgebrochen. Es ist nichts passiert — versuch es, wann immer du magst, erneut.",
       "stale": "Dieser Anmeldelink ist nicht mehr gültig. Schick dir einen neuen.",
       "generic": "Dieser Anmeldelink hat nicht funktioniert. Schick dir einen neuen."
-    }
+    },
+    "or": "oder",
+    "signIn": "Anmelden",
+    "consent": "Mit dem Fortfahren stimmst du den <terms>Bedingungen</terms> und der <privacy>Datenschutzerklärung</privacy> zu."
   },
   "studio": {
     "tabs": {

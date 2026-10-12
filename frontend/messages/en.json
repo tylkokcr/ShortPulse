@@ -412,7 +412,10 @@
       "cancelled": "Sign-in was cancelled. Nothing happened — try again whenever you like.",
       "stale": "That sign-in link is no longer valid. Send yourself a fresh one.",
       "generic": "That sign-in link didn't work. Send yourself a fresh one."
-    }
+    },
+    "or": "or",
+    "signIn": "Sign in",
+    "consent": "By continuing you agree to our <terms>terms</terms> and <privacy>privacy policy</privacy>."
   },
   "studio": {
     "tabs": {

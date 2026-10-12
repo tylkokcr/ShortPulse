@@ -394,7 +394,7 @@ export function LoginPanel({ className }: { className?: string }) {
           {oauthProviders.length > 0 && (
             <div className="flex items-center gap-3" aria-hidden>
               <span className="h-px flex-1 bg-border" />
-              <span className="text-xs uppercase tracking-wider text-white/25">or</span>
+              <span className="text-xs uppercase tracking-wider text-white/25">{t("or")}</span>
               <span className="h-px flex-1 bg-border" />
             </div>
           )}
@@ -442,7 +442,7 @@ export function LoginPanel({ className }: { className?: string }) {
                   : t("busy.signingIn")
                 : mode === "signup"
                   ? t("createAccount")
-                  : "Sign in"}
+                  : t("signIn")}
               {busy !== "password" && <ArrowRight size={16} />}
             </Button>
           </form>

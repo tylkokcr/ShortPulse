@@ -412,7 +412,10 @@
       "cancelled": "Logowanie zostało anulowane. Nic się nie stało — spróbuj ponownie, kiedy zechcesz.",
       "stale": "Ten link do logowania nie jest już ważny. Wyślij sobie nowy.",
       "generic": "Ten link do logowania nie zadziałał. Wyślij sobie nowy."
-    }
+    },
+    "or": "lub",
+    "signIn": "Zaloguj się",
+    "consent": "Kontynuując, akceptujesz <terms>regulamin</terms> i <privacy>politykę prywatności</privacy>."
   },
   "studio": {
     "tabs": {

@@ -79,15 +79,18 @@ export default function LoginPage() {
           <LoginPanel />
 
           <p className="text-center text-xs text-white/30">
-            By continuing you agree to our{" "}
-            <Link href="/terms" className="underline underline-offset-2 hover:text-white/60">
-              terms
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="underline underline-offset-2 hover:text-white/60">
-              privacy policy
-            </Link>
-            .
+            {t.rich("consent", {
+              terms: (chunks) => (
+                <Link href="/terms" className="underline underline-offset-2 hover:text-white/60">
+                  {chunks}
+                </Link>
+              ),
+              privacy: (chunks) => (
+                <Link href="/privacy" className="underline underline-offset-2 hover:text-white/60">
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
         </div>
       </main>
