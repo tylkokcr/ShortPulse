@@ -784,6 +784,14 @@ def _add_moment(
     out.append(Moment(len(out), clip, a, b, score, clip.scale_at(middle) == "close"))
 
 
+# How far inside the source's own cuts a moment starts and ends. A cut is
+# found between two of the 12-a-second samples, so it can sit up to about
+# a twelfth of a second either side of where it is placed: taken right at
+# the boundary, a cut showed one frame of the shot before it — invisible
+# on a hard cut, a flash of the wrong player inside a whip.
+_SHOT_EDGE_S = 0.1
+
+
 def _moments(clips: list[ClipMotion], look: Style) -> list[Moment]:
     """Every candidate moment: each of the clips' own shots, and runs of up
     to `look.moment_shots` consecutive ones, long enough to be a moment
@@ -800,10 +808,14 @@ def _moments(clips: list[ClipMotion], look: Style) -> list[Moment]:
         unusable = [not clip.usable(a, b) for a, b in shots]
 
         for n, (a, _b) in enumerate(shots):
+            if a > 0:
+                a += _SHOT_EDGE_S
             for span in range(1, look.moment_shots + 1):
                 if n + span > len(shots) or unusable[n + span - 1]:
                     break
                 b = shots[n + span - 1][1]
+                if b < clip.duration_s - 0.05:
+                    b -= _SHOT_EDGE_S
                 if b - a > longest:
                     if span == 1:
                         step = look.moment_max_s / 2
@@ -889,9 +901,11 @@ def _fit_to_beats(
     if 0 < rest < min_b:
         beats_n = limit if limit <= max_b + min_b - 1 else limit - min_b
     timeline_len = beats_n * period
-    # Stretched a little further than usual when it had to take the
-    # leftover beats, rather than cut short.
-    speed = min(max(usable / timeline_len, min(lo, 0.7)), hi)
+    # Stretched further than usual when it had to take the leftover beats
+    # or is shorter than the fewest beats a cut gets: slower — as slow as
+    # it takes, within reason — rather than running past the moment's end
+    # into whatever the source cut to next.
+    speed = min(max(usable / timeline_len, 0.3), hi)
     return beats_n, timeline_len * speed, speed
 
 

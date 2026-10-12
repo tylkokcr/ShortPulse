@@ -806,3 +806,21 @@ def test_a_transition_moves_only_the_ends_of_a_cut(tmp_path, kind):
     differs = [float(np.abs(m - p).mean()) for m, p in zip(moved, plain, strict=True)]
     assert differs[0] > 8 and differs[-1] > 8  # both ends move
     assert max(differs[15:45]) < 1  # the middle of the shot is untouched
+
+
+def test_no_cut_shows_a_frame_of_the_shot_either_side():
+    """Moments sit a tenth of a second inside the source's own cuts, which
+    are only known to a twelfth of a second; a cut that ran to the edge
+    flashed one frame of the neighbouring shot inside a whip."""
+    clip = _compilation_motion(shot_s=2.0, total_s=120.0)
+    bounds = [0.0, *_source_cut_times(clip), clip.duration_s]
+    for style in ("energetic", "cinematic", "calm"):
+        for seed in range(3):
+            plan = beat_edit.plan_edit(_grid(seconds=120.0), [clip], 30.0, style, seed=seed)
+            for cut in plan.cuts:
+                start, end = cut.source_start, cut.source_start + cut.duration * cut.speed
+                # A moment may run across a cut on purpose (a move and its
+                # replay); its ends are what must not touch one.
+                for edge in (start, end):
+                    near = [b for b in bounds[1:-1] if abs(edge - b) < 0.09]
+                    assert near == [], (style, seed, start, end, near)
