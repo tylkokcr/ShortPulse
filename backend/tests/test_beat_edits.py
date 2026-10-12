@@ -758,3 +758,51 @@ def test_a_scenepacks_intro_before_its_card_is_left_out():
     short.activity[card] = 0.0
     short.flat[card] = 0.8
     assert short.framing() == (0.0, 30.0)
+
+
+def test_the_drop_is_rushed_into_and_energetic_whips_after_it_calm_never():
+    clip = _compilation_motion(shot_s=2.0, total_s=120.0)
+    energetic = beat_edit.plan_edit(_grid(seconds=120.0), [clip], 30.0, "energetic", seed=3)
+    drop = next(i for i, c in enumerate(energetic.cuts) if "flash" in c.effects)
+    assert energetic.cuts[drop - 1].transition_out == "zoom"
+    assert energetic.cuts[drop].transition_in == "zoom"
+    whips = [i for i, c in enumerate(energetic.cuts) if c.transition_in == "whip"]
+    assert whips and all(i > drop for i in whips)
+    # Both halves, always together; never out of the last cut or into the first.
+    for a, b in zip(energetic.cuts, energetic.cuts[1:], strict=False):
+        assert a.transition_out == b.transition_in
+    assert energetic.cuts[0].transition_in is None and energetic.cuts[-1].transition_out is None
+    calm = beat_edit.plan_edit(_grid(seconds=120.0), [clip], 30.0, "calm", seed=3)
+    assert all(c.transition_in is None and c.transition_out is None for c in calm.cuts)
+
+
+@pytest.mark.skipif(shutil.which(FFMPEG) is None and not Path(FFMPEG).exists(), reason="no ffmpeg")
+@pytest.mark.parametrize("kind", ["zoom", "whip"])
+def test_a_transition_moves_only_the_ends_of_a_cut(tmp_path, kind):
+    import subprocess
+
+    clip = tmp_path / "clip.mp4"
+    subprocess.run(
+        [FFMPEG, "-nostdin", "-v", "error", "-y", "-f", "lavfi", "-i",
+         "testsrc2=size=640x360:rate=30:duration=3", "-pix_fmt", "yuv420p", str(clip)],
+        check=True,
+    )
+
+    def frames(cut: beat_edit.Cut) -> np.ndarray:
+        raw = subprocess.run(
+            [FFMPEG, "-nostdin", "-v", "error", "-t", "2", "-i", str(clip), "-filter_complex",
+             beat_edit._segment_filter(cut) + ";[v]scale=54:96,format=gray[g]", "-map", "[g]",
+             "-f", "rawvideo", "-"],
+            capture_output=True, check=True,
+        ).stdout
+        return np.frombuffer(raw, np.uint8).reshape(-1, 96, 54).astype(np.float32)
+
+    plain = frames(beat_edit.Cut(clip, 0.0, 2.0, effects=["grade"], landscape=True))
+    moved = frames(
+        beat_edit.Cut(clip, 0.0, 2.0, effects=["grade"], landscape=True,
+                      transition_in=kind, transition_out=kind)
+    )
+    assert len(moved) == len(plain) == 2 * beat_edit.FPS
+    differs = [float(np.abs(m - p).mean()) for m, p in zip(moved, plain, strict=True)]
+    assert differs[0] > 8 and differs[-1] > 8  # both ends move
+    assert max(differs[15:45]) < 1  # the middle of the shot is untouched

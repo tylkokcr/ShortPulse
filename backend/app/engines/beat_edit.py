@@ -670,6 +670,12 @@ class Cut:
     # pieces in order. `speed` above is then their average, which is what
     # the stretch of source taken is measured by.
     ramp: tuple[tuple[float, float], ...] | None = None
+    # How the cut leaves and how the next one arrives: "zoom" (a rush in,
+    # blurring, out of which the next shot settles) or "whip" (a sideways
+    # snap). Each side is drawn on its own cut, so the two halves meet at
+    # the hard cut and read as one movement. None is a plain cut.
+    transition_in: str | None = None
+    transition_out: str | None = None
 
 
 # Fast into the moment, slow through it, quick out: the velocity edit. The
@@ -714,6 +720,11 @@ class Style:
     moment_min_s: float = 1.4
     moment_max_s: float = 3.2
     moment_shots: int = 1
+    # The transition into the drop, and how often a cut after it whips
+    # into the next (every nth boundary; 0 never). Kept rare: a fan edit
+    # cuts on the beat, and a transition on every cut is a slideshow.
+    drop_transition: str | None = None
+    whip_every: int = 0
 
 
 STYLES: dict[str, Style] = {
@@ -725,11 +736,13 @@ STYLES: dict[str, Style] = {
         4, 2, "punch", ("flash", "rgbsplit", "shake"), 0.75, "shake", "grade",
         close_crop_scales=("close", "medium"),
         moment_min_s=1.4, moment_max_s=3.2, moment_shots=1,
+        drop_transition="zoom", whip_every=3,
     ),
     "cinematic": Style(
         8, 4, "drift", ("softflash",), 0.75, None, "grade_film",
         close_crop_scales=("close", "medium"),
         moment_min_s=2.2, moment_max_s=5.0, moment_shots=2,
+        drop_transition="zoom",
     ),
     "calm": Style(
         8, 8, "drift", (), 1.0, None, "grade_soft", close_crop_scales=("close",),
@@ -952,6 +965,7 @@ def plan_edit(
     }
     taken: set[int] = set()
     cuts: list[Cut] = []
+    drop_cut: int | None = None
     i = 0
     last_clip: Path | None = None
     since_reaction = 0
@@ -1004,6 +1018,7 @@ def plan_edit(
         effects: list[str] = [look.grade]
         start_t = timeline[i]
         if is_drop:
+            drop_cut = len(cuts)
             effects += list(look.drop_effects)
         elif round(start_t, 3) in downbeats:
             effects.append(look.bar_effect)
@@ -1033,9 +1048,26 @@ def plan_edit(
         last_clip = clip.path
         i = end_i
 
+    _add_transitions(cuts, drop_cut, look)
     return EditPlan(
         music_start=music_start, duration=timeline[i] - timeline[0], cuts=cuts
     )
+
+
+def _add_transitions(cuts: list[Cut], drop_cut: int | None, look: Style) -> None:
+    """The drop is rushed into; after it, every `look.whip_every`th cut
+    snaps sideways into the next. Never across the first or last cut —
+    the edit rises out of black and goes into it there."""
+    if drop_cut is not None and 0 < drop_cut < len(cuts) and look.drop_transition:
+        cuts[drop_cut - 1].transition_out = look.drop_transition
+        cuts[drop_cut].transition_in = look.drop_transition
+    if not look.whip_every or drop_cut is None:
+        return
+    for k in range(drop_cut + look.whip_every, len(cuts) - 1, look.whip_every):
+        if cuts[k - 1].transition_out or cuts[k].transition_in:
+            continue
+        cuts[k - 1].transition_out = "whip"
+        cuts[k].transition_in = "whip"
 
 
 # ---------------------------------------------------------------------------
@@ -1048,6 +1080,34 @@ FADE_OUT_S = 1.5
 # How long the start takes to come up out of them: short, so the opening
 # shot and the first beat still land.
 FADE_IN_S = 0.8
+
+
+# A transition's half on each side of the cut: how long, and how far it
+# goes. Two tenths of a second either way is about the length of the move
+# a fan edit makes; the zoom rushes in to nearly twice as close, the whip
+# pushes the frame a third closer and most of that out sideways.
+TRANSITION_S = 0.2
+TRANSITION_ZOOM = 0.8
+WHIP_ZOOM = 0.35
+
+
+def _transition_frames(cut: Cut, frames: int) -> tuple[int, int]:
+    """Frames given to the arriving and the leaving half of a transition;
+    never more than a third of a short cut each, so the shot is still seen."""
+    most = max(0, frames // 3)
+    want = int(round(TRANSITION_S * FPS))
+    return (
+        min(want, most) if cut.transition_in else 0,
+        min(want, most) if cut.transition_out else 0,
+    )
+
+
+def _transition_blur(kind: str | None, when: str) -> str:
+    """The smear that sells the movement: along the whip, all round for the
+    zoom. Only while the transition lasts."""
+    if kind == "whip":
+        return f"avgblur=sizeX=36:sizeY=1:enable='{when}'"
+    return f"gblur=sigma=10:enable='{when}'"
 
 
 def _segment_filter(cut: Cut) -> str:
@@ -1102,17 +1162,47 @@ def _segment_filter(cut: Cut) -> str:
     chain: list[str] = []
     frames = max(1, int(round(cut.duration * FPS)))
 
+    # One zoompan for every movement of the frame: the punch or drift the
+    # cut has, and the halves of the transitions at either end. Terms of
+    # one zoom and one sideways position, so they add rather than fight.
+    zoom_terms: list[str] = []
+    shift_terms: list[str] = []
     if "punch" in cut.effects or "flash" in cut.effects or "softflash" in cut.effects:
         # Hit hard and settle: 18% in, back to framing in a quarter second.
-        chain.append(
-            f"zoompan=z='1+0.18*exp(-on/3.2)':d=1:x='iw/2-(iw/zoom/2)':"
-            f"y='ih/2-(ih/zoom/2)':s={WIDTH}x{HEIGHT}:fps={FPS}"
-        )
+        zoom_terms.append("0.18*exp(-on/3.2)")
     elif "drift" in cut.effects:
+        zoom_terms.append(f"0.05*on/{frames}")
+    blur: list[str] = []
+    head, tail = _transition_frames(cut, frames)
+    if head:
+        # 1 on the first frame, 0 once the transition is over.
+        left = f"pow(max(0,1-on/{head}),2)"
+        if cut.transition_in == "zoom":
+            zoom_terms.append(f"{TRANSITION_ZOOM}*{left}")
+        elif cut.transition_in == "whip":
+            zoom_terms.append(f"{WHIP_ZOOM}*{left}")
+            shift_terms.append(f"-{left}")
+        blur.append(_transition_blur(cut.transition_in, f"lt(n,{head})"))
+    if tail:
+        start = frames - tail
+        # 0 before the transition, 1 on the cut's last frame.
+        done = f"pow(min(1,max(0,(on-{start}+1)/{tail})),2)"
+        if cut.transition_out == "zoom":
+            zoom_terms.append(f"{TRANSITION_ZOOM}*{done}")
+        elif cut.transition_out == "whip":
+            zoom_terms.append(f"{WHIP_ZOOM}*{done}")
+            shift_terms.append(done)
+        blur.append(_transition_blur(cut.transition_out, f"gte(n,{start})"))
+    if zoom_terms:
+        z = "+".join(["1", *zoom_terms])
+        # The window's left edge: centred, then pushed towards an edge by
+        # the whip (-1 is the left edge of the zoomed frame, 1 the right).
+        shift = "+".join(shift_terms) or "0"
         chain.append(
-            f"zoompan=z='1.0+0.05*on/{frames}':d=1:x='iw/2-(iw/zoom/2)':"
+            f"zoompan=z='{z}':d=1:x='(iw-iw/zoom)/2*(1+({shift}))':"
             f"y='ih/2-(ih/zoom/2)':s={WIDTH}x{HEIGHT}:fps={FPS}"
         )
+    chain.extend(blur)
     if "shake" in cut.effects:
         chain.append(f"scale={int(WIDTH * 1.08)}:{int(HEIGHT * 1.08)}")
         chain.append(
