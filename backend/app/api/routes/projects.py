@@ -30,6 +30,7 @@ from app.schemas.project import (
     PostCopy,
     Project,
     ProjectConfig,
+    ProjectSource,
     ProjectStatus,
     SceneFeedback,
     TextOverlay,
@@ -637,8 +638,12 @@ async def suggest_post_copy(
     upload, a clip or a beat edit — written from what is said in it."""
     project = await _visible_project(project_id, user_id)
     settings = get_settings()
+    # In the language spoken in the video; a beat edit has none — its
+    # language field is the default it was created with, which wrote a
+    # Turkish user's edit up in English — so it takes the reader's.
     spoken = project.config.language
-    lang = spoken if spoken and spoken != AUTO_LANGUAGE else body.lang
+    has_speech = project.config.source != ProjectSource.BEAT_EDIT
+    lang = spoken if has_speech and spoken and spoken != AUTO_LANGUAGE else body.lang
     llm = LLMConfig(
         provider=LLMProvider(settings.llm_provider),
         model=settings.llm_model,

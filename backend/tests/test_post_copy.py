@@ -70,3 +70,35 @@ async def test_the_route_writes_in_the_videos_own_language(monkeypatch):
         response = await client.post(f"/api/projects/{project.config.id}/post-copy", json={"lang": "en"})
     assert response.status_code == 200, response.text
     assert response.json()["title"] == "Başlık" and seen == ["tr"]
+
+
+async def test_a_beat_edit_is_written_up_in_the_readers_language(monkeypatch):
+    """It has no speech; its language field is only the default."""
+    from fastapi import FastAPI
+
+    from app.api.routes import projects
+    from app.schemas.project import PostCopy
+    from app.services import project_store
+    from tests.test_uploads import _client
+
+    project_store.configure(None)
+    project = await project_store.create_project(
+        ProjectConfig(
+            topic="NEYMAR'IN EN İYİ ÇALIMLARI",
+            source=ProjectSource.BEAT_EDIT,
+            beat_edit=BeatEditSpec(clip_count=3, duration_s=30, style="energetic"),
+        )
+    )
+    seen: list[str] = []
+
+    async def suggest(p, lang, llm):
+        seen.append(lang)
+        return PostCopy(title="Başlık")
+
+    monkeypatch.setattr(post_copy, "suggest", suggest)
+    app = FastAPI()
+    app.include_router(projects.router)
+    async with _client(app) as client:
+        response = await client.post(f"/api/projects/{project.config.id}/post-copy", json={"lang": "tr"})
+    assert response.status_code == 200, response.text
+    assert seen == ["tr"]
