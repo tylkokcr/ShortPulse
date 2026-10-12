@@ -432,6 +432,20 @@ async def test_a_music_track_can_be_auditioned_without_a_token(pool, jwks):
     assert response.status_code != 401
 
 
+async def test_a_trend_thumbnail_loads_without_a_token_and_the_trends_do_not(pool, jwks):
+    """An <img> sends no Authorization; every card's picture was a 401."""
+    app, _ = _build_app(pool, jwks, require_auth=True)
+
+    async with _client(app) as client:
+        thumb = await client.get("/api/trends/thumb/aqz-KE-bpKQ")
+        other = await client.get("/api/trends/thumb/../../projects")
+        trends = await client.get("/api/trends?region=TR")
+
+    assert thumb.status_code != 401
+    assert other.status_code == 401 or other.status_code == 404
+    assert trends.status_code == 401
+
+
 async def test_the_voice_catalog_itself_still_needs_one(pool, jwks):
     """Only the sample is exempt. The list is fetched with headers like
     everything else, so exempting it would widen the hole for nothing."""

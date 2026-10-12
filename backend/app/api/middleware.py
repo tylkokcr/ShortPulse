@@ -131,6 +131,14 @@ _MEDIA_PATHS = re.compile(
 # has to reach the route to be turned into a redirect a human can read.
 _SOCIAL_CALLBACK_PATH = re.compile(r"^/api/social/callback/[^/]+$")
 
+# A trend's example thumbnail, which an <img> asks for — the same position
+# as the voice preview above, found the same way: every card's picture
+# answered 401 and was hidden as broken. It serves YouTube's public
+# thumbnail for an 11-character video id and nothing else (see
+# routes/trends.py), so there is nothing behind it to protect. The trends
+# themselves stay behind sign-in.
+_TREND_THUMB_PATH = re.compile(r"^/api/trends/thumb/[A-Za-z0-9_-]{11}$")
+
 
 def _authenticates_itself(request: Request) -> bool:
     """Whether this request carries a credential this middleware can't read.
@@ -147,7 +155,7 @@ def _authenticates_itself(request: Request) -> bool:
     """
     if request.url.path in _UNAUTHENTICATED_PATHS:
         return True
-    if _SOCIAL_CALLBACK_PATH.match(request.url.path):
+    if _SOCIAL_CALLBACK_PATH.match(request.url.path) or _TREND_THUMB_PATH.match(request.url.path):
         return True
     return bool(_MEDIA_PATHS.match(request.url.path) and request.query_params.get("token"))
 
