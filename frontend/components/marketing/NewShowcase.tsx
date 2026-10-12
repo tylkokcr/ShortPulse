@@ -229,7 +229,10 @@ export function NewShowcase() {
             <Phone>
               <video
                 key={`${style}-${beatLanguage}`}
-                src={`/showcase/beat-${style}-${beatLanguage}.mp4`}
+                // Starts past the fade in from black the edit opens with,
+                // so what a visitor first sees is the picture and the
+                // title, not a dark frame; the loop still plays it whole.
+                src={`/showcase/beat-${style}-${beatLanguage}.mp4#t=0.8`}
                 poster={`/showcase/beat-${style}-${beatLanguage}.jpg`}
                 autoPlay
                 loop
