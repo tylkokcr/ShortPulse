@@ -66,7 +66,9 @@ export function CaptionStyles() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr] lg:items-start">
-        <div className="flex flex-col gap-2">
+        {/* Two short columns on a phone: eleven full-width rows put the
+            preview a screen and a half below the button that changes it. */}
+        <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-col">
           {CAPTION_PRESETS.map((preset) => {
             const selected = preset.id === activeId;
             const text = presetText(preset);
@@ -76,19 +78,19 @@ export function CaptionStyles() {
                 type="button"
                 onClick={() => setActiveId(preset.id)}
                 className={clsx(
-                  "flex items-center gap-3 rounded-lg border p-3 text-left transition-all duration-200",
+                  "flex items-center gap-2.5 rounded-lg border p-2.5 text-left transition-all duration-200 lg:gap-3 lg:p-3",
                   selected
                     ? "border-accent bg-accent/10"
                     : "border-border bg-surface hover:border-border-strong hover:bg-surface-hover"
                 )}
               >
                 <span
-                  className="h-8 w-8 shrink-0 rounded-md border border-white/10"
+                  className="h-6 w-6 shrink-0 rounded-md border border-white/10 lg:h-8 lg:w-8"
                   style={{ backgroundColor: preset.previewHighlight }}
                 />
                 <span className="min-w-0">
                   <span className="block text-sm font-medium">{text.name}</span>
-                  <span className="block truncate text-[11px] text-white/40">
+                  <span className="hidden truncate text-[11px] text-white/40 lg:block">
                     {text.description}
                   </span>
                 </span>
@@ -97,10 +99,10 @@ export function CaptionStyles() {
           })}
         </div>
 
-        <Card className="flex justify-center bg-surface-raised p-6">
+        <Card className="flex justify-center bg-surface-raised p-4 sm:p-6">
           <div
             className={clsx(
-              "relative flex aspect-[9/16] w-full max-w-[260px] justify-center overflow-hidden rounded-md bg-gradient-to-br from-neutral-600 via-neutral-800 to-neutral-900 p-5",
+              "relative flex aspect-[9/16] w-full max-w-[200px] justify-center overflow-hidden rounded-md bg-gradient-to-br from-neutral-600 via-neutral-800 to-neutral-900 p-5 sm:max-w-[260px]",
               align
             )}
           >

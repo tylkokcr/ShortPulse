@@ -37,12 +37,14 @@ import { useLocale, useTranslations } from "next-intl";
  * would be taking the screen away from a person who is reading it.
  */
 const TABS = [
-  { key: "create", icon: Wand2, shot: "create" },
-  { key: "dub", icon: Languages, shot: "dub" },
-  { key: "clips", icon: Scissors, shot: "library" },
-  { key: "beat", icon: Clapperboard, shot: "beat" },
-  { key: "edit", icon: PenLine, shot: "edit" },
-  { key: "publish", icon: Send, shot: null },
+  // `focus`: where across the capture a phone's square crop sits — the
+  // part of the screen the tab is about, at a size that can be read.
+  { key: "create", icon: Wand2, shot: "create", focus: "45%" },
+  { key: "dub", icon: Languages, shot: "dub", focus: "40%" },
+  { key: "clips", icon: Scissors, shot: "library", focus: "35%" },
+  { key: "beat", icon: Clapperboard, shot: "beat", focus: "35%" },
+  { key: "edit", icon: PenLine, shot: "edit", focus: "45%" },
+  { key: "publish", icon: Send, shot: null, focus: "50%" },
 ] as const;
 
 /** The captures exist in each language the page is written in, so a
@@ -106,7 +108,7 @@ export function FeatureTour() {
         <div
           role="tablist"
           aria-label={t("title")}
-          className="-mx-6 flex gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none] lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0"
+          className="-mx-6 flex gap-2 overflow-x-auto px-6 pb-1 [mask-image:linear-gradient(to_right,black_85%,transparent)] [scrollbar-width:none] lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:[mask-image:none]"
         >
           {TABS.map((tab) => {
             const selected = tab.key === active;
@@ -170,8 +172,9 @@ export function FeatureTour() {
           <div
             id="tour-screen"
             role="tabpanel"
-            className="relative w-full overflow-hidden rounded-xl border border-border bg-[#0a0a0a] shadow-2xl shadow-black/40"
-            style={{ aspectRatio: `${SHOT.width} / ${SHOT.height}` }}
+            // Square on a phone: the whole 1280px screen at 350px wide
+            // was a picture of an app, not one you could read.
+            className="relative aspect-square w-full overflow-hidden rounded-xl border border-border bg-[#0a0a0a] shadow-2xl shadow-black/40 sm:aspect-[1280/711]"
           >
             {/* All mounted, one shown: switching is a fade rather than a
                 load; the five images are ~750KB together, lazily. */}
@@ -187,8 +190,9 @@ export function FeatureTour() {
                   width={SHOT.width}
                   height={SHOT.height}
                   loading="lazy"
+                  style={{ "--focus": tab.focus } as React.CSSProperties}
                   className={clsx(
-                    "absolute inset-0 h-full w-full object-cover transition-opacity duration-500",
+                    "absolute inset-0 h-full w-full object-cover transition-opacity duration-500 [object-position:var(--focus)_0%] sm:[object-position:center]",
                     tab.key === active ? "opacity-100" : "opacity-0"
                   )}
                 />

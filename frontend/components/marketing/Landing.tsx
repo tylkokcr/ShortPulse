@@ -275,7 +275,33 @@ export function Landing() {
       <Reveal>
         <section className="mx-auto max-w-6xl px-6 py-16">
           <SectionHeading eyebrow={t("comparison.eyebrow")} title={t("comparison.title")} />
-          <Card className="overflow-x-auto p-0">
+          {/* On a phone the table's third column fell off the screen with
+              nothing to say it was there; each row is a small card instead,
+              ShortPulse above the typical tool. */}
+          <Card className="flex flex-col p-0 sm:hidden">
+            {COMPARISON_KEYS.map((key) => (
+              <div key={key} className="flex flex-col gap-1.5 border-b border-border/60 px-4 py-3.5 last:border-0">
+                <span className="text-[11px] uppercase tracking-wide text-white/40">
+                  {t(`comparison.${key}.label`)}
+                </span>
+                <span className="flex items-start gap-1.5 text-sm font-medium text-white">
+                  <Check size={14} className="mt-0.5 shrink-0 text-accent" />
+                  <span>
+                    <span className="sr-only">ShortPulse: </span>
+                    {t(`comparison.${key}.us`)}
+                  </span>
+                </span>
+                <span className="flex items-start gap-1.5 text-xs text-white/40">
+                  <X size={13} className="mt-0.5 shrink-0 text-white/25" />
+                  <span>
+                    <span className="sr-only">{t("comparison.them")}: </span>
+                    {t(`comparison.${key}.them`)}
+                  </span>
+                </span>
+              </div>
+            ))}
+          </Card>
+          <Card className="hidden overflow-x-auto p-0 sm:block">
             <table className="w-full min-w-[560px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-white/40">
