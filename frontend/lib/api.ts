@@ -15,6 +15,8 @@ import type {
   SocialConnection,
   SocialPlatform,
   SocialPost,
+  TikTokChoices,
+  TikTokCreator,
   SubtitleStyle,
   TextOverlay,
   Voice,
@@ -598,8 +600,13 @@ export const publishProject = (body: {
   title: string;
   description: string;
   hashtags: string[];
+  /** Present to post to TikTok directly; absent sends it a draft. */
+  tiktok?: TikTokChoices;
 }) =>
   request<SocialPost>("/social/posts", { method: "POST", body: JSON.stringify(body) });
+
+export const getTikTokCreator = (connectionId: string) =>
+  request<TikTokCreator>(`/social/connections/${connectionId}/tiktok`);
 
 /** Release a post the first-post rule held back. */
 export const approvePost = (postId: string) =>

@@ -964,7 +964,47 @@
       "suggest": "Öner",
       "fieldTags": "Etiketler",
       "needsTitle": "Burada paylaşmak için bir başlık yaz",
-      "tiktokCopied": "Başlık, açıklama ve etiketler panoya kopyalandı — TikTok videoyu metinsiz taslak olarak alıyor, orada yapıştır."
+      "tiktokCopied": "Başlık, açıklama ve etiketler panoya kopyalandı — TikTok videoyu metinsiz taslak olarak alıyor, orada yapıştır.",
+      "tiktok": {
+        "postingAs": "<name></name> hesabına paylaşılacak",
+        "caption": "TikTok açıklaması",
+        "privacy": "Bu videoyu kimler izleyebilir",
+        "privacyPlaceholder": "Seç…",
+        "levels": {
+          "PUBLIC_TO_EVERYONE": "Herkes",
+          "MUTUAL_FOLLOW_FRIENDS": "Arkadaşlar",
+          "FOLLOWER_OF_CREATOR": "Takipçiler",
+          "SELF_ONLY": "Yalnızca ben"
+        },
+        "allow": "İzin ver",
+        "interactions": {
+          "comment": "Yorum",
+          "duet": "Duet",
+          "stitch": "Stitch"
+        },
+        "disabledByCreator": "TikTok ayarlarında kapalı",
+        "disclose": "Ticari içerik beyanı",
+        "discloseHint": "Bu video bir markayı, ürünü ya da hizmeti tanıtıyorsa aç.",
+        "yourBrand": "Kendi markan",
+        "yourBrandHint": "Kendini ya da kendi işini tanıtıyorsun.",
+        "branded": "Markalı içerik",
+        "brandedHint": "Bir markayla ücretli ortaklık ya da sponsorluk.",
+        "labelPromo": "Videon “Tanıtım içeriği” olarak etiketlenecek.",
+        "labelPaid": "Videon “Ücretli ortaklık” olarak etiketlenecek.",
+        "pickOne": "Beyan için en az bir seçeneği işaretle.",
+        "brandedNotPrivate": "Markalı içerik “Yalnızca ben” görünürlüğüyle paylaşılamaz.",
+        "aigc": "Bir konudan yapay zekâ ile üretildi; TikTok bunu yapay zekâ ile üretilmiş içerik olarak etiketleyecek.",
+        "tooLong": "Bu video, hesabının TikTok'ta paylaşabileceği süreden ({max} sn) uzun.",
+        "needsPrivacy": "Önce kimlerin izleyebileceğini seç.",
+        "consent": "Paylaşarak TikTok'un <music>Müzik Kullanım Onayı</music>'nı kabul etmiş olursun.",
+        "consentBranded": "Paylaşarak TikTok'un <branded>Markalı İçerik Politikası</branded> ve <music>Müzik Kullanım Onayı</music>'nı kabul etmiş olursun.",
+        "post": "TikTok'ta paylaş",
+        "draft": "Taslak olarak gönder",
+        "draftHint": "Taslak TikTok uygulamanın gelen kutusuna düşer; orada tamamlayıp kendin paylaşırsın.",
+        "loading": "TikTok hesabın okunuyor…",
+        "loadFailed": "TikTok şu an bu hesap için yanıt vermedi: {reason}",
+        "processing": "Paylaşıldı — profilinde görünmesi birkaç dakika sürebilir."
+      }
     },
     "edit": {
       "notEditable": "Bu video, altyazılar düzenlenebilir olmadan önce render edildi. Metni düzeltmek için yeniden render al.",

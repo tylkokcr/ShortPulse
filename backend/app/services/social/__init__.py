@@ -82,6 +82,7 @@ def build_publishers(settings: Settings) -> dict[str, SocialPublisher]:
             client_key=settings.tiktok_client_key,
             client_secret=settings.tiktok_client_secret,
             redirect_uri=redirect_uri(settings, "tiktok"),
+            direct_post=settings.tiktok_direct_post,
         )
 
     _report(settings, publishers)

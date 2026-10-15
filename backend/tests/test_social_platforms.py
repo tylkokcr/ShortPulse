@@ -16,6 +16,7 @@ here is what would still be wrong if every remote call succeeded:
 
 from __future__ import annotations
 
+import asyncio
 from urllib.parse import parse_qs, urlparse
 
 import httpx
@@ -150,12 +151,14 @@ def test_tiktok_separates_scopes_with_commas():
     assert _query(url)["scope"] == "user.info.basic,video.upload"
 
 
-def test_tiktok_does_not_ask_to_post_directly():
-    """`video.publish` is a second review, and posting without the user
-    seeing it first is not the product."""
+def test_tiktok_asks_to_post_directly_only_when_switched_on():
+    """`video.publish` is a second review; a deployment that has not been
+    through it keeps sending drafts."""
     url = TikTokPublisher("KEY", "secret", "https://shortpulse.app/cb").authorize_url("nonce")
-
     assert "video.publish" not in _query(url)["scope"]
+
+    direct = TikTokPublisher("KEY", "secret", "https://shortpulse.app/cb", direct_post=True)
+    assert _query(direct.authorize_url("nonce"))["scope"] == "user.info.basic,video.upload,video.publish"
 
 
 def test_instagram_asks_for_the_permission_that_posts():
@@ -593,3 +596,132 @@ def test_a_platform_nobody_configured_says_nothing(monkeypatch, caplog):
         build_publishers(_settings(meta_app_id="a", meta_app_secret="b"))
 
     assert not caplog.messages
+
+
+# -- TikTok direct posting -------------------------------------------------
+
+
+def _tiktok_target(**options):
+    from pathlib import Path
+
+    from app.services.social.base import PublishTarget
+
+    return PublishTarget(
+        video_path=Path("v.mp4"),
+        video_url="https://shortpulse.app/api/projects/p/download?token=t",
+        title="Neymar'ın en iyi çalımları",
+        description="Bir sezonun özeti #futbol",
+        hashtags=["futbol", "Neymar"],
+        options=options,
+    )
+
+
+def _serve_tiktok(monkeypatch, handler):
+    import app.services.social.tiktok as mod
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        mod.httpx, "AsyncClient", lambda **kw: real_client(transport=httpx.MockTransport(handler))
+    )
+    monkeypatch.setattr(mod, "_POLL_INTERVAL_S", 0)
+
+
+def test_a_tiktok_caption_is_title_description_and_the_tags_not_already_in_it():
+    from app.services.social.tiktok import caption
+
+    text = caption(_tiktok_target())
+    assert text == "Neymar'ın en iyi çalımları\n\nBir sezonun özeti #futbol\n\n#Neymar"
+    long = _tiktok_target()
+    object.__setattr__(long, "description", "😀" * 3000)
+    assert len(caption(long).encode("utf-16-le")) <= 2200 * 2
+
+
+def test_creator_info_is_read_into_what_the_panel_shows(monkeypatch):
+    from app.services.social.base import OAuthTokens
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path.endswith("/creator_info/query/")
+        return httpx.Response(
+            200,
+            json={
+                "data": {
+                    "creator_nickname": "Emir",
+                    "creator_username": "emir",
+                    "creator_avatar_url": "https://p16/a.jpg",
+                    "privacy_level_options": ["PUBLIC_TO_EVERYONE", "SELF_ONLY", "SOMETHING_NEW"],
+                    "comment_disabled": False,
+                    "duet_disabled": True,
+                    "stitch_disabled": False,
+                    "max_video_post_duration_sec": 600,
+                },
+                "error": {"code": "ok"},
+            },
+        )
+
+    _serve_tiktok(monkeypatch, handler)
+    publisher = TikTokPublisher("k", "s", "https://shortpulse.app/cb", direct_post=True)
+    info = asyncio.run(publisher.creator_info(OAuthTokens(access_token="at")))
+    assert info["nickname"] == "Emir" and info["duet_disabled"] is True
+    # A level this code does not know is not offered.
+    assert info["privacy_levels"] == ["PUBLIC_TO_EVERYONE", "SELF_ONLY"]
+    assert info["max_duration_s"] == 600
+
+
+def test_a_direct_post_sends_exactly_what_was_chosen(monkeypatch):
+    from app.services.social.base import OAuthTokens
+
+    sent: list[dict] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/video/init/"):
+            import json as _json
+
+            sent.append(_json.loads(request.content))
+            return httpx.Response(200, json={"data": {"publish_id": "p1"}, "error": {"code": "ok"}})
+        return httpx.Response(200, json={"data": {"status": "PUBLISH_COMPLETE"}})
+
+    _serve_tiktok(monkeypatch, handler)
+    publisher = TikTokPublisher("k", "s", "https://shortpulse.app/cb", direct_post=True)
+    outcome = asyncio.run(
+        publisher.publish(
+            OAuthTokens(access_token="at"),
+            _tiktok_target(
+                mode="direct", privacy_level="MUTUAL_FOLLOW_FRIENDS", allow_comment=True, is_aigc=True
+            ),
+        )
+    )
+    info = sent[0]["post_info"]
+    assert info["privacy_level"] == "MUTUAL_FOLLOW_FRIENDS"
+    # Only what was ticked is allowed; nothing defaults to on.
+    assert info["disable_comment"] is False
+    assert info["disable_duet"] is True and info["disable_stitch"] is True
+    assert info["brand_content_toggle"] is False and info["brand_organic_toggle"] is False
+    assert info["is_aigc"] is True and info["title"].startswith("Neymar'ın")
+    assert sent[0]["source_info"]["source"] == "PULL_FROM_URL"
+    assert outcome.privacy == "friends" and outcome.platform_post_id == "p1"
+
+
+def test_a_direct_post_without_a_chosen_privacy_is_refused(monkeypatch):
+    from app.services.social.base import OAuthTokens
+
+    _serve_tiktok(monkeypatch, lambda r: httpx.Response(500))
+    publisher = TikTokPublisher("k", "s", "https://shortpulse.app/cb", direct_post=True)
+    with pytest.raises(PublishError):
+        asyncio.run(publisher.publish(OAuthTokens(access_token="at"), _tiktok_target(mode="direct")))
+
+
+def test_without_direct_mode_tiktok_still_gets_a_draft(monkeypatch):
+    from app.services.social.base import OAuthTokens
+
+    paths: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        paths.append(request.url.path)
+        if request.url.path.endswith("/init/"):
+            return httpx.Response(200, json={"data": {"publish_id": "p2"}, "error": {"code": "ok"}})
+        return httpx.Response(200, json={"data": {"status": "SEND_TO_USER_INBOX"}})
+
+    _serve_tiktok(monkeypatch, handler)
+    publisher = TikTokPublisher("k", "s", "https://shortpulse.app/cb", direct_post=True)
+    outcome = asyncio.run(publisher.publish(OAuthTokens(access_token="at"), _tiktok_target()))
+    assert "/inbox/video/init/" in paths[0] and outcome.privacy == "draft"

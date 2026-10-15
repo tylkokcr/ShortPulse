@@ -256,3 +256,109 @@ async def test_a_post_that_vanished_between_write_and_read_is_a_404(monkeypatch)
         await social_route._reload_out(pool=None, post_id="post-1")
 
     assert exc.value.status_code == 404
+
+
+# --- direct posting to TikTok ----------------------------------------------
+
+
+def _direct_post_setup(monkeypatch, *, scopes=("user.info.basic", "video.upload", "video.publish"),
+                       source="generated"):
+    from types import SimpleNamespace
+
+    from app.api.routes import social as social_route
+    from app.schemas.project import Project, ProjectConfig, ProjectSource
+    from app.services.social.base import OAuthTokens
+    from app.services.social.tiktok import TikTokPublisher
+
+    created: list[dict] = []
+    project = Project(config=ProjectConfig(topic="t", source=ProjectSource(source)), output_path="/v.mp4")
+
+    async def owner_of(pid):
+        return "u1"
+
+    async def get_project(pid):
+        return project
+
+    async def load_for_publish(pool, cid, cipher):
+        return SimpleNamespace(
+            id="c1", platform="tiktok", user_id="u1", external_account_id="open1",
+            tokens=OAuthTokens(access_token="at", scopes=list(scopes)),
+        )
+
+    async def create_post(pool, **kw):
+        created.append(kw)
+        return "post-1"
+
+    async def reload_out(pool, post_id):
+        return post_id
+
+    class Queue:
+        enabled = True
+
+        async def submit(self, post_id):
+            pass
+
+    monkeypatch.setattr(social_route, "_require_pool", lambda request: object())
+    monkeypatch.setattr(social_route.project_store, "owner_of", owner_of)
+    monkeypatch.setattr(social_route.project_store, "get_project", get_project)
+    monkeypatch.setattr(social_route.social_store, "load_for_publish", load_for_publish)
+    monkeypatch.setattr(social_route.social_store, "create_post", create_post)
+    monkeypatch.setattr(social_route, "_reload_out", reload_out)
+    publisher = TikTokPublisher("k", "s", "https://x/cb", direct_post=True)
+    request = SimpleNamespace(
+        app=SimpleNamespace(
+            state=SimpleNamespace(
+                publishers={"tiktok": publisher}, publish_queue=Queue(), token_cipher=None
+            )
+        )
+    )
+    return social_route, request, created
+
+
+async def test_a_direct_tiktok_post_is_queued_with_the_choices_made(monkeypatch):
+    social_route, request, created = _direct_post_setup(monkeypatch)
+    body = social_route.PublishRequest(
+        project_id="p", connection_id="c1", title="Başlık",
+        tiktok=social_route.TikTokChoices(privacy_level="SELF_ONLY", allow_comment=True),
+    )
+    await social_route.publish_now(body, request, user_id="u1")
+    options = created[0]["options"]
+    assert options["mode"] == "direct" and options["privacy_level"] == "SELF_ONLY"
+    assert options["allow_comment"] is True and options["allow_duet"] is False
+    # A video the pipeline wrote, voiced and illustrated is labelled as AI content.
+    assert options["is_aigc"] is True
+    assert created[0]["privacy"] == "private"
+
+
+async def test_branded_content_cannot_be_private_and_a_level_must_be_known(monkeypatch):
+    from fastapi import HTTPException
+
+    social_route, request, created = _direct_post_setup(monkeypatch)
+    for choice in (
+        social_route.TikTokChoices(privacy_level="SELF_ONLY", brand_content=True),
+        social_route.TikTokChoices(privacy_level="EVERYONE_PLEASE"),
+    ):
+        body = social_route.PublishRequest(project_id="p", connection_id="c1", title="t", tiktok=choice)
+        with pytest.raises(HTTPException) as exc:
+            await social_route.publish_now(body, request, user_id="u1")
+        assert exc.value.status_code == 422
+    assert created == []
+
+
+async def test_direct_posting_needs_the_scope_and_own_footage_is_not_ai(monkeypatch):
+    from fastapi import HTTPException
+
+    social_route, request, created = _direct_post_setup(
+        monkeypatch, scopes=("user.info.basic", "video.upload")
+    )
+    body = social_route.PublishRequest(
+        project_id="p", connection_id="c1", title="t",
+        tiktok=social_route.TikTokChoices(privacy_level="PUBLIC_TO_EVERYONE"),
+    )
+    with pytest.raises(HTTPException) as exc:
+        await social_route.publish_now(body, request, user_id="u1")
+    assert exc.value.status_code == 409
+
+    social_route, request, created = _direct_post_setup(monkeypatch, source="beat_edit")
+    await social_route.publish_now(body, request, user_id="u1")
+    assert created[0]["options"]["is_aigc"] is False

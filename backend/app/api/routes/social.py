@@ -28,9 +28,11 @@ from pydantic import BaseModel, Field
 
 from app.api.deps import db_pool, require_user_id
 from app.core.config import get_settings
+from app.schemas.project import ProjectSource
 from app.services import project_store, social_store
-from app.services.publish_manager import compose_description
-from app.services.social.base import PublishError
+from app.services.publish_manager import compose_description, fresh_tokens
+from app.services.social.base import ConnectionRevoked, PublishError
+from app.services.social.tiktok import PRIVACY_LEVELS
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +137,9 @@ class ConnectionOut(BaseModel):
     # False until something has gone out through this connection. The UI
     # uses it to explain why the first automatic post still needs a click.
     has_published: bool
+    # TikTok only: this deployment offers direct posting and the account
+    # granted it. Otherwise a TikTok post is a draft in the app's inbox.
+    direct_post: bool = False
 
 
 @router.get("/connections", response_model=list[ConnectionOut])
@@ -149,9 +154,57 @@ async def list_connections(
             display_name=c.display_name,
             auto_publish=c.auto_publish,
             has_published=c.first_post_at is not None,
+            direct_post=_can_post_directly(request, c.platform, c.scopes),
         )
         for c in rows
     ]
+
+
+def _can_post_directly(request: Request, platform: str, scopes) -> bool:
+    publisher = _publishers(request).get(platform)
+    return (
+        platform == "tiktok"
+        and bool(getattr(publisher, "direct_post", False))
+        and "video.publish" in scopes
+    )
+
+
+class CreatorInfoOut(BaseModel):
+    nickname: str
+    username: str
+    avatar_url: str
+    privacy_levels: list[str]
+    comment_disabled: bool
+    duet_disabled: bool
+    stitch_disabled: bool
+    max_duration_s: int
+
+
+@router.get("/connections/{connection_id}/tiktok", response_model=CreatorInfoOut)
+async def tiktok_creator(
+    connection_id: str, request: Request, user_id: str = Depends(require_user_id)
+) -> CreatorInfoOut:
+    """What TikTok says this account may post, asked fresh each time the
+    publish panel opens it — TikTok requires the panel to show and obey
+    it, and it changes (a creator can turn duets off, hit a posting cap)."""
+    pool = _require_pool(request)
+    connection = await social_store.load_for_publish(
+        pool, connection_id, request.app.state.token_cipher
+    )
+    if connection is None or connection.user_id != user_id or connection.platform != "tiktok":
+        raise HTTPException(status_code=404, detail="Connection not found")
+    publisher = _publishers(request).get("tiktok")
+    if publisher is None or not _can_post_directly(request, "tiktok", connection.tokens.scopes):
+        raise HTTPException(status_code=409, detail="Direct posting is not available for this account")
+    try:
+        tokens = await fresh_tokens(pool, publisher, connection, request.app.state.token_cipher)
+        info = await publisher.creator_info(tokens)
+    except ConnectionRevoked as exc:
+        await social_store.revoke_connection(pool, connection.id, user_id)
+        raise HTTPException(status_code=409, detail=str(exc)) from None
+    except PublishError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from None
+    return CreatorInfoOut(**info)
 
 
 # --------------------------------------------------------------------------
@@ -317,12 +370,28 @@ async def list_posts(
     return [_to_out(p) for p in posts]
 
 
+class TikTokChoices(BaseModel):
+    """What the person chose for a direct TikTok post. Nothing defaults to
+    on: an interaction is allowed only if they ticked it."""
+
+    privacy_level: str
+    allow_comment: bool = False
+    allow_duet: bool = False
+    allow_stitch: bool = False
+    # Commercial content disclosure: promoting their own brand, and/or a
+    # paid partnership with someone else's.
+    brand_organic: bool = False
+    brand_content: bool = False
+
+
 class PublishRequest(BaseModel):
     project_id: str
     connection_id: str
     title: str = Field(max_length=100)
     description: str = Field(default="", max_length=2200)
     hashtags: list[str] = Field(default_factory=list, max_length=15)
+    # Present to post to TikTok directly; absent sends a draft there.
+    tiktok: TikTokChoices | None = None
 
 
 @router.post("/posts", response_model=PostOut, status_code=202)
@@ -373,6 +442,32 @@ async def publish_now(
     if connection is None or connection.user_id != user_id:
         raise HTTPException(status_code=404, detail="Connection not found")
 
+    options: dict | None = None
+    privacy = "public"
+    if body.tiktok is not None:
+        choice = body.tiktok
+        if connection.platform != "tiktok" or not _can_post_directly(
+            request, "tiktok", connection.tokens.scopes
+        ):
+            raise HTTPException(status_code=409, detail="Direct posting is not available for this account")
+        if choice.privacy_level not in PRIVACY_LEVELS:
+            raise HTTPException(status_code=422, detail="Choose who can see the video.")
+        if choice.brand_content and choice.privacy_level == "SELF_ONLY":
+            # TikTok's rule: branded content cannot be private.
+            raise HTTPException(
+                status_code=422, detail="Branded content can't be posted with private visibility."
+            )
+        options = {
+            "mode": "direct",
+            **choice.model_dump(),
+            # Said for the person rather than asked: a video written,
+            # voiced and illustrated by the pipeline is AI-generated
+            # content, which TikTok asks to be labelled as such. Their own
+            # footage, captioned or cut to a song, is not.
+            "is_aigc": project.config.source == ProjectSource.GENERATED,
+        }
+        privacy = PRIVACY_LEVELS[choice.privacy_level]
+
     post_id = await social_store.create_post(
         pool,
         project_id=body.project_id,
@@ -385,8 +480,9 @@ async def publish_now(
         # using the footage rather than a suggestion.
         description=compose_description(project, body.description),
         hashtags=body.hashtags,
-        privacy="public",
+        privacy=privacy,
         status="queued",
+        options=options,
     )
     if post_id is None:
         raise HTTPException(

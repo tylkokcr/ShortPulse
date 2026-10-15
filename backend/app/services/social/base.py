@@ -113,6 +113,9 @@ class PublishTarget:
     # YouTube project cannot post anything but private. The outcome says
     # what actually happened.
     privacy: str = "public"
+    # Choices a platform asks the person for on each post (TikTok's direct
+    # posting); empty everywhere else. See social_posts.options (0015).
+    options: dict = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

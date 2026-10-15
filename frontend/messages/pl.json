@@ -964,7 +964,47 @@
       "suggest": "Zaproponuj",
       "fieldTags": "Hashtagi",
       "needsTitle": "Wpisz tytuł, aby tu opublikować",
-      "tiktokCopied": "Tytuł, opis i hashtagi skopiowane — TikTok przyjmuje wideo jako szkic bez tekstu, więc wklej je tam."
+      "tiktokCopied": "Tytuł, opis i hashtagi skopiowane — TikTok przyjmuje wideo jako szkic bez tekstu, więc wklej je tam.",
+      "tiktok": {
+        "postingAs": "Publikacja na koncie <name></name>",
+        "caption": "Opis na TikToku",
+        "privacy": "Kto może oglądać ten film",
+        "privacyPlaceholder": "Wybierz…",
+        "levels": {
+          "PUBLIC_TO_EVERYONE": "Wszyscy",
+          "MUTUAL_FOLLOW_FRIENDS": "Znajomi",
+          "FOLLOWER_OF_CREATOR": "Obserwujący",
+          "SELF_ONLY": "Tylko ty"
+        },
+        "allow": "Pozwól użytkownikom na",
+        "interactions": {
+          "comment": "Komentarze",
+          "duet": "Duet",
+          "stitch": "Stitch"
+        },
+        "disabledByCreator": "wyłączone w ustawieniach TikToka",
+        "disclose": "Oznacz treść komercyjną",
+        "discloseHint": "Włącz, jeśli film promuje markę, produkt lub usługę.",
+        "yourBrand": "Twoja marka",
+        "yourBrandHint": "Promujesz siebie lub własny biznes.",
+        "branded": "Treść sponsorowana",
+        "brandedHint": "Płatna współpraca lub sponsoring marki.",
+        "labelPromo": "Film zostanie oznaczony jako „Treść promocyjna”.",
+        "labelPaid": "Film zostanie oznaczony jako „Płatna współpraca”.",
+        "pickOne": "Zaznacz co najmniej jedną opcję.",
+        "brandedNotPrivate": "Treści sponsorowanej nie można opublikować z widocznością „Tylko ty”.",
+        "aigc": "Wygenerowano przez AI z tematu, więc TikTok oznaczy go jako treść wygenerowaną przez AI.",
+        "tooLong": "Ten film jest dłuższy, niż twoje konto może opublikować na TikToku ({max} s).",
+        "needsPrivacy": "Najpierw wybierz, kto może go oglądać.",
+        "consent": "Publikując, akceptujesz <music>Potwierdzenie użycia muzyki</music> TikToka.",
+        "consentBranded": "Publikując, akceptujesz <branded>Zasady treści sponsorowanych</branded> i <music>Potwierdzenie użycia muzyki</music> TikToka.",
+        "post": "Opublikuj na TikToku",
+        "draft": "Wyślij jako szkic",
+        "draftHint": "Szkic trafia do skrzynki w aplikacji TikTok, gdzie sam go kończysz i publikujesz.",
+        "loading": "Odczytywanie konta TikTok…",
+        "loadFailed": "TikTok nie odpowiedział teraz dla tego konta: {reason}",
+        "processing": "Opublikowano — pojawienie się na profilu może potrwać kilka minut."
+      }
     },
     "edit": {
       "notEditable": "Ten film wyrenderowano, zanim napisy stały się edytowalne. Wyrenderuj go ponownie, aby poprawić tekst.",

@@ -964,7 +964,47 @@
       "suggest": "Vorschlagen",
       "fieldTags": "Hashtags",
       "needsTitle": "Schreib einen Titel, um hier zu posten",
-      "tiktokCopied": "Titel, Beschreibung und Hashtags kopiert — TikTok nimmt das Video als Entwurf ohne Text, füge sie dort ein."
+      "tiktokCopied": "Titel, Beschreibung und Hashtags kopiert — TikTok nimmt das Video als Entwurf ohne Text, füge sie dort ein.",
+      "tiktok": {
+        "postingAs": "Wird auf <name></name> gepostet",
+        "caption": "Beschreibung auf TikTok",
+        "privacy": "Wer kann dieses Video ansehen",
+        "privacyPlaceholder": "Auswählen…",
+        "levels": {
+          "PUBLIC_TO_EVERYONE": "Alle",
+          "MUTUAL_FOLLOW_FRIENDS": "Freunde",
+          "FOLLOWER_OF_CREATOR": "Follower",
+          "SELF_ONLY": "Nur ich"
+        },
+        "allow": "Nutzern erlauben",
+        "interactions": {
+          "comment": "Kommentare",
+          "duet": "Duett",
+          "stitch": "Stitch"
+        },
+        "disabledByCreator": "in deinen TikTok-Einstellungen aus",
+        "disclose": "Kommerzielle Inhalte offenlegen",
+        "discloseHint": "Einschalten, wenn das Video eine Marke, ein Produkt oder eine Dienstleistung bewirbt.",
+        "yourBrand": "Deine Marke",
+        "yourBrandHint": "Du bewirbst dich selbst oder dein eigenes Unternehmen.",
+        "branded": "Markeninhalt",
+        "brandedHint": "Bezahlte Partnerschaft oder Sponsoring durch eine Marke.",
+        "labelPromo": "Dein Video wird als „Werbeinhalt“ gekennzeichnet.",
+        "labelPaid": "Dein Video wird als „Bezahlte Partnerschaft“ gekennzeichnet.",
+        "pickOne": "Wähle mindestens eine Option zur Offenlegung.",
+        "brandedNotPrivate": "Markeninhalte können nicht mit der Sichtbarkeit „Nur ich“ gepostet werden.",
+        "aigc": "Von KI aus einem Thema erstellt, daher kennzeichnet TikTok es als KI-generierten Inhalt.",
+        "tooLong": "Dieses Video ist länger, als dein Konto auf TikTok posten darf ({max} s).",
+        "needsPrivacy": "Wähle zuerst, wer es ansehen kann.",
+        "consent": "Mit dem Posten stimmst du der <music>Musiknutzungsbestätigung</music> von TikTok zu.",
+        "consentBranded": "Mit dem Posten stimmst du der <branded>Richtlinie für Markeninhalte</branded> und der <music>Musiknutzungsbestätigung</music> von TikTok zu.",
+        "post": "Auf TikTok posten",
+        "draft": "Als Entwurf senden",
+        "draftHint": "Der Entwurf landet im Posteingang deiner TikTok-App, wo du ihn fertigstellst und selbst postest.",
+        "loading": "TikTok-Konto wird gelesen…",
+        "loadFailed": "TikTok hat für dieses Konto gerade nicht geantwortet: {reason}",
+        "processing": "Gepostet — es kann ein paar Minuten dauern, bis es auf deinem Profil erscheint."
+      }
     },
     "edit": {
       "notEditable": "Dieses Video wurde gerendert, bevor Untertitel bearbeitbar waren. Rendere es neu, um den Text zu korrigieren.",

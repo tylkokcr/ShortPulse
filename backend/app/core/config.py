@@ -302,6 +302,12 @@ class Settings(BaseSettings):
     # portal, because TikTok fetches the file rather than receiving it.
     tiktok_client_key: str | None = None
     tiktok_client_secret: str | None = None
+    # Ask for `video.publish` as well, and offer posting straight to the
+    # account from the publish panel (with the choices TikTok requires
+    # the person to make) beside sending a draft. Needs "Direct Post"
+    # added to the app in TikTok's developer portal; until TikTok has
+    # audited it, every direct post is forced to SELF_ONLY.
+    tiktok_direct_post: bool = False
 
     # How long the signed URL handed to a platform stays valid. Longer
     # than the playback TTL above because nothing is watching this one:

@@ -138,6 +138,29 @@ export default function Privacy() {
         </p>
       </Section>
 
+      <Section title="TikTok user data">
+        <p>
+          When you connect a TikTok account, TikTok tells ShortPulse the account&apos;s id and
+          display name (<code>user.info.basic</code>), and gives it permission to send videos to
+          that account: as a draft in your TikTok inbox (<code>video.upload</code>) or, where
+          offered, as a post (<code>video.publish</code>).
+        </p>
+        <p>
+          Before a post, ShortPulse asks TikTok which account it would go to and what that account
+          may choose — its name and picture, the privacy levels it allows, whether comments, duets
+          and stitches are switched on, and the longest video it may post — and shows it to you on
+          the publishing form. That answer is used for that form and not stored.
+        </p>
+        <p>
+          A video is only sent when you press the button for it, with the caption, privacy and
+          interaction settings you chose. Automatic publishing only ever sends drafts, which you
+          finish in the TikTok app. The access tokens are encrypted before they are stored;
+          disconnecting the account deletes them, and you can also remove ShortPulse&apos;s access
+          from TikTok&apos;s own settings. None of it is used for advertising, sold, or used to
+          train any model.
+        </p>
+      </Section>
+
       <Section title="What leaves the server">
         <p>Only these, and only what each one needs:</p>
         <ul className="ml-4 flex list-disc flex-col gap-1.5">

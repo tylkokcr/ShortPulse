@@ -20,7 +20,8 @@ import {
   suggestPostCopy,
 } from "@/lib/api";
 import { Link } from "@/i18n/navigation";
-import type { Project, SocialConnection, SocialPost } from "@/lib/types";
+import type { Project, SocialConnection, SocialPost, TikTokChoices } from "@/lib/types";
+import { TikTokComposer } from "@/components/render/TikTokComposer";
 import { PLATFORM_ICONS as ICONS, PLATFORM_LABELS as LABELS, isComingSoon } from "@/lib/platforms";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -66,6 +67,8 @@ export function PublishPanel({ project }: { project: Project }) {
   const [tags, setTags] = useState((copy?.hashtags ?? []).map((h) => `#${h}`).join(" "));
   const [suggesting, setSuggesting] = useState(false);
   const [copied, setCopied] = useState(false);
+  // The TikTok account whose direct-post form is open, if any.
+  const [composing, setComposing] = useState<string | null>(null);
 
   const projectId = project.config.id;
 
@@ -137,11 +140,20 @@ export function PublishPanel({ project }: { project: Project }) {
     }
   }
 
-  async function post(connection: SocialConnection) {
+  // What TikTok will show as the caption: the same composition the
+  // server sends (backend social/tiktok.py `caption`).
+  const tiktokCaption = (() => {
+    const text = [title.trim(), description.trim()].filter(Boolean).join("\n\n");
+    const present = text.toLowerCase();
+    const extra = hashtags.filter((h) => !present.includes(`#${h.toLowerCase()}`)).map((h) => `#${h}`);
+    return [text, extra.join(" ")].filter(Boolean).join("\n\n");
+  })();
+
+  async function post(connection: SocialConnection, tiktok?: TikTokChoices) {
     setBusy(connection.id);
     setError(null);
     setCopied(false);
-    if (connection.platform === "tiktok") {
+    if (connection.platform === "tiktok" && !tiktok) {
       // TikTok takes the video as a draft in the app's inbox and no text
       // with it (see backend social/tiktok.py), so the words go to the
       // clipboard — written now, while the click still counts as one.
@@ -160,7 +172,9 @@ export function PublishPanel({ project }: { project: Project }) {
         title: title.trim(),
         description: description.trim(),
         hashtags,
+        tiktok,
       });
+      setComposing(null);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.start"));
@@ -247,8 +261,10 @@ export function PublishPanel({ project }: { project: Project }) {
         {connections.map((connection) => {
           const Icon = ICONS[connection.platform];
           const existing = posts.find((p) => p.platform === connection.platform);
+          const direct = connection.platform === "tiktok" && connection.direct_post === true;
           return (
-            <div key={connection.id} className="flex items-center gap-2.5">
+            <div key={connection.id} className="flex flex-col gap-2">
+            <div className="flex items-center gap-2.5">
               <Icon size={16} className="shrink-0 text-white/40" />
               <span className="min-w-0 flex-1 truncate text-sm">
                 {LABELS[connection.platform]}
@@ -267,7 +283,11 @@ export function PublishPanel({ project }: { project: Project }) {
                   // others need one, and say so rather than just greying out.
                   disabled={busy !== null || (connection.platform !== "tiktok" && !title.trim())}
                   title={connection.platform !== "tiktok" && !title.trim() ? t("needsTitle") : undefined}
-                  onClick={() => post(connection)}
+                  onClick={() =>
+                    direct
+                      ? setComposing(composing === connection.id ? null : connection.id)
+                      : post(connection)
+                  }
                 >
                   {busy === connection.id ? (
                     <Loader2 size={13} className="animate-spin" />
@@ -277,6 +297,18 @@ export function PublishPanel({ project }: { project: Project }) {
                   {t("post")}
                 </Button>
               )}
+            </div>
+            {direct && !existing && composing === connection.id && (
+              <TikTokComposer
+                connectionId={connection.id}
+                caption={tiktokCaption}
+                durationS={project.duration_s}
+                aiGenerated={project.config.source === "generated"}
+                busy={busy === connection.id}
+                onPost={(choices) => post(connection, choices)}
+                onDraft={() => post(connection)}
+              />
+            )}
             </div>
           );
         })}
@@ -332,7 +364,11 @@ function PostState({
       {/* The honest answer to "why isn't my video public". An app that has
           not passed the platform's audit has its uploads forced private,
           and nothing in the API says so at the time. */}
-      {post.privacy === "draft" ? (
+      {post.platform === "tiktok" && post.privacy !== "draft" && post.status === "published" ? (
+        // A direct post: TikTok accepted it and processes it before it
+        // shows; there is no link to it yet.
+        <span className="text-white/40">{t("tiktok.processing")}</span>
+      ) : post.privacy === "draft" ? (
         // TikTok takes a draft, not a post: it lands in the app's inbox
         // for the user to caption and publish themselves. Saying "draft"
         // alone reads as something went half-done, and there is no link

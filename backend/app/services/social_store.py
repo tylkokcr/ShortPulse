@@ -13,8 +13,9 @@ somebody's YouTube credentials into an HTTP response.
 
 from __future__ import annotations
 
+import json
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 import asyncpg
@@ -39,6 +40,9 @@ class Connection:
     # held for review; see 0008 for why that rule exists.
     first_post_at: datetime | None
     created_at: datetime
+    # What the platform granted. Not secret, and what tells the panel
+    # whether a TikTok account can be posted to directly.
+    scopes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -115,7 +119,7 @@ async def list_connections(pool: asyncpg.Pool, user_id: str) -> list[Connection]
     rows = await pool.fetch(
         """
         select id, platform, external_account_id, display_name,
-               auto_publish, first_post_at, created_at
+               auto_publish, first_post_at, created_at, scopes
         from social_connections
         where user_id = $1 and revoked_at is null
         order by created_at
@@ -131,6 +135,7 @@ async def list_connections(pool: asyncpg.Pool, user_id: str) -> list[Connection]
             auto_publish=r["auto_publish"],
             first_post_at=r["first_post_at"],
             created_at=r["created_at"],
+            scopes=tuple(r["scopes"] or ()),
         )
         for r in rows
     ]
@@ -250,12 +255,15 @@ class Post:
     error: str | None
     created_at: datetime
     published_at: datetime | None
+    # Platform-specific choices made for this post (see 0015). Empty for
+    # most posts.
+    options: dict = field(default_factory=dict)
 
 
 _POST_COLUMNS = """
     p.id, p.project_id, p.connection_id, c.platform, p.status, p.title,
     p.description, p.hashtags, p.privacy, p.platform_url, p.error,
-    p.created_at, p.published_at
+    p.created_at, p.published_at, p.options
 """
 
 
@@ -274,7 +282,21 @@ def _to_post(row: asyncpg.Record) -> Post:
         error=row["error"],
         created_at=row["created_at"],
         published_at=row["published_at"],
+        options=_options(row["options"]),
     )
+
+
+def _options(value: object) -> dict:
+    """jsonb arrives as text unless the pool has a codec for it."""
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str) and value:
+        try:
+            loaded = json.loads(value)
+        except ValueError:
+            return {}
+        return loaded if isinstance(loaded, dict) else {}
+    return {}
 
 
 async def create_post(
@@ -288,6 +310,7 @@ async def create_post(
     hashtags: list[str],
     privacy: str,
     status: str,
+    options: dict | None = None,
 ) -> str | None:
     """Record an intent to publish.
 
@@ -301,9 +324,9 @@ async def create_post(
         """
         insert into social_posts (
             project_id, connection_id, user_id, title, description,
-            hashtags, privacy, status
+            hashtags, privacy, status, options
         )
-        values ($1, $2, $3, $4, $5, $6, $7, $8)
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)
         on conflict do nothing
         returning id
         """,
@@ -315,6 +338,7 @@ async def create_post(
         hashtags,
         privacy,
         status,
+        json.dumps(options) if options else None,
     )
     return str(row["id"]) if row else None
 

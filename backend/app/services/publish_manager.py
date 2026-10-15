@@ -35,6 +35,7 @@ from app.schemas.project import Project, ProjectStatus, VisualMode
 from app.services import db, project_store, social_store
 from app.services.social.base import (
     ConnectionRevoked,
+    OAuthTokens,
     PublishError,
     PublishTarget,
     SocialPublisher,
@@ -184,21 +185,7 @@ class PublishQueue:
         await social_store.mark_uploading(pool, post_id)
 
         try:
-            tokens = connection.tokens
-            expires_at = tokens.expires_at
-            if expires_at is not None:
-                if expires_at.tzinfo is None:
-                    expires_at = expires_at.replace(tzinfo=UTC)
-                if expires_at - _REFRESH_MARGIN <= datetime.now(UTC):
-                    if not tokens.refresh_token:
-                        raise ConnectionRevoked(
-                            "Access to this account expired. Reconnect it to publish again."
-                        )
-                    tokens = await publisher.refresh(tokens.refresh_token)
-                    await social_store.store_refreshed_tokens(
-                        pool, connection.id, tokens, self._cipher
-                    )
-
+            tokens = await fresh_tokens(pool, publisher, connection, self._cipher)
             outcome = await publisher.publish(
                 tokens, self._build_target(project, post, connection)
             )
@@ -255,6 +242,7 @@ class PublishQueue:
             description=post.description or "",
             hashtags=post.hashtags,
             privacy=post.privacy,
+            options=post.options,
         )
 
 
@@ -284,6 +272,28 @@ def configure_signer(signer) -> None:
 def configure_queue(queue: PublishQueue) -> None:
     global _queue
     _queue = queue
+
+
+async def fresh_tokens(pool, publisher, connection, cipher) -> OAuthTokens:
+    """The connection's tokens, renewed first if they are about to lapse.
+
+    Shared by the worker and by anything that calls a platform on the
+    user's behalf outside a post (TikTok's creator_info), so both renew
+    the same way and store the rotated refresh token TikTok insists on.
+    """
+    tokens = connection.tokens
+    expires_at = tokens.expires_at
+    if expires_at is not None:
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=UTC)
+        if expires_at - _REFRESH_MARGIN <= datetime.now(UTC):
+            if not tokens.refresh_token:
+                raise ConnectionRevoked(
+                    "Access to this account expired. Reconnect it to publish again."
+                )
+            tokens = await publisher.refresh(tokens.refresh_token)
+            await social_store.store_refreshed_tokens(pool, connection.id, tokens, cipher)
+    return tokens
 
 
 async def queue_automatic_posts(project: Project) -> None:

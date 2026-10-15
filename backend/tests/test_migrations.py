@@ -250,3 +250,21 @@ async def test_social_tables_are_locked_down_on_the_very_first_boot(scratch_db):
         assert row["relrowsecurity"], f"{row['relname']} has RLS off after a first boot"
         assert not row["anon_select"], f"{row['relname']} is readable by anon after a first boot"
         assert not row["auth_select"], f"{row['relname']} is readable by authenticated"
+
+
+async def test_a_post_keeps_its_platform_choices(scratch_db):
+    """0015: TikTok's direct-post choices travel with the queued post."""
+    await db.apply_migrations(scratch_db)
+    kind = await scratch_db.fetchval(
+        "select data_type from information_schema.columns "
+        "where table_name = 'social_posts' and column_name = 'options'"
+    )
+    assert kind == "jsonb"
+
+
+def test_stored_options_read_back_as_a_dict_whatever_the_codec():
+    from app.services.social_store import _options
+
+    assert _options('{"mode": "direct"}') == {"mode": "direct"}
+    assert _options({"mode": "direct"}) == {"mode": "direct"}
+    assert _options(None) == {} and _options("not json") == {} and _options("[1]") == {}

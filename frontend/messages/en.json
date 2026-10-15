@@ -964,7 +964,47 @@
       "suggest": "Suggest",
       "fieldTags": "Hashtags",
       "needsTitle": "Write a title to post here",
-      "tiktokCopied": "Title, description and hashtags copied — TikTok takes the video as a draft without text, so paste them there."
+      "tiktokCopied": "Title, description and hashtags copied — TikTok takes the video as a draft without text, so paste them there.",
+      "tiktok": {
+        "postingAs": "Posting to <name></name>",
+        "caption": "Caption on TikTok",
+        "privacy": "Who can watch this video",
+        "privacyPlaceholder": "Choose…",
+        "levels": {
+          "PUBLIC_TO_EVERYONE": "Everyone",
+          "MUTUAL_FOLLOW_FRIENDS": "Friends",
+          "FOLLOWER_OF_CREATOR": "Followers",
+          "SELF_ONLY": "Only you"
+        },
+        "allow": "Allow users to",
+        "interactions": {
+          "comment": "Comment",
+          "duet": "Duet",
+          "stitch": "Stitch"
+        },
+        "disabledByCreator": "off in your TikTok settings",
+        "disclose": "Disclose video content",
+        "discloseHint": "Turn on if this video promotes a brand, product or service.",
+        "yourBrand": "Your brand",
+        "yourBrandHint": "You are promoting yourself or your own business.",
+        "branded": "Branded content",
+        "brandedHint": "You are in a paid partnership or sponsored by a brand.",
+        "labelPromo": "Your video will be labeled as “Promotional content”.",
+        "labelPaid": "Your video will be labeled as “Paid partnership”.",
+        "pickOne": "Tick at least one option to disclose the content.",
+        "brandedNotPrivate": "Branded content can't be posted with “Only you” visibility.",
+        "aigc": "Made by AI from a topic, so TikTok will label it as AI-generated content.",
+        "tooLong": "This video is longer than your account may post on TikTok ({max} s).",
+        "needsPrivacy": "Choose who can watch it first.",
+        "consent": "By posting, you agree to TikTok's <music>Music Usage Confirmation</music>.",
+        "consentBranded": "By posting, you agree to TikTok's <branded>Branded Content Policy</branded> and <music>Music Usage Confirmation</music>.",
+        "post": "Post to TikTok",
+        "draft": "Send as a draft",
+        "draftHint": "The draft lands in your TikTok app's inbox, where you finish and post it yourself.",
+        "loading": "Reading your TikTok account…",
+        "loadFailed": "TikTok didn't answer for this account just now: {reason}",
+        "processing": "Posted — it can take a few minutes to appear on your profile."
+      }
     },
     "edit": {
       "notEditable": "This video was rendered before captions became editable. Re-render it to correct the text.",

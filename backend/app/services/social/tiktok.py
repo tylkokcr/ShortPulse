@@ -8,14 +8,17 @@ integration lives in until the paperwork lands.
 
 Three things about this API look like bugs and are not:
 
-  * **The post is a draft, not a post.** This uses the *inbox* endpoint,
-    which drops the video into the user's TikTok notifications for them
-    to caption, set privacy on, and publish themselves. Direct posting
-    is a separate scope with a separate review, and it is the wrong
-    default for a tool that generates video: the honest shape is that
-    ShortPulse hands the user something to look at, and TikTok is where
-    they decide. `PublishOutcome.url` therefore points at the inbox, not
-    at a video, because there is no video yet.
+  * **By default the post is a draft, not a post.** The *inbox* endpoint
+    drops the video into the user's TikTok notifications for them to
+    caption, set privacy on, and publish themselves — and it takes no
+    text, so a user retyped their caption every time. With
+    `tiktok_direct_post` on, the publish panel can post it outright
+    instead, but only the way TikTok allows: the person picks the
+    privacy (no default), the interactions and any commercial-content
+    disclosure on that post, after seeing which account it goes to
+    (`creator_info`). Automatic publishing still sends drafts — nobody
+    made those choices for it. A draft has no URL to give, because there
+    is no video yet.
   * **TikTok fetches the file itself.** `PULL_FROM_URL` means the bytes
     never leave this machine on our schedule — TikTok queues the download
     and takes as long as it takes. That is what `social_media_url_ttl_s`
@@ -57,6 +60,8 @@ _AUTH_URL = "https://www.tiktok.com/v2/auth/authorize/"
 _TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/"
 _USERINFO_URL = "https://open.tiktokapis.com/v2/user/info/"
 _INBOX_INIT_URL = "https://open.tiktokapis.com/v2/post/publish/inbox/video/init/"
+_DIRECT_INIT_URL = "https://open.tiktokapis.com/v2/post/publish/video/init/"
+_CREATOR_INFO_URL = "https://open.tiktokapis.com/v2/post/publish/creator_info/query/"
 _STATUS_URL = "https://open.tiktokapis.com/v2/post/publish/status/fetch/"
 
 # `video.upload` is the inbox scope — the one that hands a draft to the
@@ -66,7 +71,18 @@ _STATUS_URL = "https://open.tiktokapis.com/v2/post/publish/status/fetch/"
 # `user.info.basic` is the smallest thing that answers "whose account is
 # this", which is half the connection's primary key.
 _UPLOAD_SCOPE = "video.upload"
+_PUBLISH_SCOPE = "video.publish"
 _SCOPES = ["user.info.basic", _UPLOAD_SCOPE]
+
+# TikTok's privacy levels, and what this app calls them once posted.
+PRIVACY_LEVELS = {
+    "PUBLIC_TO_EVERYONE": "public",
+    "MUTUAL_FOLLOW_FRIENDS": "friends",
+    "FOLLOWER_OF_CREATOR": "followers",
+    "SELF_ONLY": "private",
+}
+# A caption counts UTF-16 units up to this.
+_CAPTION_MAX = 2200
 
 # The inbox transfer is TikTok pulling from us, so nothing here waits on
 # bytes — these are ordinary API calls.
@@ -87,10 +103,17 @@ _POLL_INTERVAL_S = 3.0
 class TikTokPublisher:
     platform = "tiktok"
 
-    def __init__(self, client_key: str, client_secret: str, redirect_uri: str) -> None:
+    def __init__(
+        self, client_key: str, client_secret: str, redirect_uri: str, direct_post: bool = False
+    ) -> None:
         self._client_key = client_key
         self._client_secret = client_secret
         self._redirect_uri = redirect_uri
+        self.direct_post = direct_post
+
+    @property
+    def _scopes(self) -> list[str]:
+        return [*_SCOPES, _PUBLISH_SCOPE] if self.direct_post else _SCOPES
 
     # -- OAuth ---------------------------------------------------------
 
@@ -104,7 +127,7 @@ class TikTokPublisher:
                 "client_key": self._client_key,
                 "redirect_uri": self._redirect_uri,
                 "response_type": "code",
-                "scope": ",".join(_SCOPES),
+                "scope": ",".join(self._scopes),
                 "state": state,
             }
         )
@@ -218,9 +241,48 @@ class TikTokPublisher:
 
     # -- Publishing ----------------------------------------------------
 
+    async def creator_info(self, tokens: OAuthTokens) -> dict:
+        """Who a direct post would go to and what they may choose.
+
+        TikTok requires this before every direct post: the panel shows the
+        account's name, offers only the privacy levels listed here, greys
+        out interactions the account has turned off, and refuses a video
+        longer than the account may post. It also answers "this account
+        cannot post right now" (too many posts, a ban) up front rather
+        than after an upload.
+        """
+        async with httpx.AsyncClient(timeout=_API_TIMEOUT) as client:
+            response = await client.post(
+                _CREATOR_INFO_URL,
+                headers={
+                    "Authorization": f"Bearer {tokens.access_token}",
+                    "Content-Type": "application/json; charset=UTF-8",
+                },
+            )
+        if response.status_code != 200:
+            raise _api_error(response)
+        body = response.json()
+        if body.get("error", {}).get("code") not in (None, "ok"):
+            raise _mapped_error(body["error"])
+        data = body.get("data", {})
+        return {
+            "nickname": data.get("creator_nickname") or "",
+            "username": data.get("creator_username") or "",
+            "avatar_url": data.get("creator_avatar_url") or "",
+            "privacy_levels": [
+                p for p in data.get("privacy_level_options") or [] if p in PRIVACY_LEVELS
+            ],
+            "comment_disabled": bool(data.get("comment_disabled")),
+            "duet_disabled": bool(data.get("duet_disabled")),
+            "stitch_disabled": bool(data.get("stitch_disabled")),
+            "max_duration_s": int(data.get("max_video_post_duration_sec") or 0),
+        }
+
     async def publish(self, tokens: OAuthTokens, target: PublishTarget) -> PublishOutcome:
         if not target.video_url:
             raise PublishError("There is no link for TikTok to fetch the video from.")
+        if target.options.get("mode") == "direct":
+            return await self._publish_direct(tokens, target)
 
         async with httpx.AsyncClient(timeout=_API_TIMEOUT) as client:
             init = await client.post(
@@ -268,6 +330,60 @@ class TikTokPublisher:
             privacy="draft",
         )
 
+    async def _publish_direct(self, tokens: OAuthTokens, target: PublishTarget) -> PublishOutcome:
+        """Post it, with exactly what the person chose in the panel.
+
+        Nothing here fills a gap with a default: the route refuses a
+        direct post without a privacy level, and every interaction that
+        was not switched on is sent as disabled.
+        """
+        options = target.options
+        privacy_level = options.get("privacy_level")
+        if privacy_level not in PRIVACY_LEVELS:
+            raise PublishError("Choose who can see the video before posting it to TikTok.")
+        async with httpx.AsyncClient(timeout=_API_TIMEOUT) as client:
+            init = await client.post(
+                _DIRECT_INIT_URL,
+                headers={
+                    "Authorization": f"Bearer {tokens.access_token}",
+                    "Content-Type": "application/json; charset=UTF-8",
+                },
+                json={
+                    "post_info": {
+                        "title": caption(target),
+                        "privacy_level": privacy_level,
+                        "disable_comment": not options.get("allow_comment", False),
+                        "disable_duet": not options.get("allow_duet", False),
+                        "disable_stitch": not options.get("allow_stitch", False),
+                        "brand_organic_toggle": bool(options.get("brand_organic")),
+                        "brand_content_toggle": bool(options.get("brand_content")),
+                        "is_aigc": bool(options.get("is_aigc")),
+                        "video_cover_timestamp_ms": 1000,
+                    },
+                    "source_info": {"source": "PULL_FROM_URL", "video_url": target.video_url},
+                },
+            )
+            if init.status_code != 200:
+                raise _api_error(init)
+            body = init.json()
+            if body.get("error", {}).get("code") not in (None, "ok"):
+                raise _mapped_error(body["error"])
+            publish_id = body.get("data", {}).get("publish_id")
+            if not publish_id:
+                raise PublishError("TikTok accepted the post but returned no id.", retryable=True)
+            failure = await self._watch(client, tokens.access_token, publish_id)
+
+        if failure is not None:
+            raise failure
+        return PublishOutcome(
+            platform_post_id=publish_id,
+            # TikTok processes the post after accepting it and gives no
+            # link to it here; the panel says it can take a few minutes
+            # to appear on the profile.
+            url=None,
+            privacy=PRIVACY_LEVELS[privacy_level],
+        )
+
     async def _watch(
         self, client: httpx.AsyncClient, access_token: str, publish_id: str
     ) -> PublishError | None:
@@ -304,6 +420,21 @@ class TikTokPublisher:
                 return _download_failure(data.get("fail_reason", ""))
 
         return None
+
+
+def caption(target: PublishTarget) -> str:
+    """The title, the description and any hashtag not already in them, as
+    TikTok's one caption field, cut to its limit without splitting a
+    character in two."""
+    text = "\n\n".join(part for part in (target.title.strip(), target.description.strip()) if part)
+    present = text.lower()
+    tags = " ".join(f"#{h}" for h in target.hashtags if f"#{h.lower()}" not in present)
+    if tags:
+        text = f"{text}\n\n{tags}" if text else tags
+    encoded = text.encode("utf-16-le")
+    if len(encoded) <= _CAPTION_MAX * 2:
+        return text
+    return encoded[: _CAPTION_MAX * 2].decode("utf-16-le", errors="ignore").rstrip()
 
 
 def _tokens_from(payload: dict) -> OAuthTokens:

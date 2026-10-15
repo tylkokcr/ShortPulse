@@ -537,6 +537,39 @@ export interface SocialConnection {
    *  While it is false the first automatic post is held for approval, so
    *  the UI has to explain why a toggle that is on hasn't posted yet. */
   has_published: boolean;
+  /** TikTok only: this account can be posted to directly (the deployment
+   *  offers it and the account granted it). Otherwise TikTok gets a draft. */
+  direct_post?: boolean;
+}
+
+/** GET /social/connections/{id}/tiktok — what TikTok says this account may
+ *  post, which the panel must show and obey before a direct post. */
+export interface TikTokCreator {
+  nickname: string;
+  username: string;
+  avatar_url: string;
+  privacy_levels: TikTokPrivacy[];
+  comment_disabled: boolean;
+  duet_disabled: boolean;
+  stitch_disabled: boolean;
+  max_duration_s: number;
+}
+
+export type TikTokPrivacy =
+  | "PUBLIC_TO_EVERYONE"
+  | "MUTUAL_FOLLOW_FRIENDS"
+  | "FOLLOWER_OF_CREATOR"
+  | "SELF_ONLY";
+
+/** The choices a direct TikTok post is sent with — every one made by the
+ *  person; nothing here has a default that switches something on. */
+export interface TikTokChoices {
+  privacy_level: TikTokPrivacy;
+  allow_comment: boolean;
+  allow_duet: boolean;
+  allow_stitch: boolean;
+  brand_organic: boolean;
+  brand_content: boolean;
 }
 
 export type SocialPostStatus =
