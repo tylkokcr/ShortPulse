@@ -53,6 +53,7 @@ const PREVIEW_CAPTION: Record<LanguageCode, string[]> = {
   ar: ["كلماتك", "تنزل", "على", "الإيقاع"],
   ru: ["твои", "слова", "попадают", "в", "ритм"],
   it: ["le", "tue", "parole", "cadono", "a", "tempo"],
+  pl: ["twoje", "słowa", "trafiają", "w", "rytm"],
 };
 
 /**

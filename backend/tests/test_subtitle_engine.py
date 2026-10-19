@@ -207,7 +207,7 @@ def test_the_coverage_map_matches_what_the_files_contain():
 
     probes = {
         "en": "Hello", "tr": "ğşıİ", "es": "ñáé", "fr": "àçê", "de": "äöüß",
-        "pt": "ãõçá", "it": "àèìòù", "ru": "Привет", "ar": "مرحبا",
+        "pt": "ãõçá", "it": "àèìòù", "ru": "Привет", "ar": "مرحبا", "pl": "ąćęłńśźż",
     }
 
     by_family = {}

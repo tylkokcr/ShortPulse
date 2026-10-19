@@ -82,7 +82,7 @@
       },
       "voiceover": {
         "title": "Seslendirme",
-        "detail": "Piper sesleri, tamamen yerel, 9 dil"
+        "detail": "Piper sesleri, tamamen yerel, 10 dil"
       },
       "captions": {
         "title": "Altyazı",
@@ -109,7 +109,7 @@
         "detail": "faster-whisper kelime düzeyinde zamanlama verir, böylece altyazı tüm satırı basmak yerine tek tek kelimeleri vurgular."
       },
       "languages": {
-        "title": "9 dil",
+        "title": "10 dil",
         "detail": "Senaryo, seslendirme ve altyazı İngilizce, Türkçe, İspanyolca, Almanca, Arapça ve daha fazlasında doğrudan üretilir."
       },
       "music": {
@@ -130,7 +130,7 @@
       },
       "dub": {
         "title": "Başka bir dilde seslendir",
-        "detail": "Kendi videon, dokuz dilden herhangi birinde orijinal görüntünün üzerinden yeniden seslendirilir — uyumlu altyazısıyla."
+        "detail": "Kendi videon, on dilden herhangi birinde orijinal görüntünün üzerinden yeniden seslendirilir — uyumlu altyazısıyla."
       },
       "autopost": {
         "title": "YouTube'a senin yerine paylaşır",
@@ -206,7 +206,7 @@
   "examples": {
     "eyebrow": "Gerçek çıktı",
     "title": "Bu hattın gerçekten ürettiği on yedi video",
-    "intro": "Düzenlenmemiş çıktı — yapay zekânın yazdığı metin, Piper seslendirme, kelimeye kilitli altyazılar; ürünün sunduğu dokuz dilin hepsinde. On altısı gerçek stok görüntü kullanıyor; AI stills işaretli olan ücretli modda çizildi. Oynatmak için üzerine gel."
+    "intro": "Düzenlenmemiş çıktı — yapay zekânın yazdığı metin, Piper seslendirme, kelimeye kilitli altyazılar; dokuz farklı dilde. On altısı gerçek stok görüntü kullanıyor; AI stills işaretli olan ücretli modda çizildi. Oynatmak için üzerine gel."
   },
   "clips": {
     "eyebrow": "Yeni",
@@ -303,7 +303,7 @@
       },
       "languages": {
         "q": "Hangi diller destekleniyor?",
-        "a": "Dokuz: İngilizce, Türkçe, İspanyolca, Fransızca, Almanca, Portekizce, Arapça, Rusça ve İtalyanca. Senaryo, seslendirme ve altyazı seçtiğin dilde üretilir. Japonca yok, çünkü Piper'ın ticari olarak kullanabileceğimiz bir Japonca sesi yok."
+        "a": "On: İngilizce, Türkçe, Lehçe, İspanyolca, Fransızca, Almanca, Portekizce, Arapça, Rusça ve İtalyanca. Senaryo, seslendirme ve altyazı seçtiğin dilde üretilir. Japonca yok, çünkü Piper'ın ticari olarak kullanabileceğimiz bir Japonca sesi yok."
       },
       "script": {
         "q": "Kendi metnimi kullanabilir miyim?",

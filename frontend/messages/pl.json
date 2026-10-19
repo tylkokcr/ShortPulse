@@ -82,7 +82,7 @@
       },
       "voiceover": {
         "title": "Lektor",
-        "detail": "Głosy Piper, w pełni lokalnie, 9 języków"
+        "detail": "Głosy Piper, w pełni lokalnie, 10 języków"
       },
       "captions": {
         "title": "Napisy",
@@ -109,7 +109,7 @@
         "detail": "faster-whisper podaje czas z dokładnością do słowa, więc napisy podświetlają pojedyncze słowa zamiast wyrzucać całą linię."
       },
       "languages": {
-        "title": "9 języków",
+        "title": "10 języków",
         "detail": "Scenariusz, lektor i napisy powstają natywnie po angielsku, turecku, hiszpańsku, niemiecku, arabsku i w kolejnych językach."
       },
       "music": {
@@ -130,7 +130,7 @@
       },
       "dub": {
         "title": "Dubbing na inny język",
-        "detail": "Twoje własne wideo nagrane od nowa w dowolnym z dziewięciu języków na oryginalnym obrazie — z pasującymi napisami."
+        "detail": "Twoje własne wideo nagrane od nowa w dowolnym z dziesięciu języków na oryginalnym obrazie — z pasującymi napisami."
       },
       "autopost": {
         "title": "Publikuje na YouTube za ciebie",
@@ -206,7 +206,7 @@
   "examples": {
     "eyebrow": "Prawdziwe efekty",
     "title": "Siedemnaście filmów, które ten pipeline naprawdę zrobił",
-    "intro": "Materiał bez montażu — scenariusz napisany przez AI, lektor Piper, napisy zsynchronizowane co do słowa, we wszystkich dziewięciu językach produktu. Szesnaście korzysta z prawdziwych materiałów stockowych; ten oznaczony AI stills narysował tryb płatny. Najedź na dowolny, żeby go odtworzyć."
+    "intro": "Materiał bez montażu — scenariusz napisany przez AI, lektor Piper, napisy zsynchronizowane co do słowa, w dziewięciu różnych językach. Szesnaście korzysta z prawdziwych materiałów stockowych; ten oznaczony AI stills narysował tryb płatny. Najedź na dowolny, żeby go odtworzyć."
   },
   "clips": {
     "eyebrow": "Nowość",
@@ -303,7 +303,7 @@
       },
       "languages": {
         "q": "Jakie języki są obsługiwane?",
-        "a": "Dziewięć: angielski, turecki, hiszpański, francuski, niemiecki, portugalski, arabski, rosyjski i włoski. Scenariusz, lektor i napisy powstają w wybranym języku. Japońskiego brakuje, bo Piper nie ma japońskiego głosu, którego moglibyśmy użyć komercyjnie."
+        "a": "Dziesięć: angielski, turecki, polski, hiszpański, francuski, niemiecki, portugalski, arabski, rosyjski i włoski. Scenariusz, lektor i napisy powstają w wybranym języku. Japońskiego brakuje, bo Piper nie ma japońskiego głosu, którego moglibyśmy użyć komercyjnie."
       },
       "script": {
         "q": "Czy mogę użyć własnego scenariusza?",

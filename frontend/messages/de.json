@@ -82,7 +82,7 @@
       },
       "voiceover": {
         "title": "Voiceover",
-        "detail": "Piper-Stimmen, vollständig lokal, 9 Sprachen"
+        "detail": "Piper-Stimmen, vollständig lokal, 10 Sprachen"
       },
       "captions": {
         "title": "Untertitel",
@@ -109,7 +109,7 @@
         "detail": "faster-whisper liefert Timing auf Wortebene, sodass Untertitel ein Wort nach dem anderen hervorheben statt eine ganze Zeile hinzuwerfen."
       },
       "languages": {
-        "title": "9 Sprachen",
+        "title": "10 Sprachen",
         "detail": "Skript, Voiceover und Untertitel entstehen direkt auf Englisch, Türkisch, Spanisch, Deutsch, Arabisch und mehr."
       },
       "music": {
@@ -130,7 +130,7 @@
       },
       "dub": {
         "title": "In eine andere Sprache vertonen",
-        "detail": "Dein eigenes Video, neu gesprochen in einer der neun Sprachen über dem Originalbild — mit passenden Untertiteln."
+        "detail": "Dein eigenes Video, neu gesprochen in einer der zehn Sprachen über dem Originalbild — mit passenden Untertiteln."
       },
       "autopost": {
         "title": "Postet für dich auf YouTube",
@@ -206,7 +206,7 @@
   "examples": {
     "eyebrow": "Echte Ergebnisse",
     "title": "Siebzehn Videos, die diese Pipeline tatsächlich gemacht hat",
-    "intro": "Ungeschnittenes Ergebnis — KI-geschriebenes Skript, Piper-Sprecher, wortgenaue Untertitel, in allen neun Sprachen des Produkts. Sechzehn nutzen echtes Stockmaterial; das mit AI stills markierte hat der kostenpflichtige Modus gezeichnet. Zum Abspielen mit der Maus darüberfahren."
+    "intro": "Ungeschnittenes Ergebnis — KI-geschriebenes Skript, Piper-Sprecher, wortgenaue Untertitel, in neun verschiedenen Sprachen. Sechzehn nutzen echtes Stockmaterial; das mit AI stills markierte hat der kostenpflichtige Modus gezeichnet. Zum Abspielen mit der Maus darüberfahren."
   },
   "clips": {
     "eyebrow": "Neu",
@@ -303,7 +303,7 @@
       },
       "languages": {
         "q": "Welche Sprachen werden unterstützt?",
-        "a": "Neun: Englisch, Türkisch, Spanisch, Französisch, Deutsch, Portugiesisch, Arabisch, Russisch und Italienisch. Skript, Voiceover und Untertitel entstehen alle in der gewählten Sprache. Japanisch fehlt, weil Piper keine japanische Stimme mitbringt, die wir kommerziell nutzen dürfen."
+        "a": "Zehn: Englisch, Türkisch, Polnisch, Spanisch, Französisch, Deutsch, Portugiesisch, Arabisch, Russisch und Italienisch. Skript, Voiceover und Untertitel entstehen alle in der gewählten Sprache. Japanisch fehlt, weil Piper keine japanische Stimme mitbringt, die wir kommerziell nutzen dürfen."
       },
       "script": {
         "q": "Kann ich mein eigenes Skript verwenden?",

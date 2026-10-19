@@ -27,6 +27,7 @@ import { Link } from "@/i18n/navigation";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { LogoMark } from "@/components/ui/Logo";
 import { useSignupCredits } from "@/lib/signupCredits";
+import { LANGUAGE_OPTIONS } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -66,10 +67,12 @@ const ANCHORS = {
 // ai_video was refused here — and this component is static, with no way
 // to know. Art styles are in the code and the same everywhere.
 // Only the icon and the order live here now. The number in each stat is
-// still code — "9" is tied to LANGUAGE_OPTIONS and a translator must not
+// still code — the language count is LANGUAGE_OPTIONS itself and a translator must not
 // be able to change it, which is exactly what putting it in a catalogue
 // would allow.
-const STAT_VALUES = (signupCredits: number) => ["9", "6", String(signupCredits), "MIT"];
+const STAT_VALUES = (signupCredits: number) => [
+  String(LANGUAGE_OPTIONS.length), "6", String(signupCredits), "MIT",
+];
 const STAT_KEYS = ["languages", "artStyles", "freeCredits", "licensed"] as const;
 
 const PIPELINE_ICONS = [FileText, Mic, Captions, ImageIcon, Film];

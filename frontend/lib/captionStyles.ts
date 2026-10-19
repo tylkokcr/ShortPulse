@@ -226,7 +226,7 @@ export const CAPTION_PRESETS: CaptionPreset[] = [
     description: "Felt-tip handwriting. No Turkish — it has no ğ, ş or ı.",
     previewHighlight: "#34D399",
     previewFont: "var(--font-caption-marker), cursive",
-    notCovered: [...NON_LATIN, "tr"],
+    notCovered: [...NON_LATIN, "tr", "pl"],
     style: {
       ...BASE,
       font_family: "Permanent Marker",

@@ -23,7 +23,7 @@ export type AspectRatio = "9:16" | "1:1" | "16:9";
 export type VideoLength = "short" | "medium" | "long";
 
 /** Matches backend/app/engines/script_engine.py's LANGUAGE_NAMES keys. */
-export type LanguageCode = "en" | "tr" | "es" | "fr" | "de" | "pt" | "ja" | "ar" | "ru" | "it";
+export type LanguageCode = "en" | "tr" | "es" | "fr" | "de" | "pt" | "ja" | "ar" | "ru" | "it" | "pl";
 
 export interface LanguageOption {
   code: LanguageCode;
@@ -50,6 +50,7 @@ export const LANGUAGE_OPTIONS: LanguageOption[] = [
   { code: "ar", label: "العربية" },
   { code: "ru", label: "Русский" },
   { code: "it", label: "Italiano" },
+  { code: "pl", label: "Polski" },
 ];
 
 export type RenderStage =

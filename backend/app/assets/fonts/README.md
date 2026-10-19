@@ -10,7 +10,7 @@ the render deterministic on any machine.
 | `Montserrat-Bold.ttf` | Latin, Latin-ext, Cyrillic | OFL 1.1 |
 | `Anton-Regular.ttf` | Latin, Latin-ext | OFL 1.1 |
 | `Bangers-Regular.ttf` | Latin, Latin-ext | OFL 1.1 |
-| `PermanentMarker-Regular.ttf` | Latin (no Turkish ğ/ş/ı) | Apache 2.0 |
+| `PermanentMarker-Regular.ttf` | Latin (no Turkish ğ/ş/ı, no Polish ą/ę/ś/ż) | Apache 2.0 |
 | `NotoSansArabic-Bold.ttf` | Arabic | OFL 1.1 |
 
 Coverage is measured from each file's cmap, not taken from its listing —

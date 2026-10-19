@@ -80,6 +80,9 @@ VOICES: tuple[Voice, ...] = (
     # Italian
     _v("it/it_IT/paola/medium/it_IT-paola-medium", "Paola", "it", "Italy", "medium"),
     _v("it/it_IT/serena/medium/it_IT-serena-medium", "Serena", "it", "Italy", "medium"),
+    # Polish
+    _v("pl/pl_PL/darkman/medium/pl_PL-darkman-medium", "Darkman", "pl", "Poland", "medium"),
+    _v("pl/pl_PL/gosia/medium/pl_PL-gosia-medium", "Gosia", "pl", "Poland", "medium"),
 )
 
 # A short, neutral line per language for the preview endpoint. Written in
@@ -95,6 +98,7 @@ PREVIEW_LINE: dict[str, str] = {
     "ar": "هكذا سيبدو صوت الفيديو الخاص بك.",
     "ru": "Вот как будет звучать ваше видео.",
     "it": "Ecco come suonerà il tuo video.",
+    "pl": "Tak będzie brzmiał twój film.",
 }
 
 

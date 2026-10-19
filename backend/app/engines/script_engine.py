@@ -56,6 +56,7 @@ LANGUAGE_NAMES: dict[str, str] = {
     "ar": "Arabic",
     "ru": "Russian",
     "it": "Italian",
+    "pl": "Polish",
 }
 
 # Descriptive: this text is fed to a diffusion model, where subject,

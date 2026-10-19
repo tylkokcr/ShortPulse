@@ -35,13 +35,14 @@ logger = logging.getLogger(__name__)
 # The display faces are Latin-only by nature, so a project in Russian or
 # Arabic falls back rather than being refused — the style is a
 # preference, the alphabet is not.
-_LATIN = frozenset({"en", "tr", "es", "fr", "de", "pt", "it"})
+_LATIN = frozenset({"en", "tr", "es", "fr", "de", "pt", "it", "pl"})
 FONT_COVERAGE: dict[str, frozenset[str]] = {
     "Montserrat": _LATIN | {"ru"},
     "Anton": _LATIN,
     "Bangers": _LATIN,
-    # No ğ/ş/ı, so Turkish is not in its Latin set despite the rest being.
-    "Permanent Marker": _LATIN - {"tr"},
+    # No ğ/ş/ı and no ą/ę/ś/ż, so Turkish and Polish are not in its Latin
+    # set despite the rest being.
+    "Permanent Marker": _LATIN - {"tr", "pl"},
     # Latin as well as Arabic, which is not why it is here but is worth
     # recording accurately: this map is what each file *can* draw, not
     # what it is for. A test measures it against the files, and declaring

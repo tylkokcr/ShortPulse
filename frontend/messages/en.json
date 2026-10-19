@@ -82,7 +82,7 @@
       },
       "voiceover": {
         "title": "Voiceover",
-        "detail": "Piper voices, fully local, 9 languages"
+        "detail": "Piper voices, fully local, 10 languages"
       },
       "captions": {
         "title": "Captions",
@@ -109,7 +109,7 @@
         "detail": "faster-whisper gives word-level timing, so captions highlight one word at a time instead of dumping a full line."
       },
       "languages": {
-        "title": "9 languages",
+        "title": "10 languages",
         "detail": "Script, voiceover and subtitles generate natively in English, Turkish, Spanish, German, Arabic and more."
       },
       "music": {
@@ -130,7 +130,7 @@
       },
       "dub": {
         "title": "Dub into another language",
-        "detail": "Your own video, spoken again in any of the nine languages over the original picture — with captions to match."
+        "detail": "Your own video, spoken again in any of the ten languages over the original picture — with captions to match."
       },
       "autopost": {
         "title": "Posts to YouTube for you",
@@ -206,7 +206,7 @@
   "examples": {
     "eyebrow": "Real output",
     "title": "Seventeen videos this pipeline actually made",
-    "intro": "Unedited output — AI-written script, Piper voiceover, word-synced captions, in all nine languages the product offers. Sixteen use real stock footage; the one marked AI stills was drawn by the paid mode. Hover any one to play it."
+    "intro": "Unedited output — AI-written script, Piper voiceover, word-synced captions, in nine different languages. Sixteen use real stock footage; the one marked AI stills was drawn by the paid mode. Hover any one to play it."
   },
   "clips": {
     "eyebrow": "New",
@@ -303,7 +303,7 @@
       },
       "languages": {
         "q": "Which languages are supported?",
-        "a": "Nine: English, Turkish, Spanish, French, German, Portuguese, Arabic, Russian and Italian. Script, voiceover and subtitles are all produced in the language you pick. Japanese is missing because Piper ships no Japanese voice we can use commercially."
+        "a": "Ten: English, Turkish, Polish, Spanish, French, German, Portuguese, Arabic, Russian and Italian. Script, voiceover and subtitles are all produced in the language you pick. Japanese is missing because Piper ships no Japanese voice we can use commercially."
       },
       "script": {
         "q": "Can I use my own script?",
