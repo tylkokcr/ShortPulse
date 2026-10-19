@@ -11,6 +11,7 @@ Two responsibilities:
 
 from __future__ import annotations
 
+import difflib
 import logging
 import re
 import subprocess
@@ -125,7 +126,7 @@ async def _synthesize_edge_tts(text: str, voice: VoiceConfig, output_path: Path)
 
 # Default Piper voice per language. Every entry is a real medium-quality
 # voice in rhasspy/piper-voices (MIT), verified present in that repo's
-# voices.json. Piper covers 9 of the 10 languages ShortPulse offers —
+# voices.json. Piper covers 10 of the 11 languages ShortPulse offers —
 # Japanese has no Piper voice, which _resolve_piper_voice reports clearly
 # rather than failing deep inside synthesis.
 # Repo layout is "<lang>/<locale>/<speaker>/<quality>/<name>" — the leading
@@ -140,6 +141,7 @@ PIPER_VOICE_BY_LANGUAGE: dict[str, str] = {
     "ar": "ar/ar_JO/kareem/medium/ar_JO-kareem-medium",
     "ru": "ru/ru_RU/dmitri/medium/ru_RU-dmitri-medium",
     "it": "it/it_IT/paola/medium/it_IT-paola-medium",
+    "pl": "pl/pl_PL/darkman/medium/pl_PL-darkman-medium",
 }
 
 _PIPER_REPO = "rhasspy/piper-voices"
@@ -310,6 +312,7 @@ def transcribe_segments(
             )
             for word in segment.words or []
         ]
+        words = join_split_numbers(words)
         if not words:
             continue
         out.append(
@@ -350,6 +353,126 @@ _LANGUAGE_NAMES = {
 
 def _bare(token: str) -> str:
     return re.sub(r"[^\w]", "", token.lower())
+
+
+# A decimal or thousands part Whisper heard as its own word: ".2", ",000".
+_NUMBER_TAIL = re.compile(r"^[.,]\d")
+
+
+def join_split_numbers(words: list[Word]) -> list[Word]:
+    """Put numbers Whisper split back together.
+
+    It hears "3.2" as "3" and ".2", "10,000" as "10" and ",000", and the
+    caption then read "3 .2" with a space no one wrote. A piece that starts
+    with a separator and a digit, after a word ending in a digit, belongs to
+    it; so does a bare "%".
+    """
+    out: list[Word] = []
+    for word in words:
+        prev = out[-1] if out else None
+        if prev is not None and prev.text[-1:].isdigit() and (
+            _NUMBER_TAIL.match(word.text) or word.text == "%"
+        ):
+            confidences = [c for c in (prev.confidence, word.confidence) if c is not None]
+            out[-1] = prev.model_copy(
+                update={
+                    "text": prev.text + word.text,
+                    "end_ms": max(prev.end_ms, word.end_ms),
+                    "confidence": min(confidences) if confidences else None,
+                }
+            )
+        else:
+            out.append(word)
+    return out
+
+
+def _fold(text: str) -> str:
+    """Letters and digits only, lower-cased: what alignment compares."""
+    return "".join(ch for ch in text.lower() if ch.isalnum())
+
+
+def align_to_script(words: list[Word], script: str) -> list[Word]:
+    """The script's own words, at the times Whisper heard them.
+
+    A generated voiceover reads a script we wrote, but its captions came
+    from Whisper listening back to it — so they said "as sick" where the
+    script said "acidic", "cumulonibus", "3 .2". The text is known; only
+    the timing has to come from listening. Both are folded to letters and
+    digits and matched character by character, so a word Whisper split,
+    merged or misheard still finds its place; each script word spans the
+    times of the characters it matched, and a word with no match at all
+    (a number Piper read out as words) is placed between its neighbours.
+    """
+    tokens = script.split()
+    if not tokens or not words:
+        return words
+
+    heard_chars: list[str] = []
+    heard_times: list[tuple[int, int]] = []
+    for word in words:
+        folded = _fold(word.text)
+        span = max(1, word.end_ms - word.start_ms)
+        for i, ch in enumerate(folded):
+            heard_chars.append(ch)
+            heard_times.append(
+                (
+                    word.start_ms + span * i // len(folded),
+                    word.start_ms + span * (i + 1) // len(folded),
+                )
+            )
+
+    script_chars: list[str] = []
+    owner: list[int] = []
+    for t, token in enumerate(tokens):
+        for ch in _fold(token):
+            script_chars.append(ch)
+            owner.append(t)
+
+    spans: list[list[int] | None] = [None] * len(tokens)
+    matcher = difflib.SequenceMatcher(None, script_chars, heard_chars, autojunk=False)
+    for block in matcher.get_matching_blocks():
+        for k in range(block.size):
+            t = owner[block.a + k]
+            start, end = heard_times[block.b + k]
+            have = spans[t]
+            spans[t] = [start, end] if have is None else [min(have[0], start), max(have[1], end)]
+
+    first, last = words[0].start_ms, words[-1].end_ms
+    out: list[Word] = []
+    t = 0
+    while t < len(tokens):
+        found = spans[t]
+        if found is not None:
+            start, end = found
+            out.append(Word(text=tokens[t], start_ms=start, end_ms=max(end, start + 40)))
+            t += 1
+            continue
+        # A run of unmatched words: share the gap between the neighbours.
+        run_end = t
+        while run_end < len(tokens) and spans[run_end] is None:
+            run_end += 1
+        gap_start = out[-1].end_ms if out else first
+        nxt = spans[run_end] if run_end < len(tokens) else None
+        gap_end = nxt[0] if nxt is not None else last
+        if gap_end - gap_start < 40 * (run_end - t):
+            gap_end = gap_start + 40 * (run_end - t)
+        weights = [max(1, len(_fold(tok))) for tok in tokens[t:run_end]]
+        total = sum(weights)
+        at = gap_start
+        for k, weight in zip(range(t, run_end), weights, strict=True):
+            length = (gap_end - gap_start) * weight // total
+            out.append(Word(text=tokens[k], start_ms=at, end_ms=at + max(40, length)))
+            at += length
+        t = run_end
+
+    # Matched characters can arrive out of order across a split word; keep
+    # the track monotonic so no caption starts before the one before it.
+    for i in range(1, len(out)):
+        if out[i].start_ms < out[i - 1].start_ms:
+            out[i] = out[i].model_copy(update={"start_ms": out[i - 1].start_ms})
+        if out[i].end_ms <= out[i].start_ms:
+            out[i] = out[i].model_copy(update={"end_ms": out[i].start_ms + 40})
+    return out
 
 
 def _punctuate(words: list[Word], sentence: str) -> list[Word]:
@@ -400,7 +523,7 @@ def _segments_from_verbose(data: dict, offset_s: float) -> list[Segment]:
             index += 1
         if not inside:
             continue
-        inside = _punctuate(inside, str(seg.get("text", "")))
+        inside = _punctuate(join_split_numbers(inside), str(seg.get("text", "")))
         out.append(
             Segment(
                 text=str(seg.get("text", "")).strip(),
@@ -571,6 +694,8 @@ async def process_scene_audio(
         language,
     )
 
+    # The captions say what the script says; Whisper only says when.
+    words = align_to_script(words, scene.audio.voiceover_line)
     scene.audio.audio_path = str(audio_path)
     scene.audio.words = words
     # Note this is the end of the last transcribed *word*, not the length of
