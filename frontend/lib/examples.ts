@@ -19,7 +19,7 @@ import type { LanguageCode } from "@/lib/types";
  * Durations and scene counts are read off the rendered projects rather
  * than chosen to look good.
  *
- * Sixteen are `stock_media` and one is `fast_hybrid`, marked on the card.
+ * Eighteen are `stock_media` and one is `fast_hybrid`, marked on the card.
  * Both are here on purpose: for most of this page's life every example was
  * stock footage, which meant a visitor judged the three-credit mode by the
  * one-credit one and the paid mode looked like whatever they imagined.
@@ -30,7 +30,7 @@ import type { LanguageCode } from "@/lib/types";
  * to RealVisXL over an API: on a side-by-side of the same topic the
  * generated frames held their faces and kept one subject across every
  * scene, while the stock cut matched a caregiving clip to a line about
- * attraction. The eleventh entry is that render.
+ * attraction. The entry marked `aiStills` is that render.
  *
  * The .mp4 files are gitignored — see the README in public/examples for
  * why, and for the step that gets them onto the server, which a git pull
@@ -70,7 +70,8 @@ export interface Example {
 
 export const EXAMPLES: Example[] = [
   { slug: "honey", languageCode: "en", title: "Why honey never spoils", language: "English", seconds: 24, scenes: 5 },
-  { slug: "dreams-tr", languageCode: "tr", title: "Neden gece rüya görürüz?", language: "Türkçe", seconds: 18, scenes: 5 },
+  { slug: "dreams-tr", languageCode: "tr", title: "Neden gece rüya görürüz?", language: "Türkçe", seconds: 20, scenes: 5 },
+  { slug: "honey-pl", languageCode: "pl", title: "Dlaczego miód nigdy się nie psuje?", language: "Polski", seconds: 24, scenes: 5 },
   { slug: "moon-fr", languageCode: "fr", title: "Pourquoi la lune change-t-elle de forme ?", language: "Français", seconds: 25, scenes: 6 },
   { slug: "ocean", languageCode: "en", title: "Why the ocean is salty", language: "English", seconds: 19, scenes: 5 },
   { slug: "leaves-de", languageCode: "de", title: "Warum färben sich Blätter im Herbst?", language: "Deutsch", seconds: 20, scenes: 5 },
@@ -80,7 +81,8 @@ export const EXAMPLES: Example[] = [
   { slug: "yawn-pt", languageCode: "pt", title: "Por que bocejamos?", language: "Português", seconds: 26, scenes: 5 },
   { slug: "coffee", languageCode: "en", title: "Why coffee wakes you up", language: "English", seconds: 24, scenes: 5 },
   { slug: "night-ru", languageCode: "ru", title: "Почему небо ночью тёмное?", language: "Русский", seconds: 11, scenes: 5 },
-  { slug: "cats-tr", languageCode: "tr", title: "Kediler neden kutuları sever?", language: "Türkçe", seconds: 22, scenes: 5 },
+  { slug: "cats-tr", languageCode: "tr", title: "Kediler neden kutuları sever?", language: "Türkçe", seconds: 20, scenes: 5 },
+  { slug: "ocean-pl", languageCode: "pl", title: "Dlaczego ocean jest słony?", language: "Polski", seconds: 21, scenes: 5 },
   { slug: "espresso-it", languageCode: "it", title: "Perché il caffè ci sveglia?", language: "Italiano", seconds: 16, scenes: 5 },
   { slug: "volcano", languageCode: "en", title: "Why volcanoes erupt", language: "English", seconds: 24, scenes: 5 },
   { slug: "goosebumps", languageCode: "en", title: "Why we get goosebumps", language: "English", seconds: 18, scenes: 5 },
@@ -116,7 +118,7 @@ export const EXAMPLES: Example[] = [
 /**
  * Pexels' API terms require a visible link back to Pexels and credit to
  * the videographer. The pipeline records who shot each clip at fetch time;
- * this is that list, deduplicated across all sixteen stock-footage videos.
+ * this is that list, deduplicated across all eighteen stock-footage videos.
  */
 export const FOOTAGE_CREDITS = [
   "Aaron Burden", "Abdullah | 4K", "Adventure Studio", "Aleks Magnusson", "Alexey Chudin",
@@ -124,13 +126,16 @@ export const FOOTAGE_CREDITS = [
   "Angela Roma", "Anna Pou", "Anna Shvets", "Artem Podrez", "aslı aydoğdu", "Bahri Gün",
   "Barbara Olsen", "Bav Vadgama", "Ben Prater", "Canan İldeniz", "cottonbro studio",
   "Darina Belonogova", "Deti riyanti", "Ebahir", "Emrah", "Eyüp Can", "Grigoriy Bunkov",
-  "Hale Ş", "Hashim Suhimi", "Iceberg San", "Ilya Lyzhin", "John Diez", "Joolsmagools ®️",
-  "Juan Camilo Trujillo  Botero 🇨🇴📸", "JUN HO LEE", "K", "Kakada Chuon", "Kevin  Malik",
-  "khezez | خزاز", "Koushalya Karthikeyan", "LauraB", "Lentes  Bella", "Luis Quintero",
-  "Marina Leonova", "Masha Glazova", "Matthias Groeneveld", "Max Medyk", "Michael Burrows",
-  "Mikhail Nilov", "Mizuno K", "Muhtelifane", "Nadezhda Moryak", "Nicola Narracci",
-  "Nikita Ryumshin", "Nisasu", "Pachon in Motion", "Pavel Danilyuk", "Photoviewx",
-  "Physical  Pixel", "RDNE Stock project", "ROMAN ODINTSOV", "Ron Lach", "Sema",
-  "Shan Ali", "Stefanie Jockschat", "Thuan Pham", "Tima Miroshnichenko", "Timothy Fuller",
-  "Timur Weber", "Toni.063371 -  Antonio Sáez", "Yuliya Duzhaya", "Şahin Doğdu",
+  "Hale Ş", "Hashim Suhimi", "Iceberg San", "Ilya Lyzhin", "İrem  Meriç", "John Diez",
+  "Joolsmagools ®️", "Juan Camilo Trujillo  Botero 🇨🇴📸", "JUN HO LEE", "K", "Kakada Chuon",
+  "Kevin  Malik", "Kevin  Villanueva", "khezez | خزاز", "Koushalya Karthikeyan", "LauraB",
+  "Lentes  Bella", "Los Muertos Crew", "Luis Quintero", "Marina Leonova", "Masha Glazova",
+  "Matthias Groeneveld", "Max Medyk", "Micaela Alejandro", "Michael Burrows",
+  "Mikhail Nilov", "Miriam Alonso", "Mizuno K", "muhammed diler", "Muhtelifane",
+  "Nadezhda Moryak", "Nataliya Vaitkevich", "Nicola Narracci", "Nikita Ryumshin", "Nisasu",
+  "NQPPresents", "Nur", "Pachon in Motion", "Pavel Danilyuk", "Photoviewx",
+  "Physical  Pixel", "RDNE Stock project", "ROMAN ODINTSOV", "Ron Lach",
+  "Sandeep  Solanki", "Sema", "Shan Ali", "Stefanie Jockschat", "Thuan Pham",
+  "Tima Miroshnichenko", "Timothy Fuller", "Timur Weber", "Toni.063371 -  Antonio Sáez",
+  "Yuliya Duzhaya", "Şahin Doğdu",
 ];
