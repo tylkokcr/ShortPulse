@@ -258,7 +258,13 @@ class LLMConfig(BaseModel):
     provider: LLMProvider = LLMProvider.OLLAMA
     model: str = "llama3"
     base_url: str = "http://localhost:11434"
-    api_key: str | None = None
+    # The server's own OpenAI key, filled in from settings. Excluded from
+    # every dump: this model lives inside ProjectConfig, which is stored as
+    # JSONB and returned whole by GET /api/projects/{id}, so a serialised
+    # key went to the browser of everyone who made a project. A config read
+    # back from the database therefore has no key, and script_engine takes
+    # it from settings.
+    api_key: str | None = Field(default=None, exclude=True)
     temperature: float = 0.8
 
 

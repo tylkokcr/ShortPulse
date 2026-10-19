@@ -20,6 +20,7 @@ import re
 import httpx
 from pydantic import ValidationError
 
+from app.core.config import get_settings
 from app.schemas.project import (
     LLMConfig,
     LLMProvider,
@@ -276,7 +277,7 @@ async def _call_openai(config: LLMConfig, system_prompt: str, prompt: str) -> st
     # to surface, on an account that had already spent credits on the
     # render. The SDK cannot tell them apart, so it is left to do neither
     # and the distinction is made here.
-    client = AsyncOpenAI(api_key=config.api_key, max_retries=0)
+    client = AsyncOpenAI(api_key=config.api_key or get_settings().openai_api_key, max_retries=0)
 
     # A backoff per retry, then None for the final attempt, which must not
     # sleep and must not swallow. Same shape as the Replicate retry in
