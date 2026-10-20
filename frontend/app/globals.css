@@ -413,8 +413,9 @@ html[data-session="1"] [data-landing-boot] {
 /* surface-lit with the accent coming in from the top-right corner, the
    way light off a coloured screen catches the edge of a frame. Keyed off
    --accent like everything else coloured here, and low enough that the
-   card's text never sits on colour. After surface-lit so it wins where a
-   Card (which carries surface-lit) asks for it. */
+   card's text never sits on colour. Every Card carries it: it was on four
+   panels first, and it was the thing people noticed and wanted everywhere.
+   After surface-lit so it wins where both are present. */
 .surface-accent {
   background-image:
     radial-gradient(130% 90% at 100% 0%, rgb(var(--accent) / 0.14), transparent 60%),

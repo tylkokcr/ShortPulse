@@ -125,7 +125,7 @@ function PickerBody({ kind, multiple = false, exclude = [], onClose, onPick }: P
         role="dialog"
         aria-modal
         aria-label={t(kind === "video" ? "pickVideos" : "pickSong")}
-        className="relative flex max-h-[85vh] w-full max-w-3xl flex-col rounded-t-xl border border-border bg-surface-raised sm:rounded-xl"
+        className="surface-accent relative flex max-h-[85vh] w-full max-w-3xl flex-col rounded-t-xl border border-border bg-surface-raised sm:rounded-xl"
       >
         <div className="flex items-center gap-2 border-b border-border px-5 py-3.5">
           <FolderOpen size={15} className="text-accent" />
