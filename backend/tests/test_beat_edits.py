@@ -712,6 +712,21 @@ def test_flat_colour_reads_as_a_graphic_and_grain_does_not():
     assert beat_edit._flatness(end_screen)[0] > beat_edit._FLAT_LEVEL
 
 
+def test_a_page_of_thumbnails_reads_as_a_grid_and_hoardings_do_not():
+    rng = np.random.default_rng(2)
+    # Three by four tiles of busy picture on dark gutters.
+    page = np.full((1, 54, 96), 15.0, dtype=np.float32)
+    for r in range(3):
+        for c in range(4):
+            y, x = 3 + r * 17, 3 + c * 23
+            page[0, y : y + 14, x : x + 20] = rng.uniform(120, 240, size=(14, 20))
+    # A pitch with an advertising board across it: one long horizontal edge.
+    pitch = rng.normal(90, 12, size=(1, 54, 96)).astype(np.float32)
+    pitch[0, 20:28, :] = 220.0
+    assert beat_edit._grid_lines(page)[0] >= beat_edit._GRID_LINES
+    assert beat_edit._grid_lines(pitch)[0] < beat_edit._GRID_LINES
+
+
 def test_an_end_screen_never_makes_it_into_an_edit():
     """A compilation ending on "check out these videos": eight seconds where
     nothing moves on flat colour. Scored as the busiest stretch of the clip,

@@ -204,12 +204,18 @@ _STILL_LEVEL = 0.012
 # against 0.13-0.47 for every shot of play around it, dark night matches
 # included.
 _FLAT_LEVEL = 0.6
+# A page of thumbnails — a scenepack's "like and subscribe for more" over
+# a grid of the channel's videos — is animated and full of detail, so it
+# is neither still nor flat. What it has that play does not is lines that
+# cross the whole frame both ways: 4-9 each way on one that ended up in an
+# edit, 0 on every sampled frame of 33 other videos (match compilations,
+# screen recordings, talks). Hoardings rule lines across a pitch, but only
+# one way.
+_GRID_LINES = 3
 # A scenepack opens on its channel's promo — the player cut out over a
 # scrolling page of the channel's videos — then a "for editing only" card,
-# and closes on "like and subscribe" after one. The promo and the outro
-# are animated and full of edges, nothing measurable sets them apart from
-# play (stadium hoardings rule as many straight lines as a page of
-# thumbnails); the card beside them does. A card this near either end of
+# and closes on "like and subscribe", sometimes after one. Not every
+# promo is a grid; the card beside it is what marks it. A card this near either end of
 # a video longer than `_FRAMED_MIN_S` marks everything outside it.
 _INTRO_S = 15.0
 _OUTRO_S = 25.0
@@ -288,6 +294,9 @@ class ClipMotion:
     # Per sample, the share of the picture that is flat colour (see
     # `_FLAT_LEVEL` and `_flatness`).
     flat: np.ndarray | None = None
+    # Per sample, the straight lines that cross the whole frame both ways
+    # (the fewer of the two counts): a page of thumbnails. See _GRID_LINES.
+    grid: np.ndarray | None = None
     _scales: np.ndarray | None = field(default=None, repr=False)
     _framing: tuple[float, float] | None = field(default=None, repr=False)
     _windows: dict[int, np.ndarray] = field(default_factory=dict, repr=False)
@@ -406,6 +415,8 @@ class ClipMotion:
             return False
         a = int(start * _MOTION_FPS)
         b = max(a + 1, int(end * _MOTION_FPS))
+        if self.grid is not None and len(self.grid[a:b]) and float(np.median(self.grid[a:b])) >= _GRID_LINES:
+            return True
         if self.flat is None or len(self.flat) == 0:
             return False
         return (
@@ -578,6 +589,26 @@ def _flatness(frames: np.ndarray) -> np.ndarray:
     return (np.maximum(across, down) < 1.5).mean(axis=(1, 2)).astype(np.float32)
 
 
+def _grid_lines(frames: np.ndarray) -> np.ndarray:
+    """Per grey frame, the fewer of its full-width horizontal and full-height
+    vertical edges: where most of a row (or column) jumps sharply from the
+    next. Neighbouring rows of one edge count once."""
+    if len(frames) == 0 or frames.shape[1] < 4 or frames.shape[2] < 4:
+        return np.zeros(len(frames), dtype=np.float32)
+
+    def count(edges: np.ndarray) -> np.ndarray:
+        # edges: (frames, boundaries) booleans; a run with gaps of one or
+        # two boundaries is one line.
+        before = np.zeros_like(edges)
+        before[:, 1:] |= edges[:, :-1]
+        before[:, 2:] |= edges[:, :-2]
+        return (edges & ~before).sum(axis=1)
+
+    rows = (np.abs(np.diff(frames, axis=1)) > 28).mean(axis=2) > 0.55
+    cols = (np.abs(np.diff(frames, axis=2)) > 28).mean(axis=1) > 0.55
+    return np.minimum(count(rows), count(cols)).astype(np.float32)
+
+
 def _source_cuts(changes: np.ndarray, floor: float = 0.45) -> list[int]:
     """Samples where the picture's make-up changes far more than around it:
     a cut, not motion. `changes[i]` is the change between sample i and
@@ -638,7 +669,7 @@ def motion_profile(clip: Path, ffmpeg: str = "ffmpeg", ffprobe: str | None = Non
     return ClipMotion(
         path=clip, duration_s=len(frames) / _MOTION_FPS, scores=scores,
         cuts=cuts, width=width, height=height,
-        activity=activity, focus=focus, flat=_flatness(frames),
+        activity=activity, focus=focus, flat=_flatness(frames), grid=_grid_lines(frames),
     )
 
 
