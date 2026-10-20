@@ -776,6 +776,21 @@ def test_the_drop_is_rushed_into_and_energetic_whips_after_it_calm_never():
     assert all(c.transition_in is None and c.transition_out is None for c in calm.cuts)
 
 
+def test_a_long_cut_pulses_on_the_beats_inside_it_and_glitches_on_the_bar():
+    clip = _compilation_motion(shot_s=2.0, total_s=120.0)
+    plan = beat_edit.plan_edit(_grid(seconds=120.0), [clip], 30.0, "energetic", seed=3)
+    drop = next(i for i, c in enumerate(plan.cuts) if "flash" in c.effects)
+    for cut in plan.cuts:
+        # Strictly inside the cut: its own start already hits, its end is the next cut's.
+        assert all(0 < b < cut.duration for b in cut.beats)
+        assert set(cut.hits) <= set(cut.beats)
+    assert any(len(c.beats) > 1 for c in plan.cuts[drop:])
+    assert any(c.hits for c in plan.cuts[drop:])
+    assert not any(c.hits for c in plan.cuts[:drop])
+    calm = beat_edit.plan_edit(_grid(seconds=120.0), [clip], 30.0, "calm", seed=3)
+    assert not any(c.beats or c.hits for c in calm.cuts)
+
+
 @pytest.mark.skipif(shutil.which(FFMPEG) is None and not Path(FFMPEG).exists(), reason="no ffmpeg")
 @pytest.mark.parametrize("kind", ["zoom", "whip"])
 def test_a_transition_moves_only_the_ends_of_a_cut(tmp_path, kind):

@@ -676,6 +676,12 @@ class Cut:
     # the hard cut and read as one movement. None is a plain cut.
     transition_in: str | None = None
     transition_out: str | None = None
+    # The beat inside a long cut, so it keeps moving with the music between
+    # cuts: seconds from the cut's start where the frame bumps in by
+    # `pulse` and settles, and the subset of them where it also glitches.
+    beats: tuple[float, ...] = ()
+    pulse: float = 0.0
+    hits: tuple[float, ...] = ()
 
 
 # Fast into the moment, slow through it, quick out: the velocity edit. The
@@ -725,6 +731,11 @@ class Style:
     # cuts on the beat, and a transition on every cut is a slideshow.
     drop_transition: str | None = None
     whip_every: int = 0
+    # Movement on the beats a cut holds over: how far the frame bumps in
+    # (0 never), on every beat once it has dropped and on the first of each
+    # bar before; and whether a bar's first beat after the drop glitches.
+    beat_pulse: float = 0.0
+    bar_glitch: bool = False
 
 
 STYLES: dict[str, Style] = {
@@ -737,12 +748,13 @@ STYLES: dict[str, Style] = {
         close_crop_scales=("close", "medium"),
         moment_min_s=1.4, moment_max_s=3.2, moment_shots=1,
         drop_transition="zoom", whip_every=3,
+        beat_pulse=0.07, bar_glitch=True,
     ),
     "cinematic": Style(
         8, 4, "drift", ("softflash",), 0.75, None, "grade_film",
         close_crop_scales=("close", "medium"),
         moment_min_s=2.2, moment_max_s=5.0, moment_shots=2,
-        drop_transition="zoom",
+        drop_transition="zoom", beat_pulse=0.03,
     ),
     "calm": Style(
         8, 8, "drift", (), 1.0, None, "grade_soft", close_crop_scales=("close",),
@@ -1051,11 +1063,18 @@ def plan_edit(
             # what is happening has to be readable before it is pretty.
             zoom = ACTION_ZOOM
             focus_x = 0.5 + 0.5 * (clip.focus_at(src, source_len) - 0.5)
+        inner = timeline[i + 1 : end_i]
+        on_bar = [b for b in inner if round(b, 3) in downbeats]
+        pulsed = inner if after else on_bar
+        hits = on_bar if after and look.bar_glitch else []
         cuts.append(
             Cut(
                 clip=clip.path, source_start=src, duration=length, speed=speed,
                 effects=effects, landscape=clip.landscape, zoom=zoom, focus_x=focus_x,
                 close_crop=close_crop,
+                beats=tuple(round(float(b - start_t), 3) for b in pulsed) if look.beat_pulse else (),
+                pulse=look.beat_pulse,
+                hits=tuple(round(float(b - start_t), 3) for b in hits),
             )
         )
         since_reaction = 0 if role == "reaction" else since_reaction + 1
@@ -1102,6 +1121,9 @@ FADE_IN_S = 0.8
 # pushes the frame a third closer and most of that out sideways.
 TRANSITION_S = 0.2
 TRANSITION_ZOOM = 0.8
+# How long a bar's glitch lasts: three frames, enough to see, too short to
+# read as damage.
+GLITCH_S = 0.1
 WHIP_ZOOM = 0.35
 
 
@@ -1186,6 +1208,11 @@ def _segment_filter(cut: Cut) -> str:
         zoom_terms.append("0.18*exp(-on/3.2)")
     elif "drift" in cut.effects:
         zoom_terms.append(f"0.05*on/{frames}")
+    for beat in cut.beats:
+        # The same hit-and-settle as the punch, smaller, from the beat on.
+        at = int(round(beat * FPS))
+        if 0 < at < frames:
+            zoom_terms.append(f"{cut.pulse}*gte(on,{at})*exp(-(on-{at})/2.6)")
     blur: list[str] = []
     head, tail = _transition_frames(cut, frames)
     if head:
@@ -1226,6 +1253,13 @@ def _segment_filter(cut: Cut) -> str:
         )
     if "rgbsplit" in cut.effects:
         chain.append("rgbashift=rh=-14:bh=14:enable='lt(t,0.25)'")
+    if cut.hits:
+        # A tenth of a second of broken signal on the bar: the channels
+        # torn apart, static over it and a faint flash.
+        when = "+".join(f"between(t,{h:.3f},{h + GLITCH_S:.3f})" for h in cut.hits)
+        chain.append(f"rgbashift=rh=-22:bh=22:gv=6:enable='{when}'")
+        chain.append(f"noise=alls=36:allf=t:enable='{when}'")
+        chain.append(f"drawbox=c=white@0.22:t=fill:enable='{when}'")
     if "grade" in cut.effects:
         chain.append("eq=contrast=1.12:saturation=1.28:gamma=0.97")
         chain.append("vignette=PI/5")
