@@ -111,7 +111,7 @@ export const EXAMPLES: Example[] = [
   // the three-credit mode produces rather than judging it by the
   // one-credit one.
   { slug: "quiet-sq", languageCode: "en", title: "Why quiet people read the room", language: "English", seconds: 20, scenes: 5, square: true, aiStills: true },
-  { slug: "dreams-sq", languageCode: "tr", title: "Neden gece rüya görürüz?", language: "Türkçe", seconds: 21, scenes: 5, square: true },
+  { slug: "dreams-sq", languageCode: "tr", title: "Neden gece rüya görürüz?", language: "Türkçe", seconds: 26, scenes: 6, square: true },
   { slug: "cats-sq", languageCode: "ar", title: "لماذا تخاف القطط من الماء؟", language: "العربية", seconds: 20, scenes: 4, square: true },
 ];
 
@@ -122,11 +122,12 @@ export const EXAMPLES: Example[] = [
  */
 export const FOOTAGE_CREDITS = [
   "Aaron Burden", "Abdullah | 4K", "Adventure Studio", "Aleks Magnusson", "Alexey Chudin",
-  "Ambareesh Sridhar Photography", "Ana Sandu", "Andre Moura", "Andres Perez",
-  "Angela Roma", "Anna Pou", "Anna Shvets", "Artem Podrez", "aslı aydoğdu", "Bahri Gün",
-  "Barbara Olsen", "Bav Vadgama", "Ben Prater", "Canan İldeniz", "cottonbro studio",
-  "Darina Belonogova", "Deti riyanti", "Ebahir", "Emrah", "Eyüp Can", "Grigoriy Bunkov",
-  "Hale Ş", "Hashim Suhimi", "Iceberg San", "Ilya Lyzhin", "İrem  Meriç", "John Diez",
+  "Alvin David", "Ambareesh Sridhar Photography", "Ana Sandu", "Andre Moura",
+  "Andres Perez", "Angela Roma", "Anna Pou", "Anna Shvets", "ANTONI SHKRABA production",
+  "Artem Podrez", "aslı aydoğdu", "Bahri Gün", "Barbara Olsen", "Bav Vadgama",
+  "Ben Prater", "Canan İldeniz", "cottonbro studio", "Darina Belonogova", "Deti riyanti",
+  "Ebahir", "Emrah", "Engin Akyurt", "Eyüp Can", "Grigoriy Bunkov", "Hale Ş",
+  "Hashim Suhimi", "Iceberg San", "Ilya Lyzhin", "İrem  Meriç", "John Diez",
   "Joolsmagools ®️", "Juan Camilo Trujillo  Botero 🇨🇴📸", "JUN HO LEE", "K", "Kakada Chuon",
   "Kevin  Malik", "Kevin  Villanueva", "khezez | خزاز", "Koushalya Karthikeyan", "LauraB",
   "Lentes  Bella", "Los Muertos Crew", "Luis Quintero", "Marina Leonova", "Masha Glazova",
