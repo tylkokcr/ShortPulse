@@ -24,6 +24,7 @@ from app.api.routes.media import keep as keep_in_files
 from app.api.routes.music import track_path_for
 from app.core.config import get_settings, project_dir
 from app.schemas.project import (
+    BeatEditLook,
     BeatEditSpec,
     BeatEditStyle,
     Project,
@@ -56,6 +57,7 @@ async def create_beat_edit(
     save_to_files: bool = Form(False),
     duration_s: float = Form(15.0),
     style: str = Form(BeatEditStyle.ENERGETIC.value),
+    look: str = Form(""),
     music_start_s: float | None = Form(None),
     title: str = Form(""),
     overlay_title: str = Form("", max_length=60),
@@ -96,6 +98,14 @@ async def create_beat_edit(
         raise HTTPException(
             status_code=422,
             detail={"error": "unsupported_style", "supported": [s.value for s in BeatEditStyle]},
+        ) from None
+
+    try:
+        chosen_look = BeatEditLook(look.strip()) if look.strip() else None
+    except ValueError:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "unsupported_look", "supported": [s.value for s in BeatEditLook]},
         ) from None
 
     track_id = music_track_id.strip() or None
@@ -164,6 +174,7 @@ async def create_beat_edit(
             # A video longer than the track would end in silence.
             duration_s=min(max(duration_s, 5.0), 60.0, track_length),
             style=chosen_style,
+            look=chosen_look,
             music_start_s=music_start_s,
             overlay_title=" ".join(overlay_title.split()),
         )

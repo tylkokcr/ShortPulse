@@ -700,6 +700,37 @@
           "hint": "Ein Schnitt pro Takt, sanfte Bewegung, weiche Farben."
         }
       },
+      "look": "Look",
+      "looks": {
+        "auto": {
+          "name": "Wie der Stil",
+          "hint": "Die Farbe, die zum Stil gehört."
+        },
+        "vivid": {
+          "name": "Kräftig",
+          "hint": "Satte, helle Farben."
+        },
+        "teal": {
+          "name": "Kino",
+          "hint": "Blaue Schatten, oranges Licht: der Trailer-Look."
+        },
+        "golden": {
+          "name": "Golden",
+          "hint": "Warm wie die goldene Stunde."
+        },
+        "night": {
+          "name": "Nacht",
+          "hint": "Kalt, dunkel und blau."
+        },
+        "mono": {
+          "name": "Schwarz-Weiß",
+          "hint": "Kontrastreiches Schwarz-Weiß."
+        },
+        "retro": {
+          "name": "Retro",
+          "hint": "Verblasst und warm: alter Film."
+        }
+      },
       "price": "{credits, plural, one {# Credit} other {# Credits}}",
       "free": "Kostenlos · läuft auf diesem Rechner",
       "cta": "Edit erstellen",

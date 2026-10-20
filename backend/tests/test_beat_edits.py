@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 from app.engines import beat_edit
+from app.schemas.project import BeatEditLook
 from tests.test_uploads import FFMPEG, FFPROBE, _client, _FakeQueue, _real_video
 
 pytestmark = pytest.mark.skipif(
@@ -839,3 +840,14 @@ def test_no_cut_shows_a_frame_of_the_shot_either_side():
                 for edge in (start, end):
                     near = [b for b in bounds[1:-1] if abs(edge - b) < 0.09]
                     assert near == [], (style, seed, start, end, near)
+
+
+def test_a_picked_look_replaces_the_styles_colour_and_an_unknown_one_does_not():
+    clip = _compilation_motion(shot_s=2.0, total_s=120.0)
+    retro = beat_edit.plan_edit(_grid(seconds=120.0), [clip], 30.0, "energetic", seed=3, look_name="retro")
+    assert all("look_retro" in c.effects and "grade" not in c.effects for c in retro.cuts)
+    odd = beat_edit.plan_edit(_grid(seconds=120.0), [clip], 30.0, "energetic", seed=3, look_name="sepia")
+    assert all("grade" in c.effects for c in odd.cuts)
+    # Every look a person can pick has a colour behind it.
+    assert all(f"look_{name}" in beat_edit.GRADES for name in beat_edit.LOOKS)
+    assert {look.value for look in BeatEditLook} == set(beat_edit.LOOKS)

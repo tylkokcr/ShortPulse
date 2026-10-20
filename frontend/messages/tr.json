@@ -700,6 +700,37 @@
           "hint": "Her ölçüde bir kesim, yumuşak hareket, yumuşak renk."
         }
       },
+      "look": "Görünüm",
+      "looks": {
+        "auto": {
+          "name": "Stile göre",
+          "hint": "Stilin kendi rengi."
+        },
+        "vivid": {
+          "name": "Canlı",
+          "hint": "Doygun, parlak renkler."
+        },
+        "teal": {
+          "name": "Sinema",
+          "hint": "Mavi gölgeler, turuncu ışık: fragman tonu."
+        },
+        "golden": {
+          "name": "Altın",
+          "hint": "Sıcak, gün batımı gibi."
+        },
+        "night": {
+          "name": "Gece",
+          "hint": "Soğuk, koyu ve mavi."
+        },
+        "mono": {
+          "name": "Siyah-beyaz",
+          "hint": "Yüksek kontrastlı siyah-beyaz."
+        },
+        "retro": {
+          "name": "Retro",
+          "hint": "Solgun ve sıcak: eski film."
+        }
+      },
       "price": "{credits, plural, one {# kredi} other {# kredi}}",
       "free": "Ücretsiz · bu makinede çalışır",
       "cta": "Edit'i hazırla",

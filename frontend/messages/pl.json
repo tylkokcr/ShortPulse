@@ -700,6 +700,37 @@
           "hint": "Cięcie co takt, łagodny ruch, miękkie kolory."
         }
       },
+      "look": "Wygląd",
+      "looks": {
+        "auto": {
+          "name": "Według stylu",
+          "hint": "Kolor, który ma wybrany styl."
+        },
+        "vivid": {
+          "name": "Żywy",
+          "hint": "Nasycone, jasne kolory."
+        },
+        "teal": {
+          "name": "Kino",
+          "hint": "Niebieskie cienie, pomarańczowe światło: wygląd zwiastuna."
+        },
+        "golden": {
+          "name": "Złoty",
+          "hint": "Ciepły, jak złota godzina."
+        },
+        "night": {
+          "name": "Noc",
+          "hint": "Zimny, ciemny i niebieski."
+        },
+        "mono": {
+          "name": "Czarno-biały",
+          "hint": "Kontrastowa czerń i biel."
+        },
+        "retro": {
+          "name": "Retro",
+          "hint": "Wyblakły i ciepły: stary film."
+        }
+      },
       "price": "{credits, plural, one {# kredyt} few {# kredyty} many {# kredytów} other {# kredytu}}",
       "free": "Za darmo · działa na tym komputerze",
       "cta": "Zrób montaż",

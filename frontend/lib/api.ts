@@ -613,6 +613,8 @@ export const approvePost = (postId: string) =>
   request<SocialPost>(`/social/posts/${postId}/approve`, { method: "POST" });
 
 export type BeatEditStyle = "energetic" | "cinematic" | "calm";
+/** The colour of the whole edit; omitted, the style's own. */
+export type BeatEditLook = "vivid" | "teal" | "golden" | "night" | "mono" | "retro";
 
 /**
  * Cut the user's own clips to a track. Exactly one of `musicTrackId` (a
@@ -630,6 +632,7 @@ export async function createBeatEdit(
     saveToFiles?: boolean;
     durationS: number;
     style: BeatEditStyle;
+    look?: BeatEditLook;
     /** Where in the song the edit starts. Omitted: around the drop. */
     musicStartS?: number;
     title?: string;
@@ -647,6 +650,7 @@ export async function createBeatEdit(
   form.append("duration_s", String(options.durationS));
   if (options.musicStartS !== undefined) form.append("music_start_s", String(options.musicStartS));
   form.append("style", options.style);
+  if (options.look) form.append("look", options.look);
   form.append("title", options.title ?? "");
   if (options.overlayTitle) form.append("overlay_title", options.overlayTitle);
   return postMultipart("/beat-edits", form, onProgress);

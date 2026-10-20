@@ -232,6 +232,7 @@ export interface BeatEditSpec {
   music_uploaded: boolean;
   duration_s: number;
   style: "energetic" | "cinematic" | "calm";
+  look?: "vivid" | "teal" | "golden" | "night" | "mono" | "retro" | null;
   music_start_s?: number | null;
 }
 

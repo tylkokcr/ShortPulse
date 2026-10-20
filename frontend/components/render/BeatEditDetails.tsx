@@ -38,6 +38,7 @@ export function BeatEditDetails({ projectId, spec }: { projectId: string; spec: 
   const song = spec.music_uploaded ? t("ownSong") : (spec.music_track_id ?? "—");
   const rows: { icon: typeof Wand2; label: string; value: string }[] = [
     { icon: Wand2, label: t("style"), value: tb(`styles.${spec.style}.name`) },
+    ...(spec.look ? [{ icon: Wand2, label: tb("look"), value: tb(`looks.${spec.look}.name`) }] : []),
     { icon: Timer, label: t("length"), value: `${Math.round(spec.duration_s)}s` },
     { icon: Music, label: t("song"), value: song },
     {

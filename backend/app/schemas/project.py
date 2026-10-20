@@ -393,6 +393,18 @@ class BeatEditStyle(StrEnum):
     CALM = "calm"
 
 
+class BeatEditLook(StrEnum):
+    """The colour of the whole edit. See engines/beat_edit.GRADES. Absent
+    on a spec: the style's own."""
+
+    VIVID = "vivid"
+    TEAL = "teal"
+    GOLDEN = "golden"
+    NIGHT = "night"
+    MONO = "mono"
+    RETRO = "retro"
+
+
 class BeatEditSpec(BaseModel):
     """What was asked of a beat edit. Paths are not here on purpose: the
     clips and an uploaded track live at fixed names in the project's own
@@ -407,6 +419,7 @@ class BeatEditSpec(BaseModel):
     music_uploaded: bool = False
     duration_s: float = Field(default=15.0, ge=5.0, le=60.0)
     style: BeatEditStyle = BeatEditStyle.ENERGETIC
+    look: BeatEditLook | None = None
     # Where in the track the edit starts. None: around the drop.
     music_start_s: float | None = Field(default=None, ge=0.0)
     # A line of text that types itself in over the opening, the way a fan

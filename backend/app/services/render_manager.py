@@ -812,6 +812,7 @@ async def run_beat_edit_pipeline(project: Project, settings: Settings) -> None:
                 target_s=spec.duration_s,
                 style=spec.style.value,
                 music_start=spec.music_start_s,
+                look_name=spec.look.value if spec.look else None,
                 # Each edit its own pick among equally good shots: the same
                 # footage tried again, or in another style, is not the same
                 # twenty shots in the same order.

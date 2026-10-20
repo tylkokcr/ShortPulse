@@ -12,6 +12,7 @@ import {
   InsufficientCreditsError,
   listMusic,
   musicPreviewUrl,
+  type BeatEditLook,
   type BeatEditStyle,
   type TrackAnalysis,
 } from "@/lib/api";
@@ -42,6 +43,17 @@ const STYLES: { id: BeatEditStyle; icon: typeof Zap }[] = [
   { id: "cinematic", icon: Film },
   { id: "calm", icon: Music },
 ];
+// Each look's swatch: its shadows into its highlights, so the chip shows
+// the colour before anyone reads the name.
+const LOOKS: { id: BeatEditLook | null; swatch: string }[] = [
+  { id: null, swatch: "linear-gradient(135deg, #3a3a3a, #bdbdbd)" },
+  { id: "vivid", swatch: "linear-gradient(135deg, #0a5cff, #ffcc00)" },
+  { id: "teal", swatch: "linear-gradient(135deg, #0d4f5c, #f2a65a)" },
+  { id: "golden", swatch: "linear-gradient(135deg, #7a3e12, #ffd27a)" },
+  { id: "night", swatch: "linear-gradient(135deg, #0b1630, #6f87b8)" },
+  { id: "mono", swatch: "linear-gradient(135deg, #000, #fff)" },
+  { id: "retro", swatch: "linear-gradient(135deg, #5b4636, #e8d3b0)" },
+];
 const VIDEO_TYPES = "video/mp4,video/quicktime,video/webm,video/x-matroska";
 const AUDIO_TYPES = "audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/aac,audio/ogg,audio/flac,.mp3,.wav,.m4a,.aac,.ogg,.flac";
 
@@ -68,6 +80,7 @@ export function BeatEditPanel() {
   const [musicFile, setMusicFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(15);
   const [style, setStyle] = useState<BeatEditStyle>("energetic");
+  const [look, setLook] = useState<BeatEditLook | null>(null);
   const [overlayTitle, setOverlayTitle] = useState("");
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -201,6 +214,7 @@ export function BeatEditPanel() {
           durationS: duration,
           musicStartS: reading && musicStart !== null ? musicStart : undefined,
           style,
+          look: look ?? undefined,
           overlayTitle: overlayTitle.trim() || undefined,
           title:
             overlayTitle.trim() ||
@@ -478,6 +492,30 @@ export function BeatEditPanel() {
             </div>
             <p className="mt-1.5 text-xs text-white/40">{t(`styles.${style}.hint`)}</p>
           </div>
+        </div>
+
+        <div>
+          <span className="mb-1.5 block text-sm font-medium text-white/70">{t("look")}</span>
+          <div className="flex flex-wrap gap-2">
+            {LOOKS.map((option) => (
+              <button
+                key={option.id ?? "auto"}
+                type="button"
+                onClick={() => setLook(option.id)}
+                aria-pressed={look === option.id}
+                className={clsx(
+                  "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition-colors",
+                  look === option.id
+                    ? "border-accent/60 bg-accent/[0.08] text-white"
+                    : "border-border text-white/50 hover:border-border-strong"
+                )}
+              >
+                <span aria-hidden className="h-3 w-3 rounded-full" style={{ background: option.swatch }} />
+                {t(`looks.${option.id ?? "auto"}.name`)}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs text-white/40">{t(`looks.${look ?? "auto"}.hint`)}</p>
         </div>
 
         <div>

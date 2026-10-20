@@ -700,6 +700,37 @@
           "hint": "A cut every bar, gentle movement, soft colour."
         }
       },
+      "look": "Look",
+      "looks": {
+        "auto": {
+          "name": "Style's own",
+          "hint": "The colour that comes with the style."
+        },
+        "vivid": {
+          "name": "Vivid",
+          "hint": "Saturated, bright colour."
+        },
+        "teal": {
+          "name": "Cinema",
+          "hint": "Teal shadows, orange light: the trailer look."
+        },
+        "golden": {
+          "name": "Golden",
+          "hint": "Warm, like golden hour."
+        },
+        "night": {
+          "name": "Night",
+          "hint": "Cold, dark and blue."
+        },
+        "mono": {
+          "name": "Black & white",
+          "hint": "High-contrast black and white."
+        },
+        "retro": {
+          "name": "Retro",
+          "hint": "Faded and warm: old film."
+        }
+      },
       "price": "{credits, plural, one {# credit} other {# credits}}",
       "free": "Free · runs on this machine",
       "cta": "Make the edit",

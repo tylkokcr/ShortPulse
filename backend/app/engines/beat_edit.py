@@ -943,6 +943,7 @@ def plan_edit(
     music_start: float | None = None,
     seed: int | None = None,
     history: dict[Path, list[tuple[float, float]]] | None = None,
+    look_name: str | None = None,
 ) -> EditPlan:
     """Which clip, which stretch and which effect sits on each beat.
 
@@ -1041,7 +1042,7 @@ def plan_edit(
         taken.add(moment.index)
         used[clip.path].append((src, src + source_len))
 
-        effects: list[str] = [look.grade]
+        effects: list[str] = [f"look_{look_name}" if look_name in LOOKS else look.grade]
         start_t = timeline[i]
         if is_drop:
             drop_cut = len(cuts)
@@ -1260,17 +1261,8 @@ def _segment_filter(cut: Cut) -> str:
         chain.append(f"rgbashift=rh=-22:bh=22:gv=6:enable='{when}'")
         chain.append(f"noise=alls=36:allf=t:enable='{when}'")
         chain.append(f"drawbox=c=white@0.22:t=fill:enable='{when}'")
-    if "grade" in cut.effects:
-        chain.append("eq=contrast=1.12:saturation=1.28:gamma=0.97")
-        chain.append("vignette=PI/5")
-        chain.append("unsharp=5:5:0.6")
-    elif "grade_film" in cut.effects:
-        # Teal shadows, warm highlights, a little crushed: the trailer look.
-        chain.append("colorbalance=rs=-0.06:bs=0.08:rh=0.07:bh=-0.06")
-        chain.append("eq=contrast=1.15:saturation=1.05:gamma=0.95")
-        chain.append("vignette=PI/4")
-    elif "grade_soft" in cut.effects:
-        chain.append("eq=contrast=1.04:saturation=1.08:brightness=0.02")
+    grade = next((GRADES[e] for e in cut.effects if e in GRADES), ())
+    chain.extend(grade)
     graph = ",".join(chain) or "null"
     flash_len = 0.22 if "flash" in cut.effects else 0.45
     if "flash" in cut.effects or "softflash" in cut.effects:
@@ -1282,6 +1274,48 @@ def _segment_filter(cut: Cut) -> str:
     else:
         graph = f"{framing}[framed]{graph}"
     return graph + f",trim=duration={cut.duration:.3f},format=yuv420p[v]"
+
+
+# The colour of the whole edit. Each style has its own (`Style.grade`);
+# a look the person picked replaces it (`plan_edit(look=...)`). Plain
+# ffmpeg filters, cheap enough to run on every cut.
+GRADES: dict[str, tuple[str, ...]] = {
+    "grade": ("eq=contrast=1.12:saturation=1.28:gamma=0.97", "vignette=PI/5", "unsharp=5:5:0.6"),
+    # Teal shadows, warm highlights, a little crushed: the trailer look.
+    "grade_film": (
+        "colorbalance=rs=-0.06:bs=0.08:rh=0.07:bh=-0.06",
+        "eq=contrast=1.15:saturation=1.05:gamma=0.95",
+        "vignette=PI/4",
+    ),
+    "grade_soft": ("eq=contrast=1.04:saturation=1.08:brightness=0.02",),
+    "look_vivid": ("eq=contrast=1.04:saturation=1.45:gamma=0.93", "unsharp=5:5:0.7"),
+    "look_teal": (
+        "colorbalance=rs=-0.14:bs=0.16:rh=0.12:gh=-0.02:bh=-0.14",
+        "eq=contrast=1.16:saturation=1.15:gamma=0.94",
+        "vignette=PI/4",
+    ),
+    "look_golden": (
+        "colorbalance=rs=0.1:bs=-0.1:rm=0.12:gm=0.03:bm=-0.14:rh=0.08:bh=-0.14",
+        "eq=contrast=1.06:saturation=1.18:gamma=0.97",
+        "vignette=PI/5",
+    ),
+    "look_night": (
+        "colorbalance=rs=-0.06:bs=0.14:rm=-0.04:bm=0.1:bh=0.04",
+        "eq=contrast=1.12:saturation=0.72:brightness=-0.05:gamma=0.92",
+        "vignette=PI/3.5",
+    ),
+    "look_mono": ("hue=s=0", "eq=contrast=1.3:gamma=0.95", "vignette=PI/4"),
+    # Lifted blacks, warm and a little washed out: old film. No grain —
+    # grain that moves is new detail on every frame, and at the quality the
+    # cuts are encoded at it made a 15-second edit 120MB.
+    "look_retro": (
+        "curves=r='0/0.1 1/1':g='0/0.07 1/0.95':b='0/0.1 1/0.82'",
+        "eq=saturation=0.8",
+        "vignette=PI/4",
+    ),
+}
+# The looks a person can pick, by the name the API takes.
+LOOKS = ("vivid", "teal", "golden", "night", "mono", "retro")
 
 
 # The opening title: when it starts, how fast its words type in, how long
