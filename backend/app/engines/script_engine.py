@@ -175,15 +175,21 @@ tense as it unfolds. Open each "voiceover_line" with a time marker \
 ("One minute later", "By morning", "A month in", "Ten years on"). Each \
 scene is ONE consequence, and each is bigger or stranger than the last.
 - Every consequence is a specific fact most viewers do not know: a named \
-place, industry, product, animal or route, and a real number wherever \
-one exists — at least half the scenes carry a number. Vague effects are \
-not consequences: never write that something "is disrupted", "falls into \
+place, industry, product, animal or route. Vague effects are not \
+consequences: never write that something "is disrupted", "falls into \
 chaos", "is affected", "struggles" or "changes completely". \
 Weak: "The oceans would change." Strong: "By morning, high tides are \
 about a third as high — only the Sun is pulling now."
-- Ground every number in something real and say "about" when it is an \
-estimate. Never invent a statistic: if you are not sure of a figure, use \
-a true fact without one.
+- Numbers: only ones that are well established and stable — a \
+population, an area, a distance, a famous record, a share an encyclopedia \
+would state — rounded and said with "about". Never a percentage of \
+damage, loss or decline: nobody has measured a hypothetical, so any such \
+figure is invented. A scene without a number is fine; a made-up number is \
+the one thing that ruins this video.
+- Stay consistent with the premise: whatever vanishes takes everything \
+inside it with it (its rivers, cities, mines, people), so a consequence \
+is about what the REST of the world loses or how it changes, never about \
+something that no longer exists.
 - The last consequence is the one nobody expects — the twist the video is \
 shared for — then a short question that invites a comment ("What would \
 you miss first?").

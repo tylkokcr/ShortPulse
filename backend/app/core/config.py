@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     # takes longer to write the script than the rest of the render takes to
     # produce the video.
     openai_api_key: str | None = None
+    # The model that writes scripts whose worth is their facts — the
+    # "what if?" format — when the provider is OpenAI. gpt-4.1-mini, asked
+    # for a number per scene, supplied them whether or not it knew one;
+    # a script is a few hundred words, so the larger model costs well
+    # under a cent more a video. Empty: llm_model for everything.
+    fact_llm_model: str = "gpt-4.1"
     # The YouTube Data API key the trends section reads most-popular charts
     # with (services/trends.py). Without one there is no trends section.
     youtube_api_key: str | None = None

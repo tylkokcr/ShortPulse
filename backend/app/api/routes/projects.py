@@ -33,6 +33,7 @@ from app.schemas.project import (
     ProjectSource,
     ProjectStatus,
     SceneFeedback,
+    ScriptFormat,
     TextOverlay,
     VisualMode,
 )
@@ -117,12 +118,18 @@ async def create_project(
     # read the result back out of the project's error field. Which model
     # writes the script is a deployment decision anyway, not a per-request
     # one, so the whole block is replaced rather than validated.
+    factual = config.script_format == ScriptFormat.WHAT_IF
     config.llm = LLMConfig(
         provider=LLMProvider(settings.llm_provider),
-        model=settings.llm_model,
+        model=(
+            settings.fact_llm_model
+            if factual and settings.llm_provider == "openai" and settings.fact_llm_model
+            else settings.llm_model
+        ),
         base_url=settings.ollama_base_url,
         api_key=settings.openai_api_key,
-        temperature=config.llm.temperature,
+        # Cooler for facts: the warmth that varies a hook also varies a number.
+        temperature=min(config.llm.temperature, 0.5) if factual else config.llm.temperature,
     )
 
     billing = billing_for(db_pool(request), user_id)

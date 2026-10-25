@@ -120,3 +120,26 @@ async def test_temperature_is_still_the_callers_to_set(api):
         )
 
     assert queue.submitted[0].config.llm.temperature == 0.2
+
+
+async def test_a_what_if_script_is_written_by_the_fact_model_and_cooler(api, monkeypatch):
+    app, queue = api
+    settings = core_config.get_settings()
+    monkeypatch.setattr(settings, "llm_provider", "openai")
+    monkeypatch.setattr(settings, "llm_model", "gpt-4.1-mini")
+    monkeypatch.setattr(settings, "fact_llm_model", "gpt-4.1")
+
+    async with _client(app) as client:
+        await client.post("/api/projects", json={"topic": "x", "script_format": "what_if"})
+        await client.post("/api/projects", json={"topic": "y"})
+
+    what_if, free = (p.config.llm for p in queue.submitted)
+    assert what_if.model == "gpt-4.1" and what_if.temperature <= 0.5
+    assert free.model == "gpt-4.1-mini"
+
+
+async def test_the_fact_model_is_only_for_openai(api):
+    app, queue = api
+    async with _client(app) as client:
+        await client.post("/api/projects", json={"topic": "x", "script_format": "what_if"})
+    assert queue.submitted[0].config.llm.model == "llama3"
