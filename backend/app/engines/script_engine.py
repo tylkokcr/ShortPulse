@@ -170,21 +170,30 @@ Poland vanished from the map?"). If it is not phrased as one, treat it as \
 - The hook states the hypothetical as if it has just happened, in one \
 short, vivid sentence — "Tonight, the Moon is gone." — not as a question \
 to the viewer.
-- Then a chain of consequences in time order: the first seconds or \
-minutes, then days, then years. Each scene is ONE concrete consequence, \
-and each is bigger or stranger than the one before.
-- Ground every consequence in a real fact, and use a real number where \
-one exists (populations, distances, percentages). Say "about" when a \
-figure is an estimate. Never invent a statistic; a vague true line beats \
-a precise false one.
+- Then a chain of consequences in time order, narrated in the present \
+tense as it unfolds. Open each "voiceover_line" with a time marker \
+("One minute later", "By morning", "A month in", "Ten years on"). Each \
+scene is ONE consequence, and each is bigger or stranger than the last.
+- Every consequence is a specific fact most viewers do not know: a named \
+place, industry, product, animal or route, and a real number wherever \
+one exists — at least half the scenes carry a number. Vague effects are \
+not consequences: never write that something "is disrupted", "falls into \
+chaos", "is affected", "struggles" or "changes completely". \
+Weak: "The oceans would change." Strong: "By morning, high tides are \
+about a third as high — only the Sun is pulling now."
+- Ground every number in something real and say "about" when it is an \
+estimate. Never invent a statistic: if you are not sure of a figure, use \
+a true fact without one.
+- The last consequence is the one nobody expects — the twist the video is \
+shared for — then a short question that invites a comment ("What would \
+you miss first?").
 - About countries, peoples or groups: the experiment is about geography, \
 economics, physics or history — never about whether a people deserves to \
-exist. No mockery of a nation, no stereotypes, no wishing harm.
+exist. No mockery of a nation, no stereotypes, no wishing harm. When a \
+place vanishes, tell what the rest of the world no longer gets from it.
 - Disasters are told through their effects on the world (lights going \
 out, tides stopping, trade routes moving), never through injured or dead \
 people.
-- End on the most surprising consequence, then a short question that \
-invites a comment ("What would you miss first?").
 - "visual_prompt": a scene of an illustrated world showing that one \
 consequence through objects, places and people doing things. Never a map, \
 a globe with borders, a chart or anything with words or numbers in it: \
