@@ -11,6 +11,7 @@ import {
   type Project,
   type ProjectConfig,
   type RenderProgress,
+  type ScriptFormat,
   type SubtitleStyle,
   type AspectRatio,
   type VideoLength,
@@ -20,6 +21,7 @@ import {
 interface ProjectDraft {
   topic: string;
   rawScript: string;
+  scriptFormat: ScriptFormat;
   visualMode: VisualMode;
   videoLength: VideoLength;
   language: LanguageCode;
@@ -95,6 +97,7 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
   draft: {
     topic: "",
     rawScript: "",
+    scriptFormat: "free",
     visualMode: "fast_hybrid",
     videoLength: "short",
     language: "en",
@@ -133,6 +136,7 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
       art_style: draft.artStyle,
       negative_prompt: draft.negativePrompt.trim() || null,
       video_length: draft.videoLength,
+      script_format: draft.scriptFormat,
       language: draft.language,
       aspect_ratio: draft.aspectRatio,
       fps: 30,

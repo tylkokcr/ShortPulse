@@ -349,7 +349,7 @@
   },
   "artStyles": {
     "eyebrow": "Çizim stilleri",
-    "title": "Altı görünüm, tek prompt uzağında",
+    "title": "Yedi görünüm, tek prompt uzağında",
     "sub": "Aşağıdaki her kare gerçek bir render — aynı model, aynı ayarlar, aynı özne. Özneyi yüzü ve elleri olacak şekilde bilerek seçtik, çünkü doğru çizilmesi en zor şey bu ve bu görünümlerin çoğunun stilize olmasının sebebi de bu."
   },
   "captionStyles": {
@@ -544,8 +544,20 @@
       "createFailed": "Proje oluşturulamadı"
     },
     "script": {
+      "format": "Format",
+      "formats": {
+        "free": {
+          "name": "Serbest",
+          "hint": "Konuyu yaz, gerisini senaryo yazarı halleder."
+        },
+        "what_if": {
+          "name": "Ne olurdu?",
+          "hint": "Bir varsayım, ardından zamanla büyüyen sonuçlar zinciri. Gerçek rakamlarla; çizgi film görünümü AI görsel modunda."
+        }
+      },
       "topic": "Konu",
       "topicPlaceholder": "örn. insanların sana anında güvenmesini sağlayan 3 psikoloji taktiği",
+      "whatIfPlaceholder": "örn. Ay bir gecede yok olsaydı ne olurdu?",
       "try": "Dene",
       "rawScript": "Hazır metin",
       "rawScriptHint": "(isteğe bağlı — yapay zekâya yazdırmayı atlar)",
@@ -555,6 +567,12 @@
         "ocean": "Okyanus neden tuzlu",
         "cats": "Kediler neden karton kutulara bayılır",
         "sleep": "Daha iyi uyumak için basit bir taktik"
+      },
+      "whatIfSuggestions": {
+        "moon": "Ay bir gecede yok olsaydı?",
+        "spin": "Dünya dönmeyi bıraksaydı?",
+        "internet": "İnternet bir hafta kapansaydı?",
+        "language": "Herkes aynı dili konuşsaydı?"
       }
     },
     "outro": {
@@ -1166,6 +1184,10 @@
     "clay": {
       "name": "Kil Animasyon",
       "description": "Parmak izleri görünen hamur modeller."
+    },
+    "flat": {
+      "name": "Düz Çizgi Film",
+      "description": "Temiz konturlu, düz renkli anlatım çizimleri."
     },
     "pixel": {
       "name": "Piksel Sanatı",

@@ -349,7 +349,7 @@
   },
   "artStyles": {
     "eyebrow": "Style graficzne",
-    "title": "Sześć stylów, jeden prompt stąd",
+    "title": "Siedem stylów, jeden prompt stąd",
     "sub": "Każdy kadr poniżej to prawdziwy render — ten sam model, te same ustawienia, ten sam temat. Temat z twarzą i dłońmi wybraliśmy celowo, bo to najtrudniejsze do poprawnego oddania i właśnie dlatego większość tych stylów jest stylizowana."
   },
   "captionStyles": {
@@ -544,8 +544,20 @@
       "createFailed": "Nie udało się utworzyć projektu"
     },
     "script": {
+      "format": "Format",
+      "formats": {
+        "free": {
+          "name": "Dowolny",
+          "hint": "Wpisz temat, resztę zrobi scenarzysta."
+        },
+        "what_if": {
+          "name": "Co by było, gdyby?",
+          "hint": "Hipoteza, a potem łańcuch skutków, który rośnie z czasem. Prawdziwe liczby; wygląd kreskówki w trybie obrazów AI."
+        }
+      },
       "topic": "Temat",
       "topicPlaceholder": "np. 3 psychologiczne triki, dzięki którym ludzie od razu ci ufają",
+      "whatIfPlaceholder": "np. Co by było, gdyby Księżyc zniknął w jedną noc?",
       "try": "Spróbuj",
       "rawScript": "Gotowy scenariusz",
       "rawScriptHint": "(opcjonalnie — pomija pisanie przez AI)",
@@ -555,6 +567,12 @@
         "ocean": "Dlaczego ocean jest słony",
         "cats": "Dlaczego koty kochają kartony",
         "sleep": "Prosty sposób na lepszy sen"
+      },
+      "whatIfSuggestions": {
+        "moon": "Gdyby Księżyc zniknął w jedną noc?",
+        "spin": "Gdyby Ziemia przestała się obracać?",
+        "internet": "Gdyby internet wyłączono na tydzień?",
+        "language": "Gdyby wszyscy mówili jednym językiem?"
       }
     },
     "outro": {
@@ -1166,6 +1184,10 @@
     "clay": {
       "name": "Plastelina",
       "description": "Modele z plasteliny z widocznymi odciskami palców."
+    },
+    "flat": {
+      "name": "Płaska kreskówka",
+      "description": "Płaskie, kolorowe rysunki objaśniające z wyraźnym konturem."
     },
     "pixel": {
       "name": "Pixel art",

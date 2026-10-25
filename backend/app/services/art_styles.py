@@ -142,6 +142,21 @@ ART_STYLES: tuple[ArtStyle, ...] = (
         negative_prompt=f"{_BASE_NEGATIVE}, {_ANTI_PHOTO}, cgi, smooth digital render, flat 2d",
         sample="clay.jpg",
     ),
+    # The explainer cartoon: flat shapes and clean outlines, the look of the
+    # "what would happen if" videos. Flat on purpose — it hides the same
+    # failures the other styles do, and reads at phone size.
+    ArtStyle(
+        id="flat",
+        name="Flat Cartoon",
+        description="Flat-colour explainer cartoon with clean outlines.",
+        prompt_template=(
+            "flat 2d vector cartoon illustration, educational explainer animation style, "
+            "clean bold outlines, simple rounded shapes, bright flat colors, no gradients, "
+            "cheerful cartoon scene of {prompt}"
+        ),
+        negative_prompt=f"{_BASE_NEGATIVE}, {_ANTI_PHOTO}, 3d render, realistic shading, map, text",
+        sample="flat.jpg",
+    ),
     ArtStyle(
         id="pixel",
         name="Pixel Art",

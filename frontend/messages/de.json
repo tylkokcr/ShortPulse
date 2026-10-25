@@ -349,7 +349,7 @@
   },
   "artStyles": {
     "eyebrow": "Bildstile",
-    "title": "Sechs Looks, einen Prompt entfernt",
+    "title": "Sieben Looks, einen Prompt entfernt",
     "sub": "Jedes Bild unten ist ein echter Render — dasselbe Modell, dieselben Einstellungen, dasselbe Motiv. Wir haben bewusst ein Motiv mit Gesicht und Händen gewählt, weil genau das am schwersten richtig hinzubekommen ist und der Grund, warum die meisten dieser Looks stilisiert sind."
   },
   "captionStyles": {
@@ -544,8 +544,20 @@
       "createFailed": "Projekt konnte nicht erstellt werden"
     },
     "script": {
+      "format": "Format",
+      "formats": {
+        "free": {
+          "name": "Frei",
+          "hint": "Gib ein Thema ein, den Rest schreibt der Skriptautor."
+        },
+        "what_if": {
+          "name": "Was wäre, wenn?",
+          "hint": "Eine Annahme, dann eine Kette von Folgen, die mit der Zeit wächst. Echte Zahlen; der Cartoon-Look gibt es im KI-Bilder-Modus."
+        }
+      },
       "topic": "Thema",
       "topicPlaceholder": "z. B. 3 Psychologie-Tricks, mit denen dir Menschen sofort vertrauen",
+      "whatIfPlaceholder": "z. B. Was wäre, wenn der Mond über Nacht verschwände?",
       "try": "Probier",
       "rawScript": "Fertiges Skript",
       "rawScriptHint": "(optional — überspringt das KI-Skript)",
@@ -555,6 +567,12 @@
         "ocean": "Warum das Meer salzig ist",
         "cats": "Warum Katzen Kartons lieben",
         "sleep": "Ein einfacher Trick für besseren Schlaf"
+      },
+      "whatIfSuggestions": {
+        "moon": "Wenn der Mond über Nacht verschwände?",
+        "spin": "Wenn die Erde aufhörte, sich zu drehen?",
+        "internet": "Wenn das Internet eine Woche ausfiele?",
+        "language": "Wenn alle dieselbe Sprache sprächen?"
       }
     },
     "outro": {
@@ -1166,6 +1184,10 @@
     "clay": {
       "name": "Knetanimation",
       "description": "Knetfiguren mit sichtbaren Fingerabdrücken."
+    },
+    "flat": {
+      "name": "Flacher Cartoon",
+      "description": "Flächige Erklärzeichnungen mit klaren Konturen."
     },
     "pixel": {
       "name": "Pixel-Art",

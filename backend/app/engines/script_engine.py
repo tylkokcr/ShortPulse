@@ -142,6 +142,7 @@ title and description in {language_name}. Give hashtags without the '#' \
 and without spaces. This is what appears on the post itself, not in the \
 video, so do not repeat the hook word for word.
 
+{format_rules}
 Respond with ONLY valid JSON, no markdown fences, matching this shape:
 {{
   "hook": "string",
@@ -158,8 +159,46 @@ Respond with ONLY valid JSON, no markdown fences, matching this shape:
 """
 
 
+# Extra rules per ScriptFormat, added to the system prompt. "free" has
+# none: the rules above are already that format.
+FORMAT_RULES: dict[str, str] = {
+    "what_if": """\
+This video is a "what would happen if" thought experiment. Also follow these:
+- The topic is a hypothetical ("What if the Moon disappeared?", "What if \
+Poland vanished from the map?"). If it is not phrased as one, treat it as \
+"what would happen if <topic>".
+- The hook states the hypothetical as if it has just happened, in one \
+short, vivid sentence — "Tonight, the Moon is gone." — not as a question \
+to the viewer.
+- Then a chain of consequences in time order: the first seconds or \
+minutes, then days, then years. Each scene is ONE concrete consequence, \
+and each is bigger or stranger than the one before.
+- Ground every consequence in a real fact, and use a real number where \
+one exists (populations, distances, percentages). Say "about" when a \
+figure is an estimate. Never invent a statistic; a vague true line beats \
+a precise false one.
+- About countries, peoples or groups: the experiment is about geography, \
+economics, physics or history — never about whether a people deserves to \
+exist. No mockery of a nation, no stereotypes, no wishing harm.
+- Disasters are told through their effects on the world (lights going \
+out, tides stopping, trade routes moving), never through injured or dead \
+people.
+- End on the most surprising consequence, then a short question that \
+invites a comment ("What would you miss first?").
+- "visual_prompt": a scene of an illustrated world showing that one \
+consequence through objects, places and people doing things. Never a map, \
+a globe with borders, a chart or anything with words or numbers in it: \
+the image model cannot draw geography or text, and a wrong map is the \
+first thing a viewer notices.
+""",
+}
+
+
 def _build_system_prompt(
-    video_length: VideoLength, language: str, visual_mode: str = "fast_hybrid"
+    video_length: VideoLength,
+    language: str,
+    visual_mode: str = "fast_hybrid",
+    script_format: str = "free",
 ) -> str:
     min_scenes, max_scenes = SCENE_COUNT_BY_LENGTH[video_length]
     language_name = LANGUAGE_NAMES.get(language, language)
@@ -170,7 +209,8 @@ def _build_system_prompt(
     )
     return SYSTEM_PROMPT_TEMPLATE.format(
         visual_prompt_rule=visual_prompt_rule,
-        min_scenes=min_scenes, max_scenes=max_scenes, language_name=language_name
+        min_scenes=min_scenes, max_scenes=max_scenes, language_name=language_name,
+        format_rules=FORMAT_RULES.get(script_format, ""),
     )
 
 
@@ -322,6 +362,7 @@ async def generate_script(
     language: str = "en",
     visual_mode: str = "fast_hybrid",
     max_attempts: int = 3,
+    script_format: str = "free",
 ) -> ScriptOutput:
     """Run the LLM and convert its response into a validated ScriptOutput.
 
@@ -335,7 +376,7 @@ async def generate_script(
     for attempt in range(1, max_attempts + 1):
         try:
             return await _generate_script_once(
-                topic, config, raw_script, video_length, language, visual_mode
+                topic, config, raw_script, video_length, language, visual_mode, script_format
             )
         except ScriptGenerationError as exc:
             last_error = exc
@@ -351,8 +392,9 @@ async def _generate_script_once(
     video_length: VideoLength,
     language: str,
     visual_mode: str = "fast_hybrid",
+    script_format: str = "free",
 ) -> ScriptOutput:
-    system_prompt = _build_system_prompt(video_length, language, visual_mode)
+    system_prompt = _build_system_prompt(video_length, language, visual_mode, script_format)
     user_prompt = _build_user_prompt(topic, raw_script)
 
     raw_text = await _call_llm(config, system_prompt, user_prompt)

@@ -349,7 +349,7 @@
   },
   "artStyles": {
     "eyebrow": "Art styles",
-    "title": "Six looks, one prompt away",
+    "title": "Seven looks, one prompt away",
     "sub": "Every frame below is a real render — same model, same settings, same subject. We picked a subject with a face and hands on purpose, because that's the hardest thing to get right and the reason most of these looks are stylized."
   },
   "captionStyles": {
@@ -544,8 +544,20 @@
       "createFailed": "Failed to create project"
     },
     "script": {
+      "format": "Format",
+      "formats": {
+        "free": {
+          "name": "Free",
+          "hint": "Type a topic, the scriptwriter does the rest."
+        },
+        "what_if": {
+          "name": "What if?",
+          "hint": "A hypothetical, then a chain of consequences that grows over time. Real numbers; the cartoon look is in the AI visuals mode."
+        }
+      },
       "topic": "Topic",
       "topicPlaceholder": "e.g. 3 psychology tricks that make people trust you instantly",
+      "whatIfPlaceholder": "e.g. What if the Moon vanished overnight?",
       "try": "Try",
       "rawScript": "Raw script",
       "rawScriptHint": "(optional — skips AI scriptwriting)",
@@ -555,6 +567,12 @@
         "ocean": "Why the ocean is salty",
         "cats": "Why cats love cardboard boxes",
         "sleep": "A simple trick for better sleep"
+      },
+      "whatIfSuggestions": {
+        "moon": "What if the Moon vanished overnight?",
+        "spin": "What if the Earth stopped spinning?",
+        "internet": "What if the internet went down for a week?",
+        "language": "What if everyone spoke the same language?"
       }
     },
     "outro": {
@@ -1166,6 +1184,10 @@
     "clay": {
       "name": "Claymation",
       "description": "Plasticine models with visible fingerprints."
+    },
+    "flat": {
+      "name": "Flat Cartoon",
+      "description": "Flat-colour explainer drawings with clean outlines."
     },
     "pixel": {
       "name": "Pixel Art",

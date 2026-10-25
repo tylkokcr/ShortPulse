@@ -393,6 +393,16 @@ class BeatEditStyle(StrEnum):
     CALM = "calm"
 
 
+class ScriptFormat(StrEnum):
+    """The kind of video a topic is written as. See
+    script_engine.FORMAT_RULES."""
+
+    FREE = "free"
+    # "What would happen if ...": a chain of consequences, each one bigger
+    # and further in time than the last.
+    WHAT_IF = "what_if"
+
+
 class BeatEditLook(StrEnum):
     """The colour of the whole edit. See engines/beat_edit.GRADES. Absent
     on a spec: the style's own."""
@@ -470,6 +480,7 @@ class ProjectConfig(BaseModel):
     # Ignored by stock_media for the same reason art_style is.
     negative_prompt: str | None = Field(default=None, max_length=400)
     video_length: VideoLength = VideoLength.SHORT
+    script_format: ScriptFormat = ScriptFormat.FREE
     # Set only on uploads, and only when the caller asked for a dub: the
     # language the video should come out speaking. `language` above stays
     # what it always was, the language the source is *in*, because the

@@ -36,6 +36,7 @@ const FALLBACK: ArtStyle[] = [
   { id: "toon3d", name: "3D Toon", description: "Big-eyed animated-film look.", sample: "toon3d.jpg", is_default: false },
   { id: "comic", name: "Comic", description: "Inked outlines, halftone shading.", sample: "comic.jpg", is_default: false },
   { id: "clay", name: "Claymation", description: "Plasticine models.", sample: "clay.jpg", is_default: false },
+  { id: "flat", name: "Flat Cartoon", description: "Flat-colour explainer drawings.", sample: "flat.jpg", is_default: false },
   { id: "pixel", name: "Pixel Art", description: "Chunky 16-bit sprites.", sample: "pixel.jpg", is_default: false },
 ];
 
@@ -63,7 +64,7 @@ export function ArtStyles() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
         {styles.map((style) => (
           <StyleCard key={style.id} style={style} />
         ))}

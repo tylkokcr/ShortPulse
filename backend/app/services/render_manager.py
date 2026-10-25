@@ -443,6 +443,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 # Stock mode turns this into a keyword search, so asking
                 # for prose here would be generated and then discarded.
                 visual_mode=str(config.visual_mode),
+                script_format=str(config.script_format),
             )
         # What the whole render should keep out of frame, stamped onto
         # every scene the LLM just wrote. Per scene rather than read from

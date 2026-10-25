@@ -236,6 +236,8 @@ export interface BeatEditSpec {
   music_start_s?: number | null;
 }
 
+export type ScriptFormat = "free" | "what_if";
+
 export interface ProjectConfig {
   id: string;
   topic: string;
@@ -252,6 +254,8 @@ export interface ProjectConfig {
    *  modes — stock footage is whatever the videographer shot. */
   art_style: string;
   video_length: VideoLength;
+  /** The kind of video the topic is written as (backend ScriptFormat). */
+  script_format?: ScriptFormat;
   language: string;
   llm: LLMConfig;
   voice: VoiceConfig;
