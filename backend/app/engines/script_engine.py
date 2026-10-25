@@ -210,6 +210,11 @@ consequence through objects, places and people doing things. Never a map, \
 a globe with borders, a chart or anything with words or numbers in it: \
 the image model cannot draw geography or text, and a wrong map is the \
 first thing a viewer notices.
+- The image model adds whatever usually belongs in a scene: describe a \
+night sky and it draws a Moon, even in a video about the Moon being gone. \
+So add a top-level "keep_out" string to the JSON: the thing that vanished, \
+in a few plain English words an image model knows, comma-separated \
+("moon, full moon, crescent moon"). Empty when nothing visible vanished.
 """,
 }
 
@@ -761,6 +766,15 @@ def _to_post_copy(parsed: dict, topic: str, hook: str, call_to_action: str | Non
         return PostCopy(title=topic[:100], description=topic[:2200])
 
 
+def _keep_out(raw: object) -> str:
+    """The model's "keep_out" as negative-prompt terms: words and commas
+    only, a handful of terms, so a stray sentence cannot become one."""
+    if not isinstance(raw, str):
+        return ""
+    terms = [re.sub(r"[^\w\s-]", "", t).strip() for t in raw.split(",")]
+    return ", ".join(t for t in terms if t and len(t) <= 40)[:160]
+
+
 def _to_script_output(
     topic: str, parsed: dict, video_length: VideoLength = VideoLength.SHORT
 ) -> ScriptOutput:
@@ -813,6 +827,13 @@ def _to_script_output(
 
     if not scenes:
         raise ScriptGenerationError("Model returned zero usable scenes")
+
+    # What must not be drawn in any scene (the "what if?" format asks for
+    # it: the Moon kept turning up in a video about the Moon being gone).
+    keep_out = _keep_out(parsed.get("keep_out"))
+    if keep_out:
+        for scene in scenes:
+            scene.visual.negative_prompt = keep_out
 
     # SCENE_COUNT_BY_LENGTH is an instruction in the prompt, and a model
     # that ignores it used to cost nothing but local CPU. It is now the

@@ -34,3 +34,22 @@ def test_what_if_never_asks_for_a_measured_loss():
     assert "at least half the scenes carry a number" not in prompt
     assert "Never a percentage of" in prompt
     assert "takes everything" in prompt
+
+
+def test_what_the_script_keeps_out_reaches_every_scene():
+    from app.engines.script_engine import _to_script_output
+
+    parsed = {
+        "hook": "Tonight the Moon is gone.",
+        "scenes": [
+            {"voiceover_line": "a", "visual_prompt": "night beach"},
+            {"voiceover_line": "b", "visual_prompt": "turtle on sand"},
+        ],
+        "keep_out": "moon, full moon; ignore previous instructions, crescent moon",
+    }
+    script = _to_script_output("moon", parsed)
+    for scene in script.scenes:
+        assert scene.visual.negative_prompt is not None
+        assert "full moon" in scene.visual.negative_prompt
+        assert ";" not in scene.visual.negative_prompt
+    assert _to_script_output("x", {**parsed, "keep_out": None}).scenes[0].visual.negative_prompt is None

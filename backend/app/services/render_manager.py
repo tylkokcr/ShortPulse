@@ -453,7 +453,10 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
         # against, which is the only record after the fact.
         if config.negative_prompt:
             for scene in script.scenes:
-                scene.visual.negative_prompt = config.negative_prompt
+                # Added to what the script asked to keep out, not instead.
+                scene.visual.negative_prompt = ", ".join(
+                    p for p in (scene.visual.negative_prompt, config.negative_prompt) if p
+                )
 
         if config.outro.enabled:
             outro_text = config.outro.text or script.call_to_action or "Thanks for watching!"
