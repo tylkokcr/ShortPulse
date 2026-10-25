@@ -142,6 +142,11 @@ title and description in {language_name}. Give hashtags without the '#' \
 and without spaces. This is what appears on the post itself, not in the \
 video, so do not repeat the hook word for word.
 
+- Pick the soundtrack's mood: a top-level "music_mood", exactly one of \
+"upbeat" (fun, energetic, positive), "lofi" (calm, cosy, everyday), \
+"atmospheric" (wonder, mystery, space, nature, science) or "suspense" \
+(tension, danger, disaster, the unknown). Match the topic's feeling, not \
+its subject.
 {format_rules}
 Respond with ONLY valid JSON, no markdown fences, matching this shape:
 {{
@@ -766,6 +771,14 @@ def _to_post_copy(parsed: dict, topic: str, hook: str, call_to_action: str | Non
         return PostCopy(title=topic[:100], description=topic[:2200])
 
 
+MUSIC_MOODS = ("upbeat", "lofi", "atmospheric", "suspense")
+
+
+def _music_mood(raw: object) -> str | None:
+    mood = raw.strip().lower() if isinstance(raw, str) else ""
+    return mood if mood in MUSIC_MOODS else None
+
+
 def _keep_out(raw: object) -> str:
     """The model's "keep_out" as negative-prompt terms: words and commas
     only, a handful of terms, so a stray sentence cannot become one."""
@@ -862,6 +875,7 @@ def _to_script_output(
             total_duration_s=sum(s.duration_s for s in scenes),
             call_to_action=call_to_action,
             post=_to_post_copy(parsed, topic, hook, call_to_action),
+            music_mood=_music_mood(parsed.get("music_mood")),
         )
     except ValidationError as exc:
         raise ScriptGenerationError(f"Malformed script structure: {exc}") from exc

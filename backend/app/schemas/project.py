@@ -26,6 +26,11 @@ class VisualMode(StrEnum):
 
 
 class TTSProvider(StrEnum):
+    # OpenAI's speech model, steered by `VoiceConfig.instructions`. The
+    # hosted default when there is a key: Piper reads every line at the
+    # same pitch and pace, and a narrator who never leans on a word is
+    # what made the videos sound flat.
+    OPENAI = "openai"
     EDGE_TTS = "edge_tts"
     PIPER = "piper"
     COQUI_XTTS = "coqui_xtts"
@@ -224,6 +229,9 @@ class ScriptOutput(BaseModel):
     scenes: list[Scene]
     total_duration_s: float
     call_to_action: str | None = None
+    # The library category the soundtrack is drawn from when nobody picked
+    # a track (see render_manager). None: the default track.
+    music_mood: str | None = None
     # Absent on projects rendered before publishing existed, and on
     # uploads, which skip the LLM entirely — so every reader has to cope
     # with it being None rather than assume the generator filled it in.
@@ -252,6 +260,9 @@ class VoiceConfig(BaseModel):
     # edge-tts only; Piper exposes speed differently and ignores these.
     rate: str = "+0%"
     pitch: str = "+0Hz"
+    # openai only: how to read it (tone, pace, emphasis). Set by the server
+    # from the script format, never taken from a request.
+    instructions: str = Field(default="", max_length=600)
 
 
 class LLMConfig(BaseModel):

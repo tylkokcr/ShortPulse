@@ -430,8 +430,11 @@ export function listVoices(language: string): Promise<Voice[]> {
  * api/middleware.py now, deliberately and for stated reasons, rather than
  * by assumption: a catalog sample belongs to nobody.
  */
-export function voicePreviewUrl(voiceId: string): string {
-  return `${API_BASE}/voices/preview?voice_id=${encodeURIComponent(voiceId)}`;
+/** `language` matters for the OpenAI voices, which speak every language
+ *  and are previewed in the one the video will be in. */
+export function voicePreviewUrl(voiceId: string, language?: string): string {
+  const lang = language ? `&language=${encodeURIComponent(language)}` : "";
+  return `${API_BASE}/voices/preview?voice_id=${encodeURIComponent(voiceId)}${lang}`;
 }
 
 export function musicPreviewUrl(trackId: string): string {

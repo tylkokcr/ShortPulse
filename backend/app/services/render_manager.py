@@ -293,6 +293,21 @@ async def _settle_referral(project_id: str) -> None:
         logger.exception("Could not settle a referral after %s", project_id)
 
 
+def _track_for_mood(mood: str | None, project_id: str) -> Path | None:
+    """A library track in the mood the script asked for, picked by the
+    project id so a re-render keeps its soundtrack. Every video without a
+    chosen track used to get the same lounge-jazz piece, whatever it was
+    about."""
+    if not mood:
+        return None
+    from app.api.routes.music import available_tracks, track_path_for
+
+    pool = [t.id for t in available_tracks() if t.category == mood]
+    if not pool:
+        return None
+    return track_path_for(pool[uuid.UUID(project_id).int % len(pool)])
+
+
 async def _emit(project_id: str, **kwargs) -> None:
     progress = RenderProgress(project_id=project_id, **kwargs)
     await connection_manager.broadcast(progress)
@@ -615,12 +630,12 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
         )
         output_path = paths / "output" / "final.mp4"
 
-        if (
-            config.music.enabled
-            and not config.music.track_path
-            and settings.default_music_track_path.exists()
-        ):
-            config.music.track_path = str(settings.default_music_track_path)
+        if config.music.enabled and not config.music.track_path:
+            moody = _track_for_mood(script.music_mood, project_id)
+            if moody is not None:
+                config.music.track_path = str(moody)
+            elif settings.default_music_track_path.exists():
+                config.music.track_path = str(settings.default_music_track_path)
 
         with timings.stage("ffmpeg_assembly"):
             final_path = await render_engine.render_project(

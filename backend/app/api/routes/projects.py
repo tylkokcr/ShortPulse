@@ -42,6 +42,7 @@ from app.services import (
     credits,
     editing,
     feedback,
+    narration,
     post_copy,
     project_lock,
     project_store,
@@ -118,6 +119,10 @@ async def create_project(
     # read the result back out of the project's error field. Which model
     # writes the script is a deployment decision anyway, not a per-request
     # one, so the whole block is replaced rather than validated.
+    # Which engine reads the script and how, like the model that writes it:
+    # the request only names a voice (see services/narration.py).
+    config.voice = narration.resolve(config.voice, config.language, str(config.script_format))
+
     factual = config.script_format == ScriptFormat.WHAT_IF
     config.llm = LLMConfig(
         provider=LLMProvider(settings.llm_provider),

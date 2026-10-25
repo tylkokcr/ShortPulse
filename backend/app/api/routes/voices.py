@@ -21,6 +21,7 @@ from pydantic import BaseModel
 from app.core.config import get_settings
 from app.engines import audio_engine
 from app.schemas.project import TTSProvider, VoiceConfig
+from app.services import narration
 from app.services import voices as voice_catalog
 
 logger = logging.getLogger(__name__)
@@ -63,18 +64,24 @@ async def list_voices(
         VoiceOut(
             id=voice.id,
             name=voice.name,
-            language=voice.language,
+            language=language if voice.language == "*" and language else voice.language,
             region=voice.region,
             quality=voice.quality,
-            is_default=voice.is_default,
+            is_default=(
+                voice.id == voice_catalog.default_voice_id(language) if language else voice.is_default
+            ),
         )
         for voice in catalog
     ]
 
 
 @router.get("/preview")
-async def preview(voice_id: str = Query(..., description="Voice id from GET /api/voices")):
-    """A short spoken sample of one voice, as WAV."""
+async def preview(
+    voice_id: str = Query(..., description="Voice id from GET /api/voices"),
+    language: str = Query(default="en", max_length=8),
+):
+    """A short spoken sample of one voice: WAV from Piper, MP3 from OpenAI,
+    whose voices speak every language and are previewed in the one asked."""
     voice = voice_catalog.by_id(voice_id)
     if voice is None:
         # Only catalog entries are synthesizable: `voice_id` reaches
@@ -82,21 +89,30 @@ async def preview(voice_id: str = Query(..., description="Voice id from GET /api
         # would let a caller probe for files in that repo.
         raise HTTPException(status_code=404, detail=f"Unknown voice: {voice_id!r}")
 
+    hosted = voice.language == "*"
+    spoken = language if hosted and language in voice_catalog.PREVIEW_LINE else voice.language
+    if spoken == "*":
+        spoken = "en"
     preview_dir = _preview_dir()
     preview_dir.mkdir(parents=True, exist_ok=True)
-    cached = preview_dir / f"{re.sub(r'[^A-Za-z0-9_-]', '_', voice.id)}.wav"
+    stem = re.sub(r"[^A-Za-z0-9_-]", "_", voice.id) + (f"_{spoken}" if hosted else "")
+    cached = preview_dir / f"{stem}.{'mp3' if hosted else 'wav'}"
 
     if not cached.exists():
-        line = voice_catalog.PREVIEW_LINE.get(voice.language, voice_catalog.PREVIEW_LINE["en"])
+        line = voice_catalog.PREVIEW_LINE.get(spoken, voice_catalog.PREVIEW_LINE["en"])
         async with _preview_lock:
             # Re-check: another request may have produced it while we waited.
             if not cached.exists():
                 try:
                     await audio_engine.synthesize_line(
                         line,
-                        VoiceConfig(provider=TTSProvider.PIPER, voice_id=voice.id),
+                        VoiceConfig(
+                            provider=TTSProvider.OPENAI if hosted else TTSProvider.PIPER,
+                            voice_id=voice.id,
+                            instructions=narration.instructions("free", spoken) if hosted else "",
+                        ),
                         cached,
-                        language=voice.language,
+                        language=spoken,
                     )
                 except Exception as exc:  # noqa: BLE001 - surfaced to the client
                     logger.exception("Voice preview failed for %s", voice.id)
@@ -107,6 +123,6 @@ async def preview(voice_id: str = Query(..., description="Voice id from GET /api
 
     return FileResponse(
         cached,
-        media_type="audio/wav",
+        media_type="audio/mpeg" if hosted else "audio/wav",
         headers={"Cache-Control": "public, max-age=86400"},
     )

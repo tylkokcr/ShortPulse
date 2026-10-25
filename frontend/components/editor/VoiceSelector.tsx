@@ -63,7 +63,7 @@ export function VoiceSelector() {
     }
 
     audioRef.current?.pause();
-    const audio = new Audio(voicePreviewUrl(voice.id));
+    const audio = new Audio(voicePreviewUrl(voice.id, draft.language));
     audioRef.current = audio;
     setBuffering(voice.id);
     setFailed(null);

@@ -100,7 +100,9 @@ async def synthesize_line(
     """
     cleaned = clean_text_for_tts(text)
 
-    if voice.provider == TTSProvider.EDGE_TTS:
+    if voice.provider == TTSProvider.OPENAI:
+        await _synthesize_openai(cleaned, voice, output_path)
+    elif voice.provider == TTSProvider.EDGE_TTS:
         await _synthesize_edge_tts(cleaned, voice, output_path)
     elif voice.provider == TTSProvider.PIPER:
         await _synthesize_piper(cleaned, voice, output_path, language, length_scale)
@@ -110,6 +112,47 @@ async def synthesize_line(
         raise ValueError(f"Unsupported TTS provider: {voice.provider}")
 
     return output_path
+
+
+OPENAI_VOICE_PREFIX = "openai:"
+
+
+async def _synthesize_openai(text: str, voice: VoiceConfig, output_path: Path) -> None:
+    """One line through OpenAI's speech endpoint, as MP3. The voice id is
+    "openai:<name>"; the instructions carry the delivery."""
+    import asyncio
+
+    import httpx
+
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    if not settings.openai_api_key:
+        raise RuntimeError("OpenAI narration needs OPENAI_API_KEY")
+    name = voice.voice_id.removeprefix(OPENAI_VOICE_PREFIX) or settings.openai_tts_voice
+    payload: dict[str, str] = {
+        "model": settings.openai_tts_model,
+        "voice": name,
+        "input": text,
+        "response_format": "mp3",
+    }
+    if voice.instructions:
+        payload["instructions"] = voice.instructions
+    async with httpx.AsyncClient(timeout=90) as client:
+        # A rate limit or a 5xx is worth one more try; anything else is the
+        # request itself and will fail the same way again.
+        for attempt in range(3):
+            response = await client.post(
+                "https://api.openai.com/v1/audio/speech",
+                headers={"Authorization": f"Bearer {settings.openai_api_key}"},
+                json=payload,
+            )
+            if response.status_code in (429, 500, 502, 503) and attempt < 2:
+                await asyncio.sleep(2 * (attempt + 1))
+                continue
+            response.raise_for_status()
+            output_path.write_bytes(response.content)
+            return
 
 
 async def _synthesize_edge_tts(text: str, voice: VoiceConfig, output_path: Path) -> None:

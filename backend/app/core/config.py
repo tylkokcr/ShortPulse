@@ -44,6 +44,12 @@ class Settings(BaseSettings):
     # a script is a few hundred words, so the larger model costs well
     # under a cent more a video. Empty: llm_model for everything.
     fact_llm_model: str = "gpt-4.1"
+    # Narration through OpenAI's speech model when there is a key. False
+    # keeps every generated video on Piper.
+    openai_tts: bool = True
+    openai_tts_model: str = "gpt-4o-mini-tts"
+    # The voice a generated video gets when nobody picked one.
+    openai_tts_voice: str = "ash"
     # The YouTube Data API key the trends section reads most-popular charts
     # with (services/trends.py). Without one there is no trends section.
     youtube_api_key: str | None = None

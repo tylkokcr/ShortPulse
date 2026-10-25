@@ -102,9 +102,36 @@ PREVIEW_LINE: dict[str, str] = {
 }
 
 
+# OpenAI's voices speak every language, so they are offered for each one,
+# ahead of Piper's, when the server narrates through OpenAI (see
+# openai_enabled). Named as OpenAI names them; "*" for the language.
+OPENAI_VOICE_NAMES = ("ash", "coral", "sage", "ballad", "verse", "onyx", "nova", "shimmer")
+OPENAI_VOICES: tuple[Voice, ...] = tuple(
+    _v(f"openai:{name}", name.capitalize(), "*", "AI", "studio") for name in OPENAI_VOICE_NAMES
+)
+
+
+def openai_enabled() -> bool:
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    return bool(settings.openai_tts and settings.openai_api_key)
+
+
+def default_voice_id(language: str) -> str:
+    """The voice a video in `language` gets when nobody picked one."""
+    if openai_enabled():
+        from app.core.config import get_settings
+
+        return f"openai:{get_settings().openai_tts_voice}"
+    return PIPER_VOICE_BY_LANGUAGE.get(language, "")
+
+
 def by_id(voice_id: str) -> Voice | None:
-    return next((voice for voice in VOICES if voice.id == voice_id), None)
+    pool = (*OPENAI_VOICES, *VOICES) if openai_enabled() else VOICES
+    return next((voice for voice in pool if voice.id == voice_id), None)
 
 
 def for_language(language: str) -> list[Voice]:
-    return [voice for voice in VOICES if voice.language == language]
+    own = [voice for voice in VOICES if voice.language == language]
+    return [*OPENAI_VOICES, *own] if openai_enabled() else own
