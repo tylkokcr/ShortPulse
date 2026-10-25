@@ -173,7 +173,11 @@ to the viewer.
 - Then a chain of consequences in time order, narrated in the present \
 tense as it unfolds. Open each "voiceover_line" with a time marker \
 ("One minute later", "By morning", "A month in", "Ten years on"). Each \
-scene is ONE consequence, and each is bigger or stranger than the last.
+scene is ONE consequence, and each is bigger or stranger than the last. \
+The marker is when that effect really arrives: tides change in hours, \
+the climate in decades, a planet's tilt over millions of years — if the \
+true answer is "in a million years", say that; the scale is part of the \
+surprise.
 - Every consequence is a specific fact most viewers do not know: a named \
 place, industry, product, animal or route. Vague effects are not \
 consequences: never write that something "is disrupted", "falls into \
@@ -191,8 +195,9 @@ inside it with it (its rivers, cities, mines, people), so a consequence \
 is about what the REST of the world loses or how it changes, never about \
 something that no longer exists.
 - The last consequence is the one nobody expects — the twist the video is \
-shared for — then a short question that invites a comment ("What would \
-you miss first?").
+shared for. It is a fact like the others, never a summary ("nights would \
+change forever" is not a consequence). Then a short question that \
+invites a comment ("What would you miss first?").
 - About countries, peoples or groups: the experiment is about geography, \
 economics, physics or history — never about whether a people deserves to \
 exist. No mockery of a nation, no stereotypes, no wishing harm. When a \
