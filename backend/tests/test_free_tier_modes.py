@@ -186,14 +186,9 @@ async def test_an_install_that_cannot_render_it_says_so_instead(monkeypatch):
     assert "credit pack" not in modes["fast_hybrid"]["reason"]
 
 
-async def test_ai_video_keeps_its_own_reason_even_unpaid(hosted_images, monkeypatch):
-    """No credit pack unlocks it on this service, so none may be implied.
-
-    The absence of torch is stated rather than assumed: a developer
-    machine with diffusers installed *can* run ai_video, and there the
-    upsell is the right answer — this asserts the hosted shape, which is
-    the one with a customer reading the tooltip.
-    """
+async def test_hosted_ai_video_is_unlocked_by_a_purchase(hosted_images, monkeypatch):
+    """ai_video runs over the API here now (still, then image-to-video), so
+    an unpaid account is told what unlocks it, and a paying one has it."""
     monkeypatch.setattr(
         visual_engine.importlib.util,
         "find_spec",
@@ -202,10 +197,13 @@ async def test_ai_video_keeps_its_own_reason_even_unpaid(hosted_images, monkeypa
 
     app = _app(visual_modes_route.router, pool=FakePool(purchased=False), user_id=USER)
     modes = {m["mode"]: m for m in (await _get(app, "/api/visual-modes")).json()}
-
     assert modes["ai_video"]["available"] is False
-    assert "GPU" in modes["ai_video"]["reason"]
-    assert "credit pack" not in modes["ai_video"]["reason"]
+    assert "credit pack" in modes["ai_video"]["reason"]
+    assert modes["ai_video"]["backend"] == "replicate"
+
+    app = _app(visual_modes_route.router, pool=FakePool(purchased=True), user_id=USER)
+    modes = {m["mode"]: m for m in (await _get(app, "/api/visual-modes")).json()}
+    assert modes["ai_video"]["available"] is True
 
 
 async def test_the_gate_asks_the_ledger_once(hosted_images):
@@ -311,11 +309,8 @@ async def test_the_picker_offers_the_trial(hosted_images):
 
 
 async def test_the_trial_never_covers_ai_video(hosted_images, monkeypatch):
-    """One free generated video, not one of each.
-
-    ai_video is refused for a reason no trial can lift — this service has
-    no GPU — so the exemption must not reach it.
-    """
+    """One free generated video, in stills: animating every scene costs
+    twenty times what the trial was sized for (credits.TRIAL_MODES)."""
     monkeypatch.setattr(
         visual_engine.importlib.util,
         "find_spec",
@@ -326,6 +321,10 @@ async def test_the_trial_never_covers_ai_video(hosted_images, monkeypatch):
     modes = {m["mode"]: m for m in (await _get(app, "/api/visual-modes")).json()}
 
     assert modes["ai_video"]["available"] is False
+    assert modes["fast_hybrid"]["available"] is True
+
+    app = _app(projects_route.router, pool=FakePool(**_NEW_ACCOUNT), user_id=USER)
+    assert (await _post_project(app, "ai_video")).status_code == 402
 
 
 async def test_the_trial_render_is_accepted(hosted_images):

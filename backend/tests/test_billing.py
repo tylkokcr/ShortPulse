@@ -166,8 +166,8 @@ async def test_cost_scales_with_what_the_render_actually_costs(pool, user):
         )
 
     assert cheap.json()["credits_cost"] == 2
-    assert dear.json()["credits_cost"] == 60
-    assert await credits.balance(pool, user) == 100 - 2 - 60
+    assert dear.json()["credits_cost"] == 36
+    assert await credits.balance(pool, user) == 100 - 2 - 36
 
 
 async def test_render_is_refused_when_credits_run_out(pool, user):

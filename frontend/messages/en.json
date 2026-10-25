@@ -188,7 +188,7 @@
       "title": "Built to survive scrutiny",
       "intro": "Marketing pages hide the rough edges. Ours are in the README, in full — here are a few of them, so you know before you clone it:",
       "stills": "AI stills draw faces convincingly and extremities badly — hands, feet and full-body shots are where a frame falls apart, so the script engine keeps people in close and medium shots. Legible text is beyond the model entirely: it cannot write a label, a sign or a book cover.",
-      "aiVideo": "ai_video (local text-to-video) only runs where you supply the GPU. It is not available on this hosted service: renting one costs more per video than the mode is priced at, so we would rather not offer it than offer it badly.",
+      "aiVideo": "Animated scenes are AI stills brought to life by an image-to-video model at 480p and upscaled, so they are softer than the stills. When you self-host, this mode runs local text-to-video instead and needs a real GPU.",
       "llm": "Small local LLMs occasionally under-count scenes; the script engine retries and drops malformed ones rather than failing the render.",
       "stock": "Stock footage is a closest-match, not a guarantee — Pexels clips can be loosely related to the scene."
     },
@@ -279,7 +279,7 @@
     "tariff": {
       "stock": "{n} credits = stock footage",
       "aiStills": "{n} = AI stills",
-      "localVideo": "{n} = local text-to-video",
+      "localVideo": "{n} = animated (every scene moves)",
       "note": "{rates}, each ×2 for medium and ×3 for long. You're quoted the exact cost before a render starts."
     },
     "currencyNote": "Prices in {currency}. Cards from any country work — your bank converts at its own rate."
@@ -339,7 +339,7 @@
       },
       "local": {
         "q": "Is it genuinely local?",
-        "a": "When you self-host, yes: scripting, voiceover, transcription, image generation and rendering all run on your machine, and the one stage that reaches the network is stock footage from Pexels. This hosted service is the trade-off — it has no GPU, so scripts come from OpenAI, AI stills from Replicate, and the speech in uploads longer than three minutes is transcribed by OpenAI. Voiceover, shorter captions and rendering still happen on our server, and the code is the same either way."
+        "a": "When you self-host, yes: scripting, voiceover, transcription, image generation and rendering all run on your machine, and the one stage that reaches the network is stock footage from Pexels. This hosted service is the trade-off — it has no GPU, so scripts and voiceover come from OpenAI, AI stills and animated scenes from Replicate, and the speech in uploads longer than three minutes is transcribed by OpenAI. Shorter captions and rendering still happen on our server, and the code is the same either way."
       },
       "roughEdges": {
         "q": "What are the rough edges?",
@@ -612,7 +612,7 @@
     },
     "visual": {
       "fast_hybrid": "AI stills + Ken Burns pan/zoom. Recommended — fast on modest hardware.",
-      "ai_video": "Local text-to-video diffusion. Slowest, needs a real GPU.",
+      "ai_video": "Every scene animated: the AI still is brought to life by a video model. The liveliest result; takes a few minutes.",
       "stock_media": "Free Pexels/Pixabay footage. Zero GPU required.",
       "aiWarning": "AI Video downloads a large model (tens of GB) the first time you use it on a machine — this can take hours on a slow connection, and generation itself is slow without a real GPU. It's a one-time download; later renders won't repeat it.",
       "aiAck": "I understand this may take a long time on first use",
@@ -641,7 +641,7 @@
     },
     "artStyle": {
       "loading": "Loading styles...",
-      "stockNotice": "Stock footage is filmed, not generated, so there's no art style to pick. Switch to Fast Hybrid or AI Video to choose one."
+      "stockNotice": "Stock footage is filmed, not generated, so there's no art style to pick. Switch to Fast Hybrid or Animated to choose one."
     },
     "negative": {
       "stockNotice": "Stock footage is whatever was filmed, so there is nothing to steer here. Switch to Fast Hybrid to exclude things from the generated frames.",

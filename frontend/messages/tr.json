@@ -188,7 +188,7 @@
       "title": "İncelemeye dayanacak şekilde",
       "intro": "Pazarlama sayfaları pürüzleri saklar. Bizimkiler README'de, eksiksiz — klonlamadan önce bilesin diye birkaçı burada:",
       "stills": "Yapay zekâ kareleri yüzleri ikna edici, uzuvları kötü çizer — eller, ayaklar ve tam boy planlar karenin dağıldığı yerdir, bu yüzden senaryo motoru insanları yakın ve orta planda tutar. Okunabilir yazı modelin tamamen dışında: bir etiket, tabela ya da kitap kapağı yazamaz.",
-      "aiVideo": "ai_video (yerel metinden videoya) yalnızca GPU'yu sen sağladığında çalışır. Bu barındırılan serviste yok: GPU kiralamak videonun fiyatından pahalıya geliyor, kötü sunmaktansa hiç sunmamayı tercih ediyoruz.",
+      "aiVideo": "Hareketli sahneler, AI karelerinin 480p'de bir görselden videoya modeliyle canlandırılıp büyütülmesidir; bu yüzden karelerden biraz daha yumuşaktır. Kendin barındırdığında bu mod yerel metinden videoya çalışır ve gerçek bir GPU ister.",
       "llm": "Küçük yerel dil modelleri bazen sahne sayısını eksik verir; senaryo motoru render'ı düşürmek yerine yeniden dener ve bozuk olanları atar.",
       "stock": "Stok görüntü en yakın eşleşmedir, garanti değil — Pexels klipleri sahneyle gevşek ilişkili olabilir."
     },
@@ -279,7 +279,7 @@
     "tariff": {
       "stock": "{n} kredi = stok görüntü",
       "aiStills": "{n} = AI stills",
-      "localVideo": "{n} = yerel metinden videoya",
+      "localVideo": "{n} = hareketli (her sahne canlanır)",
       "note": "{rates}; orta uzunlukta ×2, uzunda ×3. Render başlamadan önce kesin tutar sana bildirilir."
     },
     "currencyNote": "Fiyatlar {currency} cinsinden. Her ülkenin kartı çalışır — dönüşümü kendi bankan kendi kuruyla yapar."
@@ -339,7 +339,7 @@
       },
       "local": {
         "q": "Gerçekten yerel mi?",
-        "a": "Kendin barındırırsan evet: senaryo, seslendirme, deşifre, görsel üretimi ve render tamamen kendi makinende çalışır; ağa çıkan tek aşama Pexels'ten stok görüntüdür. Barındırılan servis bunun takası — GPU'su yok, bu yüzden senaryolar OpenAI'den, yapay zekâ kareleri Replicate'ten gelir ve üç dakikadan uzun yüklemelerdeki konuşmayı OpenAI deşifre eder. Seslendirme, kısa altyazılar ve render yine bizim sunucumuzda yapılır; kod her iki durumda da aynı."
+        "a": "Kendin barındırırsan evet: senaryo, seslendirme, deşifre, görsel üretimi ve render tamamen kendi makinende çalışır; ağa çıkan tek aşama Pexels'ten stok görüntüdür. Barındırılan servis bunun takası — GPU'su yok, bu yüzden senaryo ve seslendirme OpenAI'den, yapay zekâ kareleri ve hareketli sahneler Replicate'ten gelir ve üç dakikadan uzun yüklemelerdeki konuşmayı OpenAI deşifre eder. Kısa altyazılar ve render yine bizim sunucumuzda yapılır; kod her iki durumda da aynı."
       },
       "roughEdges": {
         "q": "Pürüzler neler?",
@@ -612,7 +612,7 @@
     },
     "visual": {
       "fast_hybrid": "Yapay zekâ kareleri + Ken Burns kaydırma/yakınlaştırma. Önerilen — mütevazı donanımda hızlı.",
-      "ai_video": "Yerel metinden videoya difüzyon. En yavaşı, gerçek bir GPU ister.",
+      "ai_video": "Her sahne hareketli: AI karesi bir video modeliyle canlandırılır. En canlı sonuç; birkaç dakika sürer.",
       "stock_media": "Ücretsiz Pexels/Pixabay görüntüleri. GPU gerekmez.",
       "aiWarning": "AI Video, bir makinede ilk kullanımda büyük bir model indirir (onlarca GB) — yavaş bağlantıda saatler sürebilir ve gerçek bir GPU olmadan üretimin kendisi de yavaştır. İndirme tek seferliktir; sonraki renderlar tekrarlamaz.",
       "aiAck": "İlk kullanımda uzun sürebileceğini anlıyorum",
@@ -641,7 +641,7 @@
     },
     "artStyle": {
       "loading": "Stiller yükleniyor...",
-      "stockNotice": "Stok görüntü çekilmiştir, üretilmez; o yüzden seçilecek bir çizim stili yok. Birini seçmek için Fast Hybrid veya AI Video moduna geç."
+      "stockNotice": "Stok görüntü çekilmiştir, üretilmez; o yüzden seçilecek bir çizim stili yok. Birini seçmek için Fast Hybrid veya Animated moduna geç."
     },
     "negative": {
       "stockNotice": "Stok görüntü ne çekildiyse odur, burada yönlendirilecek bir şey yok. Üretilen karelerden bir şey çıkarmak için Fast Hybrid moduna geç.",

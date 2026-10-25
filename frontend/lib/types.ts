@@ -16,8 +16,11 @@ export interface VisualModeAvailability {
   mode: VisualMode;
   available: boolean;
   reason: string | null;
+  /** "replicate" when the mode runs over an API here, "local" on the
+   *  machine's own GPU; null for stock footage. */
+  backend?: "replicate" | "local" | null;
 }
-export type TTSProvider = "edge_tts" | "piper" | "coqui_xtts";
+export type TTSProvider = "openai" | "edge_tts" | "piper" | "coqui_xtts";
 export type LLMProvider = "ollama" | "openai";
 export type AspectRatio = "9:16" | "1:1" | "16:9";
 export type VideoLength = "short" | "medium" | "long";

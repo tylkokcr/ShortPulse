@@ -55,7 +55,9 @@ class InsufficientCredits(Exception):
 _MODE_COST = {
     VisualMode.STOCK_MEDIA: 2,
     VisualMode.FAST_HYBRID: 6,
-    VisualMode.AI_VIDEO: 20,
+    # Animated: every scene's still is turned into a clip over the API,
+    # about $0.30 more a short video than the stills alone.
+    VisualMode.AI_VIDEO: 12,
 }
 
 _LENGTH_MULTIPLIER = {
@@ -216,6 +218,10 @@ FREE_TIER_MODES: frozenset[VisualMode] = frozenset({VisualMode.STOCK_MEDIA})
 # decides whether they come back. The signup grant caps the rest by
 # itself, and the paid modes stay behind a purchase whatever it holds.
 FREE_TRIAL_GENERATED_VIDEOS = 1
+# The paid modes the free video may be made in. Not ai_video: animating
+# every scene costs about $0.45 a short, twenty times the stills trial, and
+# the trial exists to show generated pictures, which stills already do.
+TRIAL_MODES: frozenset[VisualMode] = frozenset({VisualMode.FAST_HYBRID})
 
 # Read by a customer in a disabled tile's tooltip, so it says what to do
 # rather than what went wrong.
@@ -262,7 +268,7 @@ async def generated_videos_delivered(
 
 
 async def may_render_paid_mode(
-    conn: asyncpg.Connection | asyncpg.Pool, user_id: str
+    conn: asyncpg.Connection | asyncpg.Pool, user_id: str, mode: VisualMode | None = None
 ) -> bool:
     """Whether this account can start a render in a paid visual mode.
 
@@ -274,6 +280,8 @@ async def may_render_paid_mode(
     """
     if await has_purchased(conn, user_id):
         return True
+    if mode is not None and mode not in TRIAL_MODES:
+        return False
     return await generated_videos_delivered(conn, user_id) < FREE_TRIAL_GENERATED_VIDEOS
 
 

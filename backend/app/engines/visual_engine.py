@@ -216,7 +216,9 @@ def scene_concurrency(mode: VisualMode, settings) -> int:
     """
     if mode == VisualMode.STOCK_MEDIA:
         return _REMOTE_SCENE_CONCURRENCY
-    if mode == VisualMode.FAST_HYBRID and image_backend(settings) is ImageBackend.REPLICATE:
+    if mode in (VisualMode.FAST_HYBRID, VisualMode.AI_VIDEO) and (
+        image_backend(settings) is ImageBackend.REPLICATE
+    ):
         return _REMOTE_SCENE_CONCURRENCY
     return 1
 
@@ -269,7 +271,7 @@ def unavailable_reason(mode: VisualMode, settings) -> str | None:
         )
 
     if mode == VisualMode.AI_VIDEO:
-        if _has_local_diffusion():
+        if _has_local_diffusion() or image_backend(settings) is ImageBackend.REPLICATE:
             return None
         # Hosted text-to-video costs more per render than this mode is
         # priced at, so there is no API route behind this one and the
@@ -320,7 +322,10 @@ async def generate_scene_visual(
     render_height = (render_size or (1080, 1920))[1]
     try:
         if mode == VisualMode.AI_VIDEO:
-            path = await _generate_ai_video(scene, output_dir, settings, style)
+            if image_backend(settings) is ImageBackend.REPLICATE:
+                path = await _generate_hosted_video(scene, output_dir, settings, style, size)
+            else:
+                path = await _generate_ai_video(scene, output_dir, settings, style)
         elif mode == VisualMode.FAST_HYBRID:
             if image_backend(settings) is ImageBackend.REPLICATE:
                 path = await _generate_replicate_image(scene, output_dir, settings, style, size)
@@ -332,13 +337,20 @@ async def generate_scene_visual(
             raise ValueError(f"Unsupported visual mode: {mode}")
         produced_by = mode
     except Exception:
-        logger.exception(
-            "Visual generation failed for scene %s in mode %s; falling back to stock media",
-            scene.index,
-            mode,
-        )
-        path = await _fetch_stock_media(scene, output_dir, settings, render_height, variant)
-        produced_by = VisualMode.STOCK_MEDIA
+        still = output_dir / f"scene_{scene.index:02d}.png"
+        if mode == VisualMode.AI_VIDEO and still.exists():
+            # The animation failed after the still was drawn: the still is
+            # the scene the script asked for, which stock footage is not.
+            logger.exception("Animating scene %s failed; keeping its still", scene.index)
+            path, produced_by = still, VisualMode.FAST_HYBRID
+        else:
+            logger.exception(
+                "Visual generation failed for scene %s in mode %s; falling back to stock media",
+                scene.index,
+                mode,
+            )
+            path = await _fetch_stock_media(scene, output_dir, settings, render_height, variant)
+            produced_by = VisualMode.STOCK_MEDIA
 
     scene.visual.asset_path = str(path)
     # What actually made this asset, which is not always what was asked
@@ -408,6 +420,50 @@ async def _generate_ai_video(
         return output_path
 
     return await asyncio.to_thread(_run)
+
+
+async def _generate_hosted_video(
+    scene: Scene,
+    output_dir: Path,
+    settings,
+    style: ArtStyle | None = None,
+    size: tuple[int, int] | None = None,
+) -> Path:
+    """ai_video over the API: the scene's still, as fast_hybrid draws it,
+    then animated by an image-to-video model. Starting from the still keeps
+    the art style and the framing the script asked for; text-to-video
+    from the prompt alone wandered from both.
+
+    The still is kept beside the clip, so a failure here can fall back to
+    it rather than to stock footage."""
+    import base64
+
+    style = style or art_styles.DEFAULT_ART_STYLE
+    still = await _generate_replicate_image(scene, output_dir, settings, style, size)
+    image_s = scene.visual.predict_time_s or 0.0
+    output_path = output_dir / f"scene_{scene.index:02d}.mp4"
+    prediction = await _replicate_predict(
+        {
+            "version": settings.replicate_video_model,
+            "input": {
+                "image": "data:image/png;base64," + base64.b64encode(still.read_bytes()).decode(),
+                "prompt": (
+                    f"{style.name} animation. {scene.visual.prompt}. The scene comes alive: "
+                    "people and animals move naturally, light and water shimmer, "
+                    "a slow, smooth camera movement. Keep the drawing style."
+                ),
+                "resolution": "480p",
+                "go_fast": True,
+                # Smoother than the model's own 16fps, done on their side.
+                "interpolate_output": True,
+            },
+        },
+        settings,
+    )
+    await _download(_replicate_output_url(prediction), output_path)
+    video_s = (prediction.get("metrics") or {}).get("predict_time") or 0.0
+    scene.visual.predict_time_s = image_s + video_s
+    return output_path
 
 
 # --------------------------------------------------------------------------

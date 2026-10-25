@@ -38,6 +38,10 @@ class VisualModeOut(BaseModel):
     # Populated only when unavailable. Phrased for whoever runs the
     # install, since they are the only one who can change it.
     reason: str | None = None
+    # "replicate" when the mode runs over an API here, "local" on this
+    # machine's GPU — the studio warns about a model download only for
+    # the second.
+    backend: str | None = None
 
 
 @router.get("", response_model=list[VisualModeOut])
@@ -54,6 +58,12 @@ async def list_visual_modes(
     gated = billing is not None and not await credits.may_render_paid_mode(
         billing.pool, billing.user_id
     )
+    # Which paid modes the account reaches through the trial alone rather
+    # than a purchase — a second question only when the first one said yes
+    # and there is a trial-excluded mode to answer it for.
+    purchased = (
+        billing is None or gated or await credits.has_purchased(billing.pool, billing.user_id)
+    )
 
     out: list[VisualModeOut] = []
     for mode in VisualMode:
@@ -63,5 +73,20 @@ async def list_visual_modes(
         # ai_video would be selling them something no purchase unlocks.
         if reason is None and gated and mode not in credits.FREE_TIER_MODES:
             reason = credits.PURCHASE_REQUIRED_REASON
-        out.append(VisualModeOut(mode=mode, available=reason is None, reason=reason))
+        elif (
+            reason is None
+            and not purchased
+            and mode not in credits.FREE_TIER_MODES
+            and mode not in credits.TRIAL_MODES
+        ):
+            reason = credits.PURCHASE_REQUIRED_REASON
+        backend = visual_engine.image_backend(settings)
+        out.append(
+            VisualModeOut(
+                mode=mode,
+                available=reason is None,
+                reason=reason,
+                backend=backend.value if backend and mode != VisualMode.STOCK_MEDIA else None,
+            )
+        )
     return out

@@ -13,7 +13,7 @@ import type { VisualMode } from "@/lib/types";
 // calls them. Only the sentence explaining each one is translated.
 const OPTIONS: { mode: VisualMode; label: string; icon: typeof Film }[] = [
   { mode: "fast_hybrid", label: "Fast Hybrid", icon: ImageIcon },
-  { mode: "ai_video", label: "AI Video", icon: Clapperboard },
+  { mode: "ai_video", label: "Animated", icon: Clapperboard },
   { mode: "stock_media", label: "Stock Media", icon: Film },
 ];
 
@@ -24,14 +24,19 @@ export function VisualSelector() {
   // meantime rather than nothing: a picker that starts empty and fills in
   // reads as broken, and the API refuses an unavailable mode anyway.
   const [availability, setAvailability] = useState<Record<string, string | null>>();
+  // ai_video over an API animates the stills in a few minutes; on a local
+  // GPU it downloads tens of GB first. Only the second needs the warning
+  // and the box to tick.
+  const [hostedVideo, setHostedVideo] = useState(false);
 
   useEffect(() => {
     listVisualModes()
-      .then((modes) =>
+      .then((modes) => {
         setAvailability(
           Object.fromEntries(modes.map((m) => [m.mode, m.available ? null : m.reason]))
-        )
-      )
+        );
+        setHostedVideo(modes.some((m) => m.mode === "ai_video" && m.backend === "replicate"));
+      })
       .catch(() => setAvailability(undefined));
   }, []);
 
@@ -71,7 +76,12 @@ export function VisualSelector() {
               type="button"
               disabled={Boolean(blocked)}
               title={blocked ?? undefined}
-              onClick={() => setDraft({ visualMode: mode, aiVideoAcknowledged: mode === "ai_video" ? draft.aiVideoAcknowledged : false })}
+              onClick={() =>
+                setDraft({
+                  visualMode: mode,
+                  aiVideoAcknowledged: mode === "ai_video" ? hostedVideo || draft.aiVideoAcknowledged : false,
+                })
+              }
               className={clsx(
                 // `items-start` used to sit here, which is what let the
                 // text overflow: in a column flex it sizes every child to
@@ -111,7 +121,7 @@ export function VisualSelector() {
         })}
       </div>
 
-      {draft.visualMode === "ai_video" && (
+      {draft.visualMode === "ai_video" && !hostedVideo && (
         <div className="flex flex-col gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
           <div className="flex items-start gap-2 text-sm text-amber-200">
             <TriangleAlert size={16} className="mt-0.5 shrink-0" />

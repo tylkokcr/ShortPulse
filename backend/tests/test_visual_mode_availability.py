@@ -114,24 +114,24 @@ def test_a_token_makes_fast_hybrid_available_without_torch(monkeypatch):
     assert visual_engine.unavailable_reason(VisualMode.FAST_HYBRID, settings) is None
     assert visual_engine.image_backend(settings) is visual_engine.ImageBackend.REPLICATE
     assert visual_engine.available_modes(settings) == [
+        VisualMode.AI_VIDEO,
         VisualMode.FAST_HYBRID,
         VisualMode.STOCK_MEDIA,
     ]
 
 
-def test_ai_video_is_still_refused_without_torch(monkeypatch):
-    """A deliberate product decision, pinned so nobody later 'fixes' it.
+def test_a_token_makes_ai_video_available_without_torch(monkeypatch):
+    """A pricing decision, pinned with its numbers.
 
-    ai_video is priced at 10 credits, about €0.90 on the cheapest pack.
-    Hosted text-to-video runs about $0.04 a second, so the ~24 seconds of
-    output a short produces costs roughly $0.96 to make. There is no API
-    route behind this mode because every render sold would lose money.
+    This used to be refused: hosted text-to-video was about $0.04 a second
+    against a 10-credit price, a loss on every render. Animating the stills
+    instead (Wan 2.2 fast, 480p) is about $0.05 a five-second scene, ~$0.30
+    a short on top of the stills — against 12 credits, €0.95-1.40 a pack.
     """
     _no_local_diffusion(monkeypatch)
     settings = Settings(replicate="r8_test", provider="replicate")
-    reason = visual_engine.unavailable_reason(VisualMode.AI_VIDEO, settings)
-    assert reason is not None
-    assert VisualMode.AI_VIDEO not in visual_engine.available_modes(settings)
+    assert visual_engine.unavailable_reason(VisualMode.AI_VIDEO, settings) is None
+    assert visual_engine.scene_concurrency(VisualMode.AI_VIDEO, settings) == 2
 
 
 def test_the_fast_hybrid_reason_names_both_routes(monkeypatch):

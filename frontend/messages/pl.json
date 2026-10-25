@@ -188,7 +188,7 @@
       "title": "Zbudowane tak, by wytrzymać sprawdzenie",
       "intro": "Strony marketingowe ukrywają niedociągnięcia. Nasze są w całości w pliku README — oto kilka z nich, żebyś wiedział, zanim sklonujesz projekt:",
       "stills": "Kadry z AI rysują twarze przekonująco, a kończyny źle — dłonie, stopy i ujęcia całej sylwetki to miejsca, w których kadr się rozpada, dlatego silnik scenariusza trzyma ludzi w planach bliskich i średnich. Czytelny tekst jest całkowicie poza możliwościami modelu: nie napisze etykiety, znaku ani okładki książki.",
-      "aiVideo": "ai_video (lokalne tekst-na-wideo) działa wyłącznie wtedy, gdy sam dostarczysz GPU. W tej usłudze hostowanej go nie ma: wynajem GPU kosztuje na film więcej, niż wynosi cena tego trybu, więc wolimy go nie oferować, niż oferować źle.",
+      "aiVideo": "Animowane sceny to obrazy AI ożywione modelem obraz-do-wideo w 480p i powiększone, więc są nieco mniej ostre niż same obrazy. Na własnym serwerze ten tryb działa jako lokalny tekst-do-wideo i wymaga prawdziwego GPU.",
       "llm": "Małe lokalne modele językowe czasem liczą sceny na minus; silnik scenariusza ponawia próbę i odrzuca błędne, zamiast przerywać renderowanie.",
       "stock": "Materiał stockowy to najlepsze dopasowanie, a nie gwarancja — klipy z Pexels bywają luźno związane ze sceną."
     },
@@ -279,7 +279,7 @@
     "tariff": {
       "stock": "{n, plural, one {# kredyt} few {# kredyty} many {# kredytów} other {# kredytu}} = materiał stockowy",
       "aiStills": "{n} = AI stills",
-      "localVideo": "{n} = lokalny text-to-video",
+      "localVideo": "{n} = animowane (każda scena się rusza)",
       "note": "{rates}, każdy ×2 przy średniej i ×3 przy długiej. Dokładny koszt poznajesz przed startem renderu."
     },
     "currencyNote": "Ceny w {currency}. Karty z każdego kraju działają — przeliczenia dokonuje twój bank po własnym kursie."
@@ -339,7 +339,7 @@
       },
       "local": {
         "q": "Czy to naprawdę działa lokalnie?",
-        "a": "Przy własnym hostingu tak: scenariusz, lektor, transkrypcja, generowanie obrazów i renderowanie działają na twojej maszynie, a jedyny etap, który wychodzi do sieci, to materiały stockowe z Pexels. Usługa hostowana to kompromis — nie ma GPU, więc scenariusze pochodzą z OpenAI, kadry AI z Replicate, a mowę w nagraniach dłuższych niż trzy minuty transkrybuje OpenAI. Lektor, krótsze napisy i renderowanie nadal odbywają się na naszym serwerze, a kod jest ten sam."
+        "a": "Na własnym serwerze tak: scenariusz, lektor, transkrypcja, generowanie obrazów i render działają na twojej maszynie, a jedyny etap, który sięga do sieci, to materiały stockowe z Pexels. Usługa hostowana to kompromis — nie ma GPU, więc scenariusze i lektor pochodzą z OpenAI, obrazy AI i animowane sceny z Replicate, a mowę w przesłanych nagraniach dłuższych niż trzy minuty transkrybuje OpenAI. Krótsze napisy i render nadal wykonuje nasz serwer, a kod jest ten sam w obu przypadkach."
       },
       "roughEdges": {
         "q": "Gdzie są słabe punkty?",
@@ -612,7 +612,7 @@
     },
     "visual": {
       "fast_hybrid": "Kadry z AI + najazd/zbliżenie Kena Burnsa. Zalecane — szybkie na skromnym sprzęcie.",
-      "ai_video": "Lokalna dyfuzja tekst-na-wideo. Najwolniejsza, wymaga prawdziwego GPU.",
+      "ai_video": "Każda scena w ruchu: obraz AI ożywia model wideo. Najżywszy efekt; trwa kilka minut.",
       "stock_media": "Darmowe materiały z Pexels/Pixabay. Bez GPU.",
       "aiWarning": "AI Video przy pierwszym użyciu na danej maszynie pobiera duży model (dziesiątki GB) — przy wolnym łączu może to potrwać godziny, a samo generowanie bez prawdziwego GPU też jest powolne. To jednorazowe pobranie; kolejne rendery go nie powtarzają.",
       "aiAck": "Rozumiem, że przy pierwszym użyciu może to długo potrwać",
@@ -641,7 +641,7 @@
     },
     "artStyle": {
       "loading": "Wczytywanie stylów...",
-      "stockNotice": "Materiał stockowy jest nakręcony, a nie wygenerowany, więc nie ma tu stylu do wyboru. Przełącz się na Fast Hybrid lub AI Video, aby go wybrać."
+      "stockNotice": "Materiał stockowy jest nakręcony, a nie wygenerowany, więc nie ma tu stylu do wyboru. Przełącz się na Fast Hybrid lub Animated, aby go wybrać."
     },
     "negative": {
       "stockNotice": "Materiał stockowy jest taki, jaki nakręcono — nie ma tu czym sterować. Przełącz się na Fast Hybrid, aby wykluczać rzeczy z generowanych kadrów.",

@@ -71,7 +71,7 @@ const ANCHORS = {
 // be able to change it, which is exactly what putting it in a catalogue
 // would allow.
 const STAT_VALUES = (signupCredits: number) => [
-  String(LANGUAGE_OPTIONS.length), "6", String(signupCredits), "MIT",
+  String(LANGUAGE_OPTIONS.length), "7", String(signupCredits), "MIT",
 ];
 const STAT_KEYS = ["languages", "artStyles", "freeCredits", "licensed"] as const;
 

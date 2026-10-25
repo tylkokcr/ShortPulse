@@ -153,7 +153,7 @@ async def create_project(
     if (
         billing is not None
         and mode not in credits.FREE_TIER_MODES
-        and not await credits.may_render_paid_mode(billing.pool, billing.user_id)
+        and not await credits.may_render_paid_mode(billing.pool, billing.user_id, mode)
     ):
         raise HTTPException(
             status_code=402,
