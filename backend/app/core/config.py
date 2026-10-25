@@ -50,6 +50,13 @@ class Settings(BaseSettings):
     openai_tts_model: str = "gpt-4o-mini-tts"
     # The voice a generated video gets when nobody picked one.
     openai_tts_voice: str = "ash"
+    # Narration through MiniMax Speech on Replicate, preferred over OpenAI
+    # when both are configured. About $0.0001 a character, ~$0.08 a minute.
+    minimax_tts: bool = True
+    minimax_tts_model: str = (
+        "minimax/speech-2.6-hd:f8d19a70bcf8809cdaa7abfe82e4d73840a21dc0697717f1462a8a31b1c1da13"
+    )
+    minimax_tts_voice: str = "English_CaptivatingStoryteller"
     # The YouTube Data API key the trends section reads most-popular charts
     # with (services/trends.py). Without one there is no trends section.
     youtube_api_key: str | None = None

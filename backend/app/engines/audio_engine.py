@@ -102,6 +102,8 @@ async def synthesize_line(
 
     if voice.provider == TTSProvider.OPENAI:
         await _synthesize_openai(cleaned, voice, output_path)
+    elif voice.provider == TTSProvider.MINIMAX:
+        await _synthesize_minimax(cleaned, voice, output_path, language)
     elif voice.provider == TTSProvider.EDGE_TTS:
         await _synthesize_edge_tts(cleaned, voice, output_path)
     elif voice.provider == TTSProvider.PIPER:
@@ -115,6 +117,49 @@ async def synthesize_line(
 
 
 OPENAI_VOICE_PREFIX = "openai:"
+MINIMAX_VOICE_PREFIX = "minimax:"
+
+# ProjectConfig.language to MiniMax's `language_boost`, which makes any of
+# its voices speak that language with the right accent rather than
+# guessing it from the text.
+_MINIMAX_LANGUAGE = {
+    "en": "English", "tr": "Turkish", "es": "Spanish", "fr": "French", "de": "German",
+    "pt": "Portuguese", "ja": "Japanese", "ar": "Arabic", "ru": "Russian",
+    "it": "Italian", "pl": "Polish",
+}
+
+
+async def _synthesize_minimax(
+    text: str, voice: VoiceConfig, output_path: Path, language: str
+) -> None:
+    """One line through MiniMax Speech on Replicate, as MP3. Goes through the
+    same prediction call the image generation uses, so it shares its retry,
+    rate-limit and deadline handling."""
+    import httpx
+
+    from app.core.config import get_settings
+    from app.engines.visual_engine import _replicate_output_url, _replicate_predict
+
+    settings = get_settings()
+    if not settings.replicate_api_token:
+        raise RuntimeError("MiniMax narration needs REPLICATE_API_TOKEN")
+    name = voice.voice_id.removeprefix(MINIMAX_VOICE_PREFIX) or settings.minimax_tts_voice
+    prediction = await _replicate_predict(
+        {
+            "version": settings.minimax_tts_model,
+            "input": {
+                "text": text,
+                "voice_id": name,
+                "language_boost": _MINIMAX_LANGUAGE.get(language.split("-")[0], "Automatic"),
+                "emotion": "auto",
+            },
+        },
+        settings,
+    )
+    async with httpx.AsyncClient(timeout=60) as client:
+        response = await client.get(_replicate_output_url(prediction))
+        response.raise_for_status()
+        output_path.write_bytes(response.content)
 
 
 async def _synthesize_openai(text: str, voice: VoiceConfig, output_path: Path) -> None:

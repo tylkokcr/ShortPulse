@@ -37,6 +37,26 @@ logger = logging.getLogger(__name__)
 # (min_scenes, max_scenes) target per preset. Scenes are still individually
 # capped at 3-5s each, so these ranges land roughly at ~15-25s / ~30-45s /
 # ~60s+ once the hook and call-to-action are included.
+# A format whose rhythm is quicker cuts: more, shorter scenes for the same
+# length preset. "What if?" videos change picture every two or three
+# seconds — one consequence, one image — where a free topic explains.
+FORMAT_SCENE_COUNT: dict[str, dict[VideoLength, tuple[int, int]]] = {
+    "what_if": {
+        VideoLength.SHORT: (9, 11),
+        VideoLength.MEDIUM: (14, 17),
+        VideoLength.LONG: (20, 24),
+    },
+}
+_SCENE_LENGTH = {
+    "free": "3 to 5 seconds of spoken voiceover (roughly 8-14 words)",
+    "what_if": "2 to 3 seconds of spoken voiceover (roughly 5-10 words) — one punchy idea",
+}
+
+
+def scene_count(video_length: VideoLength, script_format: str = "free") -> tuple[int, int]:
+    return FORMAT_SCENE_COUNT.get(script_format, SCENE_COUNT_BY_LENGTH)[video_length]
+
+
 SCENE_COUNT_BY_LENGTH: dict[VideoLength, tuple[int, int]] = {
     VideoLength.SHORT: (5, 6),
     VideoLength.MEDIUM: (8, 10),
@@ -103,7 +123,7 @@ Rules:
 - The first line (the "hook") must grab attention within 3 seconds. Use a \
 question, bold claim, or pattern interrupt. Never start with "Have you ever".
 - Break the script into {min_scenes} to {max_scenes} scenes. Each scene is \
-3 to 5 seconds of spoken voiceover (roughly 8-14 words).
+{scene_length}.
 - Write "hook", every "voiceover_line", and "call_to_action" entirely in \
 {language_name}. Always write "visual_prompt" in English regardless of the \
 target language — the image-generation model responds best to English \
@@ -168,53 +188,60 @@ Respond with ONLY valid JSON, no markdown fences, matching this shape:
 # none: the rules above are already that format.
 FORMAT_RULES: dict[str, str] = {
     "what_if": """\
-This video is a "what would happen if" thought experiment. Also follow these:
+This video is a "what would happen if" thought experiment, told as a story \
+to the viewer rather than a list of facts. Follow these:
 - The topic is a hypothetical ("What if the Moon disappeared?", "What if \
 Poland vanished from the map?"). If it is not phrased as one, treat it as \
 "what would happen if <topic>".
 - The hook states the hypothetical as if it has just happened, in one \
 short, vivid sentence — "Tonight, the Moon is gone." — not as a question \
 to the viewer.
-- Then a chain of consequences in time order, narrated in the present \
-tense as it unfolds. Open each "voiceover_line" with a time marker \
-("One minute later", "By morning", "A month in", "Ten years on"). Each \
-scene is ONE consequence, and each is bigger or stranger than the last. \
-The marker is when that effect really arrives: tides change in hours, \
-the climate in decades, a planet's tilt over millions of years — if the \
-true answer is "in a million years", say that; the scale is part of the \
-surprise.
-- Every consequence is a specific fact most viewers do not know: a named \
-place, industry, product, animal or route. Vague effects are not \
-consequences: never write that something "is disrupted", "falls into \
-chaos", "is affected", "struggles" or "changes completely". \
-Weak: "The oceans would change." Strong: "By morning, high tides are \
-about a third as high — only the Sun is pulling now."
-- Numbers: only ones that are well established and stable — a \
-population, an area, a distance, a famous record, a share an encyclopedia \
-would state — rounded and said with "about". Never a percentage of \
-damage, loss or decline: nobody has measured a hypothetical, so any such \
-figure is invented. A scene without a number is fine; a made-up number is \
-the one thing that ruins this video.
+- Talk TO the viewer, in the second person, and put the consequences in \
+their own day: what they notice first at breakfast, in their kitchen, on \
+their phone, at the beach, on holiday. "Look at your kitchen" beats "the \
+appliance industry is affected".
+- Prefer things people know and touch — a food, a spread, a fruit, a \
+show, a holiday spot, a festival, an animal — over sectors and statistics. \
+Each consequence is a specific thing most viewers do not know comes from \
+there (or depends on it). Never write that something "is disrupted", \
+"falls into chaos", "is affected", "struggles" or "changes completely". \
+Weak: "Agriculture would suffer." Strong: "Your morning hazelnut spread \
+just got very expensive."
+- Early on, one striking image in a single line — a poetic picture of the \
+change ("two seas shake hands for the first time").
+- Short lines: one idea each, rhythm varied, as if spoken to camera. \
+Time markers are welcome where the order matters ("By morning", "Ten years \
+on") and must match when the effect really arrives — tides in hours, \
+climate in decades, a planet's tilt over millions of years; a long scale \
+is part of the surprise.
+- Two thirds of the way through, a turn: "But..." — a twist that changes \
+how the whole thing feels (something that once vanished and came back, a \
+hidden upside, the thing nobody would expect to miss). Then the most \
+surprising fact as the payoff. Never end on a summary.
+- Close on a question that turns the video into a series and invites a \
+comment: for a place, "Which country should vanish next? Tell me below"; \
+otherwise "What would you miss first?".
+- Numbers: only well-established, stable ones — a population, an area, a \
+distance, a famous record, a share an encyclopedia would state ("about \
+two thirds of the world's hazelnuts") — rounded and said with "about". \
+Never a percentage of damage, loss or decline: nobody has measured a \
+hypothetical, so any such figure is invented. A line without a number is \
+fine; a made-up number ruins the video.
 - Stay consistent with the premise: whatever vanishes takes everything \
-inside it with it (its rivers, cities, mines, people), so a consequence \
-is about what the REST of the world loses or how it changes, never about \
-something that no longer exists.
-- The last consequence is the one nobody expects — the twist the video is \
-shared for. It is a fact like the others, never a summary ("nights would \
-change forever" is not a consequence). Then a short question that \
-invites a comment ("What would you miss first?").
-- About countries, peoples or groups: the experiment is about geography, \
-economics, physics or history — never about whether a people deserves to \
-exist. No mockery of a nation, no stereotypes, no wishing harm. When a \
-place vanishes, tell what the rest of the world no longer gets from it.
+inside it with it (its rivers, cities, people), so a consequence is about \
+what the REST of the world loses or how it changes.
+- About countries, peoples or groups: geography, food, culture, economy, \
+history — never whether a people deserves to exist. No mockery, no \
+stereotypes, no wishing harm. Warmth is welcome: these videos are loved \
+by the country's own people.
 - Disasters are told through their effects on the world (lights going \
-out, tides stopping, trade routes moving), never through injured or dead \
+out, tides stopping, prices jumping), never through injured or dead \
 people.
-- "visual_prompt": a scene of an illustrated world showing that one \
-consequence through objects, places and people doing things. Never a map, \
-a globe with borders, a chart or anything with words or numbers in it: \
-the image model cannot draw geography or text, and a wrong map is the \
-first thing a viewer notices.
+- "visual_prompt": an illustrated scene showing that one consequence \
+through objects, places and people doing things, framed close and simple \
+enough to read in two seconds. Never a map, a globe with borders, a chart \
+or anything with words or numbers in it: the image model cannot draw \
+geography or text.
 - The image model adds whatever usually belongs in a scene: describe a \
 night sky and it draws a Moon, even in a video about the Moon being gone. \
 So add a top-level "keep_out" string to the JSON: the thing that vanished, \
@@ -230,7 +257,7 @@ def _build_system_prompt(
     visual_mode: str = "fast_hybrid",
     script_format: str = "free",
 ) -> str:
-    min_scenes, max_scenes = SCENE_COUNT_BY_LENGTH[video_length]
+    min_scenes, max_scenes = scene_count(video_length, script_format)
     language_name = LANGUAGE_NAMES.get(language, language)
     visual_prompt_rule = (
         VISUAL_PROMPT_RULE_STOCK
@@ -240,6 +267,7 @@ def _build_system_prompt(
     return SYSTEM_PROMPT_TEMPLATE.format(
         visual_prompt_rule=visual_prompt_rule,
         min_scenes=min_scenes, max_scenes=max_scenes, language_name=language_name,
+        scene_length=_SCENE_LENGTH.get(script_format, _SCENE_LENGTH["free"]),
         format_rules=FORMAT_RULES.get(script_format, ""),
     )
 
@@ -435,7 +463,7 @@ async def _generate_script_once(
     # library of real footage — somebody filmed it properly.
     if visual_mode != "stock_media":
         await _rewrite_badly_framed_prompts(parsed, config)
-    return _to_script_output(topic, parsed, video_length)
+    return _to_script_output(topic, parsed, video_length, script_format)
 
 
 async def _call_llm(config: LLMConfig, system_prompt: str, prompt: str) -> str:
@@ -789,7 +817,10 @@ def _keep_out(raw: object) -> str:
 
 
 def _to_script_output(
-    topic: str, parsed: dict, video_length: VideoLength = VideoLength.SHORT
+    topic: str,
+    parsed: dict,
+    video_length: VideoLength = VideoLength.SHORT,
+    script_format: str = "free",
 ) -> ScriptOutput:
     # The model is asked for a top-level object, but occasionally returns a
     # bare array of scenes (or something else entirely). Raise the engine's
@@ -854,7 +885,7 @@ def _to_script_output(
     # per scene, billed per image, against a charge fixed by the length
     # preset the buyer picked. Thirty scenes on a three-credit short is a
     # three-minute "short" as well, so the cap is right on its own terms.
-    max_scenes = SCENE_COUNT_BY_LENGTH[video_length][1]
+    max_scenes = scene_count(video_length, script_format)[1]
     if len(scenes) > max_scenes:
         logger.warning(
             "Model returned %d scenes for a %s video; keeping the first %d",

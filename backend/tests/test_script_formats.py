@@ -17,8 +17,8 @@ def test_what_if_adds_its_rules_before_the_json_shape():
     rules = prompt.index("thought experiment")
     assert rules < prompt.index("Respond with ONLY valid JSON")
     # The two that keep the genre honest and on the right side of the line.
-    assert "a made-up number is" in prompt
-    assert "never about whether a people deserves" in prompt
+    assert "a made-up number ruins" in prompt
+    assert "never whether a people deserves" in prompt
     assert "Never a map" in prompt
 
 
@@ -53,3 +53,19 @@ def test_what_the_script_keeps_out_reaches_every_scene():
         assert "full moon" in scene.visual.negative_prompt
         assert ";" not in scene.visual.negative_prompt
     assert _to_script_output("x", {**parsed, "keep_out": None}).scenes[0].visual.negative_prompt is None
+
+
+def test_what_if_is_quicker_cuts_and_more_of_them():
+    from app.engines.script_engine import SCENE_COUNT_BY_LENGTH, scene_count
+
+    assert scene_count(VideoLength.SHORT, "what_if")[0] > SCENE_COUNT_BY_LENGTH[VideoLength.SHORT][1]
+    assert scene_count(VideoLength.SHORT, "free") == SCENE_COUNT_BY_LENGTH[VideoLength.SHORT]
+    prompt = _build_system_prompt(VideoLength.SHORT, "tr", "fast_hybrid", "what_if")
+    assert "9 to 11 scenes" in prompt and "5-10 words" in prompt
+    assert "Talk TO the viewer" in prompt and "a turn" in prompt
+    # The cap follows the format, so the extra scenes are not cut off.
+    from app.engines.script_engine import _to_script_output
+
+    parsed = {"hook": "h", "scenes": [{"voiceover_line": f"l{i}", "visual_prompt": "p"} for i in range(11)]}
+    assert len(_to_script_output("x", parsed, VideoLength.SHORT, "what_if").scenes) == 11
+    assert len(_to_script_output("x", parsed, VideoLength.SHORT).scenes) == 6

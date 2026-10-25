@@ -111,6 +111,15 @@ OPENAI_VOICES: tuple[Voice, ...] = tuple(
 )
 
 
+# MiniMax's system voices, also every language (language_boost sets the
+# accent). Few on purpose: these were heard in Turkish before being listed.
+MINIMAX_VOICES: tuple[Voice, ...] = (
+    _v("minimax:English_CaptivatingStoryteller", "Storyteller", "*", "AI", "studio"),
+    _v("minimax:English_Deep-VoicedGentleman", "Deep Voice", "*", "AI", "studio"),
+    _v("minimax:English_Wiselady", "Wise Lady", "*", "AI", "studio"),
+)
+
+
 def openai_enabled() -> bool:
     from app.core.config import get_settings
 
@@ -118,20 +127,31 @@ def openai_enabled() -> bool:
     return bool(settings.openai_tts and settings.openai_api_key)
 
 
+def minimax_enabled() -> bool:
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    return bool(settings.minimax_tts and settings.replicate_api_token)
+
+
+def _hosted() -> tuple[Voice, ...]:
+    return (*(MINIMAX_VOICES if minimax_enabled() else ()), *(OPENAI_VOICES if openai_enabled() else ()))
+
+
 def default_voice_id(language: str) -> str:
     """The voice a video in `language` gets when nobody picked one."""
-    if openai_enabled():
-        from app.core.config import get_settings
+    from app.core.config import get_settings
 
+    if minimax_enabled():
+        return f"minimax:{get_settings().minimax_tts_voice}"
+    if openai_enabled():
         return f"openai:{get_settings().openai_tts_voice}"
     return PIPER_VOICE_BY_LANGUAGE.get(language, "")
 
 
 def by_id(voice_id: str) -> Voice | None:
-    pool = (*OPENAI_VOICES, *VOICES) if openai_enabled() else VOICES
-    return next((voice for voice in pool if voice.id == voice_id), None)
+    return next((voice for voice in (*_hosted(), *VOICES) if voice.id == voice_id), None)
 
 
 def for_language(language: str) -> list[Voice]:
-    own = [voice for voice in VOICES if voice.language == language]
-    return [*OPENAI_VOICES, *own] if openai_enabled() else own
+    return [*_hosted(), *(voice for voice in VOICES if voice.language == language)]

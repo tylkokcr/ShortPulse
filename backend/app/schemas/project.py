@@ -31,6 +31,10 @@ class TTSProvider(StrEnum):
     # same pitch and pace, and a narrator who never leans on a word is
     # what made the videos sound flat.
     OPENAI = "openai"
+    # MiniMax Speech over Replicate: the most expressive of the three in
+    # Turkish by ear, side by side on one script. The hosted default when
+    # there is a Replicate token.
+    MINIMAX = "minimax"
     EDGE_TTS = "edge_tts"
     PIPER = "piper"
     COQUI_XTTS = "coqui_xtts"

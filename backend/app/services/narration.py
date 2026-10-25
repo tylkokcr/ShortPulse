@@ -44,9 +44,19 @@ def resolve(voice: VoiceConfig, language: str, script_format: str) -> VoiceConfi
     to another engine or say how it is read."""
     picked = voice_catalog.by_id(voice.voice_id) if voice.voice_id else None
     voice_id = picked.id if picked else voice_catalog.default_voice_id(language)
-    hosted = voice_id.startswith("openai:")
+    provider = provider_for(voice_id)
     return VoiceConfig(
-        provider=TTSProvider.OPENAI if hosted else TTSProvider.PIPER,
+        provider=provider,
         voice_id=voice_id,
-        instructions=instructions(script_format, language) if hosted else "",
+        # Only OpenAI's model reads instructions; MiniMax picks the emotion
+        # from the text itself.
+        instructions=instructions(script_format, language) if provider == TTSProvider.OPENAI else "",
     )
+
+
+def provider_for(voice_id: str) -> TTSProvider:
+    if voice_id.startswith("minimax:"):
+        return TTSProvider.MINIMAX
+    if voice_id.startswith("openai:"):
+        return TTSProvider.OPENAI
+    return TTSProvider.PIPER

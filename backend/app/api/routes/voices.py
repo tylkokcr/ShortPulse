@@ -107,9 +107,13 @@ async def preview(
                     await audio_engine.synthesize_line(
                         line,
                         VoiceConfig(
-                            provider=TTSProvider.OPENAI if hosted else TTSProvider.PIPER,
+                            provider=narration.provider_for(voice.id),
                             voice_id=voice.id,
-                            instructions=narration.instructions("free", spoken) if hosted else "",
+                            instructions=(
+                                narration.instructions("free", spoken)
+                                if narration.provider_for(voice.id) == TTSProvider.OPENAI
+                                else ""
+                            ),
                         ),
                         cached,
                         language=spoken,

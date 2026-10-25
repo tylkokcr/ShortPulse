@@ -13,15 +13,26 @@ from app.services import voices as voice_catalog
 
 @pytest.fixture
 def hosted(monkeypatch):
+    """OpenAI only — the shape these first tests were written for."""
     settings = get_settings()
     monkeypatch.setattr(settings, "openai_tts", True)
     monkeypatch.setattr(settings, "openai_api_key", "sk-test")
     monkeypatch.setattr(settings, "openai_tts_voice", "ash")
+    monkeypatch.setattr(settings, "replicate_api_token", None)
+
+
+@pytest.fixture
+def both(hosted, monkeypatch):
+    settings = get_settings()
+    monkeypatch.setattr(settings, "replicate_api_token", "r8_test")
+    monkeypatch.setattr(settings, "minimax_tts", True)
+    monkeypatch.setattr(settings, "minimax_tts_voice", "English_CaptivatingStoryteller")
 
 
 @pytest.fixture
 def local(monkeypatch):
     monkeypatch.setattr(get_settings(), "openai_api_key", None)
+    monkeypatch.setattr(get_settings(), "replicate_api_token", None)
 
 
 def test_with_a_key_an_unpicked_voice_is_openai_and_read_for_its_format(hosted):
@@ -59,3 +70,19 @@ def test_openai_voices_are_offered_in_every_language_when_hosted(hosted):
 def test_only_known_moods_choose_the_soundtrack():
     assert _music_mood(" Suspense ") == "suspense"
     assert _music_mood("../../etc") is None and _music_mood(None) is None
+
+
+def test_with_both_minimax_is_the_default_and_takes_no_instructions(both):
+    voice = narration.resolve(VoiceConfig(), "tr", "what_if")
+    assert voice.provider == TTSProvider.MINIMAX
+    assert voice.voice_id == "minimax:English_CaptivatingStoryteller"
+    assert voice.instructions == ""
+    # OpenAI's voices stay pickable beside it.
+    picked = narration.resolve(VoiceConfig(voice_id="openai:coral"), "tr", "free")
+    assert picked.provider == TTSProvider.OPENAI and picked.instructions
+
+
+def test_minimax_voices_lead_the_picker(both):
+    ids = [v.id for v in voice_catalog.for_language("pl")]
+    assert ids[0].startswith("minimax:")
+    assert any(i.startswith("openai:") for i in ids) and any("/" in i for i in ids)
