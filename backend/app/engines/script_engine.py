@@ -240,6 +240,8 @@ by the country's own people.
 - Disasters are told through their effects on the world (lights going \
 out, tides stopping, prices jumping), never through injured or dead \
 people.
+- Keep it light and curious: no wars, genocide, memorials or disasters \
+with victims as content, not even as the twist.
 - "visual_prompt": an illustrated scene showing that one consequence \
 through objects, places and people doing things, framed close and simple \
 enough to read in two seconds. Never a map, a globe with borders, a chart \
@@ -554,6 +556,16 @@ into one.
 6. The last line before the closing question must be a surprising fact, \
 never a summary.
 
+7. Tone: light and curious. Remove any war, genocide, memorial or \
+disaster with victims, whatever its place in history.
+8. Voice: you fix facts, never the storytelling. Keep it told to the \
+viewer in the second person, inside their own day (breakfast, kitchen, \
+phone, holiday). No sentence pattern ("X disappears", "X is gone") more \
+than twice — rewrite the rest as what the viewer notices.
+9. The hook is spoken on its own; the first scene must not repeat it.
+10. The last scene asks the viewer a question that invites a comment \
+("Which country should vanish next?").
+
 When a fact is doubtful, replace it with one you are certain of rather \
 than softening it. Keep the hook, keep the scene count within one, keep \
 lines short (5-10 words) and in the second person where they were. When \
@@ -582,6 +594,11 @@ over; ten certain facts beat fourteen with one wrong.
 - Consistent with the premise: whatever vanishes takes everything inside \
 it (its rivers, cities, people). Facts are about the rest of the world.
 - Prefer things an ordinary person has touched, eaten, watched or used.
+- Mind borders: a forest, river, mountain or sea shared with a neighbour \
+loses only the part inside.
+- Light and curious, never grim: no wars, genocide, memorials or \
+disasters with victims, however well known. These videos are watched for \
+fun and by the country's own people.
 
 Respond with ONLY JSON: {"facts": ["...", "..."]}
 """

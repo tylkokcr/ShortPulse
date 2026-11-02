@@ -158,3 +158,14 @@ async def test_a_what_if_script_is_written_from_collected_facts(monkeypatch):
     writer = next(p for s, p in seen if "thought experiment" in s)
     reviewer = next(p for s, p in seen if "fact-checker" in s)
     assert "a third of the EU's apples" in writer and "a third of the EU's apples" in reviewer
+
+
+def test_what_if_keeps_away_from_tragedy_and_keeps_its_voice():
+    from app.engines.script_engine import FACTS_PROMPT, WHAT_IF_REVIEW_PROMPT
+
+    # gpt-5.6 made a genocide memorial the "twist" of a Poland video, and
+    # its review flattened every line into "X disappears".
+    for prompt in (FACTS_PROMPT, WHAT_IF_REVIEW_PROMPT, FORMAT_RULES["what_if"]):
+        assert "genocide" in prompt
+    assert "never the storytelling" in WHAT_IF_REVIEW_PROMPT
+    assert "Mind borders" in FACTS_PROMPT
