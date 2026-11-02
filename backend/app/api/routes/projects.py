@@ -19,7 +19,7 @@ from app.api.deps import billing_for, current_user_id, db_pool
 from app.api.routes import music
 from app.core.config import get_settings, project_dir
 from app.core.storage import discard_project_files
-from app.engines import render_engine, visual_engine
+from app.engines import render_engine, script_engine, visual_engine
 from app.schemas.project import (
     AUTO_LANGUAGE,
     CaptionTrack,
@@ -127,7 +127,7 @@ async def create_project(
     config.llm = LLMConfig(
         provider=LLMProvider(settings.llm_provider),
         model=(
-            settings.fact_llm_model
+            await script_engine.resolve_fact_model(settings)
             if factual and settings.llm_provider == "openai" and settings.fact_llm_model
             else settings.llm_model
         ),

@@ -95,3 +95,66 @@ async def test_a_what_if_script_is_reviewed_and_a_bad_review_is_ignored(monkeypa
     replies.append(json.dumps({"hook": "h", "scenes": [{"voiceover_line": "only one"}]}))
     out = await script_engine._review_what_if(draft, "x", "tr", VideoLength.SHORT, LLMConfig())
     assert out is draft
+
+
+def test_reasoning_models_are_told_apart():
+    from app.engines.script_engine import is_reasoning_model
+
+    assert is_reasoning_model("gpt-5.6-terra") and is_reasoning_model("o3")
+    assert not is_reasoning_model("gpt-4.1") and not is_reasoning_model("gpt-4o-mini")
+
+
+async def test_auto_takes_the_first_candidate_the_account_has(monkeypatch):
+    import httpx
+
+    from app.engines import script_engine
+
+    class Settings:
+        fact_llm_model = "auto"
+        fact_llm_candidates = ["gpt-9", "gpt-5.4", "gpt-4.1"]
+        llm_model = "gpt-4.1-mini"
+        openai_api_key = "sk-test"
+
+    def handler(request):
+        return httpx.Response(200, json={"data": [{"id": "gpt-4.1"}, {"id": "gpt-5.4"}]})
+
+    real = httpx.AsyncClient
+    monkeypatch.setattr(
+        script_engine.httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(handler))
+    )
+    monkeypatch.setattr(script_engine, "_fact_model_cache", None)
+    assert await script_engine.resolve_fact_model(Settings()) == "gpt-5.4"
+
+    # Pinned is pinned, no listing.
+    pinned = Settings()
+    pinned.fact_llm_model = "gpt-4.1"
+    assert await script_engine.resolve_fact_model(pinned) == "gpt-4.1"
+
+
+async def test_a_what_if_script_is_written_from_collected_facts(monkeypatch):
+    import json
+
+    from app.engines import script_engine
+    from app.schemas.project import LLMConfig
+
+    seen: list[tuple[str, str]] = []
+    script = {"hook": "h", "scenes": [{"voiceover_line": f"l{i}", "visual_prompt": "p"} for i in range(10)]}
+
+    async def fake_llm(config, system, prompt):
+        seen.append((system, prompt))
+        if "You research" in system:
+            return json.dumps({"facts": ["Poland grows about a third of the EU's apples."]})
+        return json.dumps(script)
+
+    async def nothing(*a, **k):
+        return None
+
+    monkeypatch.setattr(script_engine, "_call_llm", fake_llm)
+    monkeypatch.setattr(script_engine, "_rewrite_named_prompts", nothing)
+    monkeypatch.setattr(script_engine, "_rewrite_badly_framed_prompts", nothing)
+    await script_engine._generate_script_once(
+        "What if Poland vanished?", LLMConfig(), None, VideoLength.SHORT, "tr", "fast_hybrid", "what_if"
+    )
+    writer = next(p for s, p in seen if "thought experiment" in s)
+    reviewer = next(p for s, p in seen if "fact-checker" in s)
+    assert "a third of the EU's apples" in writer and "a third of the EU's apples" in reviewer

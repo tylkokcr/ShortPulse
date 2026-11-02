@@ -43,7 +43,14 @@ class Settings(BaseSettings):
     # for a number per scene, supplied them whether or not it knew one;
     # a script is a few hundred words, so the larger model costs well
     # under a cent more a video. Empty: llm_model for everything.
-    fact_llm_model: str = "gpt-4.1"
+    fact_llm_model: str = "auto"
+    # "auto": the first of these the account can use (asked of OpenAI once
+    # an hour), falling back to llm_model. A name instead pins one. Middle
+    # tiers first — a "what if?" script is three calls, and the flagship
+    # tier would cost more than the visuals.
+    fact_llm_candidates: list[str] = [
+        "gpt-5.6-terra", "gpt-5.4", "gpt-5.6-luna", "gpt-5.2", "gpt-5.1", "gpt-5", "gpt-4.1",
+    ]
     # Narration through OpenAI's speech model when there is a key. False
     # keeps every generated video on Piper.
     openai_tts: bool = True

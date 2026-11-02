@@ -359,6 +359,44 @@ def _is_out_of_quota(exc: object) -> bool:
     return False
 
 
+def is_reasoning_model(model: str) -> bool:
+    """gpt-5 and later, and the o-series: no temperature, an effort instead."""
+    name = model.lower()
+    return name.startswith("gpt-5") or bool(re.match(r"o\d", name))
+
+
+_fact_model_cache: tuple[float, str] | None = None
+
+
+async def resolve_fact_model(settings) -> str:
+    """The model that writes fact-bound scripts. `fact_llm_model` may name
+    one; "auto" asks OpenAI which of `fact_llm_candidates` this account can
+    use and takes the first, rechecking hourly — model names change faster
+    than deploys, and a name that has been retired fails every render."""
+    import time
+
+    global _fact_model_cache
+    if settings.fact_llm_model and settings.fact_llm_model != "auto":
+        return settings.fact_llm_model
+    if _fact_model_cache and time.monotonic() - _fact_model_cache[0] < 3600:
+        return _fact_model_cache[1]
+    chosen = settings.llm_model
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.get(
+                "https://api.openai.com/v1/models",
+                headers={"Authorization": f"Bearer {settings.openai_api_key}"},
+            )
+            response.raise_for_status()
+            have = {m.get("id") for m in response.json().get("data", [])}
+        chosen = next((m for m in settings.fact_llm_candidates if m in have), settings.llm_model)
+    except Exception:  # noqa: BLE001 - the everyday model still writes a script
+        logger.warning("Could not list OpenAI models; using %s", chosen, exc_info=True)
+    _fact_model_cache = (time.monotonic(), chosen)
+    logger.info("Fact-bound scripts are written by %s", chosen)
+    return chosen
+
+
 async def _call_openai(config: LLMConfig, system_prompt: str, prompt: str) -> str:
     import asyncio
 
@@ -385,14 +423,22 @@ async def _call_openai(config: LLMConfig, system_prompt: str, prompt: str) -> st
     # visual_engine, for the same reason.
     for backoff in (*_OPENAI_RETRY_BACKOFF_S, None):
         try:
+            model = config.model or "gpt-4o-mini"
+            # Reasoning models refuse any temperature but their own and take
+            # an effort instead.
+            tuning: dict = (
+                {"reasoning_effort": "medium"}
+                if is_reasoning_model(model)
+                else {"temperature": config.temperature}
+            )
             response = await client.chat.completions.create(
-                model=config.model or "gpt-4o-mini",
-                temperature=config.temperature,
+                model=model,
                 response_format={"type": "json_object"},
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt},
                 ],
+                **tuning,
             )
             return response.choices[0].message.content or "{}"
         except RateLimitError as exc:
@@ -457,6 +503,19 @@ async def _generate_script_once(
 ) -> ScriptOutput:
     system_prompt = _build_system_prompt(video_length, language, visual_mode, script_format)
     user_prompt = _build_user_prompt(topic, raw_script)
+    facts: list[str] = []
+    if script_format == "what_if" and not raw_script:
+        # Facts first, then the story: a model asked to be vivid and correct
+        # in one go was vivid. Collected on their own, with the instruction
+        # to leave out anything uncertain, they are the only claims the
+        # script may make.
+        facts = await _collect_facts(topic, config)
+        if facts:
+            user_prompt += (
+                "\n\nVerified facts — the only factual claims the script may make; "
+                "pick the most surprising, everyday ones and tell them in the viewer's "
+                "own day:\n" + "\n".join(f"- {f}" for f in facts)
+            )
 
     raw_text = await _call_llm(config, system_prompt, user_prompt)
     parsed = _extract_json(raw_text)
@@ -465,7 +524,7 @@ async def _generate_script_once(
     # "close-up of feet" is a perfectly good thing to look for in a
     # library of real footage — somebody filmed it properly.
     if script_format == "what_if" and not raw_script:
-        parsed = await _review_what_if(parsed, topic, language, video_length, config)
+        parsed = await _review_what_if(parsed, topic, language, video_length, config, facts)
     if visual_mode != "stock_media":
         await _rewrite_badly_framed_prompts(parsed, config)
     return _to_script_output(topic, parsed, video_length, script_format)
@@ -476,6 +535,8 @@ You are the fact-checker and editor of a "what would happen if" short-video \
 script, written in {language_name}. You get the script as JSON and return \
 the SAME JSON shape with every problem fixed. Check each "voiceover_line":
 
+0. When a list of verified facts is given, every factual claim must come \
+from it; replace any other claim with one from the list.
 1. Is the fact true of THIS subject specifically? A food, product, record \
 or tradition that belongs to another country or thing must go. A \
 superlative must be literally true ("Europe's largest" is not "the \
@@ -504,8 +565,49 @@ Respond with ONLY the corrected JSON object.
 """
 
 
+FACTS_PROMPT = """\
+You research a "what would happen if" short video. For the hypothetical you \
+are given, list what the REST of the world concretely depends on from the \
+thing that vanished, or what physically changes — the facts such a video \
+is built from.
+
+Rules:
+- 10 to 14 facts, each one sentence in English, specific (a named product, \
+food, place, industry, species, route, record) and checkable in an \
+encyclopedia.
+- Numbers only when well established; round them and say "about". Never a \
+percentage of damage, loss or decline.
+- Only facts you are certain of. Leave out anything you would hesitate \
+over; ten certain facts beat fourteen with one wrong.
+- Consistent with the premise: whatever vanishes takes everything inside \
+it (its rivers, cities, people). Facts are about the rest of the world.
+- Prefer things an ordinary person has touched, eaten, watched or used.
+
+Respond with ONLY JSON: {"facts": ["...", "..."]}
+"""
+
+
+async def _collect_facts(topic: str, config: LLMConfig) -> list[str]:
+    """The checked facts a "what if?" script is written from. Empty when the
+    model does not answer usably — the script is then written as before."""
+    try:
+        parsed = _extract_json(await _call_llm(config, FACTS_PROMPT, f"Hypothetical: {topic}"))
+    except Exception:  # noqa: BLE001 - facts are an aid, not a requirement
+        logger.warning("Collecting facts failed; writing without them", exc_info=True)
+        return []
+    facts = parsed.get("facts") if isinstance(parsed, dict) else None
+    if not isinstance(facts, list):
+        return []
+    return [f.strip()[:240] for f in facts if isinstance(f, str) and f.strip()][:14]
+
+
 async def _review_what_if(
-    parsed: dict, topic: str, language: str, video_length: VideoLength, config: LLMConfig
+    parsed: dict,
+    topic: str,
+    language: str,
+    video_length: VideoLength,
+    config: LLMConfig,
+    facts: list[str] | None = None,
 ) -> dict:
     """A second pass over a "what if?" script, as a fact-checker.
 
@@ -524,7 +626,15 @@ async def _review_what_if(
         raw = await _call_llm(
             config,
             WHAT_IF_REVIEW_PROMPT.format(language_name=LANGUAGE_NAMES.get(language, language)),
-            f"Topic: {topic}\n\nScript:\n{_json.dumps(parsed, ensure_ascii=False)}",
+            f"Topic: {topic}\n\n"
+            + (
+                "Facts the script was written from (verified):\n"
+                + "\n".join(f"- {f}" for f in facts)
+                + "\n\n"
+                if facts
+                else ""
+            )
+            + f"Script:\n{_json.dumps(parsed, ensure_ascii=False)}",
         )
         reviewed = _extract_json(raw)
     except Exception:  # noqa: BLE001 - the unreviewed script is still a script
