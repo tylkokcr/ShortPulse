@@ -406,3 +406,176 @@
 @media (prefers-reduced-motion: reduce) {
   .spinner { animation: none; }
 }
+
+/* ---------- caption & edit demos ---------- */
+.drop {
+  position: absolute;
+  border-radius: 10px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.16);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--sp-text);
+  text-align: center;
+}
+.drop small { color: var(--sp-faint); font-size: 11px; }
+.dropOver { border-color: var(--sp-accent); background: color-mix(in srgb, var(--sp-accent) 9%, transparent); }
+.fileGhost {
+  position: absolute;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 8px;
+  border-radius: 10px;
+  background: #222228;
+  border: 1px solid var(--sp-accent);
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.9);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.fileGhost img { width: 26px; height: 46px; object-fit: cover; border-radius: 4px; }
+.fileGhost span { display: block; color: var(--sp-faint); font-size: 10.5px; }
+.select {
+  position: absolute;
+  border-radius: 9px;
+  border: 1px solid var(--sp-line-strong);
+  background: #0d0d10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.menu {
+  position: absolute;
+  z-index: 20;
+  border-radius: 10px;
+  background: #1f1f25;
+  border: 1px solid var(--sp-line-strong);
+  box-shadow: 0 24px 50px -14px rgba(0, 0, 0, 0.95);
+  padding: 6px;
+}
+.menuItem { height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; font-size: 12.5px; color: var(--sp-muted); }
+.menuItemOn { background: color-mix(in srgb, var(--sp-accent) 22%, transparent); color: var(--sp-text); }
+.tag {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 5px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  border: 1px solid var(--sp-line-strong);
+  color: var(--sp-muted);
+}
+.tagAccent { border-color: transparent; background: color-mix(in srgb, var(--sp-accent) 25%, transparent); color: var(--sp-text); }
+.voice {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: #fff;
+  z-index: 2;
+}
+.clipThumb { position: absolute; border-radius: 7px; overflow: hidden; border: 1px solid var(--sp-line-strong); background: #0d0d10; }
+.clipThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.clipThumb b {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  font-size: 9px;
+  font-weight: 500;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.song { position: absolute; border-radius: 9px; border: 1px solid var(--sp-accent); background: color-mix(in srgb, var(--sp-accent) 8%, transparent); display: flex; align-items: center; gap: 10px; padding: 0 12px; font-size: 13px; }
+.song small { margin-left: auto; color: var(--sp-faint); font-size: 10.5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.eq { display: flex; align-items: flex-end; gap: 2px; height: 12px; width: 14px; }
+.eq i { flex: 1; background: var(--sp-accent); border-radius: 1px; }
+.waveform { position: absolute; border-radius: 8px; border: 1px solid var(--sp-line); background: #0d0d10; overflow: hidden; display: flex; align-items: center; gap: 1px; padding: 0 4px; }
+.waveform i { flex: 1; border-radius: 1px; background: rgba(255, 255, 255, 0.22); }
+.window {
+  position: absolute;
+  border-radius: 6px;
+  border: 1.5px solid var(--sp-accent);
+  background: color-mix(in srgb, var(--sp-accent) 18%, transparent);
+}
+.window span {
+  position: absolute;
+  left: 3px;
+  top: 2px;
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--sp-text);
+}
+.pick { position: absolute; display: flex; gap: 6px; }
+.pick > span { justify-content: center; }
+.dotSw { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.stepNo { position: absolute; font-size: 11px; color: var(--sp-accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.stepTxt { position: absolute; font-size: 12.5px; color: var(--sp-muted); line-height: 1.45; white-space: normal; }
+.stepDetail { position: absolute; font-size: 10.5px; color: var(--sp-accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
+.flash { position: absolute; inset: 0; background: #fff; pointer-events: none; z-index: 3; }
+.grade { position: absolute; inset: 0; mix-blend-mode: multiply; pointer-events: none; z-index: 1; }
+.titleOver {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 14%;
+  text-align: center;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.8), 0 0 14px rgba(0, 0, 0, 0.5);
+  z-index: 2;
+}
+.mt { position: absolute; border-radius: 9px; border: 1px solid var(--sp-line); background: #0d0d10; overflow: hidden; }
+.seg { position: absolute; top: 0; bottom: 0; overflow: hidden; border-right: 1px solid rgba(0, 0, 0, 0.6); }
+.seg img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0.85; }
+.beatTick { position: absolute; bottom: 0; width: 1px; height: 6px; background: rgba(255, 255, 255, 0.5); }
+.dropMark {
+  position: absolute;
+  top: -1px;
+  padding: 1px 5px;
+  border-radius: 0 0 5px 5px;
+  background: var(--sp-accent);
+  color: #0d0b14;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.toastSp {
+  position: absolute;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #1c1c21;
+  border: 1px solid var(--sp-line-strong);
+  box-shadow: 0 20px 40px -16px rgba(0, 0, 0, 0.9);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.playhead { position: absolute; width: 2px; background: #fff; border-radius: 2px; box-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }

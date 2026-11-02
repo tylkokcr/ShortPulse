@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Check, Coins, Loader2, TriangleAlert } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import clsx from "clsx";
 import { Link } from "@/i18n/navigation";
 import { getCredits, getPublicPricing, startCheckout } from "@/lib/api";
@@ -50,6 +50,7 @@ export default function CreditsPage() {
 
 function Credits() {
   const t = useTranslations("app.credits");
+  const locale = useLocale();
   const { credits, setCredits } = useShortPulseStore();
   const params = useSearchParams();
   const justPurchased = params.get("purchase") === "ok";
@@ -192,7 +193,7 @@ function Credits() {
               >
                 <div className="flex items-start justify-between">
                   <span className="font-mono text-3xl font-semibold">
-                    {formatPrice(pack.price_cents, credits?.currency)}
+                    {formatPrice(pack.price_cents, credits?.currency, locale)}
                   </span>
                   {pack.popular && <Badge tone="accent">{t("popular")}</Badge>}
                 </div>

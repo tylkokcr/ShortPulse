@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/money";
 import type { CreditPack } from "@/lib/types";
 
@@ -12,11 +12,12 @@ import type { CreditPack } from "@/lib/types";
  * credits.SALE), so this renders nothing outside a sale.
  */
 export function SaleOff({ pack, currency }: { pack: CreditPack; currency?: string }) {
+  const locale = useLocale();
   if (!pack.regular_price_cents || pack.regular_price_cents <= pack.price_cents) return null;
   const off = Math.round((1 - pack.price_cents / pack.regular_price_cents) * 100);
   return (
     <span className="flex items-center gap-2 text-sm">
-      <s className="text-white/40">{formatPrice(pack.regular_price_cents, currency)}</s>
+      <s className="text-white/40">{formatPrice(pack.regular_price_cents, currency, locale)}</s>
       <span className="rounded bg-accent/15 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-accent">
         −{off}%
       </span>
@@ -27,10 +28,11 @@ export function SaleOff({ pack, currency }: { pack: CreditPack; currency?: strin
 export function SaleNote({ pack, currency }: { pack: CreditPack; currency?: string }) {
   const t = useTranslations("sale");
   const format = useFormatter();
+  const locale = useLocale();
   if (!pack.regular_price_cents || pack.regular_price_cents <= pack.price_cents) return null;
   return (
     <p className="text-[11px] leading-snug text-white/35">
-      {t("lowest", { price: formatPrice(pack.regular_price_cents, currency) })}
+      {t("lowest", { price: formatPrice(pack.regular_price_cents, currency, locale) })}
       {pack.sale_ends_at &&
         ` ${t("ends", { date: format.dateTime(new Date(pack.sale_ends_at), { day: "numeric", month: "long" }) })}`}
     </p>

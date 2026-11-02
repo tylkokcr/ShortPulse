@@ -119,26 +119,27 @@ export const EXAMPLES: Example[] = [
  * Pexels' API terms require a visible link back to Pexels and credit to
  * the videographer. The pipeline records who shot each clip at fetch time;
  * this is that list, deduplicated across all eighteen stock-footage videos
- * and the five frames of the landing demo (public/demo).
+ * and the frames of the landing demos (public/demo).
  */
 export const FOOTAGE_CREDITS = [
   "Aaron Burden", "Abdullah | 4K", "Adventure Studio", "Aleks Magnusson",
-  "Alessio Casaretto", "Alexey Chudin", "Alvin David", "Ambareesh Sridhar Photography",
-  "Ana Sandu", "Andre Moura", "Andres Perez", "Angela Roma", "Anna Pou", "Anna Shvets",
-  "ANTONI SHKRABA production", "Artem Podrez", "Ashad The Nomadic", "aslı aydoğdu",
-  "Bahri Gün", "Barbara Olsen", "Bav Vadgama", "Ben Prater", "Canan İldeniz",
-  "cottonbro studio", "Darina Belonogova", "Deti riyanti", "Ebahir", "Emrah",
-  "Engin Akyurt", "Eyüp Can", "Grigoriy Bunkov", "Hale Ş", "Hashim Suhimi", "Iceberg San",
-  "Ilya Lyzhin", "İrem  Meriç", "John Diez", "Joolsmagools ®️",
-  "Juan Camilo Trujillo  Botero 🇨🇴📸", "JUN HO LEE", "K", "Kakada Chuon", "Kevin  Malik",
-  "Kevin  Villanueva", "khezez | خزاز", "Koushalya Karthikeyan", "LauraB", "Lentes  Bella",
-  "Los Muertos Crew", "Luis Quintero", "Marina Leonova", "Masha Glazova",
-  "Matthias Groeneveld", "Max Medyk", "Md Amir Umar", "Micaela Alejandro",
+  "Alessio Casaretto", "Alex Moliski", "Alexey Chudin", "Alvin David",
+  "Ambareesh Sridhar Photography", "Ana Sandu", "Andre Moura", "Andres Perez",
+  "Angela Roma", "Anna Pou", "Anna Shvets", "ANTONI SHKRABA production", "Artem Podrez",
+  "ArtHouse Studio", "Ashad The Nomadic", "aslı aydoğdu", "Bahri Gün", "Barbara Olsen",
+  "Bav Vadgama", "Ben Prater", "Canan İldeniz", "cottonbro studio", "Darina Belonogova",
+  "Deti riyanti", "Ebahir", "Emrah", "Engin Akyurt", "Eyüp Can", "Grigoriy Bunkov",
+  "Hale Ş", "Hashim Suhimi", "Iceberg San", "Ilya Lyzhin", "İrem  Meriç", "John Diez",
+  "Joolsmagools ®️", "Juan Camilo Trujillo  Botero 🇨🇴📸", "JUN HO LEE", "K", "Kakada Chuon",
+  "Kevin  Malik", "Kevin  Villanueva", "khezez | خزاز", "Koushalya Karthikeyan", "LauraB",
+  "Lentes  Bella", "Los Muertos Crew", "Luis Quintero", "Marc Espejo", "Marina Leonova",
+  "Masha Glazova", "Matthias Groeneveld", "Max Medyk", "Md Amir Umar", "Micaela Alejandro",
   "Michael Burrows", "Mikhail Nilov", "Miriam Alonso", "Mizuno K", "muhammed diler",
   "Muhtelifane", "Nadezhda Moryak", "Nataliya Vaitkevich", "Nereid Ndreu",
   "Nicola Narracci", "Nikita Ryumshin", "Nisasu", "NQPPresents", "Nur", "Pachon in Motion",
   "Pavel Danilyuk", "Photoviewx", "Physical  Pixel", "RDNE Stock project",
   "ROMAN ODINTSOV", "Ron Lach", "Sandeep  Solanki", "Sema", "Shan Ali",
   "Stefanie Jockschat", "Thuan Pham", "Tima Miroshnichenko", "Timothy Fuller",
-  "Timur Weber", "Toni.063371 -  Antonio Sáez", "Yuliya Duzhaya", "Şahin Doğdu",
+  "Timur Weber", "Tom Fisk", "Toni.063371 -  Antonio Sáez", "Yuliya Duzhaya",
+  "Şahin Doğdu",
 ];

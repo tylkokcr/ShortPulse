@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check, Sparkles, Github } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import clsx from "clsx";
 import { SIGNUP_CREDITS } from "@/lib/signupCredits";
 import { getPublicPricing } from "@/lib/api";
@@ -60,6 +60,7 @@ const FALLBACK_RATES: Rates = { stock: 2, stills: 6, local: 20 };
 
 export function Pricing() {
   const t = useTranslations("pricing");
+  const locale = useLocale();
   const [packs, setPacks] = useState<CreditPack[]>(FALLBACK_PACKS);
   // Currency and whether VAT is already in the price are deployment
   // settings, so they come from the server alongside the packs.
@@ -135,7 +136,7 @@ export function Pricing() {
             {/* Formatted, not written: on a EUR deployment a hardcoded
                 "$0" sits directly above three prices in euros. */}
             <span className="text-3xl font-semibold tracking-tight">
-              {formatPrice(0, currency)}
+              {formatPrice(0, currency, locale)}
             </span>
           </div>
           {/* What the grant buys, not what the deployment can render.
@@ -208,7 +209,7 @@ export function Pricing() {
 
               <div className="flex items-baseline gap-1.5">
                 <span className="text-3xl font-semibold tracking-tight">
-                  {formatPrice(pack.price_cents, currency)}
+                  {formatPrice(pack.price_cents, currency, locale)}
                   {taxIncluded && (
                     <span className="ml-1.5 align-middle text-[10px] font-normal text-white/30">
                       {t("taxIncluded")}
