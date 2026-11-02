@@ -160,12 +160,125 @@ async def _probe_duration_ms(path: Path, ffprobe_binary: str) -> int:
     return round(float(stdout.decode().strip()) * 1000)
 
 
+def _ken_burns_frames(image_path: Path, target: RenderTarget, index: int, total_frames: int):
+    """The Ken Burns move as frames, drawn with OpenCV at the output size.
+
+    ffmpeg's zoompan places its window on whole pixels, so it only moves
+    smoothly over a hugely oversized source: the path below scales every
+    still to 8000px wide (113 megapixels for a vertical one) and resamples
+    that for every frame — about a minute a scene on the hosted server, a
+    quarter of an hour for a ten-scene "what if?". An affine warp samples
+    between pixels, so it moves just as smoothly (0.1px frame-to-frame
+    wobble against zoompan's 0.11 at 8000px, measured) from an image the
+    size of the frame. Same moves as the zoompan path: zoom in or out by
+    turns, from the centre or the left edge, drifting slowly down.
+
+    Yields BGR frames; None when OpenCV is not installed.
+    """
+    try:
+        import cv2
+    except ImportError:
+        return None
+    image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+    if image is None:
+        return None
+    width, height = target.width, target.height
+    cover = max(width / image.shape[1], height / image.shape[0])
+    # A little larger than the frame, so the drift has room at zoom 1.0.
+    base_scale = cover * 1.04
+    base = cv2.resize(
+        image,
+        (max(width, round(image.shape[1] * base_scale)), max(height, round(image.shape[0] * base_scale))),
+        interpolation=cv2.INTER_AREA if base_scale < 1 else cv2.INTER_CUBIC,
+    )
+    bh, bw = base.shape[:2]
+    zoom_start, zoom_end = (1.0, 1.15) if index % 2 == 0 else (1.15, 1.0)
+    from_left = index % 4 >= 2
+
+    def frames():
+        import numpy as np
+
+        for k in range(total_frames):
+            f = k / max(total_frames - 1, 1)
+            z = zoom_start + (zoom_end - zoom_start) * f
+            win_w, win_h = width / z, height / z
+            x0 = 0.0 if from_left else (bw - win_w) / 2
+            y0 = min(max((bh - win_h) / 2 + f * 0.02 * bh, 0.0), bh - win_h)
+            m = np.array([[z, 0, -x0 * z], [0, z, -y0 * z]], dtype=np.float32)
+            yield cv2.warpAffine(
+                base, m, (width, height), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT
+            )
+
+    return frames()
+
+
 async def _render_image_scene_clip(
     scene: Scene, target: RenderTarget, output_path: Path, ffmpeg_binary: str, duration: float
 ) -> None:
     """Ken Burns effect: slow zoom + pan across the still image, cropped to
     the vertical frame. Direction alternates per scene so consecutive
     clips don't all drift the same way."""
+    total_frames = max(round(duration * target.fps), 1)
+    exact = total_frames / target.fps
+    frames = _ken_burns_frames(Path(str(scene.visual.asset_path)), target, scene.index, total_frames)
+    if frames is not None:
+        await _encode_frames(
+            frames,
+            target,
+            [
+                "-i", str(scene.audio.audio_path),
+                "-t", f"{exact:.6f}",
+                "-map", "0:v:0",
+                "-map", "1:a:0",
+                "-af", f"apad=whole_dur={exact:.6f}",
+                "-c:v", "libx264",
+                "-preset", "veryfast",
+                "-pix_fmt", "yuv420p",
+                "-c:a", "aac",
+                "-b:a", "192k",
+                *_CLIP_AUDIO_FORMAT,
+                str(output_path),
+            ],
+            ffmpeg_binary,
+        )
+        return
+    await _render_image_scene_clip_zoompan(scene, target, output_path, ffmpeg_binary, duration)
+
+
+async def _encode_frames(frames, target: RenderTarget, rest: list[str], ffmpeg_binary: str) -> None:
+    """Feed raw BGR frames to ffmpeg as its first input; `rest` is the rest
+    of the command line. Runs in a thread — the frames are numpy work and
+    the pipe write blocks."""
+    import subprocess
+
+    cmd = [
+        ffmpeg_binary, "-y", "-hide_banner", "-loglevel", "error",
+        "-f", "rawvideo", "-pix_fmt", "bgr24",
+        "-s", f"{target.width}x{target.height}", "-r", str(target.fps), "-i", "-",
+        *rest,
+    ]
+
+    def run() -> None:
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        assert proc.stdin is not None
+        try:
+            for frame in frames:
+                proc.stdin.write(frame.tobytes())
+        except BrokenPipeError:
+            pass
+        finally:
+            proc.stdin.close()
+        stderr = proc.stderr.read() if proc.stderr else b""
+        if proc.wait() != 0:
+            raise RenderError(f"ffmpeg failed ({' '.join(cmd)}):\n{stderr.decode(errors='ignore')}")
+
+    await asyncio.to_thread(run)
+
+
+async def _render_image_scene_clip_zoompan(
+    scene: Scene, target: RenderTarget, output_path: Path, ffmpeg_binary: str, duration: float
+) -> None:
+    """The same move through ffmpeg alone, for installs without OpenCV."""
     total_frames = max(round(duration * target.fps), 1)
     # The video track can only ever be a whole number of frames long, so
     # pin the audio to that exact same frame-quantized length (via apad +
