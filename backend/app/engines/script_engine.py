@@ -207,8 +207,11 @@ there (or depends on it). Never write that something "is disrupted", \
 "falls into chaos", "is affected", "struggles" or "changes completely". \
 Weak: "Agriculture would suffer." Strong: "Your morning hazelnut spread \
 just got very expensive."
-- Early on, one striking image in a single line — a poetic picture of the \
-change ("two seas shake hands for the first time").
+- Early on, one striking image in a single line — a poetic picture of \
+what THIS change looks like, true to its geography or physics.
+- Every example in these rules shows a style, never content to reuse: \
+copying an example sentence into a script about something else is a \
+failure.
 - Short lines: one idea each, rhythm varied, as if spoken to camera. \
 Time markers are welcome where the order matters ("By morning", "Ten years \
 on") and must match when the effect really arrives — tides in hours, \
@@ -461,9 +464,78 @@ async def _generate_script_once(
     # Only for the generated modes: a stock search is keywords, and
     # "close-up of feet" is a perfectly good thing to look for in a
     # library of real footage — somebody filmed it properly.
+    if script_format == "what_if" and not raw_script:
+        parsed = await _review_what_if(parsed, topic, language, video_length, config)
     if visual_mode != "stock_media":
         await _rewrite_badly_framed_prompts(parsed, config)
     return _to_script_output(topic, parsed, video_length, script_format)
+
+
+WHAT_IF_REVIEW_PROMPT = """\
+You are the fact-checker and editor of a "what would happen if" short-video \
+script, written in {language_name}. You get the script as JSON and return \
+the SAME JSON shape with every problem fixed. Check each "voiceover_line":
+
+1. Is the fact true of THIS subject specifically? A food, product, record \
+or tradition that belongs to another country or thing must go. A \
+superlative must be literally true ("Europe's largest" is not "the \
+world's largest").
+2. Is it consistent with the premise? Whatever vanished takes everything \
+inside it with it — its rivers, forests, cities, people — so a line about \
+one of those still existing, or about something that would not change, \
+must go.
+3. Does it make literal sense? Remove non-sequiturs and lines that sound \
+nice but mean nothing.
+4. Is it concrete? Replace vague lines ("things change", "everyone looks \
+for something") with a specific, true, everyday consequence.
+5. Is the "But..." turn a real twist grounded in fact? If not, rewrite it \
+into one.
+6. The last line before the closing question must be a surprising fact, \
+never a summary.
+
+When a fact is doubtful, replace it with one you are certain of rather \
+than softening it. Keep the hook, keep the scene count within one, keep \
+lines short (5-10 words) and in the second person where they were. When \
+you change a line, rewrite its "visual_prompt" to match (an illustrated \
+scene, no maps, no text). Keep "keep_out", "music_mood", "post" and \
+"call_to_action" unless they are wrong.
+
+Respond with ONLY the corrected JSON object.
+"""
+
+
+async def _review_what_if(
+    parsed: dict, topic: str, language: str, video_length: VideoLength, config: LLMConfig
+) -> dict:
+    """A second pass over a "what if?" script, as a fact-checker.
+
+    The first pass follows the shape well and invents freely: on gpt-4.1 a
+    Poland script had fish and chips for breakfast, "the world's largest"
+    apple orchards and a "two seas meet" line copied from the prompt's own
+    example. Reviewing a finished script against a checklist is a much
+    easier task than writing one under twenty rules, and catches those.
+
+    Never makes things worse than it found them: if the reply does not parse
+    or has lost scenes, the original is kept.
+    """
+    import json as _json
+
+    try:
+        raw = await _call_llm(
+            config,
+            WHAT_IF_REVIEW_PROMPT.format(language_name=LANGUAGE_NAMES.get(language, language)),
+            f"Topic: {topic}\n\nScript:\n{_json.dumps(parsed, ensure_ascii=False)}",
+        )
+        reviewed = _extract_json(raw)
+    except Exception:  # noqa: BLE001 - the unreviewed script is still a script
+        logger.warning("What-if review failed; keeping the first draft", exc_info=True)
+        return parsed
+    scenes = reviewed.get("scenes") if isinstance(reviewed, dict) else None
+    floor = scene_count(video_length, "what_if")[0] - 1
+    if not isinstance(scenes, list) or len(scenes) < floor:
+        logger.warning("What-if review returned an unusable script; keeping the first draft")
+        return parsed
+    return reviewed
 
 
 async def _call_llm(config: LLMConfig, system_prompt: str, prompt: str) -> str:

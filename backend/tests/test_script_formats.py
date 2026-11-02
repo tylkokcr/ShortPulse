@@ -69,3 +69,29 @@ def test_what_if_is_quicker_cuts_and_more_of_them():
     parsed = {"hook": "h", "scenes": [{"voiceover_line": f"l{i}", "visual_prompt": "p"} for i in range(11)]}
     assert len(_to_script_output("x", parsed, VideoLength.SHORT, "what_if").scenes) == 11
     assert len(_to_script_output("x", parsed, VideoLength.SHORT).scenes) == 6
+
+
+async def test_a_what_if_script_is_reviewed_and_a_bad_review_is_ignored(monkeypatch):
+    import json
+
+    from app.engines import script_engine
+    from app.schemas.project import LLMConfig
+
+    def scenes(word):
+        return [{"voiceover_line": f"{word} {i}", "visual_prompt": "p"} for i in range(10)]
+
+    draft = {"hook": "h", "scenes": scenes("draft")}
+    fixed = {**draft, "scenes": scenes("fixed")}
+    replies = [json.dumps(fixed)]
+
+    async def fake_llm(config, system, prompt):
+        assert "fact-checker" in system and "draft 0" in prompt
+        return replies.pop(0)
+
+    monkeypatch.setattr(script_engine, "_call_llm", fake_llm)
+    out = await script_engine._review_what_if(draft, "x", "tr", VideoLength.SHORT, LLMConfig())
+    assert out["scenes"][0]["voiceover_line"] == "fixed 0"
+
+    replies.append(json.dumps({"hook": "h", "scenes": [{"voiceover_line": "only one"}]}))
+    out = await script_engine._review_what_if(draft, "x", "tr", VideoLength.SHORT, LLMConfig())
+    assert out is draft
