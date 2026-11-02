@@ -48,6 +48,7 @@ import { ClipShowcase } from "@/components/marketing/ClipShowcase";
 import { FeatureTour } from "./FeatureTour";
 import { EditorShowcase } from "./EditorShowcase";
 import { Faq } from "./Faq";
+import { ProductDemo } from "./ProductDemo";
 
 const REPO_URL = "https://github.com/tylkokcr/ShortPulse";
 
@@ -190,6 +191,11 @@ export function Landing() {
           <PreviewMock />
         </div>
       </section>
+
+      {/* The whole flow, playing — before anything else is claimed. */}
+      <Reveal>
+        <ProductDemo />
+      </Reveal>
 
       {/* What is new, playing — the first thing below the fold, because it
           is what someone who has seen tools like this has not seen yet. */}

@@ -74,7 +74,7 @@ export function ClipShowcase() {
           up as they are spoken, which is what each of those five cards is.
           The close-up is the AI-stills render, not stock footage of a
           person, so there is no one in it whose likeness needs a release. */}
-      <div className="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_220px] lg:items-end">
+      <div className="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-end">
         <ClipSplit />
         <figure className="mx-auto flex w-full max-w-[170px] flex-col gap-2 lg:max-w-[220px]">
           <LoopingClip
@@ -91,7 +91,7 @@ export function ClipShowcase() {
         </figure>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px] lg:items-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
         <Card className="flex flex-col gap-5 bg-surface-raised">
           {/* The chip row, at the moment three is chosen. */}
           <div className="flex flex-col gap-2">

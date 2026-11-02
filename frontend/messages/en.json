@@ -201,6 +201,11 @@
       "tagline": "MIT licensed · No tracking, no dark patterns.",
       "terms": "Terms",
       "privacy": "Privacy"
+    },
+    "demo": {
+      "eyebrow": "In 30 seconds",
+      "title": "From a trending topic to a posted short",
+      "sub": "Pick an idea, choose a caption style, generate. The script, footage, voice and captions come together, the short goes out to YouTube and TikTok, and it is waiting in your library."
     }
   },
   "examples": {

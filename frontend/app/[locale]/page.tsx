@@ -361,7 +361,7 @@ function CreateVideo() {
 
         {mode === "generate" && (
 
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px] lg:items-start">
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
           <div className="flex flex-col gap-4">
             <Card className="animate-fade-up flex flex-col gap-4 border-border-strong bg-surface-raised">
               <div className="flex items-center gap-2">

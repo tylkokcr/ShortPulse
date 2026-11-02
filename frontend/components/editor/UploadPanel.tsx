@@ -474,7 +474,7 @@ export function UploadPanel({
     // screen used to be a single narrow card in the middle of the page,
     // which made it look like a different product from the studio it
     // shares a tab strip with.
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px] lg:items-start">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
       <div className="flex flex-col gap-4">
       <Card className="flex flex-col gap-5">
         <div

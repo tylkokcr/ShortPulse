@@ -175,8 +175,13 @@ function Project({ id }: { id: string }) {
         {project?.clip_project_ids?.length ? (
           <ClipList project={project} />
         ) : (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-          <div className="animate-fade-up flex flex-col gap-4">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          {/* minmax(0, 1fr), not 1fr: a plain 1fr track will not shrink below
+              its widest unbreakable child, so at 1074px — just past lg, where
+              this column is narrowest — the page grew to 1224px and pushed
+              the output panel off screen. min-w-0 lets the column's own
+              children wrap or clip instead. */}
+          <div className="animate-fade-up flex min-w-0 flex-col gap-4">
             <div className="inline-flex w-fit rounded-md border border-border bg-surface p-1">
               {([
                 { id: "scenes", label: t("tabScenes"), icon: ListTree },

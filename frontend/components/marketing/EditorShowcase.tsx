@@ -40,7 +40,7 @@ export function EditorShowcase() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px] lg:items-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
         <Card className="flex flex-col gap-3 bg-surface-raised">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium text-white/70">{t("breakdown")}</h3>
