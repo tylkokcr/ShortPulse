@@ -279,6 +279,7 @@ export interface ProjectConfig {
   /** A quick zoom that settles at the top of each generated scene. On
    *  unless turned off — a held frame reads as a slideshow. */
   zoom_punch?: boolean;
+  info_graphics?: boolean | null;
   music: MusicConfig;
   outro: OutroConfig;
   created_at: string;

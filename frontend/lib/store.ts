@@ -53,6 +53,8 @@ interface ProjectDraft {
   musicTrackId: string | null;
   censorProfanity: boolean;
   zoomPunch: boolean;
+  /** Info graphics and sound effects; only sent for "what if?". */
+  infoGraphics: boolean;
   outroEnabled: boolean;
   outroText: string;
   aiVideoAcknowledged: boolean;
@@ -112,6 +114,7 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
     musicTrackId: null,
     censorProfanity: false,
     zoomPunch: true,
+    infoGraphics: true,
     outroEnabled: false,
     outroText: "",
     aiVideoAcknowledged: false,
@@ -147,6 +150,7 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
       subtitles: captionStyleFor(draft),
       censor_profanity: draft.censorProfanity,
       zoom_punch: draft.zoomPunch,
+      info_graphics: draft.scriptFormat === "what_if" ? draft.infoGraphics : null,
       music: {
         ...DEFAULT_MUSIC_CONFIG,
         enabled: draft.musicEnabled,

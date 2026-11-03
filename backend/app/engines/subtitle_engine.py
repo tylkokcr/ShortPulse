@@ -414,6 +414,8 @@ def build_ass_from_words(
     language: str = "en",
     censor: bool = False,
     censor_extra: str = "",
+    extra_styles: list[str] | None = None,
+    extra_events: list[str] | None = None,
 ) -> Path:
     """Build an .ass file from words already timed against the finished
     video.
@@ -438,10 +440,14 @@ def build_ass_from_words(
     # Layer 1, so authored text draws above the caption track where they
     # happen to occupy the same moment.
     events.extend(_events_for_overlays(overlays or []))
+    # Info graphics (engines/graphics.py) bring their own styles and draw
+    # on layers 2-3, above both.
+    events.extend(extra_events or [])
 
-    output_path.write_text(
-        _header_for(style, play_res, language) + "\n".join(events) + "\n", encoding="utf-8"
-    )
+    header = _header_for(style, play_res, language)
+    if extra_styles:
+        header = header.replace("\n\n[Events]", "\n" + "\n".join(extra_styles) + "\n\n[Events]", 1)
+    output_path.write_text(header + "\n".join(events) + "\n", encoding="utf-8")
     return output_path
 
 
@@ -518,6 +524,8 @@ def build_ass_subtitles(
     language: str = "en",
     censor: bool = False,
     censor_extra: str = "",
+    extra_styles: list[str] | None = None,
+    extra_events: list[str] | None = None,
 ) -> Path:
     """Build a single .ass file covering the full timeline of a generated
     project."""
@@ -529,4 +537,6 @@ def build_ass_subtitles(
         language=language,
         censor=censor,
         censor_extra=censor_extra,
+        extra_styles=extra_styles,
+        extra_events=extra_events,
     )

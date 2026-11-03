@@ -416,6 +416,7 @@ async def render_scene_clip(
     scene_gap_s: float = DEFAULT_SCENE_GAP_S,
     punch: bool = True,
     duration_override_s: float | None = None,
+    sound_effects: bool = False,
 ) -> Path:
     """Encode one scene into a clip the concat step can stream-copy.
 
@@ -442,11 +443,24 @@ async def render_scene_clip(
         else await _scene_duration_s(scene, ffprobe_binary, scene_gap_s)
     )
 
+    # The scene's effects (graphics.mix_scene_sfx) go into the clip, not the
+    # stored scene: its audio path stays the plain voice, which is what a
+    # re-roll or a re-transcription should read.
+    clip_scene = scene
+    if sound_effects:
+        from app.engines import graphics
+
+        mixed = await graphics.mix_scene_sfx(scene, output_dir, ffmpeg_binary)
+        if mixed is not None:
+            clip_scene = scene.model_copy(
+                update={"audio": scene.audio.model_copy(update={"audio_path": str(mixed)})}
+            )
+
     if ext in _IMAGE_EXTENSIONS:
-        await _render_image_scene_clip(scene, target, output_path, ffmpeg_binary, duration)
+        await _render_image_scene_clip(clip_scene, target, output_path, ffmpeg_binary, duration)
     elif ext in _VIDEO_EXTENSIONS:
         await _render_video_scene_clip(
-            scene, target, output_path, ffmpeg_binary, duration, punch=punch
+            clip_scene, target, output_path, ffmpeg_binary, duration, punch=punch
         )
     else:
         raise RenderError(f"Unrecognized visual asset type: {ext}")
@@ -676,6 +690,7 @@ async def render_project(
     punch: bool = True,
     censor: bool = False,
     censor_extra: str = "",
+    graphics_plan=None,
 ) -> Path:
     """Full assembly: render each scene clip, THEN build subtitles (using
     each clip's real, frame-quantized duration rather than the pre-render
@@ -685,16 +700,27 @@ async def render_project(
     clip_paths: list[Path] = []
     for scene in scenes:
         clip_path = await render_scene_clip(
-            scene, target, output_dir, ffmpeg_binary, ffprobe_binary, scene_gap_s, punch=punch
+            scene, target, output_dir, ffmpeg_binary, ffprobe_binary, scene_gap_s, punch=punch,
+            sound_effects=graphics_plan is not None,
         )
         clip_paths.append(clip_path)
         if on_scene_rendered:
             await on_scene_rendered(scene.index + 1, len(scenes))
 
+    extra_styles: list[str] | None = None
+    extra_events: list[str] | None = None
+    if graphics_plan is not None:
+        from app.engines import graphics
+
+        extra_styles, extra_events = graphics.ass_extras(
+            scenes, graphics_plan, subtitle_style, language, (target.width, target.height)
+        )
     subtitle_ass_path = build_ass_subtitles(
         scenes,
         subtitle_style,
         subtitle_output_path,
+        extra_styles=extra_styles,
+        extra_events=extra_events,
         play_res=(target.width, target.height),
         # Casing rules differ by language — see subtitle_engine._uppercase.
         language=language,

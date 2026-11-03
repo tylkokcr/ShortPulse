@@ -21,6 +21,7 @@ from app.core.config import Settings, project_dir
 from app.core.storage import discard_intermediates
 from app.engines import (
     audio_engine,
+    graphics,
     render_engine,
     script_engine,
     subtitle_engine,
@@ -654,6 +655,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 punch=config.zoom_punch,
                 censor=config.censor_profanity,
                 censor_extra=settings.profanity_extra,
+                graphics_plan=graphics.plan_from(config, script),
             )
 
         video_s = sum(

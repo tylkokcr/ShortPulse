@@ -794,6 +794,12 @@
       "youtubeOff": "YouTube links can't be brought in here yet. Download the video and upload the file.",
       "busyHint": "Large videos take a few minutes. You can wait here.",
       "failed": "That link couldn't be brought in."
+    },
+    "graphics": {
+      "toggle": "Info graphics and sound effects",
+      "hint": "A counter, a list that grows with each consequence and stamps on the big moments; a tick for each row, a whoosh under each stamp.",
+      "summaryOn": "Graphics on",
+      "summaryOff": "Graphics off"
     }
   },
   "app": {

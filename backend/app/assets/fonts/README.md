@@ -12,6 +12,7 @@ the render deterministic on any machine.
 | `Bangers-Regular.ttf` | Latin, Latin-ext | OFL 1.1 |
 | `PermanentMarker-Regular.ttf` | Latin (no Turkish ğ/ş/ı, no Polish ą/ę/ś/ż) | Apache 2.0 |
 | `NotoSansArabic-Bold.ttf` | Arabic | OFL 1.1 |
+| `NotoEmoji-SemiBold.ttf` | Monochrome emoji — the icons of the info graphics (engines/graphics.py) | OFL 1.1 |
 
 Coverage is measured from each file's cmap, not taken from its listing —
 `subtitle_engine.FONT_COVERAGE` holds the result and is what decides
@@ -22,3 +23,8 @@ here, or a language quietly starts rendering as empty boxes.
 variable font at `wght=700`: libass renders a variable font at its
 default weight, which put Arabic captions in Regular next to everything
 else in Bold, and the whole file is 650KB smaller this way.
+
+`NotoEmoji-SemiBold.ttf` is likewise a static `wght=600` instance of the
+upstream variable Noto Emoji, for the same reason. It is drawn in one
+colour (the caption highlight), which is the point: icons that match the
+captions rather than a sticker sheet of someone else's palette.

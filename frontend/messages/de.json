@@ -794,6 +794,12 @@
       "youtubeOff": "YouTube-Links können hier noch nicht geholt werden. Lade das Video herunter und lade die Datei hoch.",
       "busyHint": "Große Videos dauern ein paar Minuten. Du kannst hier warten.",
       "failed": "Dieser Link konnte nicht geholt werden."
+    },
+    "graphics": {
+      "toggle": "Infografiken und Soundeffekte",
+      "hint": "Ein Zähler, eine Liste, die mit jeder Folge wächst, und Stempel an den großen Stellen; ein Tick pro Zeile, ein Whoosh unter jedem Stempel.",
+      "summaryOn": "Grafiken an",
+      "summaryOff": "Grafiken aus"
     }
   },
   "app": {

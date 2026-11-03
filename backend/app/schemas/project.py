@@ -184,6 +184,16 @@ class SceneVisual(BaseModel):
     revision: int = 0
 
 
+class SceneGraphic(BaseModel):
+    """What a scene adds to the info graphics (engines/graphics.py): a row
+    for the running list with an icon from graphics.ICONS, and an optional
+    stamp. Written by the script model with the line it belongs to."""
+
+    tally: str | None = Field(default=None, max_length=40)
+    icon: str | None = Field(default=None, max_length=24)
+    stamp: str | None = Field(default=None, max_length=24)
+
+
 class Scene(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     index: int
@@ -193,6 +203,7 @@ class Scene(BaseModel):
     is_outro: bool = Field(
         default=False, description="Branded closing card appended after the LLM-generated scenes"
     )
+    graphic: SceneGraphic | None = None
 
     model_config = ConfigDict(use_enum_values=True)
 
@@ -225,6 +236,15 @@ class PostCopy(BaseModel):
     hashtags: list[str] = Field(default_factory=list, max_length=15)
 
 
+class GraphicCounter(BaseModel):
+    """A number that counts down on screen ("Population 38,000,000" → 0).
+    Only when the script has a well-established figure to show."""
+
+    label: str = Field(max_length=40)
+    start: int = Field(ge=0, le=10_000_000_000)
+    end: int = Field(default=0, ge=0, le=10_000_000_000)
+
+
 class ScriptOutput(BaseModel):
     """Structured output returned by the script_engine LLM call."""
 
@@ -233,6 +253,10 @@ class ScriptOutput(BaseModel):
     scenes: list[Scene]
     total_duration_s: float
     call_to_action: str | None = None
+    # Info graphics (engines/graphics.py): the counter and the heading over
+    # the running list. Absent outside the formats that write them.
+    counter: GraphicCounter | None = None
+    tally_title: str | None = Field(default=None, max_length=40)
     # The library category the soundtrack is drawn from when nobody picked
     # a track (see render_manager). None: the default track.
     music_mood: str | None = None
@@ -496,6 +520,9 @@ class ProjectConfig(BaseModel):
     negative_prompt: str | None = Field(default=None, max_length=400)
     video_length: VideoLength = VideoLength.SHORT
     script_format: ScriptFormat = ScriptFormat.FREE
+    # Info graphics and their sound effects (engines/graphics.py). None: the
+    # format decides — on for "what if?", which writes the data for them.
+    info_graphics: bool | None = None
     # Set only on uploads, and only when the caller asked for a dub: the
     # language the video should come out speaking. `language` above stays
     # what it always was, the language the source is *in*, because the

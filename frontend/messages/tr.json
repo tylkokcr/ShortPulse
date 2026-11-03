@@ -794,6 +794,12 @@
       "youtubeOff": "YouTube linkleri burada henüz getirilemiyor. Videoyu indirip dosyayı yükle.",
       "busyHint": "Büyük videolar birkaç dakika sürer. Burada bekleyebilirsin.",
       "failed": "Bu link getirilemedi."
+    },
+    "graphics": {
+      "toggle": "Bilgi grafikleri ve efekt sesleri",
+      "hint": "Sayaç, her sonuçla büyüyen liste ve büyük anlarda damgalar; liste satırında tık, damgada whoosh sesi.",
+      "summaryOn": "Grafikler açık",
+      "summaryOff": "Grafikler kapalı"
     }
   },
   "app": {

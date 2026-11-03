@@ -31,7 +31,7 @@ import shutil
 from pathlib import Path
 
 from app.core.config import Settings, project_dir
-from app.engines import render_engine, subtitle_engine, visual_engine
+from app.engines import graphics, render_engine, subtitle_engine, visual_engine
 from app.schemas.project import EditSpec, Layout, Project, Scene, VisualMode
 from app.services import art_styles, editing
 from app.services.render_manager import resolution_for
@@ -225,6 +225,7 @@ async def regenerate_scene(
             ffmpeg_binary=settings.ffmpeg_binary,
             ffprobe_binary=settings.ffprobe_binary,
             duration_override_s=(previous_duration_ms or 0) / 1000 or None,
+            sound_effects=graphics.plan_for(project) is not None,
         )
         # render_scene_clip re-probes and rewrites duration_ms; keep that,
         # it is the ground truth, but notice if it disagreed.

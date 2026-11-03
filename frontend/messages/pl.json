@@ -794,6 +794,12 @@
       "youtubeOff": "Linków z YouTube nie da się tu jeszcze pobrać. Pobierz film i wgraj plik.",
       "busyHint": "Duże pliki zajmują kilka minut. Możesz tu poczekać.",
       "failed": "Nie udało się pobrać tego linku."
+    },
+    "graphics": {
+      "toggle": "Grafiki informacyjne i efekty dźwiękowe",
+      "hint": "Licznik, lista rosnąca z każdym skutkiem i stemple w najważniejszych momentach; tyknięcie przy każdym wierszu, świst pod każdym stemplem.",
+      "summaryOn": "Grafiki wł.",
+      "summaryOff": "Grafiki wył."
     }
   },
   "app": {

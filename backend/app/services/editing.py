@@ -16,7 +16,7 @@ import logging
 from pathlib import Path
 
 from app.core.config import Settings, project_dir
-from app.engines import render_engine, subtitle_engine
+from app.engines import graphics, render_engine, subtitle_engine
 from app.schemas.project import EditSpec, Layout, Project
 from app.services import profanity
 
@@ -62,6 +62,20 @@ async def apply_edit(project: Project, edit: EditSpec, settings: Settings) -> Pa
     probed = await render_engine.probe_dimensions(source, settings.ffprobe_binary)
 
     captions = edit.captions or project.captions
+    # The info graphics are drawn from the stored script, not kept in the
+    # edit: they belong to the scenes, and re-deriving them here is what
+    # keeps them through every re-burn.
+    extra_styles: list[str] | None = None
+    extra_events: list[str] | None = None
+    plan = graphics.plan_for(project)
+    if plan is not None and project.script:
+        extra_styles, extra_events = graphics.ass_extras(
+            project.script.scenes,
+            plan,
+            captions.style if captions else project.config.subtitles,
+            project.config.language,
+            probed,
+        )
     ass_path = subtitle_engine.build_ass_from_words(
         captions.words if captions else [],
         captions.style if captions else project.config.subtitles,
@@ -81,6 +95,8 @@ async def apply_edit(project: Project, edit: EditSpec, settings: Settings) -> Pa
         ),
         censor=project.config.censor_profanity,
         censor_extra=settings.profanity_extra,
+        extra_styles=extra_styles,
+        extra_events=extra_events,
     )
 
     # Re-applied, not inherited. An edit burns onto the *source* — see

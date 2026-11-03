@@ -21,12 +21,15 @@ import httpx
 from pydantic import ValidationError
 
 from app.core.config import get_settings
+from app.engines.graphics import ICONS
 from app.schemas.project import (
+    GraphicCounter,
     LLMConfig,
     LLMProvider,
     PostCopy,
     Scene,
     SceneAudio,
+    SceneGraphic,
     SceneVisual,
     ScriptOutput,
     VideoLength,
@@ -255,6 +258,20 @@ night sky and it draws a Moon, even in a video about the Moon being gone. \
 So add a top-level "keep_out" string to the JSON: the thing that vanished, \
 in a few plain English words an image model knows, comma-separated \
 ("moon, full moon, crescent moon"). Empty when nothing visible vanished.
+- On-screen graphics: every scene object also carries
+  "tally": 1-3 words in the script's language naming what this line is \
+about, as a row on a growing on-screen list ("Apples", "The Witcher", \
+"Gdańsk port"); the hook scene and the closing question have none;
+  "icon": exactly one word from this list, the closest match: {icons};
+  "stamp": only on the two or three biggest moments of the whole script, \
+1-2 punchy words in the script's language that land the line (otherwise \
+leave it out).
+Add a top-level "tally_title": a short heading for that list in the \
+script's language ("The world without Poland"). And a top-level \
+"counter" ONLY if one well-established number fits the premise — a \
+population, a count of something — as {"label": "...", "start": N, \
+"end": 0} with the label in the script's language; leave it out \
+otherwise.
 """,
 }
 
@@ -276,7 +293,9 @@ def _build_system_prompt(
         visual_prompt_rule=visual_prompt_rule,
         min_scenes=min_scenes, max_scenes=max_scenes, language_name=language_name,
         scene_length=_SCENE_LENGTH.get(script_format, _SCENE_LENGTH["free"]),
-        format_rules=FORMAT_RULES.get(script_format, ""),
+        # The icon list is the renderer's (graphics.ICONS), so a word the
+        # model is offered is always one that can be drawn.
+        format_rules=FORMAT_RULES.get(script_format, "").replace("{icons}", ", ".join(ICONS)),
     )
 
 
@@ -574,8 +593,10 @@ When a fact is doubtful, replace it with one you are certain of rather \
 than softening it. Keep the hook, keep the scene count within one, keep \
 lines short (5-10 words) and in the second person where they were. When \
 you change a line, rewrite its "visual_prompt" to match (an illustrated \
-scene, no maps, no text). Keep "keep_out", "music_mood", "post" and \
-"call_to_action" unless they are wrong.
+scene, no maps, no text). Keep "keep_out", "music_mood", "post", \
+"call_to_action", "counter", "tally_title" and every scene's "tally", \
+"icon" and "stamp" unless they are wrong; when you change a line, change \
+its tally and icon to match.
 
 Respond with ONLY the corrected JSON object.
 """
@@ -1006,6 +1027,36 @@ def _bare_line(text: str) -> str:
     return re.sub(r"[^\w]+", " ", text.casefold()).strip()
 
 
+def _short(raw: object, limit: int) -> str | None:
+    text = " ".join(raw.split()) if isinstance(raw, str) else ""
+    return text[:limit] or None
+
+
+def _scene_graphic(raw_scene: dict) -> SceneGraphic | None:
+    """A scene's graphic fields, when the model wrote any. An icon outside
+    graphics.ICONS is dropped rather than drawn as a box."""
+    icon = _short(raw_scene.get("icon"), 24)
+    graphic = SceneGraphic(
+        tally=_short(raw_scene.get("tally"), 40),
+        icon=icon.lower() if icon and icon.lower() in ICONS else None,
+        stamp=_short(raw_scene.get("stamp"), 24),
+    )
+    return graphic if (graphic.tally or graphic.stamp) else None
+
+
+def _counter(raw: object) -> GraphicCounter | None:
+    if not isinstance(raw, dict):
+        return None
+    try:
+        label = _short(raw.get("label"), 40)
+        start, end = int(raw.get("start")), int(raw.get("end", 0))  # type: ignore[arg-type]
+        if not label or start <= end:
+            return None
+        return GraphicCounter(label=label, start=start, end=end)
+    except (TypeError, ValueError, ValidationError):
+        return None
+
+
 MUSIC_MOODS = ("upbeat", "lofi", "atmospheric", "suspense")
 
 
@@ -1069,6 +1120,7 @@ def _to_script_output(
                 duration_s=duration_s,
                 visual=SceneVisual(prompt=visual_prompt),
                 audio=SceneAudio(voiceover_line=voiceover_line),
+                graphic=_scene_graphic(raw_scene),
             )
         except (ValueError, TypeError, AttributeError, ValidationError) as exc:
             logger.warning("Skipping scene %d (%s): %r", raw_index, exc, raw_scene)
@@ -1138,6 +1190,8 @@ def _to_script_output(
             call_to_action=call_to_action,
             post=_to_post_copy(parsed, topic, hook, call_to_action),
             music_mood=_music_mood(parsed.get("music_mood")),
+            counter=_counter(parsed.get("counter")),
+            tally_title=_short(parsed.get("tally_title"), 40),
         )
     except ValidationError as exc:
         raise ScriptGenerationError(f"Malformed script structure: {exc}") from exc
