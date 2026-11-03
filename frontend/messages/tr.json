@@ -206,6 +206,19 @@
       "eyebrow": "Stüdyo, iş başında",
       "title": "Üç yol, her biri baştan sona",
       "sub": "Trend bir konudan short üret, elindeki videoyu altyazıla ve seslendir ya da kendi kliplerini bir şarkıya göre kes. Biri bitince sıradaki gelir — istersen üstten seç."
+    },
+    "whatIf": {
+      "badge": "Yeni format · Ne olurdu?",
+      "title": "Bir soru yaz, merak uyandıran bir video gelsin",
+      "sub": "\"Türkiye haritadan kaybolsaydı?\" gibi bir soru yaz. Gerçek bilgilerden yazılmış senaryo, ışıldayan haritalar, sayaç ve büyüyen liste, vurucu geçişler ve anlatıcısıyla hazır gelir.",
+      "points": {
+        "maps": "Gerçek sınırlardan çizilen, ışıldayan haritalar — ülke kaybolduğunda sönüyor.",
+        "facts": "Önce bilgiler toplanır ve kontrol edilir; senaryo yalnızca onlardan yazılır.",
+        "graphics": "Nüfus sayacı, her sonuçla büyüyen liste, bölüm başlıkları ve damgalar.",
+        "voice": "Dilinde konuşan bir anlatıcı, dramatik duraklamalar ve efekt sesleri."
+      },
+      "examples": "Örnekler:",
+      "cta": "Kendi sorunu dene"
     }
   },
   "examples": {

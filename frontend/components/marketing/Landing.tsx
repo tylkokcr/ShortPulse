@@ -49,6 +49,7 @@ import { FeatureTour } from "./FeatureTour";
 import { EditorShowcase } from "./EditorShowcase";
 import { Faq } from "./Faq";
 import { ProductDemo } from "./ProductDemo";
+import { WhatIfShowcase } from "./WhatIfShowcase";
 
 const REPO_URL = "https://github.com/tylkokcr/ShortPulse";
 
@@ -191,6 +192,11 @@ export function Landing() {
           <PreviewMock />
         </div>
       </section>
+
+      {/* The newest format, playing, straight under the hero. */}
+      <Reveal>
+        <WhatIfShowcase />
+      </Reveal>
 
       {/* The whole flow, playing — before anything else is claimed. */}
       <Reveal>

@@ -206,6 +206,19 @@
       "eyebrow": "Das Studio in Aktion",
       "title": "Drei Wege, jeder von Anfang bis Ende",
       "sub": "Erzeuge einen Short aus einem Trendthema, untertitle und synchronisiere ein Video, das du schon hast, oder schneide deine Clips im Takt eines Songs. Einer läuft durch, dann gleitet der nächste herein — oder wähle oben."
+    },
+    "whatIf": {
+      "badge": "Neues Format · Was wäre, wenn?",
+      "title": "Stell eine Frage, bekomm ein Video, an dem keiner vorbeiscrollt",
+      "sub": "Gib eine Frage ein wie „Was wäre, wenn Deutschland von der Karte verschwände?“ — zurück kommt ein Skript aus geprüften Fakten, mit leuchtenden Karten, Zähler und wachsender Liste, harten Schnitten und Sprecher.",
+      "points": {
+        "maps": "Leuchtende Karten aus echten Grenzen — das Land erlischt, wenn es verschwindet.",
+        "facts": "Erst werden Fakten gesammelt und geprüft; das Skript entsteht nur daraus.",
+        "graphics": "Ein Bevölkerungszähler, eine Liste, die mit jeder Folge wächst, Kapiteltitel und Stempel.",
+        "voice": "Ein Sprecher in deiner Sprache, dramatische Pausen und Soundeffekte."
+      },
+      "examples": "Beispiele:",
+      "cta": "Eigene Frage ausprobieren"
     }
   },
   "examples": {

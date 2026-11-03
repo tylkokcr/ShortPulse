@@ -206,6 +206,19 @@
       "eyebrow": "The studio, playing",
       "title": "Three ways in, each one start to finish",
       "sub": "Generate a short from a trending topic, caption and dub a video you already have, or cut your own clips to a song. Each plays through, then the next slides in — or pick one above."
+    },
+    "whatIf": {
+      "badge": "New format · What if?",
+      "title": "Ask a question, get a video people can't scroll past",
+      "sub": "Type a question like \"What if the Moon vanished?\" and it comes back scripted from checked facts, with glowing maps, a counter and a growing list, hard cuts and a narrator.",
+      "points": {
+        "maps": "Glowing maps drawn from real borders — the country goes out when it vanishes.",
+        "facts": "Facts are gathered and checked first; the script is written only from them.",
+        "graphics": "A population counter, a list that grows with every consequence, chapter titles and stamps.",
+        "voice": "A narrator in your language, dramatic pauses and sound effects."
+      },
+      "examples": "Examples:",
+      "cta": "Try your own question"
     }
   },
   "examples": {

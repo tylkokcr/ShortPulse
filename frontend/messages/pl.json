@@ -206,6 +206,19 @@
       "eyebrow": "Studio w akcji",
       "title": "Trzy drogi, każda od początku do końca",
       "sub": "Wygeneruj shorta z popularnego tematu, dodaj napisy i dubbing do filmu, który już masz, albo potnij własne klipy do utworu. Jeden się kończy, wjeżdża następny — albo wybierz powyżej."
+    },
+    "whatIf": {
+      "badge": "Nowy format · Co by było, gdyby?",
+      "title": "Zadaj pytanie, dostań film, obok którego nie da się przejść",
+      "sub": "Wpisz pytanie, np. „Co by było, gdyby Polska zniknęła z mapy?”, a dostaniesz scenariusz oparty na sprawdzonych faktach, świecące mapy, licznik i rosnącą listę, mocne cięcia i lektora.",
+      "points": {
+        "maps": "Świecące mapy rysowane z prawdziwych granic — kraj gaśnie, gdy znika.",
+        "facts": "Najpierw zbierane i sprawdzane są fakty; scenariusz powstaje tylko z nich.",
+        "graphics": "Licznik ludności, lista rosnąca z każdym skutkiem, tytuły rozdziałów i stemple.",
+        "voice": "Lektor w twoim języku, dramatyczne pauzy i efekty dźwiękowe."
+      },
+      "examples": "Przykłady:",
+      "cta": "Spróbuj własnego pytania"
     }
   },
   "examples": {
