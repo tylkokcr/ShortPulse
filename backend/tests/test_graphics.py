@@ -86,6 +86,7 @@ def test_the_models_fields_are_cleaned_before_they_are_drawn():
     assert _scene_graphic({"icon": "game"}) is None
     assert _counter({"label": "Population", "start": "38000000"}).start == 38_000_000
     assert _counter({"label": "Population", "start": 5, "end": 9}) is None
+    assert _counter({"label": "Türkiye", "start": 1, "end": 0}) is None  # one country, not people
     assert _counter("38 million") is None
 
 

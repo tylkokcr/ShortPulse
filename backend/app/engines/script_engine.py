@@ -276,7 +276,8 @@ Add a top-level "tally_title": a short heading for that list in the \
 script's language ("The world without Poland"). And a top-level \
 "counter": when a country, city or people vanishes, ALWAYS its \
 population, rounded and well established, as {"label": "...", "start": \
-N, "end": 0} with the label in the script's language ("Population of \
+N, "end": 0} — N is the number of PEOPLE, never a count of countries — \
+with the label naming it in the script's language ("Population of \
 Türkiye", 85000000); for other premises only if one well-established \
 number fits, otherwise leave it out. Every scene with a tally gets an \
 icon — pick the nearest one rather than none.
@@ -1059,7 +1060,9 @@ def _counter(raw: object) -> GraphicCounter | None:
     try:
         label = _short(raw.get("label"), 40)
         start, end = int(raw.get("start")), int(raw.get("end", 0))  # type: ignore[arg-type]
-        if not label or start <= end:
+        # A counter worth watching fall: one country counted as "1" came back
+        # from a model, and a number that drops from 1 to 0 is no counter.
+        if not label or start <= end or start < 1000:
             return None
         return GraphicCounter(label=label, start=start, end=end)
     except (TypeError, ValueError, ValidationError):
