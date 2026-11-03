@@ -51,6 +51,9 @@ class MapShot:
     focus: list[str]  # ADM0_A3 codes of the subject
     action: str = "glow"  # glow | vanish | mark
     places: list[Place] = field(default_factory=list)
+    # Already vanished in an earlier scene: drawn as the hole it left, so
+    # a later "mark" does not bring the country back.
+    gone: bool = False
 
 
 def available() -> bool:
@@ -62,12 +65,24 @@ def available() -> bool:
     return GEO.is_file()
 
 
-def shot_for(spec) -> MapShot:
+def shot_for(spec, gone: bool = False) -> MapShot:
     """A schemas.project.MapSpec as a MapShot."""
     return MapShot(
         focus=list(spec.focus),
         action=spec.action,
         places=[Place(p.name, p.lat, p.lon) for p in spec.places],
+        gone=gone,
+    )
+
+
+def vanished_before(scenes, index: int) -> bool:
+    """Whether a scene's countries already went out earlier in the video."""
+    here = scenes[index].map
+    if not here:
+        return False
+    return any(
+        s.map and s.map.action == "vanish" and set(s.map.focus) & set(here.focus)
+        for s in scenes[:index]
     )
 
 
@@ -188,10 +203,22 @@ def frames(shot: MapShot, width: int, height: int, fps: int, total_frames: int, 
     big_h, big_w = lit.shape[:2]
     font = label_font or ImageFont.truetype(str(FONT), 42)
     marks = [(p, project(p.lon, p.lat)) for p in shot.places[:4]]
+    # Labels of places close together (the two straits) would sit on each
+    # other: each one that would is pushed below the one before.
+    label_dy: list[float] = []
+    for i, (_, (bx, by)) in enumerate(marks):
+        dy = 0.0
+        for j in range(i):
+            ox, oy = marks[j][1]
+            if abs(bx - ox) < 420 and abs((by + dy) - (oy + label_dy[j])) < 56:
+                dy = (oy + label_dy[j]) - by + 58
+        label_dy.append(dy)
     for k in range(total_frames):
         t = k / fps
         f = k / max(total_frames - 1, 1)
-        if shot.action == "vanish":
+        if shot.gone:
+            frame = hole
+        elif shot.action == "vanish":
             # Lit, a flicker, then out — over the first second and a half.
             gone = min(max((t - 0.5) / 1.0, 0.0), 1.0)
             flicker = 0.5 + 0.5 * math.sin(t * 38) if 0.5 < t < 1.5 else 1.0
@@ -222,7 +249,7 @@ def frames(shot: MapShot, width: int, height: int, fps: int, total_frames: int, 
                 tw = draw.textlength(text, font=font)
                 tx = min(max(x + 18, 20), width - tw - 20)
                 draw.text(
-                    (tx, y - 26), text, font=font, fill=(255, 255, 255, int(255 * appear)),
+                    (tx, y - 26 + label_dy[i] * z), text, font=font, fill=(255, 255, 255, int(255 * appear)),
                     stroke_width=4, stroke_fill=(0, 0, 0, int(200 * appear)),
                 )
             out = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)

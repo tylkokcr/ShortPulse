@@ -562,7 +562,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                     map_path = paths / "visuals" / f"scene_{scene.index:02d}_map.mp4"
                     await asyncio.to_thread(
                         maps.render_clip,
-                        maps.shot_for(scene.map),
+                        maps.shot_for(scene.map, gone=maps.vanished_before(script.scenes, scene.index)),
                         map_path,
                         render_width,
                         render_height,
