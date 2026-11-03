@@ -597,13 +597,6 @@
       "toggle": "Dodaj planszę końcową z logo",
       "placeholder": "np. Obserwuj po więcej treści o AI open source!"
     },
-    "examples": {
-      "title": "Zacznij od przykładu",
-      "sub": "Prawdziwe rendery. Wybranie jednego wypełnia formularz — scenariusz i tak powstaje od nowa.",
-      "credit": "Materiały z <pexels>Pexels</pexels>, nakręcone przez {count} operatorów.",
-      "creditNames": "{names}. Klip z kadrami AI nie ma materiału do podpisania — każda jego klatka została wygenerowana.",
-      "undo": "Cofnij"
-    },
     "renderSummary": {
       "title": "Ten render",
       "format": "Format",

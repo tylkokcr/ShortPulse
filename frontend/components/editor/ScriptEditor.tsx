@@ -19,12 +19,16 @@ const WHAT_IF_SUGGESTIONS = ["moon", "spin", "internet", "language"] as const;
  * The kinds of video a topic can be written as. A format changes how the
  * script is written (see script_engine.FORMAT_RULES) and, as a shortcut,
  * picks the art style that suits it — a shortcut, not a lock: the style
- * can be changed afterwards like any other setting.
+ * can be changed afterwards like any other setting. Leaving the format
+ * takes its style back with it, unless the style was changed meanwhile:
+ * otherwise "free" kept the cartoon look and its preview.
  */
 const FORMATS: { id: ScriptFormat; icon: typeof PenLine; artStyle?: string }[] = [
   { id: "free", icon: PenLine },
   { id: "what_if", icon: HelpCircle, artStyle: "flat" },
 ];
+
+const DEFAULT_ART_STYLE = useShortPulseStore.getInitialState().draft.artStyle;
 
 /**
  * Topic/script input. Users either type a topic (LLM writes the script)
@@ -46,12 +50,13 @@ export function ScriptEditor() {
             <button
               key={format.id}
               type="button"
-              onClick={() =>
-                setDraft({
-                  scriptFormat: format.id,
-                  ...(format.artStyle ? { artStyle: format.artStyle } : {}),
-                })
-              }
+              onClick={() => {
+                const leaving = FORMATS.find((f) => f.id === draft.scriptFormat);
+                const artStyle =
+                  format.artStyle ??
+                  (leaving?.artStyle && leaving.artStyle === draft.artStyle ? DEFAULT_ART_STYLE : undefined);
+                setDraft({ scriptFormat: format.id, ...(artStyle ? { artStyle } : {}) });
+              }}
               aria-pressed={draft.scriptFormat === format.id}
               className={clsx(
                 "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition-colors",

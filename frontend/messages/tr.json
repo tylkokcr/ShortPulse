@@ -597,13 +597,6 @@
       "toggle": "Markalı kapanış kartı ekle",
       "placeholder": "örn. Daha fazla açık kaynak yapay zekâ içeriği için takip et!"
     },
-    "examples": {
-      "title": "Bir örnekten başla",
-      "sub": "Gerçek renderlar. Birini seçmek formu doldurur — metin yine sıfırdan yazılır.",
-      "credit": "Görüntüler <pexels>Pexels</pexels>'ten, {count} videografın çekimi.",
-      "creditNames": "{names}. Yapay zekâ kareli klibin künyelenecek çekimi yok — her karesi üretildi.",
-      "undo": "Geri al"
-    },
     "renderSummary": {
       "title": "Bu render",
       "format": "Format",

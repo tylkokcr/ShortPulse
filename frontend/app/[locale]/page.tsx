@@ -40,7 +40,6 @@ import { VoiceSelector } from "@/components/editor/VoiceSelector";
 import { RenderSummary } from "@/components/editor/RenderSummary";
 import { UploadPanel } from "@/components/editor/UploadPanel";
 import { BeatEditPanel } from "@/components/editor/BeatEditPanel";
-import { StartFromExample, topicIsUntouched } from "@/components/editor/StartFromExample";
 import { TrendsPanel } from "@/components/trends/TrendsPanel";
 import { SettingsDrawer } from "@/components/editor/SettingsDrawer";
 import { SettingRow } from "@/components/editor/SettingRow";
@@ -354,19 +353,9 @@ function CreateVideo() {
           </div>
         )}
 
-        {/* Only while the topic is empty, which is the only time it is an
-            answer to anything. Once something is typed the row would be
-            four videos sitting between the user and the button, offering
-            to overwrite what they just wrote. */}
         {mode === "generate" && (
           <div className="animate-fade-up mt-8">
             <TrendsPanel mode="generate" />
-          </div>
-        )}
-
-        {mode === "generate" && topicIsUntouched(draft.topic) && (
-          <div className="animate-fade-up mt-8">
-            <StartFromExample />
           </div>
         )}
 
