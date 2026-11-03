@@ -169,3 +169,30 @@ def test_what_if_keeps_away_from_tragedy_and_keeps_its_voice():
         assert "genocide" in prompt
     assert "never the storytelling" in WHAT_IF_REVIEW_PROMPT
     assert "Mind borders" in FACTS_PROMPT
+
+
+def test_a_what_if_opens_on_its_hook_question_even_if_the_model_left_it_out():
+    from app.engines.script_engine import _to_script_output
+
+    parsed = {
+        "hook": "Have you ever wondered what would happen if Poland vanished overnight?",
+        "scenes": [{"voiceover_line": f"line {i}", "visual_prompt": "p"} for i in range(11)],
+    }
+    script = _to_script_output("x", parsed, VideoLength.SHORT, "what_if")
+    lines = [s.audio.voiceover_line for s in script.scenes]
+    assert lines[0].startswith("Have you ever wondered")
+    # Capped to the format's 11 — and the closing line survives the cap.
+    assert len(lines) == 11 and lines[-1] == "line 10"
+    assert [s.index for s in script.scenes] == list(range(11))
+
+    # Already spoken first: nothing added.
+    parsed["scenes"][0]["voiceover_line"] = parsed["hook"]
+    assert len(_to_script_output("x", parsed, VideoLength.SHORT, "what_if").scenes) == 11
+
+
+def test_the_what_if_hook_is_a_question_to_the_viewer():
+    prompt = _build_system_prompt(VideoLength.SHORT, "tr", "fast_hybrid", "what_if")
+    assert "mysterious question" in prompt and "FIRST scene" in prompt
+    from app.engines.script_engine import WHAT_IF_REVIEW_PROMPT
+
+    assert "never drop it" in WHAT_IF_REVIEW_PROMPT

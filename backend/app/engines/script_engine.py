@@ -193,9 +193,12 @@ to the viewer rather than a list of facts. Follow these:
 - The topic is a hypothetical ("What if the Moon disappeared?", "What if \
 Poland vanished from the map?"). If it is not phrased as one, treat it as \
 "what would happen if <topic>".
-- The hook states the hypothetical as if it has just happened, in one \
-short, vivid sentence — "Tonight, the Moon is gone." — not as a question \
-to the viewer.
+- The hook is the first thing the viewer hears: the hypothetical asked \
+as a mysterious question straight to them, the kind they have never \
+thought to ask — "Have you ever wondered what would happen if Poland \
+vanished from the map overnight?" It is the FIRST scene's \
+"voiceover_line", word for word, and the second scene is where it has \
+happened ("This morning, it's gone.").
 - Talk TO the viewer, in the second person, and put the consequences in \
 their own day: what they notice first at breakfast, in their kitchen, on \
 their phone, at the beach, on holiday. "Look at your kitchen" beats "the \
@@ -562,7 +565,8 @@ disaster with victims, whatever its place in history.
 viewer in the second person, inside their own day (breakfast, kitchen, \
 phone, holiday). No sentence pattern ("X disappears", "X is gone") more \
 than twice — rewrite the rest as what the viewer notices.
-9. The hook is spoken on its own; the first scene must not repeat it.
+9. The first scene's line IS the hook: a mysterious question to the \
+viewer about the hypothetical. Keep it first; never drop it.
 10. The last scene asks the viewer a question that invites a comment \
 ("Which country should vanish next?").
 
@@ -998,6 +1002,10 @@ def _to_post_copy(parsed: dict, topic: str, hook: str, call_to_action: str | Non
         return PostCopy(title=topic[:100], description=topic[:2200])
 
 
+def _bare_line(text: str) -> str:
+    return re.sub(r"[^\w]+", " ", text.casefold()).strip()
+
+
 MUSIC_MOODS = ("upbeat", "lofi", "atmospheric", "suspense")
 
 
@@ -1071,6 +1079,26 @@ def _to_script_output(
     if not scenes:
         raise ScriptGenerationError("Model returned zero usable scenes")
 
+    # "hook" is metadata; only scenes are spoken. A Poland script came back
+    # with its hook in the field and not in the voiceover, and the video
+    # opened mid-story — so a "what if?" hook missing from the first scene
+    # is put back as one, over the first scene's picture.
+    hook_text = _first_present(parsed, ["hook"])
+    if script_format == "what_if" and hook_text and _bare_line(hook_text) not in _bare_line(
+        scenes[0].audio.voiceover_line
+    ):
+        scenes.insert(
+            0,
+            Scene(
+                index=0,
+                duration_s=scenes[0].duration_s,
+                visual=SceneVisual(prompt=scenes[0].visual.prompt),
+                audio=SceneAudio(voiceover_line=hook_text),
+            ),
+        )
+        for i, scene in enumerate(scenes):
+            scene.index = i
+
     # What must not be drawn in any scene (the "what if?" format asks for
     # it: the Moon kept turning up in a video about the Moon being gone).
     keep_out = _keep_out(parsed.get("keep_out"))
@@ -1092,7 +1120,11 @@ def _to_script_output(
             video_length,
             max_scenes,
         )
-        scenes = scenes[:max_scenes]
+        # The last scene is kept: it is the closing line or question, and
+        # the one a video can least do without.
+        scenes = [*scenes[: max_scenes - 1], scenes[-1]]
+        for i, scene in enumerate(scenes):
+            scene.index = i
 
     hook = parsed.get("hook", scenes[0].audio.voiceover_line)
     call_to_action = parsed.get("call_to_action")
