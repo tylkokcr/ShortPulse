@@ -122,6 +122,7 @@ MINIMAX_VOICES: tuple[Voice, ...] = (
     # it the way a Turkish narrator would.
     _v("minimax:Turkish_Trustworthyman", "Güven Veren", "tr", "AI", "studio"),
     _v("minimax:Turkish_CalmWoman", "Sakin", "tr", "AI", "studio"),
+    _v("minimax:German_FriendlyMan", "Freundlich", "de", "AI", "studio"),
 )
 
 

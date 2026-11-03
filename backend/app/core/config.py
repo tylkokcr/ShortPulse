@@ -65,7 +65,10 @@ class Settings(BaseSettings):
     )
     minimax_tts_voice: str = "English_CaptivatingStoryteller"
     # A language's own MiniMax voice, where one was chosen by ear.
-    minimax_voice_by_language: dict[str, str] = {"tr": "Turkish_Trustworthyman"}
+    minimax_voice_by_language: dict[str, str] = {
+        "tr": "Turkish_Trustworthyman",
+        "de": "German_FriendlyMan",
+    }
     # The YouTube Data API key the trends section reads most-popular charts
     # with (services/trends.py). Without one there is no trends section.
     youtube_api_key: str | None = None
