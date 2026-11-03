@@ -268,10 +268,12 @@ about, as a row on a growing on-screen list ("Apples", "The Witcher", \
 leave it out).
 Add a top-level "tally_title": a short heading for that list in the \
 script's language ("The world without Poland"). And a top-level \
-"counter" ONLY if one well-established number fits the premise — a \
-population, a count of something — as {"label": "...", "start": N, \
-"end": 0} with the label in the script's language; leave it out \
-otherwise.
+"counter": when a country, city or people vanishes, ALWAYS its \
+population, rounded and well established, as {"label": "...", "start": \
+N, "end": 0} with the label in the script's language ("Population of \
+Türkiye", 85000000); for other premises only if one well-established \
+number fits, otherwise leave it out. Every scene with a tally gets an \
+icon — pick the nearest one rather than none.
 """,
 }
 

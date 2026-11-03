@@ -36,6 +36,7 @@ ICONS: dict[str, str] = {
     "sun": "☀", "moon": "🌙", "star": "⭐", "fire": "🔥", "snow": "❄",
     "gem": "💎", "sport": "⚽", "science": "🔬", "medicine": "💊", "clothes": "👕",
     "gift": "🎁", "clock": "⏰", "people": "👥", "language": "💬", "art": "🎨",
+    "nut": "🌰", "bridge": "🌉", "pipeline": "🛢", "rocket": "🚀", "ice": "🧊",
 }
 
 ICON_FONT = "Noto Emoji"
