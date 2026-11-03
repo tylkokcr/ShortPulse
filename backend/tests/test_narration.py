@@ -75,8 +75,11 @@ def test_only_known_moods_choose_the_soundtrack():
 def test_with_both_minimax_is_the_default_and_takes_no_instructions(both):
     voice = narration.resolve(VoiceConfig(), "tr", "what_if")
     assert voice.provider == TTSProvider.MINIMAX
-    assert voice.voice_id == "minimax:English_CaptivatingStoryteller"
-    assert voice.instructions == ""
+    # Turkish has a native voice chosen by ear; other languages the storyteller.
+    assert voice.voice_id == "minimax:Turkish_Trustworthyman"
+    assert voice.instructions == "" and voice.rate == "-6%"
+    english = narration.resolve(VoiceConfig(), "en", "free")
+    assert english.voice_id == "minimax:English_CaptivatingStoryteller" and english.rate == "+0%"
     # OpenAI's voices stay pickable beside it.
     picked = narration.resolve(VoiceConfig(voice_id="openai:coral"), "tr", "free")
     assert picked.provider == TTSProvider.OPENAI and picked.instructions
@@ -86,3 +89,9 @@ def test_minimax_voices_lead_the_picker(both):
     ids = [v.id for v in voice_catalog.for_language("pl")]
     assert ids[0].startswith("minimax:")
     assert any(i.startswith("openai:") for i in ids) and any("/" in i for i in ids)
+
+
+def test_native_voices_lead_their_own_language_and_stay_out_of_others(both):
+    tr = [v.id for v in voice_catalog.for_language("tr")]
+    assert tr[0] == "minimax:Turkish_Trustworthyman"
+    assert "minimax:Turkish_Trustworthyman" not in [v.id for v in voice_catalog.for_language("pl")]

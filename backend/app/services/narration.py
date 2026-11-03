@@ -48,6 +48,9 @@ def resolve(voice: VoiceConfig, language: str, script_format: str) -> VoiceConfi
     return VoiceConfig(
         provider=provider,
         voice_id=voice_id,
+        # A story told slower: the "what if?" narrators the format is
+        # modelled on take their time and let lines land.
+        rate="-6%" if script_format == "what_if" and provider == TTSProvider.MINIMAX else "+0%",
         # Only OpenAI's model reads instructions; MiniMax picks the emotion
         # from the text itself.
         instructions=instructions(script_format, language) if provider == TTSProvider.OPENAI else "",

@@ -219,6 +219,9 @@ what THIS change looks like, true to its geography or physics.
 copying an example sentence into a script about something else is a \
 failure.
 - Short lines: one idea each, rhythm varied, as if spoken to camera. \
+Cliffhangers are their own short lines ("But there is a problem.", "And \
+then it starts.") and end on "…" — that is where the narrator holds a \
+breath; use it two to four times a script. \
 Time markers are welcome where the order matters ("By morning", "Ten years \
 on") and must match when the effect really arrives — tides in hours, \
 climate in decades, a planet's tilt over millions of years; a long scale \

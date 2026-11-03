@@ -117,6 +117,11 @@ MINIMAX_VOICES: tuple[Voice, ...] = (
     _v("minimax:English_CaptivatingStoryteller", "Storyteller", "*", "AI", "studio"),
     _v("minimax:English_Deep-VoicedGentleman", "Deep Voice", "*", "AI", "studio"),
     _v("minimax:English_Wiselady", "Wise Lady", "*", "AI", "studio"),
+    # Native voices, offered in their own language only and ahead of the
+    # rest there: heard against the English ones reading Turkish, they say
+    # it the way a Turkish narrator would.
+    _v("minimax:Turkish_Trustworthyman", "Güven Veren", "tr", "AI", "studio"),
+    _v("minimax:Turkish_CalmWoman", "Sakin", "tr", "AI", "studio"),
 )
 
 
@@ -134,8 +139,14 @@ def minimax_enabled() -> bool:
     return bool(settings.minimax_tts and settings.replicate_api_token)
 
 
-def _hosted() -> tuple[Voice, ...]:
-    return (*(MINIMAX_VOICES if minimax_enabled() else ()), *(OPENAI_VOICES if openai_enabled() else ()))
+def _hosted(language: str | None = None) -> tuple[Voice, ...]:
+    minimax = [
+        v for v in (MINIMAX_VOICES if minimax_enabled() else ())
+        if language is None or v.language in ("*", language)
+    ]
+    # A language's own voices first.
+    minimax.sort(key=lambda v: v.language == "*")
+    return (*minimax, *(OPENAI_VOICES if openai_enabled() else ()))
 
 
 def default_voice_id(language: str) -> str:
@@ -143,7 +154,9 @@ def default_voice_id(language: str) -> str:
     from app.core.config import get_settings
 
     if minimax_enabled():
-        return f"minimax:{get_settings().minimax_tts_voice}"
+        settings = get_settings()
+        native = settings.minimax_voice_by_language.get(language)
+        return f"minimax:{native or settings.minimax_tts_voice}"
     if openai_enabled():
         return f"openai:{get_settings().openai_tts_voice}"
     return PIPER_VOICE_BY_LANGUAGE.get(language, "")
@@ -154,4 +167,4 @@ def by_id(voice_id: str) -> Voice | None:
 
 
 def for_language(language: str) -> list[Voice]:
-    return [*_hosted(), *(voice for voice in VOICES if voice.language == language)]
+    return [*_hosted(language), *(voice for voice in VOICES if voice.language == language)]

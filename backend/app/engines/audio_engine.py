@@ -144,14 +144,21 @@ async def _synthesize_minimax(
     if not settings.replicate_api_token:
         raise RuntimeError("MiniMax narration needs REPLICATE_API_TOKEN")
     name = voice.voice_id.removeprefix(MINIMAX_VOICE_PREFIX) or settings.minimax_tts_voice
+    # An ellipsis is where the script wants a held breath; MiniMax takes
+    # pauses as <#seconds#>.
+    spoken = re.sub(r"\s*(?:…|\.{3})\s*", " <#0.5#> ", text).strip()
+    # VoiceConfig.rate ("-5%") as MiniMax's speed multiplier.
+    match = re.fullmatch(r"([+-]\d+)%", voice.rate or "")
+    speed = min(1.2, max(0.8, 1 + int(match.group(1)) / 100)) if match else 1.0
     prediction = await _replicate_predict(
         {
             "version": settings.minimax_tts_model,
             "input": {
-                "text": text,
+                "text": spoken,
                 "voice_id": name,
                 "language_boost": _MINIMAX_LANGUAGE.get(language.split("-")[0], "Automatic"),
                 "emotion": "auto",
+                "speed": speed,
             },
         },
         settings,
