@@ -268,7 +268,10 @@ about, as a row on a growing on-screen list ("Apples", "The Witcher", \
   "icon": exactly one word from this list, the closest match: {icons};
   "stamp": only on the two or three biggest moments of the whole script, \
 1-2 punchy words in the script's language that land the line (otherwise \
-leave it out).
+leave it out);
+  "chapter": on the scenes that open a new beat of the story — four to \
+six of them, the hook included — a 1-3 word headline for it in the \
+script's language ("THE PROBLEM", "LAND BRIDGE", "THE TWIST").
 Add a top-level "tally_title": a short heading for that list in the \
 script's language ("The world without Poland"). And a top-level \
 "counter": when a country, city or people vanishes, ALWAYS its \
@@ -600,7 +603,7 @@ lines short (5-10 words) and in the second person where they were. When \
 you change a line, rewrite its "visual_prompt" to match (an illustrated \
 scene, no maps, no text). Keep "keep_out", "music_mood", "post", \
 "call_to_action", "counter", "tally_title" and every scene's "tally", \
-"icon" and "stamp" unless they are wrong; when you change a line, change \
+"icon", "stamp" and "chapter" unless they are wrong; when you change a line, change \
 its tally and icon to match.
 
 Respond with ONLY the corrected JSON object.
@@ -1045,8 +1048,9 @@ def _scene_graphic(raw_scene: dict) -> SceneGraphic | None:
         tally=_short(raw_scene.get("tally"), 40),
         icon=icon.lower() if icon and icon.lower() in ICONS else None,
         stamp=_short(raw_scene.get("stamp"), 24),
+        chapter=_short(raw_scene.get("chapter"), 32),
     )
-    return graphic if (graphic.tally or graphic.stamp) else None
+    return graphic if (graphic.tally or graphic.stamp or graphic.chapter) else None
 
 
 def _counter(raw: object) -> GraphicCounter | None:

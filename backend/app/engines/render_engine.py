@@ -160,7 +160,9 @@ async def _probe_duration_ms(path: Path, ffprobe_binary: str) -> int:
     return round(float(stdout.decode().strip()) * 1000)
 
 
-def _ken_burns_frames(image_path: Path, target: RenderTarget, index: int, total_frames: int):
+def _ken_burns_frames(
+    image_path: Path, target: RenderTarget, index: int, total_frames: int, entrance: bool = False
+):
     """The Ken Burns move as frames, drawn with OpenCV at the output size.
 
     ffmpeg's zoompan places its window on whole pixels, so it only moves
@@ -196,31 +198,63 @@ def _ken_burns_frames(image_path: Path, target: RenderTarget, index: int, total_
     from_left = index % 4 >= 2
 
     def frames():
+        import math
+
         import numpy as np
 
+        fps = target.fps
+        sweep = None
+        if entrance and index > 0:
+            # A diagonal coordinate across the frame, for the light that
+            # sweeps over the opening of each scene.
+            ys, xs = np.mgrid[0:height, 0:width].astype(np.float32)
+            sweep = (xs + 0.45 * ys) / (width + 0.45 * height)
+            warm = np.array([200, 228, 255], dtype=np.float32)  # BGR, a warm white
         for k in range(total_frames):
             f = k / max(total_frames - 1, 1)
+            t = k / fps
             z = zoom_start + (zoom_end - zoom_start) * f
+            if sweep is not None:
+                # The cut lands: in 12% closer, settling in a fifth of a second.
+                z *= 1 + 0.12 * math.exp(-t / 0.09)
             win_w, win_h = width / z, height / z
             x0 = 0.0 if from_left else (bw - win_w) / 2
+            x0 = min(max(x0, 0.0), bw - win_w)
             y0 = min(max((bh - win_h) / 2 + f * 0.02 * bh, 0.0), bh - win_h)
             m = np.array([[z, 0, -x0 * z], [0, z, -y0 * z]], dtype=np.float32)
-            yield cv2.warpAffine(
+            frame = cv2.warpAffine(
                 base, m, (width, height), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT
             )
+            if sweep is not None and t < 0.6:
+                out = frame.astype(np.float32)
+                flash = 0.55 * math.exp(-t / 0.05)
+                if flash > 0.01:
+                    out += (255 - out) * flash
+                centre = -0.25 + (t / 0.6) * 1.5
+                band = np.exp(-(((sweep - centre) / 0.09) ** 2)) * 0.32
+                out += band[..., None] * (warm - out) * (1 - flash)
+                frame = np.clip(out, 0, 255).astype(np.uint8)
+            yield frame
 
     return frames()
 
 
 async def _render_image_scene_clip(
-    scene: Scene, target: RenderTarget, output_path: Path, ffmpeg_binary: str, duration: float
+    scene: Scene,
+    target: RenderTarget,
+    output_path: Path,
+    ffmpeg_binary: str,
+    duration: float,
+    entrance: bool = False,
 ) -> None:
     """Ken Burns effect: slow zoom + pan across the still image, cropped to
     the vertical frame. Direction alternates per scene so consecutive
     clips don't all drift the same way."""
     total_frames = max(round(duration * target.fps), 1)
     exact = total_frames / target.fps
-    frames = _ken_burns_frames(Path(str(scene.visual.asset_path)), target, scene.index, total_frames)
+    frames = _ken_burns_frames(
+        Path(str(scene.visual.asset_path)), target, scene.index, total_frames, entrance=entrance
+    )
     if frames is not None:
         await _encode_frames(
             frames,
@@ -457,7 +491,11 @@ async def render_scene_clip(
             )
 
     if ext in _IMAGE_EXTENSIONS:
-        await _render_image_scene_clip(clip_scene, target, output_path, ffmpeg_binary, duration)
+        # The hit on every cut — punch, flash, a sweep of light — comes with
+        # the info graphics: both belong to the "what if?" look.
+        await _render_image_scene_clip(
+            clip_scene, target, output_path, ffmpeg_binary, duration, entrance=sound_effects
+        )
     elif ext in _VIDEO_EXTENSIONS:
         await _render_video_scene_clip(
             clip_scene, target, output_path, ffmpeg_binary, duration, punch=punch

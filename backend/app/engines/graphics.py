@@ -18,7 +18,7 @@ import asyncio
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.schemas.project import GraphicCounter, Scene
+from app.schemas.project import GraphicCounter, Scene, SceneGraphic
 
 # Icons the script may name, drawn from the monochrome Noto Emoji font
 # (assets/fonts, OFL) in the caption highlight colour. A fixed list, so the
@@ -51,6 +51,7 @@ class Plan:
 
     counter: GraphicCounter | None = None
     title: str | None = None
+    tag: str | None = None
 
 
 def enabled(config) -> bool:
@@ -72,7 +73,19 @@ def plan_from(config, script) -> Plan | None:
         return None
     if not (script.counter or any(s.graphic for s in script.scenes)):
         return None
-    return Plan(counter=script.counter, title=script.tally_title)
+    return Plan(
+        counter=script.counter,
+        title=script.tally_title,
+        tag=_TAG.get(str(getattr(config, "language", "en")), _TAG["en"]),
+    )
+
+
+# The honesty label in the corner of every "what if?" video.
+_TAG = {
+    "tr": "KURGUSAL SENARYO", "en": "HYPOTHETICAL", "pl": "SCENARIUSZ FIKCYJNY",
+    "de": "FIKTIVES SZENARIO", "es": "ESCENARIO FICTICIO", "fr": "SCÉNARIO FICTIF",
+    "pt": "CENÁRIO FICTÍCIO", "it": "SCENARIO IPOTETICO", "ru": "ВЫМЫШЛЕННЫЙ СЦЕНАРИЙ",
+}
 
 
 def ass_extras(
@@ -132,6 +145,12 @@ def styles(text_font: str, highlight: str) -> list[str]:
         "-1,0,0,0,100,100,1,0,3,12,0,7,60,60,0,1",
         f"Style: GfxStamp,{text_font},84,&H00101010,&H000000FF,{highlight},&H00000000,"
         "-1,0,0,0,100,100,1,0,3,18,0,5,60,60,0,1",
+        # Chapter headlines: drawn twice, a blurred glow in the highlight
+        # under a crisp copy — the lit look of the reference videos.
+        f"Style: GfxChapter,{text_font},104,{highlight},&H000000FF,&H00000000,&H00000000,"
+        "-1,0,0,0,100,100,1,0,1,3,0,8,60,60,0,1",
+        f"Style: GfxTag,{text_font},26,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,"
+        "-1,0,0,0,100,100,4,0,1,2,0,8,60,60,0,1",
     ]
 
 
@@ -153,7 +172,38 @@ def events(
     total = scene_start_ms(scenes, len(scenes))
     out: list[str] = []
     left = round(60 * sx)
-    y = round(170 * sy)
+    centre = round(540 * sx)
+    chapters = any(s.graphic and s.graphic.chapter for s in scenes)
+    # Headlines take the top centre, so the list starts below them.
+    y = round((390 if chapters else 170) * sy)
+
+    if plan.tag:
+        out.append(
+            f"Dialogue: 2,{_ts(0)},{_ts(total)},GfxTag,,0,0,0,,"
+            f"{{\\pos({centre},{round(112 * sy)})\\alpha&H40&}}{_clean(plan.tag)[:32]}"
+        )
+    for index, scene in enumerate(scenes):
+        g = scene.graphic
+        if not (g and g.chapter):
+            continue
+        start = scene_start_ms(scenes, index)
+        # Until the next headline or the end of this scene, whichever is later
+        # in a beat of several scenes; at least the scene itself.
+        nxt = next(
+            (k for k in range(index + 1, len(scenes)) if (scenes[k].graphic or SceneGraphic()).chapter),
+            len(scenes),
+        )
+        end = scene_start_ms(scenes, nxt)
+        text = _upper(_clean(g.chapter)[:32], language)
+        pos = f"\\pos({centre},{round(160 * sy)})"
+        grow = "\\fscx118\\fscy118\\t(0,260,\\fscx100\\fscy100)\\fad(140,200)"
+        out.append(
+            f"Dialogue: 4,{_ts(start)},{_ts(end)},GfxChapter,,0,0,0,,"
+            f"{{{pos}{grow}\\bord10\\3c{highlight}\\blur14\\alpha&H70&}}{text}"
+        )
+        out.append(
+            f"Dialogue: 5,{_ts(start)},{_ts(end)},GfxChapter,,0,0,0,,{{{pos}{grow}}}{text}"
+        )
 
     if plan.counter and plan.counter.label:
         c = plan.counter

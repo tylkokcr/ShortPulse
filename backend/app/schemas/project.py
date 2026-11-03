@@ -192,6 +192,8 @@ class SceneGraphic(BaseModel):
     tally: str | None = Field(default=None, max_length=40)
     icon: str | None = Field(default=None, max_length=24)
     stamp: str | None = Field(default=None, max_length=24)
+    # A headline over the beat this scene opens ("THE PROBLEM").
+    chapter: str | None = Field(default=None, max_length=32)
 
 
 class Scene(BaseModel):
