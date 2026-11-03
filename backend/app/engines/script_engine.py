@@ -26,6 +26,8 @@ from app.schemas.project import (
     GraphicCounter,
     LLMConfig,
     LLMProvider,
+    MapPlace,
+    MapSpec,
     PostCopy,
     Scene,
     SceneAudio,
@@ -271,7 +273,17 @@ about, as a row on a growing on-screen list ("Apples", "The Witcher", \
 leave it out);
   "chapter": on the scenes that open a new beat of the story — four to \
 six of them, the hook included — a 1-3 word headline for it in the \
-script's language ("THE PROBLEM", "LAND BRIDGE", "THE TWIST").
+script's language ("THE PROBLEM", "LAND BRIDGE", "THE TWIST");
+  "map": when the hypothetical is about a real country, the scenes that \
+are about geography are drawn as a glowing map instead of a picture — \
+always the hook and the moment it happens, plus any line about a border, \
+a strait, a river, a route or a city (three to five scenes in all). As \
+{"focus": ["<country in English>"], "action": "glow" | "vanish" | \
+"mark", "places": [{"name": "<in the script's language>", "lat": .., \
+"lon": ..}]}: "glow" lights the country, "vanish" makes it go out (the \
+moment it happens), "mark" points at up to three well-known places with \
+coordinates you are sure of. A map scene's "visual_prompt" is still \
+written, as a fallback.
 Add a top-level "tally_title": a short heading for that list in the \
 script's language ("The world without Poland"). And a top-level \
 "counter": when a country, city or people vanishes, ALWAYS its \
@@ -604,7 +616,7 @@ lines short (5-10 words) and in the second person where they were. When \
 you change a line, rewrite its "visual_prompt" to match (an illustrated \
 scene, no maps, no text). Keep "keep_out", "music_mood", "post", \
 "call_to_action", "counter", "tally_title" and every scene's "tally", \
-"icon", "stamp" and "chapter" unless they are wrong; when you change a line, change \
+"icon", "stamp", "chapter" and "map" unless they are wrong; when you change a line, change \
 its tally and icon to match.
 
 Respond with ONLY the corrected JSON object.
@@ -1054,6 +1066,37 @@ def _scene_graphic(raw_scene: dict) -> SceneGraphic | None:
     return graphic if (graphic.tally or graphic.stamp or graphic.chapter) else None
 
 
+def _scene_map(raw: object) -> MapSpec | None:
+    """A scene's map, with its countries resolved to Natural Earth codes. A
+    map naming no country we can draw is no map — the scene keeps its
+    picture."""
+    if not isinstance(raw, dict):
+        return None
+    from app.engines import maps
+
+    names = raw.get("focus")
+    names = [names] if isinstance(names, str) else names if isinstance(names, list) else []
+    codes = [c for c in (maps.find_country(str(n)) for n in names[:4]) if c]
+    if not codes:
+        return None
+    action = str(raw.get("action") or "glow").strip().lower()
+    places = []
+    for p in raw.get("places") or []:
+        try:
+            name = _short(p.get("name"), 40) or ""
+            places.append(MapPlace(name=name, lat=float(p["lat"]), lon=float(p["lon"])))
+        except (TypeError, ValueError, KeyError, AttributeError, ValidationError):
+            continue
+    try:
+        return MapSpec(
+            focus=codes,
+            action=action if action in ("glow", "vanish", "mark") else "glow",
+            places=[p for p in places if p.name][:3],
+        )
+    except ValidationError:
+        return None
+
+
 def _counter(raw: object) -> GraphicCounter | None:
     if not isinstance(raw, dict):
         return None
@@ -1133,6 +1176,7 @@ def _to_script_output(
                 visual=SceneVisual(prompt=visual_prompt),
                 audio=SceneAudio(voiceover_line=voiceover_line),
                 graphic=_scene_graphic(raw_scene),
+                map=_scene_map(raw_scene.get("map")),
             )
         except (ValueError, TypeError, AttributeError, ValidationError) as exc:
             logger.warning("Skipping scene %d (%s): %r", raw_index, exc, raw_scene)

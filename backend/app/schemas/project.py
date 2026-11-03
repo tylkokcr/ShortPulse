@@ -184,6 +184,22 @@ class SceneVisual(BaseModel):
     revision: int = 0
 
 
+class MapPlace(BaseModel):
+    name: str = Field(max_length=40)
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+
+
+class MapSpec(BaseModel):
+    """A scene drawn as a glowing map instead of a picture (engines/maps.py):
+    the countries to light (ADM0_A3 codes, resolved from names when the
+    script is read), what happens to them, and places to mark."""
+
+    focus: list[str] = Field(default_factory=list, max_length=4)
+    action: str = Field(default="glow", pattern="^(glow|vanish|mark)$")
+    places: list[MapPlace] = Field(default_factory=list, max_length=4)
+
+
 class SceneGraphic(BaseModel):
     """What a scene adds to the info graphics (engines/graphics.py): a row
     for the running list with an icon from graphics.ICONS, and an optional
@@ -206,6 +222,7 @@ class Scene(BaseModel):
         default=False, description="Branded closing card appended after the LLM-generated scenes"
     )
     graphic: SceneGraphic | None = None
+    map: MapSpec | None = None
 
     model_config = ConfigDict(use_enum_values=True)
 

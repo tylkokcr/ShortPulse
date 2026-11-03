@@ -22,6 +22,7 @@ from app.core.storage import discard_intermediates
 from app.engines import (
     audio_engine,
     graphics,
+    maps,
     render_engine,
     script_engine,
     subtitle_engine,
@@ -555,6 +556,21 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                         height=render_height,
                     )
                     scene.visual.asset_path = str(outro_path)
+                elif scene.map and maps.available():
+                    # Geography is drawn, not generated: an image model
+                    # invents borders. Seven seconds covers any scene.
+                    map_path = paths / "visuals" / f"scene_{scene.index:02d}_map.mp4"
+                    await asyncio.to_thread(
+                        maps.render_clip,
+                        maps.shot_for(scene.map),
+                        map_path,
+                        render_width,
+                        render_height,
+                        config.fps,
+                        7.0,
+                        settings.ffmpeg_binary,
+                    )
+                    scene.visual.asset_path = str(map_path)
                 else:
                     await visual_engine.generate_scene_visual(
                         scene,
