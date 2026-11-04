@@ -256,3 +256,13 @@ def test_a_vanished_countrys_card_and_counter_come_from_reference_data():
     # A language with no labels keeps what the script wrote.
     script = _to_script_output("x", parsed, VideoLength.SHORT, "what_if", "ar")
     assert script.card is not None and script.card.rows[0].label == "Nehir"
+
+
+def test_known_for_is_cut_at_an_item_or_a_word_never_mid_word():
+    from app.engines.script_engine import _known_for
+
+    assert _known_for("Parmigiano Reggiano, Prosecco, Ferrari") == "Parmigiano Reggiano"
+    assert _known_for("Pizza, opera, Ferrari, espresso") == "Pizza, opera, Ferrari"
+    assert _known_for("Hazelnuts") == "Hazelnuts"
+    assert _known_for("The oldest film festival in the whole world") == "The oldest film festival"
+    assert _known_for(None) is None

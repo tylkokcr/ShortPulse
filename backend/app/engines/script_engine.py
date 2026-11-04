@@ -1120,6 +1120,27 @@ def _scene_map(raw: object) -> MapSpec | None:
         return None
 
 
+def _known_for(raw: object, limit: int = 26) -> str | None:
+    """The card's "known for", kept to what fits one row: whole items of a
+    list ("Parmigiano Reggiano, Prosecco, Ferrari" → its first two), else
+    whole words — never cut mid-word ("…, Prosecco, F")."""
+    text = _short(raw, 200)
+    if not text or len(text) <= limit:
+        return text
+    kept = ""
+    for item in (i.strip() for i in text.split(",")):
+        joined = f"{kept}, {item}" if kept else item
+        if len(joined) > limit:
+            break
+        kept = joined
+    if not kept:
+        words = text.split()
+        while words and len(" ".join(words)) > limit:
+            words.pop()
+        kept = " ".join(words)
+    return kept or None
+
+
 def _card(raw: object) -> IdCard | None:
     """The script's identity card, when it wrote a usable one: rows with
     both halves, two to four of them."""
@@ -1290,7 +1311,7 @@ def _to_script_output(
         from app.engines import maps
 
         lang = language.split("-")[0].lower()
-        known_for = _short(parsed.get("known_for"), 32)
+        known_for = _known_for(parsed.get("known_for"))
         if drawn := maps.country_card(vanished, lang, known_for):
             card = IdCard(
                 title=drawn[0][:32],
