@@ -262,7 +262,10 @@ geography or text.
 night sky and it draws a Moon, even in a video about the Moon being gone. \
 So add a top-level "keep_out" string to the JSON: the thing that vanished, \
 in a few plain English words an image model knows, comma-separated \
-("moon, full moon, crescent moon"). Empty when nothing visible vanished.
+("moon, full moon, crescent moon"). Empty when nothing visible vanished. \
+And never name it in a visual_prompt, not even negated: "moonless sky" and \
+"no moon" both draw one. Describe what is there instead ("a dark sky full \
+of stars").
 - On-screen graphics: every scene object also carries
   "tally": 1-3 words in the script's language naming what this line is \
 about, as a row on a growing on-screen list ("Apples", "The Witcher", \

@@ -140,16 +140,19 @@ class Settings(BaseSettings):
     # field that does not exist cannot be forgotten about later.
     visual_provider: str = "local"
     replicate_api_token: str | None = None
-    # Pinned to a version hash, not a bare owner/name. Model owners revise
-    # what `owner/name` points at, and a revised input schema is a 422 on
-    # every scene of every render — which the fallback would turn into a
-    # silent stock-media downgrade rather than an error anyone sees. This
-    # id is RealVisXL_V4.0, the same checkpoint sdxl_model_id names, so the
-    # art styles and the published samples describe both backends.
-    replicate_image_model: str = (
-        "adirik/realvisxl-v4.0:"
-        "85a58cc71587cc27539b7c83eb1ce4aea02feedfb9a9fae0598cebc110a3d695"
-    )
+    # FLUX.1 [dev], over RealVisXL (an SDXL fine-tune) since 2026-11-04:
+    # it draws what the prompt says — a night sky without a Moon, the
+    # number of people asked for — where SDXL filled a scene with whatever
+    # usually belongs in it. About $0.025 an image against ~$0.004.
+    #
+    # An official model, so a bare owner/name: Replicate keeps those
+    # stable and does not take version hashes for them. A community model
+    # still has to be pinned "owner/name:hash" — its owner can revise what
+    # the name points at, and a revised input schema is a 422 on every
+    # scene. Which input schema to send is decided by the name (see
+    # visual_engine.is_flux). The SDXL one, to go back:
+    # adirik/realvisxl-v4.0:85a58cc71587cc27539b7c83eb1ce4aea02feedfb9a9fae0598cebc110a3d695
+    replicate_image_model: str = "black-forest-labs/flux-dev"
     # Wall clock for one image, covering the retries, the queue and the
     # generation. A prediction still running when this expires is
     # cancelled: it bills for the seconds it burns whether or not anyone

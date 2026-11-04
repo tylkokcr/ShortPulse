@@ -7,7 +7,8 @@ with four fingers reads as drawing shorthand) where a photoreal one
 advertises them.
 
 Faces used to be on that list and are not any more — the hosted backend
-generates on RealVisXL, where they hold up. The reasoning above survives
+generates on RealVisXL, where they hold up, and since 2026-11-04 on
+FLUX.1 [dev], where they hold up better. The reasoning above survives
 because it never rested on faces: hands, feet and awkward crops are what
 a style hides.
 

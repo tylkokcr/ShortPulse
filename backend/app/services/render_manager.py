@@ -686,7 +686,11 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 "language": config.language,
                 "scene_count": total_scenes,
                 "video_duration_s": round(video_s, 2),
-                "image_model": settings.sdxl_model_id,
+                "image_model": (
+                    settings.replicate_image_model
+                    if visual_engine.image_backend(settings) is visual_engine.ImageBackend.REPLICATE
+                    else settings.sdxl_model_id
+                ),
                 "diffusion_device": settings.diffusion_device,
                 # Which implementation of fast_hybrid ran, and what the
                 # provider says it will bill for. This is the only place

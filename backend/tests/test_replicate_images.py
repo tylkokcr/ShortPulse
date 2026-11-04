@@ -99,9 +99,11 @@ class FakeReplicate:
 
 
 class Settings:
-    def __init__(self, *, guidance=7.0, steps=25, timeout=120.0, token="r8_test"):
+    def __init__(
+        self, *, guidance=7.0, steps=25, timeout=120.0, token="r8_test", model="owner/model:abc123"
+    ):
         self.replicate_api_token = token
-        self.replicate_image_model = "owner/model:abc123"
+        self.replicate_image_model = model
         self.replicate_timeout_s = timeout
         self.sdxl_num_inference_steps = steps
         self.sdxl_guidance_scale = guidance
@@ -179,6 +181,45 @@ async def test_a_scene_negative_prompt_adds_to_the_style_one(monkeypatch, scene,
     assert "no birds" in sent
     assert "bad anatomy" in sent and "crowd" in sent
     assert sent.startswith(style.negative_prompt)
+
+
+async def test_flux_gets_its_own_inputs_and_no_negative_prompt(monkeypatch, scene, tmp_path):
+    """FLUX takes an aspect ratio, not a size, and has no negative prompt:
+    sending the SDXL inputs would be a 422 on every scene."""
+    fake = _serve(monkeypatch, FakeReplicate())
+    style = art_styles.by_id("anime")
+
+    await visual_engine._generate_replicate_image(
+        scene, tmp_path, Settings(model="black-forest-labs/flux-dev"), style, (1080, 1920)
+    )
+
+    sent = fake.created["input"]
+    assert fake.created["version"] == "black-forest-labs/flux-dev"
+    assert sent["prompt"] == style.build_prompt("a lone hiker on a ridge")
+    assert sent["aspect_ratio"] == "9:16" and sent["output_format"] == "png"
+    assert "negative_prompt" not in sent and "width" not in sent
+
+
+async def test_flux_never_hears_the_name_of_what_must_stay_out(monkeypatch, scene, tmp_path):
+    """Named, even negated, FLUX draws it: "a moonless sky" came back with
+    a full Moon. The scene's keep-out terms are cut from the prompt."""
+    fake = _serve(monkeypatch, FakeReplicate())
+    scene.visual.prompt = "a cliff at night, star-filled moonless sky, no moon over the sea"
+    scene.visual.negative_prompt = "moon, full moon, crescent moon"
+
+    await visual_engine._generate_replicate_image(
+        scene, tmp_path, Settings(model="black-forest-labs/flux-dev")
+    )
+
+    assert "moon" not in fake.created["input"]["prompt"].lower()
+    assert "star-filled sky" in fake.created["input"]["prompt"]
+
+
+def test_scrubbing_takes_the_noun_not_its_adjectives():
+    scrub = visual_engine.scrub_excluded
+    assert scrub("a cup full of tea", "full moon") == "a cup full of tea"
+    assert scrub("a beach without the moon, waves", "moon") == "a beach, waves"
+    assert scrub("a harbor at noon", "") == "a harbor at noon"
 
 
 async def test_steps_and_guidance_come_from_the_same_settings_as_the_local_path(

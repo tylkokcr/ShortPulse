@@ -28,6 +28,7 @@ from __future__ import annotations
 import asyncio
 import importlib.util
 import logging
+import re
 import time
 from dataclasses import dataclass
 from enum import StrEnum
@@ -550,14 +551,63 @@ _REPLICATE_RETRY_STATUSES = frozenset({429, 502, 503, 504})
 _REPLICATE_RETRY_BACKOFF_S = (2.0, 5.0, 10.0, 20.0)
 
 
-def _replicate_image_input(scene: Scene, style: ArtStyle, size, settings) -> dict:
-    """The cog's inputs, mapped from the same settings the local path reads.
+def is_flux(model: str) -> bool:
+    """Whether a Replicate image model takes FLUX's inputs rather than the
+    SDXL cog's: an aspect ratio instead of a size, no negative prompt."""
+    return "flux" in model.split(":")[0].lower()
 
-    Deliberately the same precedence as _generate_fast_hybrid_image, so
-    SDXL_NUM_INFERENCE_STEPS and SDXL_GUIDANCE_SCALE keep one meaning
-    across both implementations of the mode.
+
+_FLUX_ASPECT = {"vertical": "9:16", "square": "1:1", "landscape": "16:9"}
+
+
+def scrub_excluded(prompt: str, excluded: str) -> str:
+    """The prompt without any word naming what the scene must not show.
+
+    FLUX takes no negative prompt, and naming a thing draws it however it
+    is negated — "a moonless sky" came back with a full Moon in it, and
+    the same sky described as "filled only with stars" did not. So the
+    scene's own keep-out terms are cut out of the words, "moonless" with
+    "moon". Only the scene's terms: the style's negatives are about
+    quality, and words like "realistic" in a prompt are wanted. And only
+    each term's last word, its noun: "full moon" must not take "full" out
+    of "a cup full of tea".
+    """
+    words = {t.split()[-1].lower() for t in excluded.split(",") if t.strip()}
+    words = {w for w in words if len(w) >= 3}
+    if not words:
+        return prompt
+    pattern = re.compile(
+        r"\b(?:(?:no|without)\s+(?:(?:the|a|an|any)\s+)?)?\w*(?:"
+        + "|".join(map(re.escape, sorted(words)))
+        + r")\w*\b",
+        re.IGNORECASE,
+    )
+    cleaned = pattern.sub("", prompt)
+    return re.sub(r"\s+([,.])", r"\1", re.sub(r"\s{2,}", " ", cleaned)).strip(" ,")
+
+
+def _replicate_image_input(scene: Scene, style: ArtStyle, size, settings) -> dict:
+    """The model's inputs, mapped from the same settings the local path reads.
+
+    For the SDXL cog, deliberately the same precedence as
+    _generate_fast_hybrid_image, so SDXL_NUM_INFERENCE_STEPS and
+    SDXL_GUIDANCE_SCALE keep one meaning across both implementations of
+    the mode. FLUX has its own defaults and is left on them.
     """
     width, height = replicate_size_for(*(size or SDXL_SIZE_BY_ORIENTATION["vertical"]))
+    if is_flux(settings.replicate_image_model):
+        orientation = "landscape" if width > height else "square" if width == height else "vertical"
+        return {
+            "prompt": style.build_prompt(
+                scrub_excluded(scene.visual.prompt, scene.visual.negative_prompt or "")
+            ),
+            "aspect_ratio": _FLUX_ASPECT[orientation],
+            "megapixels": "1",
+            "num_outputs": 1,
+            # PNG because the file is saved as scene_NN.png and read back by
+            # extension; FLUX's default is WebP.
+            "output_format": "png",
+        }
     return {
         "prompt": style.build_prompt(scene.visual.prompt),
         "negative_prompt": negative_for(scene, style),

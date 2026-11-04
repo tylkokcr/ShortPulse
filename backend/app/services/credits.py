@@ -214,12 +214,13 @@ FREE_TIER_MODES: frozenset[VisualMode] = frozenset({VisualMode.STOCK_MEDIA})
 # product by it.
 #
 # One is enough to see the difference and cheap enough not to think about:
-# roughly two cents of hosted generation, against an impression that
+# about a quarter of a dollar of hosted generation (FLUX stills, since
+# 2026-11-04; two cents on SDXL before), against an impression that
 # decides whether they come back. The signup grant caps the rest by
 # itself, and the paid modes stay behind a purchase whatever it holds.
 FREE_TRIAL_GENERATED_VIDEOS = 1
 # The paid modes the free video may be made in. Not ai_video: animating
-# every scene costs about $0.45 a short, twenty times the stills trial, and
+# every scene costs about $0.70 a short, three times the stills trial, and
 # the trial exists to show generated pictures, which stills already do.
 TRIAL_MODES: frozenset[VisualMode] = frozenset({VisualMode.FAST_HYBRID})
 
