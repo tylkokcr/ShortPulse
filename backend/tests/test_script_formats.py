@@ -213,9 +213,12 @@ def test_an_identity_card_lands_on_one_early_scene():
         ],
     }
     scenes[0]["card"] = True  # the hook: not allowed
+    scenes[1]["stamp"] = "GONE"
     script = _to_script_output("x", {"scenes": scenes, "card": card})
     assert script.card is not None and [r.label for r in script.card.rows] == ["Başkent", "Nüfus"]
     assert [s.card for s in script.scenes] == [False, True, False, False, False]
+    # The card sits where a stamp would land.
+    assert not (script.scenes[1].graphic and script.scenes[1].graphic.stamp)
 
     scenes[0]["card"], scenes[2]["card"] = False, True
     assert [s.card for s in _to_script_output("x", {"scenes": scenes, "card": card}).scenes] == [

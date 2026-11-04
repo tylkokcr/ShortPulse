@@ -253,9 +253,11 @@ def frames(shot: MapShot, width: int, height: int, fps: int, total_frames: int, 
         if shot.gone:
             frame = hole
         elif shot.action == "vanish":
-            # Lit, a flicker, then out — over the first second and a half.
-            gone = min(max((t - 0.5) / 1.0, 0.0), 1.0)
-            flicker = 0.5 + 0.5 * math.sin(t * 38) if 0.5 < t < 1.5 else 1.0
+            # Lit, a flicker, then out — over the first second and a half;
+            # behind a card, once the card has been read.
+            tv = t - (1.8 if shot.card else 0.0)
+            gone = min(max((tv - 0.5) / 1.0, 0.0), 1.0)
+            flicker = 0.5 + 0.5 * math.sin(tv * 38) if 0.5 < tv < 1.5 else 1.0
             mix = (1 - gone) * flicker
             frame = cv2.addWeighted(lit, mix, hole, 1 - mix, 0)
         else:

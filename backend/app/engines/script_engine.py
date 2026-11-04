@@ -293,12 +293,15 @@ written, as a fallback.
 whose line introduces what vanishes — which then shows an identity card \
 instead of its picture.
 Add a top-level "card" for it: {"title": "<the subject, in the script's \
-language>", "rows": [{"label": "...", "value": "..."}]} with three or four \
-rows of its best-known stable facts, labels and values in the script's \
-language, values at most three words, numbers rounded ("Capital": \
-"Ankara", "Population": "85 million", "Area": "780,000 km²", "Known for": \
-"Hazelnuts"; for the Moon its distance, size, age). Only facts an \
-encyclopedia states; a row you are unsure of is left out.
+language>", "rows": [{"label": "...", "value": "..."}]}: its basic \
+facts, as on an identity card — not the video's surprising ones. For a \
+country exactly these four, in this order: capital, population, area, \
+best known for ("Capital": "Ankara", "Population": "85 million", "Area": \
+"780,000 km²", "Known for": "Hazelnuts"). For anything else its three or \
+four defining measurements (the Moon: distance, diameter, age). Labels \
+and values in the script's language, values at most three words, \
+numbers rounded. Only facts an encyclopedia states; a row you are unsure \
+of is left out.
 Add a top-level "tally_title": a short heading for that list in the \
 script's language ("The world without Poland"). And a top-level \
 "counter": when a country, city or people vanishes, ALWAYS its \
@@ -626,6 +629,9 @@ viewer about the hypothetical. Keep it first; never drop it.
 fitting what vanished: a country gets "Which country should vanish \
 next?", anything else "What would you miss first?" — never a country \
 question about the Moon.
+
+11. When a country, city or people vanishes, "counter" counts its \
+population — not an area, a sea or a budget.
 
 When a fact is doubtful, replace it with one you are certain of rather \
 than softening it. Keep the hook, keep the scene count within one, keep \
@@ -1281,6 +1287,9 @@ def _to_script_output(
     if card and len(scenes) > 2:
         chosen = next((s for s in marked if 0 < s.index < len(scenes) - 1), scenes[1])
         chosen.card = True
+        # A stamp lands mid-frame, which is where the card sits.
+        if chosen.graphic:
+            chosen.graphic.stamp = None
 
     hook = parsed.get("hook", scenes[0].audio.voiceover_line)
     call_to_action = parsed.get("call_to_action")
