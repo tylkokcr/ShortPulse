@@ -208,6 +208,14 @@ def events(
     if plan.counter and plan.counter.label:
         c = plan.counter
         first = scene_start_ms(scenes, 1) if len(scenes) > 1 else 0
+        # Where a map shows the country going out, the count runs with it —
+        # later behind an identity card, which goes out once it is read
+        # (maps.frames), or the card's population sits beside a zero.
+        vanish = next(
+            (i for i, s in enumerate(scenes) if s.map and s.map.action == "vanish"), None
+        )
+        if vanish is not None:
+            first = scene_start_ms(scenes, vanish) + (2300 if scenes[vanish].card else 500)
         label = _clean(c.label)[:28]
         out.append(
             f"Dialogue: 2,{_ts(0)},{_ts(total)},GfxCounter,,0,0,0,,"

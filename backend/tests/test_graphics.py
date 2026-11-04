@@ -55,6 +55,23 @@ def test_rows_stamps_and_the_counter_are_drawn_on_the_timeline():
     assert any("JAPONYA'SIZ DÜNYA" in line for line in lines)
 
 
+def test_the_count_runs_when_the_map_goes_out_and_waits_for_a_card():
+    from app.schemas.project import MapSpec
+
+    scenes = [_scene(i) for i in range(4)]
+    scenes[2].map = MapSpec(focus=["JPN"], action="vanish")
+    plan = graphics.Plan(counter=GraphicCounter(label="Japonya nüfusu", start=124_000_000, end=0))
+
+    def first_step(scenes):
+        lines = [x for x in graphics.events(scenes, plan, "&H0000D7FF", "tr", "M") if "GfxCounter" in x]
+        return lines[1].split(",")[2]  # when the starting number gives way
+
+    # Scene 2 starts at 6s; the flicker begins half a second in.
+    assert first_step(scenes) == "0:00:06.50"
+    scenes[2].card = True
+    assert first_step(scenes) == "0:00:08.30"
+
+
 def test_the_styles_reach_the_caption_header(tmp_path):
     styles = graphics.styles("Montserrat", "&H0000D7FF")
     path = subtitle_engine.build_ass_from_words(
