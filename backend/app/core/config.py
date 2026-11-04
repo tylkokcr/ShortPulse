@@ -150,9 +150,19 @@ class Settings(BaseSettings):
     # still has to be pinned "owner/name:hash" — its owner can revise what
     # the name points at, and a revised input schema is a 422 on every
     # scene. Which input schema to send is decided by the name (see
-    # visual_engine.is_flux). The SDXL one, to go back:
-    # adirik/realvisxl-v4.0:85a58cc71587cc27539b7c83eb1ce4aea02feedfb9a9fae0598cebc110a3d695
+    # visual_engine.is_flux).
     replicate_image_model: str = "black-forest-labs/flux-dev"
+    # Asked when the model above fails a scene, before giving up on a
+    # generated picture: a scene that falls through to stock footage is a
+    # live-action clip in the middle of a drawn video. FLUX's first image
+    # on a freshly started instance took 50-110s, and one of them in the
+    # first real render did not come back at all. Empty to go straight to
+    # stock. RealVisXL_V4.0, the model before FLUX — also the one to set
+    # above to go back.
+    replicate_fallback_image_model: str = (
+        "adirik/realvisxl-v4.0:"
+        "85a58cc71587cc27539b7c83eb1ce4aea02feedfb9a9fae0598cebc110a3d695"
+    )
     # Wall clock for one image, covering the retries, the queue and the
     # generation. A prediction still running when this expires is
     # cancelled: it bills for the seconds it burns whether or not anyone

@@ -586,7 +586,9 @@ def scrub_excluded(prompt: str, excluded: str) -> str:
     return re.sub(r"\s+([,.])", r"\1", re.sub(r"\s{2,}", " ", cleaned)).strip(" ,")
 
 
-def _replicate_image_input(scene: Scene, style: ArtStyle, size, settings) -> dict:
+def _replicate_image_input(
+    scene: Scene, style: ArtStyle, size, settings, model: str | None = None
+) -> dict:
     """The model's inputs, mapped from the same settings the local path reads.
 
     For the SDXL cog, deliberately the same precedence as
@@ -595,7 +597,7 @@ def _replicate_image_input(scene: Scene, style: ArtStyle, size, settings) -> dic
     the mode. FLUX has its own defaults and is left on them.
     """
     width, height = replicate_size_for(*(size or SDXL_SIZE_BY_ORIENTATION["vertical"]))
-    if is_flux(settings.replicate_image_model):
+    if is_flux(model or settings.replicate_image_model):
         orientation = "landscape" if width > height else "square" if width == height else "vertical"
         return {
             "prompt": style.build_prompt(
@@ -781,13 +783,27 @@ async def _generate_replicate_image(
     output_path = output_dir / f"scene_{scene.index:02d}.png"
     style = style or art_styles.DEFAULT_ART_STYLE
 
-    prediction = await _replicate_predict(
-        {
-            "version": settings.replicate_image_model,
-            "input": _replicate_image_input(scene, style, size, settings),
-        },
-        settings,
-    )
+    model = settings.replicate_image_model
+    try:
+        prediction = await _replicate_predict(
+            {"version": model, "input": _replicate_image_input(scene, style, size, settings)},
+            settings,
+        )
+    except Exception:
+        fallback = getattr(settings, "replicate_fallback_image_model", "") or ""
+        if not fallback or fallback == model:
+            raise
+        logger.warning(
+            "Scene %s failed on %s; drawing it on %s instead", scene.index, model, fallback,
+            exc_info=True,
+        )
+        prediction = await _replicate_predict(
+            {
+                "version": fallback,
+                "input": _replicate_image_input(scene, style, size, settings, fallback),
+            },
+            settings,
+        )
     await _download(_replicate_output_url(prediction), output_path)
     # Read back by render_manager for timings.json: part of this stage's
     # cost is now an invoice rather than our own wall clock.

@@ -215,6 +215,37 @@ async def test_flux_never_hears_the_name_of_what_must_stay_out(monkeypatch, scen
     assert "star-filled sky" in fake.created["input"]["prompt"]
 
 
+async def test_a_scene_flux_fails_is_drawn_on_the_fallback_model(monkeypatch, scene, tmp_path):
+    """Not stock footage: a live-action clip in the middle of a drawn video
+    is what the first FLUX render shipped when one scene timed out."""
+
+    class FluxDown(FakeReplicate):
+        def __call__(self, request):
+            if request.method == "POST" and request.url.path == "/v1/predictions":
+                if json.loads(request.content)["version"].startswith("black-forest-labs/"):
+                    self.requests.append(request)
+                    return httpx.Response(
+                        201, content=json.dumps(_prediction("failed", error="boot timeout"))
+                    )
+            return super().__call__(request)
+
+    fake = _serve(monkeypatch, FluxDown())
+    settings = Settings(model="black-forest-labs/flux-dev")
+    settings.replicate_fallback_image_model = "owner/sdxl:abc123"
+    scene.visual.negative_prompt = "moon"
+
+    path = await visual_engine._generate_replicate_image(scene, tmp_path, settings)
+
+    created = [
+        json.loads(r.content) for r in fake.requests
+        if r.method == "POST" and r.url.path == "/v1/predictions"
+    ]
+    assert [c["version"] for c in created] == ["black-forest-labs/flux-dev", "owner/sdxl:abc123"]
+    # The SDXL inputs, negative prompt and all.
+    assert "moon" in created[1]["input"]["negative_prompt"]
+    assert path.exists()
+
+
 def test_scrubbing_takes_the_noun_not_its_adjectives():
     scrub = visual_engine.scrub_excluded
     assert scrub("a cup full of tea", "full moon") == "a cup full of tea"

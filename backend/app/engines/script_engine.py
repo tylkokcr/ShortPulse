@@ -610,8 +610,10 @@ phone, holiday). No sentence pattern ("X disappears", "X is gone") more \
 than twice — rewrite the rest as what the viewer notices.
 9. The first scene's line IS the hook: a mysterious question to the \
 viewer about the hypothetical. Keep it first; never drop it.
-10. The last scene asks the viewer a question that invites a comment \
-("Which country should vanish next?").
+10. The last scene asks the viewer a question that invites a comment, \
+fitting what vanished: a country gets "Which country should vanish \
+next?", anything else "What would you miss first?" — never a country \
+question about the Moon.
 
 When a fact is doubtful, replace it with one you are certain of rather \
 than softening it. Keep the hook, keep the scene count within one, keep \
