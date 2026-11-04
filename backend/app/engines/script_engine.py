@@ -23,7 +23,9 @@ from pydantic import ValidationError
 from app.core.config import get_settings
 from app.engines.graphics import ICONS
 from app.schemas.project import (
+    CardRow,
     GraphicCounter,
+    IdCard,
     LLMConfig,
     LLMProvider,
     MapPlace,
@@ -287,6 +289,16 @@ a strait, a river, a route or a city (three to five scenes in all). As \
 moment it happens), "mark" points at up to three well-known places with \
 coordinates you are sure of. A map scene's "visual_prompt" is still \
 written, as a fallback.
+  "card": true on exactly one early scene — the second or third, the one \
+whose line introduces what vanishes — which then shows an identity card \
+instead of its picture.
+Add a top-level "card" for it: {"title": "<the subject, in the script's \
+language>", "rows": [{"label": "...", "value": "..."}]} with three or four \
+rows of its best-known stable facts, labels and values in the script's \
+language, values at most three words, numbers rounded ("Capital": \
+"Ankara", "Population": "85 million", "Area": "780,000 km²", "Known for": \
+"Hazelnuts"; for the Moon its distance, size, age). Only facts an \
+encyclopedia states; a row you are unsure of is left out.
 Add a top-level "tally_title": a short heading for that list in the \
 script's language ("The world without Poland"). And a top-level \
 "counter": when a country, city or people vanishes, ALWAYS its \
@@ -620,8 +632,9 @@ than softening it. Keep the hook, keep the scene count within one, keep \
 lines short (5-10 words) and in the second person where they were. When \
 you change a line, rewrite its "visual_prompt" to match (an illustrated \
 scene, no maps, no text). Keep "keep_out", "music_mood", "post", \
-"call_to_action", "counter", "tally_title" and every scene's "tally", \
-"icon", "stamp", "chapter" and "map" unless they are wrong; when you change a line, change \
+"call_to_action", "counter", "tally_title", "card" and every scene's \
+"tally", "icon", "stamp", "chapter", "map" and "card" unless they are \
+wrong — check the card's facts like any line's; when you change a line, change \
 its tally and icon to match.
 
 Respond with ONLY the corrected JSON object.
@@ -1102,6 +1115,24 @@ def _scene_map(raw: object) -> MapSpec | None:
         return None
 
 
+def _card(raw: object) -> IdCard | None:
+    """The script's identity card, when it wrote a usable one: rows with
+    both halves, two to four of them."""
+    if not isinstance(raw, dict):
+        return None
+    rows = []
+    for row in raw.get("rows") or []:
+        if not isinstance(row, dict):
+            continue
+        label, value = _short(row.get("label"), 24), _short(row.get("value"), 32)
+        if label and value:
+            rows.append(CardRow(label=label, value=value))
+    title = _short(raw.get("title"), 32)
+    if not title or len(rows) < 2:
+        return None
+    return IdCard(title=title, rows=rows[:4])
+
+
 def _counter(raw: object) -> GraphicCounter | None:
     if not isinstance(raw, dict):
         return None
@@ -1182,6 +1213,7 @@ def _to_script_output(
                 audio=SceneAudio(voiceover_line=voiceover_line),
                 graphic=_scene_graphic(raw_scene),
                 map=_scene_map(raw_scene.get("map")),
+                card=raw_scene.get("card") is True,
             )
         except (ValueError, TypeError, AttributeError, ValidationError) as exc:
             logger.warning("Skipping scene %d (%s): %r", raw_index, exc, raw_scene)
@@ -1239,6 +1271,17 @@ def _to_script_output(
         for i, scene in enumerate(scenes):
             scene.index = i
 
+    # One card scene, and only with a card to show: the first one marked,
+    # or the scene after the hook when the model wrote a card and marked
+    # none. Never the hook or the closing question.
+    card = _card(parsed.get("card"))
+    marked = [s for s in scenes if s.card]
+    for scene in scenes:
+        scene.card = False
+    if card and len(scenes) > 2:
+        chosen = next((s for s in marked if 0 < s.index < len(scenes) - 1), scenes[1])
+        chosen.card = True
+
     hook = parsed.get("hook", scenes[0].audio.voiceover_line)
     call_to_action = parsed.get("call_to_action")
 
@@ -1253,6 +1296,7 @@ def _to_script_output(
             music_mood=_music_mood(parsed.get("music_mood")),
             counter=_counter(parsed.get("counter")),
             tally_title=_short(parsed.get("tally_title"), 40),
+            card=card,
         )
     except ValidationError as exc:
         raise ScriptGenerationError(f"Malformed script structure: {exc}") from exc

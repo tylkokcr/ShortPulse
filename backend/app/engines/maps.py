@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from app.core.config import BACKEND_ROOT
+from app.engines.subtitle_engine import _uppercase
 
 GEO = BACKEND_ROOT / "app" / "assets" / "geo" / "countries.json"
 FONT = BACKEND_ROOT / "app" / "assets" / "fonts" / "Montserrat-Bold.ttf"
@@ -54,6 +55,12 @@ class MapShot:
     # Already vanished in an earlier scene: drawn as the hole it left, so
     # a later "mark" does not bring the country back.
     gone: bool = False
+    # An identity card under the map: (title, [(label, value), ...]). The
+    # country moves up to make room; with no country it is drawn over the
+    # night sky alone (a card for the Moon).
+    card: tuple[str, list[tuple[str, str]]] | None = None
+    # For upper-casing labels: Turkish "i" is "İ" in capitals.
+    language: str = "en"
 
 
 def available() -> bool:
@@ -84,6 +91,23 @@ def vanished_before(scenes, index: int) -> bool:
         s.map and s.map.action == "vanish" and set(s.map.focus) & set(here.focus)
         for s in scenes[:index]
     )
+
+
+def card_shot(scenes, index: int, card) -> MapShot:
+    """The shot for a scene that shows the script's IdCard: its own map if
+    it has one, else the country the video's maps are about, else none."""
+    scene = scenes[index]
+    if scene.map:
+        shot = shot_for(scene.map, gone=vanished_before(scenes, index))
+    else:
+        focus = next((list(s.map.focus) for s in scenes if s.map and s.map.focus), [])
+        gone = any(
+            s.map and s.map.action == "vanish" and set(s.map.focus) & set(focus)
+            for s in scenes[:index]
+        )
+        shot = MapShot(focus=focus, gone=gone)
+    shot.card = (card.title, [(r.label, r.value) for r in card.rows])
+    return shot
 
 
 @lru_cache(maxsize=1)
@@ -135,12 +159,18 @@ def _layers(shot: MapShot, width: int, height: int):
     box = _bounds(shot.focus) or (-10.0, 30.0, 40.0, 60.0)
     cx, cy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
     span_x, span_y = max(box[2] - box[0], 1.0), max(box[3] - box[1], 1.0)
-    # The subject fills about three quarters of the frame's width.
-    scale = min(width * 0.78 / span_x, height * 0.45 / span_y)
+    # The subject fills about three quarters of the frame's width — or,
+    # above a card, the upper part of the frame.
+    if shot.card:
+        scale = min(width * 0.62 / span_x, height * 0.24 / span_y)
+        centre_y = big_h / 2 - height * 0.17
+    else:
+        scale = min(width * 0.78 / span_x, height * 0.45 / span_y)
+        centre_y = big_h / 2
 
     def project(lon: float, lat: float) -> tuple[float, float]:
         x, y = _merc(lon, lat)
-        return big_w / 2 + (x - cx) * scale, big_h / 2 - (y - cy) * scale
+        return big_w / 2 + (x - cx) * scale, centre_y - (y - cy) * scale
 
     grad = np.linspace(0, 1, big_h, dtype=np.float32)[:, None, None]
     bg = (np.array(_BG_TOP) * (1 - grad) + np.array(_BG_BOTTOM) * grad).astype(np.float32)
@@ -150,6 +180,10 @@ def _layers(shot: MapShot, width: int, height: int):
         x, y = rng.integers(0, big_w), rng.integers(0, big_h)
         bg[y, x] = (200, 200, 220) if rng.random() < 0.3 else (120, 110, 110)
     base = bg.astype(np.uint8)
+
+    if shot.card and not shot.focus:
+        # A card about no country: the night sky alone.
+        return base, base, project
 
     subject_mask = np.zeros((big_h, big_w), np.uint8)
     edges = np.zeros((big_h, big_w), np.uint8)
@@ -232,6 +266,8 @@ def frames(shot: MapShot, width: int, height: int, fps: int, total_frames: int, 
         y0 = (big_h - height / z) / 2
         m = np.array([[z, 0, -x0 * z], [0, z, -y0 * z]], dtype=np.float32)
         out = cv2.warpAffine(frame, m, (width, height), flags=cv2.INTER_LINEAR)
+        if shot.card:
+            out = _draw_card(out, shot.card, t, width, height, shot.language)
         if marks:
             img = Image.fromarray(cv2.cvtColor(out, cv2.COLOR_BGR2RGB))
             draw = ImageDraw.Draw(img, "RGBA")
@@ -245,7 +281,7 @@ def frames(shot: MapShot, width: int, height: int, fps: int, total_frames: int, 
                 a = int(200 * (1 - pulse) * appear)
                 draw.ellipse((x - r, y - r, x + r, y + r), outline=(255, 190, 70, a), width=4)
                 draw.ellipse((x - 9, y - 9, x + 9, y + 9), fill=(255, 205, 90, int(255 * appear)))
-                text = place.name.upper()
+                text = _uppercase(place.name, shot.language)
                 tw = draw.textlength(text, font=font)
                 tx = min(max(x + 18, 20), width - tw - 20)
                 draw.text(
@@ -254,6 +290,79 @@ def frames(shot: MapShot, width: int, height: int, fps: int, total_frames: int, 
                 )
             out = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
         yield out
+
+
+def _draw_card(frame, card, t: float, width: int, height: int, language: str = "en"):
+    """The identity card over a BGR frame at time t: a dark glass panel
+    with a gold edge rises into place, then its rows come in one by one."""
+    import cv2
+    import numpy as np
+    from PIL import Image, ImageDraw, ImageFont
+
+    title, rows = card
+    u = width / 1080
+    rise = min(max((t - 0.25) / 0.45, 0.0), 1.0)
+    if rise <= 0:
+        return frame
+    ease = 1 - (1 - rise) ** 3
+    title_font = ImageFont.truetype(str(FONT), round(64 * u))
+    label_font = ImageFont.truetype(str(FONT), round(34 * u))
+    value_font = ImageFont.truetype(str(FONT), round(44 * u))
+
+    pad, row_h, title_h = round(44 * u), round(84 * u), round(108 * u)
+    left, right = round(70 * u), width - round(70 * u)
+    top = round(height * 0.47 + (1 - ease) * 80 * u)
+    bottom = top + title_h + row_h * len(rows) + pad
+
+    img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)).convert("RGBA")
+    layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(layer)
+    alpha = ease
+    radius = round(30 * u)
+    # The glow behind the edge, then the glass, then the edge itself.
+    glow = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    ImageDraw.Draw(glow).rounded_rectangle(
+        (left, top, right, bottom), radius, outline=(255, 190, 70, int(150 * alpha)),
+        width=round(10 * u),
+    )
+    glow_arr: Any = cv2.GaussianBlur(np.asarray(glow), (0, 0), 14 * u)
+    layer = Image.alpha_composite(layer, Image.fromarray(glow_arr))
+    draw = ImageDraw.Draw(layer)
+    draw.rounded_rectangle(
+        (left, top, right, bottom), radius, fill=(8, 12, 22, int(215 * alpha)),
+        outline=(255, 200, 90, int(255 * alpha)), width=max(2, round(3 * u)),
+    )
+    draw.text(
+        ((left + right) / 2, top + title_h / 2 + 4 * u), _uppercase(title, language), font=title_font,
+        anchor="mm", fill=(255, 205, 90, int(255 * alpha)),
+    )
+    for i, (label, value) in enumerate(rows):
+        shown = min(max((t - 0.7 - i * 0.28) / 0.25, 0.0), 1.0)
+        if shown <= 0:
+            continue
+        y = top + title_h + row_h * i
+        draw.line(
+            (left + pad, y, right - pad, y), fill=(255, 255, 255, int(40 * shown)),
+            width=max(1, round(2 * u)),
+        )
+        mid = y + row_h / 2
+        dx = (1 - shown) * 30 * u
+        draw.text(
+            (left + pad + dx, mid), _uppercase(label, language), font=label_font, anchor="lm",
+            fill=(255, 255, 255, int(150 * shown)),
+        )
+        # A long value steps down rather than running into its label.
+        fit, size = value_font, 44
+        room = right - left - 2 * pad - draw.textlength(_uppercase(label, language), font=label_font)
+        while size > 26 and draw.textlength(value, font=fit) > room - 24 * u:
+            size -= 4
+            fit = ImageFont.truetype(str(FONT), round(size * u))
+        draw.text(
+            (right - pad + dx, mid), value, font=fit, anchor="rm",
+            fill=(255, 255, 255, int(255 * shown)),
+        )
+    out = Image.alpha_composite(img, layer).convert("RGB")
+    return cv2.cvtColor(np.asarray(out), cv2.COLOR_RGB2BGR)
 
 
 def render_clip(shot: MapShot, output: Path, width: int, height: int, fps: int, seconds: float,

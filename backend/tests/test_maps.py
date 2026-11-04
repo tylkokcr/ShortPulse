@@ -56,3 +56,29 @@ def test_a_vanish_shot_goes_dark_where_the_country_was():
 def test_a_shot_renders_to_a_clip(tmp_path: Path):
     out = maps.render_clip(maps.MapShot(focus=["TUR"]), tmp_path / "m.mp4", 180, 320, 10, 1.0)
     assert out.stat().st_size > 1000
+
+
+@pytest.mark.skipif(not maps.available(), reason="needs OpenCV")
+def test_an_identity_card_rises_over_the_map_or_the_night_sky():
+    card = ("Türkiye", [("Başkent", "Ankara"), ("Nüfus", "85 milyon")])
+    for focus in (["TUR"], []):
+        shot = maps.MapShot(focus=focus, card=card, language="tr")
+        frames = list(maps.frames(shot, 180, 320, 10, 25))
+        panel = (slice(160, 200), slice(20, 160))
+        # Nothing at the start, the panel's glass by the end.
+        assert frames[-1][panel].mean() != frames[0][panel].mean()
+
+
+def test_a_card_scene_borrows_the_videos_country():
+    from app.schemas.project import CardRow, IdCard, MapSpec, Scene, SceneAudio, SceneVisual
+
+    def scene(i, spec=None):
+        return Scene(
+            index=i, duration_s=4, visual=SceneVisual(prompt="p"),
+            audio=SceneAudio(voiceover_line="l"), map=spec,
+        )
+
+    scenes = [scene(0, MapSpec(focus=["POL"], action="vanish")), scene(1), scene(2)]
+    card = IdCard(title="Polska", rows=[CardRow(label="a", value="b"), CardRow(label="c", value="d")])
+    shot = maps.card_shot(scenes, 1, card)
+    assert shot.focus == ["POL"] and shot.gone and shot.card == ("Polska", [("a", "b"), ("c", "d")])

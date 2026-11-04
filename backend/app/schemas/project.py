@@ -212,6 +212,21 @@ class SceneGraphic(BaseModel):
     chapter: str | None = Field(default=None, max_length=32)
 
 
+class CardRow(BaseModel):
+    label: str = Field(max_length=24)
+    value: str = Field(max_length=32)
+
+
+class IdCard(BaseModel):
+    """An identity card for what a "what if?" video is about — a country's
+    capital, population, area — drawn over its map on the scene that
+    introduces it (engines/maps.py). Facts the script already stands
+    behind, in the script's language."""
+
+    title: str = Field(max_length=32)
+    rows: list[CardRow] = Field(min_length=2, max_length=4)
+
+
 class Scene(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     index: int
@@ -223,6 +238,8 @@ class Scene(BaseModel):
     )
     graphic: SceneGraphic | None = None
     map: MapSpec | None = None
+    # This scene shows the script's IdCard instead of its picture.
+    card: bool = False
 
     model_config = ConfigDict(use_enum_values=True)
 
@@ -276,6 +293,7 @@ class ScriptOutput(BaseModel):
     # the running list. Absent outside the formats that write them.
     counter: GraphicCounter | None = None
     tally_title: str | None = Field(default=None, max_length=40)
+    card: IdCard | None = None
     # The library category the soundtrack is drawn from when nobody picked
     # a track (see render_manager). None: the default track.
     music_mood: str | None = None

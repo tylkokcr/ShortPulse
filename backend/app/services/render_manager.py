@@ -556,13 +556,22 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                         height=render_height,
                     )
                     scene.visual.asset_path = str(outro_path)
-                elif scene.map and maps.available():
+                elif (scene.map or (scene.card and script.card)) and maps.available():
                     # Geography is drawn, not generated: an image model
-                    # invents borders. Seven seconds covers any scene.
+                    # invents borders. Seven seconds covers any scene. The
+                    # identity card is drawn the same way, over its map.
                     map_path = paths / "visuals" / f"scene_{scene.index:02d}_map.mp4"
+                    shot = (
+                        maps.card_shot(script.scenes, scene.index, script.card)
+                        if scene.card and script.card
+                        else maps.shot_for(
+                            scene.map, gone=maps.vanished_before(script.scenes, scene.index)
+                        )
+                    )
+                    shot.language = config.language
                     await asyncio.to_thread(
                         maps.render_clip,
-                        maps.shot_for(scene.map, gone=maps.vanished_before(script.scenes, scene.index)),
+                        shot,
                         map_path,
                         render_width,
                         render_height,

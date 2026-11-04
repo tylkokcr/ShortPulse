@@ -196,3 +196,32 @@ def test_the_what_if_hook_is_a_question_to_the_viewer():
     from app.engines.script_engine import WHAT_IF_REVIEW_PROMPT
 
     assert "never drop it" in WHAT_IF_REVIEW_PROMPT
+
+
+def test_an_identity_card_lands_on_one_early_scene():
+    """Never the hook or the closing question, and only with a card worth
+    drawing: a row missing its value is dropped, under two rows is none."""
+    from app.engines.script_engine import _to_script_output
+
+    scenes = [{"voiceover_line": str(i), "visual_prompt": "p"} for i in range(5)]
+    card = {
+        "title": "Türkiye",
+        "rows": [
+            {"label": "Başkent", "value": "Ankara"},
+            {"label": "Nüfus", "value": "85 milyon"},
+            {"label": "Boş"},
+        ],
+    }
+    scenes[0]["card"] = True  # the hook: not allowed
+    script = _to_script_output("x", {"scenes": scenes, "card": card})
+    assert script.card is not None and [r.label for r in script.card.rows] == ["Başkent", "Nüfus"]
+    assert [s.card for s in script.scenes] == [False, True, False, False, False]
+
+    scenes[0]["card"], scenes[2]["card"] = False, True
+    assert [s.card for s in _to_script_output("x", {"scenes": scenes, "card": card}).scenes] == [
+        False, False, True, False, False,
+    ]
+
+    thin = {"title": "X", "rows": [{"label": "a", "value": "b"}]}
+    script = _to_script_output("x", {"scenes": scenes, "card": thin})
+    assert script.card is None and not any(s.card for s in script.scenes)
