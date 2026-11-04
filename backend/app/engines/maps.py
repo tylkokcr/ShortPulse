@@ -27,6 +27,8 @@ from app.core.config import BACKEND_ROOT
 from app.engines.subtitle_engine import _uppercase
 
 GEO = BACKEND_ROOT / "app" / "assets" / "geo" / "countries.json"
+# Population, area and capital per country (scripts/build_country_facts.py).
+FACTS = BACKEND_ROOT / "app" / "assets" / "geo" / "facts.json"
 FONT = BACKEND_ROOT / "app" / "assets" / "fonts" / "Montserrat-Bold.ttf"
 
 # BGR
@@ -124,6 +126,107 @@ def find_country(name_or_code: str) -> str | None:
         }:
             return c["a3"]
     return None
+
+
+@lru_cache(maxsize=1)
+def _facts() -> dict[str, dict]:
+    return json.loads(FACTS.read_text(encoding="utf-8")) if FACTS.is_file() else {}
+
+
+# The card's labels, and the counter's, in the languages the outlines are
+# named in. Another language keeps the card the script wrote.
+_CARD_LABELS = {
+    "en": ("Capital", "Population", "Area", "Known for"),
+    "tr": ("Başkent", "Nüfus", "Yüzölçümü", "Bilinen"),
+    "pl": ("Stolica", "Ludność", "Powierzchnia", "Słynie z"),
+    "de": ("Hauptstadt", "Einwohner", "Fläche", "Bekannt für"),
+}
+_POPULATION_OF = {
+    "en": "Population of {name}",
+    "tr": "{name} nüfusu",
+    "pl": "Ludność: {name}",
+    "de": "Einwohner: {name}",
+}
+# million, billion, thousand; decimal and thousands separators.
+_UNITS = {
+    "en": ("million", "billion", "", ".", ","),
+    "tr": ("milyon", "milyar", "bin", ",", "."),
+    "pl": ("mln", "mld", "tys.", ",", "\u00a0"),
+    "de": ("Mio.", "Mrd.", "", ",", "."),
+}
+
+
+# A vanished country's video ends on the same question, so the next one
+# is a series: the Italy script closed on "what would you miss first?"
+# with its rules saying otherwise.
+NEXT_COUNTRY = {
+    "en": "Which country should vanish next? Tell me below.",
+    "tr": "Sıradaki hangi ülke kaybolsun? Yorumlara yaz.",
+    "pl": "Który kraj ma zniknąć następny? Napisz w komentarzu.",
+    "de": "Welches Land soll als Nächstes verschwinden? Schreib es in die Kommentare.",
+}
+
+
+def _grouped(n: int, sep: str) -> str:
+    return f"{n:,}".replace(",", sep)
+
+
+def _population_text(n: int, language: str) -> str:
+    million, billion, thousand, dot, sep = _UNITS[language]
+    if n >= 1_000_000_000:
+        return f"{n / 1e9:.1f}".replace(".", dot) + f" {billion}"
+    if n >= 10_000_000:
+        return f"{round(n / 1e6)} {million}"
+    if n >= 1_000_000:
+        return f"{n / 1e6:.1f}".replace(".", dot) + f" {million}"
+    rounded = round(n, -3)
+    return f"{rounded // 1000} {thousand}" if thousand else _grouped(rounded, sep)
+
+
+def _area_text(km2: int, language: str) -> str:
+    # Two significant figures: computed from the outlines, it is within a
+    # percent or two of the official figure, not exact.
+    digits = len(str(int(km2)))
+    return f"{_grouped(int(round(km2, 2 - digits)), _UNITS[language][4])} km²"
+
+
+def country_name(code: str, language: str) -> str | None:
+    country = next((c for c in _countries() if c["a3"] == code), None)
+    if not country:
+        return None
+    return country.get(language) or country.get("en")
+
+
+def country_card(
+    code: str, language: str, known_for: str | None = None
+) -> tuple[str, list[tuple[str, str]]] | None:
+    """A country's identity card from the facts file, labelled in the
+    script's language: (title, [(label, value), ...]). None for a language
+    without labels or a country without facts."""
+    facts = _facts().get(code)
+    name = country_name(code, language)
+    if language not in _CARD_LABELS or not facts or not name:
+        return None
+    capital_l, population_l, area_l, known_l = _CARD_LABELS[language]
+    rows = []
+    if facts.get("capital"):
+        rows.append((capital_l, facts["capital"].get(language) or facts["capital"]["en"]))
+    if facts.get("population"):
+        rows.append((population_l, _population_text(int(facts["population"]), language)))
+    if facts.get("area_km2"):
+        rows.append((area_l, _area_text(int(facts["area_km2"]), language)))
+    if known_for:
+        rows.append((known_l, known_for))
+    return (name, rows) if len(rows) >= 2 else None
+
+
+def population_counter(code: str, language: str) -> tuple[str, int] | None:
+    """(label, population) for the counter of a vanished country."""
+    facts = _facts().get(code)
+    name = country_name(code, language)
+    if language not in _POPULATION_OF or not facts or not facts.get("population") or not name:
+        return None
+    return _POPULATION_OF[language].format(name=name), round(int(facts["population"]), -5)
 
 
 def _merc(lon: float, lat: float) -> tuple[float, float]:

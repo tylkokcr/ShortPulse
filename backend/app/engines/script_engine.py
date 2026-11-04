@@ -292,16 +292,15 @@ written, as a fallback.
   "card": true on exactly one early scene — the second or third, the one \
 whose line introduces what vanishes — which then shows an identity card \
 instead of its picture.
-Add a top-level "card" for it: {"title": "<the subject, in the script's \
-language>", "rows": [{"label": "...", "value": "..."}]}: its basic \
-facts, as on an identity card — not the video's surprising ones. For a \
-country exactly these four, in this order: capital, population, area, \
-best known for ("Capital": "Ankara", "Population": "85 million", "Area": \
-"780,000 km²", "Known for": "Hazelnuts"). For anything else its three or \
-four defining measurements (the Moon: distance, diameter, age). Labels \
-and values in the script's language, values at most three words, \
-numbers rounded. Only facts an encyclopedia states; a row you are unsure \
-of is left out.
+When a country vanishes, its card (capital, population, area) is filled \
+in from reference data: add only a top-level "known_for" — what the \
+country is best known for, at most three words, in the script's language \
+("Hazelnuts", "Pizza and opera"). For anything else, add a top-level \
+"card": {"title": "<the subject, in the script's language>", "rows": \
+[{"label": "...", "value": "..."}]} with its three or four defining \
+measurements (the Moon: distance, diameter, age), labels and values in \
+the script's language, values at most three words, numbers rounded. Only \
+facts an encyclopedia states; a row you are unsure of is left out.
 Add a top-level "tally_title": a short heading for that list in the \
 script's language ("The world without Poland"). And a top-level \
 "counter": when a country, city or people vanishes, ALWAYS its \
@@ -590,7 +589,7 @@ async def _generate_script_once(
         parsed = await _review_what_if(parsed, topic, language, video_length, config, facts)
     if visual_mode != "stock_media":
         await _rewrite_badly_framed_prompts(parsed, config)
-    return _to_script_output(topic, parsed, video_length, script_format)
+    return _to_script_output(topic, parsed, video_length, script_format, language)
 
 
 WHAT_IF_REVIEW_PROMPT = """\
@@ -638,7 +637,7 @@ than softening it. Keep the hook, keep the scene count within one, keep \
 lines short (5-10 words) and in the second person where they were. When \
 you change a line, rewrite its "visual_prompt" to match (an illustrated \
 scene, no maps, no text). Keep "keep_out", "music_mood", "post", \
-"call_to_action", "counter", "tally_title", "card" and every scene's \
+"call_to_action", "counter", "tally_title", "card", "known_for" and every scene's \
 "tally", "icon", "stamp", "chapter", "map" and "card" unless they are \
 wrong — check the card's facts like any line's; when you change a line, change \
 its tally and icon to match.
@@ -1176,6 +1175,7 @@ def _to_script_output(
     parsed: dict,
     video_length: VideoLength = VideoLength.SHORT,
     script_format: str = "free",
+    language: str | None = None,
 ) -> ScriptOutput:
     # The model is asked for a top-level object, but occasionally returns a
     # bare array of scenes (or something else entirely). Raise the engine's
@@ -1277,10 +1277,33 @@ def _to_script_output(
         for i, scene in enumerate(scenes):
             scene.index = i
 
+    # A vanished country's card and counter come from reference data, not
+    # the model: in the first two real cards it listed a stock exchange
+    # and a river and counted Japan's sea area, whatever the rules said.
+    card = _card(parsed.get("card"))
+    counter = _counter(parsed.get("counter"))
+    vanished = next(
+        (s.map.focus[0] for s in scenes if s.map and s.map.action == "vanish" and s.map.focus),
+        None,
+    )
+    if vanished and language:
+        from app.engines import maps
+
+        lang = language.split("-")[0].lower()
+        known_for = _short(parsed.get("known_for"), 32)
+        if drawn := maps.country_card(vanished, lang, known_for):
+            card = IdCard(
+                title=drawn[0][:32],
+                rows=[CardRow(label=label, value=value) for label, value in drawn[1]],
+            )
+        if population := maps.population_counter(vanished, lang):
+            counter = GraphicCounter(label=population[0][:40], start=population[1], end=0)
+        if lang in maps.NEXT_COUNTRY and len(scenes) > 2:
+            scenes[-1].audio.voiceover_line = maps.NEXT_COUNTRY[lang]
+
     # One card scene, and only with a card to show: the first one marked,
     # or the scene after the hook when the model wrote a card and marked
     # none. Never the hook or the closing question.
-    card = _card(parsed.get("card"))
     marked = [s for s in scenes if s.card]
     for scene in scenes:
         scene.card = False
@@ -1303,7 +1326,7 @@ def _to_script_output(
             call_to_action=call_to_action,
             post=_to_post_copy(parsed, topic, hook, call_to_action),
             music_mood=_music_mood(parsed.get("music_mood")),
-            counter=_counter(parsed.get("counter")),
+            counter=counter,
             tally_title=_short(parsed.get("tally_title"), 40),
             card=card,
         )

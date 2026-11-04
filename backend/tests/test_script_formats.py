@@ -228,3 +228,31 @@ def test_an_identity_card_lands_on_one_early_scene():
     thin = {"title": "X", "rows": [{"label": "a", "value": "b"}]}
     script = _to_script_output("x", {"scenes": scenes, "card": thin})
     assert script.card is None and not any(s.card for s in script.scenes)
+
+
+def test_a_vanished_countrys_card_and_counter_come_from_reference_data():
+    """Not from the model: its first two cards listed a stock exchange and
+    a river, and its counter counted a sea. Only "known for" is its own."""
+    from app.engines.script_engine import _to_script_output
+
+    scenes = [{"voiceover_line": str(i), "visual_prompt": "p"} for i in range(5)]
+    scenes[1]["map"] = {"focus": ["Italy"], "action": "vanish"}
+    parsed = {
+        "scenes": scenes,
+        "known_for": "Pizza",
+        "card": {"title": "İtalya", "rows": [{"label": "Nehir", "value": "Po"}] * 2},
+        "counter": {"label": "Deniz alanı", "start": 4500000},
+    }
+    script = _to_script_output("x", parsed, VideoLength.SHORT, "what_if", "tr")
+    assert script.card is not None
+    assert [(r.label, r.value) for r in script.card.rows][0] == ("Başkent", "Roma")
+    assert [r.label for r in script.card.rows] == ["Başkent", "Nüfus", "Yüzölçümü", "Bilinen"]
+    assert script.card.rows[-1].value == "Pizza"
+    assert script.counter is not None and script.counter.label == "İtalya nüfusu"
+    assert 55_000_000 < script.counter.start < 65_000_000
+    assert script.scenes[1].card
+    assert script.scenes[-1].audio.voiceover_line.startswith("Sıradaki hangi ülke")
+
+    # A language with no labels keeps what the script wrote.
+    script = _to_script_output("x", parsed, VideoLength.SHORT, "what_if", "ar")
+    assert script.card is not None and script.card.rows[0].label == "Nehir"
