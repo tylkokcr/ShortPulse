@@ -486,3 +486,25 @@ async def test_the_characters_words_go_with_every_scene_of_them(monkeypatch, sce
     )
 
     assert "dark curly hair" in fake.created["input"]["prompt"]
+
+
+async def test_an_animated_scene_is_acted_out_by_hailuo_with_its_motion(monkeypatch, scene, tmp_path):
+    """The still first, then six seconds of it in motion: Hailuo's own
+    inputs, and the script's line for what moves."""
+    fake = _serve(monkeypatch, FakeReplicate())
+    settings = Settings(model="black-forest-labs/flux-dev")
+    settings.replicate_video_model = "minimax/hailuo-2.3-fast"
+    settings.replicate_video_timeout_s = 480.0
+    scene.visual.motion = "she turns toward the window; slow push-in"
+
+    await visual_engine._generate_hosted_video(scene, tmp_path, settings)
+
+    created = [
+        json.loads(r.content) for r in fake.requests
+        if r.method == "POST" and r.url.path == "/v1/predictions"
+    ]
+    video = created[-1]
+    assert video["version"] == "minimax/hailuo-2.3-fast"
+    assert video["input"]["first_frame_image"].startswith("data:image/png;base64,")
+    assert video["input"]["duration"] == 6 and "image" not in video["input"]
+    assert "she turns toward the window" in video["input"]["prompt"]

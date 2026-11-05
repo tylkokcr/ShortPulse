@@ -366,3 +366,38 @@ def test_scenes_that_name_the_survivor_are_theirs_when_none_were_marked():
     parsed = {"scenes": scenes, "character": {"name": "Deniz", "look": "a woman"}}
     script = _to_script_output("x", parsed, VideoLength.SHORT, "outbreak", "tr")
     assert [s.hero for s in script.scenes] == [False, False, True, False]
+
+
+async def test_the_story_edit_changes_only_the_spoken_lines(monkeypatch):
+    import json
+
+    from app.engines import script_engine
+    from app.schemas.project import LLMConfig
+
+    parsed = {
+        "scenes": [
+            {"voiceover_line": "Deniz kapıyı kilitler.", "visual_prompt": "door", "hero": True,
+             "map": None},
+            {"voiceover_line": "Radyoyu seçer.", "visual_prompt": "radio", "hero": True},
+        ],
+        "character": {"name": "Deniz", "look": "x"},
+    }
+
+    async def fake(config, system, prompt):
+        edited = json.loads(prompt)
+        edited["scenes"][0]["voiceover_line"] = "Anahtar iki kez döner… sonra sessizlik."
+        edited["scenes"][1]["visual_prompt"] = "something else"
+        edited["character"] = {"name": "Ayşe", "look": "y"}
+        return json.dumps(edited)
+
+    monkeypatch.setattr(script_engine, "_call_llm", fake)
+    out = await script_engine._edit_story(parsed, "tr", LLMConfig())
+    assert out["scenes"][0]["voiceover_line"].startswith("Anahtar")
+    assert out["scenes"][1]["visual_prompt"] == "radio" and out["character"]["name"] == "Deniz"
+
+    async def short(config, system, prompt):
+        return json.dumps({"scenes": [{"voiceover_line": "tek"}]})
+
+    monkeypatch.setattr(script_engine, "_call_llm", short)
+    kept = await script_engine._edit_story(parsed, "tr", LLMConfig())
+    assert kept["scenes"][1]["voiceover_line"] == "Radyoyu seçer."

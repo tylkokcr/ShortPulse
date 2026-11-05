@@ -150,7 +150,7 @@ async def test_submitting_a_render_charges_the_user(pool, user):
 async def test_cost_scales_with_what_the_render_actually_costs(pool, user):
     """A long AI-video render must not cost the same as a short stock one —
     the compute difference between them is more than an order of magnitude."""
-    await _fund(pool, user, 100)
+    await _fund(pool, user, 200)
     app, _ = _build_app(pool, user)
 
     async with _client(app) as client:
@@ -166,8 +166,8 @@ async def test_cost_scales_with_what_the_render_actually_costs(pool, user):
         )
 
     assert cheap.json()["credits_cost"] == 2
-    assert dear.json()["credits_cost"] == 36
-    assert await credits.balance(pool, user) == 100 - 2 - 36
+    assert dear.json()["credits_cost"] == 120
+    assert await credits.balance(pool, user) == 200 - 2 - 120
 
 
 async def test_render_is_refused_when_credits_run_out(pool, user):

@@ -574,7 +574,7 @@
         },
         "outbreak": {
           "name": "Serial o epidemii",
-          "hint": "Historia przetrwania odcinek po odcinku: ta sama postać, epidemia na mapie, rosnący licznik, każdy odcinek kończy się w napięciu. Fikcja, bez drastycznych scen."
+          "hint": "Historia przetrwania odcinek po odcinku: ta sama postać, epidemia na mapie, rosnący licznik, każdy odcinek kończy się w napięciu. Fikcja, bez drastycznych scen. Dla ruchomych scen wybierz tryb Animated w stylu wizualnym."
         }
       },
       "topic": "Temat",

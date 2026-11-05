@@ -56,7 +56,7 @@ interface Rates {
   stills: number;
   local: number;
 }
-const FALLBACK_RATES: Rates = { stock: 2, stills: 6, local: 20 };
+const FALLBACK_RATES: Rates = { stock: 2, stills: 6, local: 40 };
 
 export function Pricing() {
   const t = useTranslations("pricing");

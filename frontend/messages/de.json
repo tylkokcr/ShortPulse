@@ -574,7 +574,7 @@
         },
         "outbreak": {
           "name": "Ausbruch-Serie",
-          "hint": "Eine Überlebensgeschichte in Folgen: dieselbe Figur, die Ausbreitung auf der Karte, ein steigender Zähler, jede Folge endet mit einem Cliffhanger. Fiktion, ohne Blut."
+          "hint": "Eine Überlebensgeschichte in Folgen: dieselbe Figur, die Ausbreitung auf der Karte, ein steigender Zähler, jede Folge endet mit einem Cliffhanger. Fiktion, ohne Blut. Für bewegte Szenen wähle beim Bildstil den Modus Animated."
         }
       },
       "topic": "Thema",

@@ -54,16 +54,21 @@ FORMAT_SCENE_COUNT: dict[str, dict[VideoLength, tuple[int, int]]] = {
         VideoLength.MEDIUM: (14, 17),
         VideoLength.LONG: (20, 24),
     },
+    # Fewer, fuller scenes: a story needs sentences with room in them, and
+    # an animated scene is a six-second clip.
     "outbreak": {
-        VideoLength.SHORT: (9, 11),
-        VideoLength.MEDIUM: (14, 17),
-        VideoLength.LONG: (20, 24),
+        VideoLength.SHORT: (7, 9),
+        VideoLength.MEDIUM: (11, 13),
+        VideoLength.LONG: (15, 18),
     },
 }
 _SCENE_LENGTH = {
     "free": "3 to 5 seconds of spoken voiceover (roughly 8-14 words)",
     "what_if": "2 to 3 seconds of spoken voiceover (roughly 5-10 words) — one punchy idea",
-    "outbreak": "2 to 3 seconds of spoken voiceover (roughly 5-10 words) — one beat of the story",
+    "outbreak": (
+        "4 to 6 seconds of spoken voiceover (roughly 10-18 words) — one moment of the "
+        "story, told with room to breathe"
+    ),
 }
 
 
@@ -329,10 +334,25 @@ Istanbul"). If it does not, pick a well-known city that fits the topic.
 left off ("Last time, Deniz made it to the ferry…") and continues from \
 exactly that moment.
 - One main character, the survivor, named in the second or third scene \
-and followed through the episode: what they see, decide and do, told in \
-the present tense, third person, short lines. Concrete choices beat \
-description: "Deniz grabs the radio, not the food." Two or three other \
-people at most, unnamed or first names only.
+and followed through the episode. Two or three other people at most, \
+unnamed or first names only.
+- Write it like a gripping audio drama by a novelist, not a summary — \
+this is what decides whether anyone watches episode two:
+  * Show, through the senses: what they hear, smell, feel in their \
+hands, the light. "The ferry horn sounds once, then never again." \
+beats "The city falls into chaos."
+  * Vary the rhythm: a long sentence that builds, then a short one that \
+lands. Some lines are fragments. Some are questions.
+  * Let the survivor speak or think now and then, in quotes, short and \
+human: "Don't open it. Don't open it."
+  * Concrete, local detail of the place: its streets, sounds, food, \
+transport, habits — the things only someone from there would mention.
+  * Never two lines in a row starting with the character's name or built \
+the same way, never a chain of "X does this. X does that.", no filler \
+verbs, no clichés ("chaos ensues", "heart pounding", "little did she \
+know"), no explaining what the viewer can feel.
+  * Natural, spoken, native in the script's language: how a gifted local storyteller \
+would say it out loud, not a translation.
 - Time moves forward and is said out loud ("By 6 a.m.", "Noon, day \
 two"); the threat grows each beat: one case, a hospital, a district, the \
 bridges, the city.
@@ -356,6 +376,10 @@ the picture. The infected and anything threatening are never drawn as \
 creatures, monsters, animals or cartoon characters — only as a dark human \
 silhouette, a shadow on a wall, a hand on frosted glass, far away or out \
 of focus. End every "visual_prompt" with "tense, dark, cinematic lighting".
+- Every scene also gets "motion": one sentence in English for animating \
+the picture — what moves (a head turns, rain streaks, a door swings, a \
+silhouette staggers out of fog) and how the camera moves (slow push-in, \
+handheld drift, a pan to the window). Never a cut, never text.
 - Add a top-level "character": {"name": "<a first name common in the \
 script's language>", "look": "<in plain English: adult or teen, age, \
 hair, skin, one distinctive piece of clothing in a colour, a bag>"}. In \
@@ -673,6 +697,8 @@ async def _generate_script_once(
     # library of real footage — somebody filmed it properly.
     if script_format == "what_if" and not raw_script:
         parsed = await _review_what_if(parsed, topic, language, video_length, config, facts)
+    if script_format == "outbreak" and not raw_script:
+        parsed = await _edit_story(parsed, language, config)
     if visual_mode != "stock_media":
         await _rewrite_badly_framed_prompts(parsed, config)
     script = _to_script_output(topic, parsed, video_length, script_format, language)
@@ -847,6 +873,64 @@ async def _review_what_if(
         logger.warning("What-if review returned an unusable script; keeping the first draft")
         return parsed
     return reviewed
+
+
+STORY_EDIT_PROMPT = """\
+You are a celebrated {language_name} novelist who also writes audio \
+dramas, editing one episode of a short survival thriller before it is \
+recorded. You get the episode as JSON. Rewrite ONLY each scene's \
+"voiceover_line", in {language_name}, so it sounds like it was written by \
+a gifted human storyteller and will hold a listener for the whole minute.
+
+- Keep every scene, in order, and what happens in it; keep names, times \
+and places. The first line stays the cold open with the time; the last \
+line stays the call to follow for the next episode.
+- Each line is 10 to 18 words, one moment, said out loud easily.
+- Sensory and specific: a sound, a smell, a texture, a light, a local \
+detail only someone from there would know. Cut anything generic.
+- Rhythm: vary sentence length; let some lines be fragments or a single \
+short sentence after a long one; a question now and then.
+- Now and then the survivor's own words or thoughts in quotes, short and \
+human.
+- Never two lines in a row that start the same way or with the name; no \
+chain of "she does X. She does Y."; no filler verbs, no clichés, no \
+telling the listener what to feel; never "chaos", "panic spreads", \
+"heart pounding".
+- Native, spoken {language_name}: idiomatic, never a translation.
+- "…" where the narrator should hold a breath, two to four times.
+
+Return the same JSON object with only the "voiceover_line" values \
+changed. Respond with ONLY the JSON.
+"""
+
+
+async def _edit_story(parsed: dict, language: str, config: LLMConfig) -> dict:
+    """A novelist's pass over a series episode: the first draft follows the
+    structure — times, maps, cliffhanger — and reads like a summary of
+    itself ("Deniz kapıyı kilitler. Radyoyu seçer."). Only the spoken lines
+    are taken from this pass, matched scene by scene, so it cannot lose a
+    map, a character or a scene."""
+    import json as _json
+
+    try:
+        raw = await _call_llm(
+            config,
+            STORY_EDIT_PROMPT.format(language_name=LANGUAGE_NAMES.get(language, language)),
+            _json.dumps(parsed, ensure_ascii=False),
+        )
+        edited = _extract_json(raw)
+    except Exception:  # noqa: BLE001 - the first draft is still an episode
+        logger.warning("Story edit failed; keeping the first draft", exc_info=True)
+        return parsed
+    before, after = parsed.get("scenes"), edited.get("scenes") if isinstance(edited, dict) else None
+    if not isinstance(before, list) or not isinstance(after, list) or len(after) != len(before):
+        logger.warning("Story edit changed the scenes; keeping the first draft")
+        return parsed
+    for old, new in zip(before, after, strict=True):
+        line = new.get("voiceover_line") if isinstance(new, dict) else None
+        if isinstance(old, dict) and isinstance(line, str) and line.strip():
+            old["voiceover_line"] = line.strip()
+    return parsed
 
 
 async def _call_llm(config: LLMConfig, system_prompt: str, prompt: str) -> str:
@@ -1373,7 +1457,7 @@ def _to_script_output(
             scene = Scene(
                 index=len(scenes),
                 duration_s=duration_s,
-                visual=SceneVisual(prompt=visual_prompt),
+                visual=SceneVisual(prompt=visual_prompt, motion=_short(raw_scene.get("motion"), 400)),
                 audio=SceneAudio(voiceover_line=voiceover_line),
                 graphic=_scene_graphic(raw_scene),
                 map=_scene_map(raw_scene.get("map")),

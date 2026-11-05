@@ -165,6 +165,10 @@ class StockAttribution(BaseModel):
 class SceneVisual(BaseModel):
     prompt: str
     negative_prompt: str | None = None
+    # What moves when the scene is animated (ai_video): the action and the
+    # camera, in a sentence. Written by the script; without it the scene is
+    # animated from the picture's own prompt.
+    motion: str | None = Field(default=None, max_length=400)
     mode: VisualMode = VisualMode.FAST_HYBRID
     asset_path: str | None = None
     # Populated for stock_media scenes only; AI-generated visuals have

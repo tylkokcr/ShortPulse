@@ -55,9 +55,11 @@ class InsufficientCredits(Exception):
 _MODE_COST = {
     VisualMode.STOCK_MEDIA: 2,
     VisualMode.FAST_HYBRID: 6,
-    # Animated: every scene's still is turned into a clip over the API,
-    # about $0.30 more a short video than the stills alone.
-    VisualMode.AI_VIDEO: 12,
+    # Animated: every scene's still is turned into a six-second clip by
+    # Hailuo 2.3 Fast, about $0.19 a scene — some $2 a short video with the
+    # stills, voice and script. 40 keeps the biggest pack on sale (6.3
+    # cents a credit) above that; it was 12 on Wan 2.2 at $0.05 a scene.
+    VisualMode.AI_VIDEO: 40,
 }
 
 _LENGTH_MULTIPLIER = {
@@ -220,7 +222,7 @@ FREE_TIER_MODES: frozenset[VisualMode] = frozenset({VisualMode.STOCK_MEDIA})
 # itself, and the paid modes stay behind a purchase whatever it holds.
 FREE_TRIAL_GENERATED_VIDEOS = 1
 # The paid modes the free video may be made in. Not ai_video: animating
-# every scene costs about $0.70 a short, three times the stills trial, and
+# every scene costs about $2 a short, eight times the stills trial, and
 # the trial exists to show generated pictures, which stills already do.
 TRIAL_MODES: frozenset[VisualMode] = frozenset({VisualMode.FAST_HYBRID})
 

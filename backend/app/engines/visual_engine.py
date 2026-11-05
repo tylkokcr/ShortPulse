@@ -452,23 +452,36 @@ async def _generate_hosted_video(
     still = await _generate_replicate_image(scene, output_dir, settings, style, size, reference)
     image_s = scene.visual.predict_time_s or 0.0
     output_path = output_dir / f"scene_{scene.index:02d}.mp4"
+    image = "data:image/png;base64," + base64.b64encode(still.read_bytes()).decode()
+    # What moves, as the script wrote it for this scene, else a general
+    # instruction to bring the picture to life.
+    motion = scene.visual.motion or (
+        "The scene comes alive: people and animals move naturally, light and water "
+        "shimmer, a slow, smooth camera movement"
+    )
+    prompt = f"{style.name} animation. {scene.visual.prompt}. {motion}. Keep the drawing style."
+    model = settings.replicate_video_model
+    if "hailuo" in model.lower():
+        # Hailuo 2.3 Fast: six seconds at 768p, and the one of four models
+        # tried on the same outbreak still that acted the scene out — she
+        # turned, and a figure came out of the fog — at a third of
+        # Kling's time.
+        video_input = {
+            "first_frame_image": image, "prompt": prompt, "duration": 6, "resolution": "768p",
+        }
+    else:
+        video_input = {
+            "image": image,
+            "prompt": prompt,
+            "resolution": "480p",
+            "go_fast": True,
+            # Smoother than the model's own 16fps, done on their side.
+            "interpolate_output": True,
+        }
     prediction = await _replicate_predict(
-        {
-            "version": settings.replicate_video_model,
-            "input": {
-                "image": "data:image/png;base64," + base64.b64encode(still.read_bytes()).decode(),
-                "prompt": (
-                    f"{style.name} animation. {scene.visual.prompt}. The scene comes alive: "
-                    "people and animals move naturally, light and water shimmer, "
-                    "a slow, smooth camera movement. Keep the drawing style."
-                ),
-                "resolution": "480p",
-                "go_fast": True,
-                # Smoother than the model's own 16fps, done on their side.
-                "interpolate_output": True,
-            },
-        },
+        {"version": model, "input": video_input},
         settings,
+        getattr(settings, "replicate_video_timeout_s", None),
     )
     await _download(_replicate_output_url(prediction), output_path)
     video_s = (prediction.get("metrics") or {}).get("predict_time") or 0.0
@@ -765,7 +778,7 @@ async def _replicate_cancel(client: httpx.AsyncClient, prediction: dict, headers
         logger.warning("Could not cancel Replicate prediction %s", prediction.get("id"))
 
 
-async def _replicate_predict(payload: dict, settings) -> dict:
+async def _replicate_predict(payload: dict, settings, timeout_s: float | None = None) -> dict:
     """Create a prediction and return it once it reaches a terminal state.
 
     `Prefer: wait` gets the finished prediction back on the original
@@ -776,7 +789,8 @@ async def _replicate_predict(payload: dict, settings) -> dict:
         "Authorization": f"Bearer {settings.replicate_api_token}",
         "Content-Type": "application/json",
     }
-    deadline = time.monotonic() + float(settings.replicate_timeout_s)
+    budget = float(timeout_s or settings.replicate_timeout_s)
+    deadline = time.monotonic() + budget
 
     # The socket is legitimately held open by Prefer: wait, so the read
     # timeout has to exceed it while the connect timeout stays short.
@@ -797,7 +811,7 @@ async def _replicate_predict(payload: dict, settings) -> dict:
                 await _replicate_cancel(client, prediction, headers)
                 raise RuntimeError(
                     f"Replicate prediction {prediction.get('id')} still running after "
-                    f"{settings.replicate_timeout_s:.0f}s; cancelled"
+                    f"{budget:.0f}s; cancelled"
                 )
             await asyncio.sleep(_REPLICATE_POLL_INTERVAL_S)
             poll_url = (prediction.get("urls") or {}).get("get")

@@ -178,12 +178,17 @@ class Settings(BaseSettings):
     # top of that. 120 left no room for both at once.
     replicate_timeout_s: float = 180.0
     # ai_video over the API: each scene's still is animated by this
-    # image-to-video model. Wan 2.2 (fast, 480p) is about $0.05 for five
-    # seconds, ~25s of predict time; the render upscales it.
-    replicate_video_model: str = (
-        "wan-video/wan-2.2-i2v-fast:"
-        "4eaf2b01d3bf70d8a2e00b219efeb7cb415855ad18b7dacdc4cae664a73a6eea"
-    )
+    # image-to-video model. Hailuo 2.3 Fast since 2026-11-05: six seconds at
+    # 768p, about $0.19 a scene, and on the same outbreak still the only
+    # one of four that acted the line out at a sensible speed (Kling 2.5
+    # Turbo Pro as good, 2.5x slower; Seedance moved the camera and
+    # nothing else; Wan 2.2, the model before, drew the woman as a child at
+    # 480p). The Wan id below is the cheap fallback, ~$0.05 a scene:
+    # wan-video/wan-2.2-i2v-fast:4eaf2b01d3bf70d8a2e00b219efeb7cb415855ad18b7dacdc4cae664a73a6eea
+    replicate_video_model: str = "minimax/hailuo-2.3-fast"
+    # A clip is 80s of predict time when warm, and a whole episode's
+    # scenes are asked for at once.
+    replicate_video_timeout_s: float = 480.0
 
     # Rendering
     ffmpeg_binary: str = "ffmpeg"
