@@ -667,8 +667,8 @@ def _reference_input(scene: Scene, style: ArtStyle, size, reference: Path) -> di
         "prompt": (
             f"Show {who}, keeping exactly the same face, hair, body and clothes, in a new "
             f"scene: {action}. Their pose and facial expression fit this moment, not the "
-            f"reference picture's. {style.build_prompt('the scene')}. Keep this exact "
-            "drawing style."
+            "reference picture's: worried and tense, never smiling. "
+            f"{style.build_prompt('the scene')}. Keep this exact drawing style."
         ),
         "aspect_ratio": _FLUX_ASPECT[orientation],
         "output_format": "png",
@@ -695,8 +695,9 @@ async def generate_character_sheet(
         duration_s=3,
         visual=SceneVisual(
             prompt=(
-                f"full body character design of {look}, adult proportions, neutral "
-                "expression, standing, front view, whole figure in frame, plain light background"
+                f"full body character design of {look}, adult proportions, serious "
+                "expression with closed mouth, not smiling, standing, front view, whole figure "
+                "in frame, plain light background"
             )
         ),
         audio=SceneAudio(voiceover_line=""),

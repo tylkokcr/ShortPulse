@@ -375,7 +375,9 @@ streets, crowds from far away, objects, screens. Never text or maps in \
 the picture. The infected and anything threatening are never drawn as \
 creatures, monsters, animals or cartoon characters — only as a dark human \
 silhouette, a shadow on a wall, a hand on frosted glass, far away or out \
-of focus. End every "visual_prompt" with "tense, dark, cinematic lighting".
+of focus. End every "visual_prompt" with "tense, dark, cinematic lighting, \
+no faces on vehicles or objects" — the 3D look gave an ambulance cartoon \
+eyes.
 - The last scene's picture is the place at dawn or night, with no people \
 in it.
 - Every scene also gets "motion": one sentence in English for animating \
