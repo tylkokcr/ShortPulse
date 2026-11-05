@@ -352,7 +352,10 @@ doing and where, calling them only "the woman" or "the man" (or "the \
 girl"/"the boy") — never their name and never their looks, which come \
 from their character sheet. Other scenes ("hero" left out): places, \
 streets, crowds from far away, objects, screens. Never text or maps in \
-the picture.
+the picture. The infected and anything threatening are never drawn as \
+creatures, monsters, animals or cartoon characters — only as a dark human \
+silhouette, a shadow on a wall, a hand on frosted glass, far away or out \
+of focus. End every "visual_prompt" with "tense, dark, cinematic lighting".
 - Add a top-level "character": {"name": "<a first name common in the \
 script's language>", "look": "<in plain English: adult or teen, age, \
 hair, skin, one distinctive piece of clothing in a colour, a bag>"}. In \
