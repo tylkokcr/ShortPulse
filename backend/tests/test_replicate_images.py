@@ -472,3 +472,17 @@ async def test_this_path_never_needs_torch(monkeypatch, scene, tmp_path):
     path = await visual_engine._generate_replicate_image(scene, tmp_path, Settings())
 
     assert path.exists()
+
+
+async def test_the_characters_words_go_with_every_scene_of_them(monkeypatch, scene, tmp_path):
+    fake = _serve(monkeypatch, FakeReplicate())
+    sheet = tmp_path / "character.png"
+    sheet.write_bytes(b"\x89PNG sheet")
+    sheet.with_suffix(".txt").write_text("adult woman, dark curly hair, mustard raincoat")
+    scene.hero = True
+
+    await visual_engine._generate_replicate_image(
+        scene, tmp_path, Settings(model="black-forest-labs/flux-dev"), reference=sheet
+    )
+
+    assert "dark curly hair" in fake.created["input"]["prompt"]

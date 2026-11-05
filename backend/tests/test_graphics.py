@@ -128,3 +128,15 @@ def test_a_series_says_which_episode_it_is_and_counts_up():
     lines = [x for x in graphics.events(scenes, plan, "&H0000D7FF", "tr", "M") if "GfxCounter" in x]
     assert lines[1].split(",")[2] == "0:00:03.30"  # with the first spread, not before
     assert lines[-1].rstrip().endswith("240.000")
+
+
+def test_an_outbreak_count_climbs_through_every_map_of_it():
+    from app.schemas.project import MapSpec
+
+    scenes = [_scene(i) for i in range(6)]
+    scenes[1].map = MapSpec(focus=["TUR"], action="spread")
+    scenes[4].map = MapSpec(focus=["TUR"], action="spread")
+    plan = graphics.Plan(counter=GraphicCounter(label="Enfekte", start=1, end=1840))
+    lines = [x for x in graphics.events(scenes, plan, "&H0000D7FF", "tr", "M") if "GfxCounter" in x]
+    # The last step lands at the end of the last map scene (15s), not 1.5s in.
+    assert lines[-1].split(",")[1] >= "0:00:14.00"

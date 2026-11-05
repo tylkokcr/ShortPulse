@@ -2019,6 +2019,8 @@ async def _character_sheet(look: str, root: Path, previous, config, settings) ->
         earlier = character_sheet_path(project_dir(previous.config.id))
         if earlier.is_file():
             shutil.copyfile(earlier, path)
+            # The words it was drawn from go with it (visual_engine.character_look).
+            path.with_suffix(".txt").write_text(look, encoding="utf-8")
             return path
     if visual_engine.image_backend(settings) is not visual_engine.ImageBackend.REPLICATE:
         return None

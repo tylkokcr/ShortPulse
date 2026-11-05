@@ -644,15 +644,25 @@ def _reference_input(scene: Scene, style: ArtStyle, size, reference: Path) -> di
     width, height = replicate_size_for(*(size or SDXL_SIZE_BY_ORIENTATION["vertical"]))
     orientation = "landscape" if width > height else "square" if width == height else "vertical"
     action = scrub_excluded(scene.visual.prompt, scene.visual.negative_prompt or "")
+    look = character_look(reference)
+    who = f"this same person ({look})" if look else "this same person"
     return {
         "input_image": "data:image/png;base64," + base64.b64encode(reference.read_bytes()).decode(),
         "prompt": (
-            "Show this same person, with the same face, hair and clothes, in a new scene: "
-            f"{action}. {style.build_prompt('the scene')}. Keep this exact drawing style."
+            f"Show {who}, keeping exactly the same face, hair, body and clothes, in a new "
+            f"scene: {action}. {style.build_prompt('the scene')}. Keep this exact drawing style."
         ),
         "aspect_ratio": _FLUX_ASPECT[orientation],
         "output_format": "png",
     }
+
+
+def character_look(reference: Path) -> str:
+    """The words the character sheet was drawn from, kept beside it: said
+    again with every scene, because the picture alone let one scene of the
+    first episode keep the jacket and lose the curly hair."""
+    note = reference.with_suffix(".txt")
+    return note.read_text(encoding="utf-8").strip()[:300] if note.is_file() else ""
 
 
 async def generate_character_sheet(
@@ -667,8 +677,8 @@ async def generate_character_sheet(
         duration_s=3,
         visual=SceneVisual(
             prompt=(
-                f"full body character design of {look}, standing, front view, "
-                "whole figure in frame, plain light background"
+                f"full body character design of {look}, adult proportions, standing, "
+                "front view, whole figure in frame, plain light background"
             )
         ),
         audio=SceneAudio(voiceover_line=""),
@@ -681,6 +691,7 @@ async def generate_character_sheet(
         settings,
     )
     await _download(_replicate_output_url(prediction), output_path)
+    output_path.with_suffix(".txt").write_text(look, encoding="utf-8")
     return output_path
 
 
@@ -862,9 +873,14 @@ async def _generate_replicate_image(
             )
 
     model = settings.replicate_image_model
+    drawn = scene
+    if reference is not None and scene.hero and (look := character_look(reference)):
+        # Drawn without the sheet: at least described the same way.
+        drawn = scene.model_copy(deep=True)
+        drawn.visual.prompt = f"{scene.visual.prompt}, the person is {look}"
     try:
         prediction = await _replicate_predict(
-            {"version": model, "input": _replicate_image_input(scene, style, size, settings)},
+            {"version": model, "input": _replicate_image_input(drawn, style, size, settings)},
             settings,
         )
     except Exception:
@@ -878,7 +894,7 @@ async def _generate_replicate_image(
         prediction = await _replicate_predict(
             {
                 "version": fallback,
-                "input": _replicate_image_input(scene, style, size, settings, fallback),
+                "input": _replicate_image_input(drawn, style, size, settings, fallback),
             },
             settings,
         )

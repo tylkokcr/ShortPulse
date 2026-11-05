@@ -260,6 +260,15 @@ def _layers(shot: MapShot, width: int, height: int):
 
     big_w, big_h = round(width * _OVERSIZE), round(height * _OVERSIZE)
     box = _bounds(shot.focus) or (-10.0, 30.0, 40.0, 60.0)
+    if shot.action == "spread" and shot.places:
+        # An outbreak inside one city (Istanbul, Kadıköy, Üsküdar) at
+        # country scale is three labels on one dot: frame the places.
+        spots = [_merc(p.lon, p.lat) for p in shot.places]
+        xs, ys = [x for x, _ in spots], [y for _, y in spots]
+        if max(xs) - min(xs) < 4 and max(ys) - min(ys) < 4:
+            half = max(max(xs) - min(xs), max(ys) - min(ys), 1.0) * 0.75
+            mx, my = (max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2
+            box = (mx - half, my - half, mx + half, my + half)
     cx, cy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
     span_x, span_y = max(box[2] - box[0], 1.0), max(box[3] - box[1], 1.0)
     # The subject fills about three quarters of the frame's width — or,

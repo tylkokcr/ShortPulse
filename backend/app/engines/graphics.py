@@ -238,6 +238,12 @@ def events(
         # Holds the start until the first consequence lands, counts to the
         # end over a second and a half, then holds the end in the highlight.
         steps, run_ms = 24, 1500
+        if c.end > c.start and spread is not None:
+            # An outbreak climbs the whole episode, through every map that
+            # shows it reaching somewhere new, not in one jump at the start.
+            last = max(i for i, s in enumerate(scenes) if s.map and s.map.action == "spread")
+            run_ms = max(scene_start_ms(scenes, last + 1) - first, 1500)
+            steps = max(24, min(run_ms // 250, 160))
         num_y = y + round(58 * sy)
         segments = [(0, first, c.start, False)]
         for k in range(1, steps):
