@@ -571,6 +571,10 @@
         "what_if": {
           "name": "Co by było, gdyby?",
           "hint": "Hipoteza, a potem łańcuch skutków, który rośnie z czasem. Prawdziwe liczby; wygląd kreskówki w trybie obrazów AI."
+        },
+        "outbreak": {
+          "name": "Serial o epidemii",
+          "hint": "Historia przetrwania odcinek po odcinku: ta sama postać, epidemia na mapie, rosnący licznik, każdy odcinek kończy się w napięciu. Fikcja, bez drastycznych scen."
         }
       },
       "topic": "Temat",
@@ -591,6 +595,13 @@
         "spin": "Gdyby Ziemia przestała się obracać?",
         "internet": "Gdyby internet wyłączono na tydzień?",
         "language": "Gdyby wszyscy mówili jednym językiem?"
+      },
+      "outbreakPlaceholder": "np. W Warszawie jednej nocy wybucha epidemia zombie",
+      "outbreakSuggestions": {
+        "city": "Epidemia zombie wybucha w Warszawie",
+        "school": "Epidemia zaczyna się w szkole",
+        "island": "Epidemia na wakacyjnej wyspie",
+        "metro": "Epidemia w nocnym metrze"
       }
     },
     "outro": {
@@ -1122,7 +1133,16 @@
         "regenerate": "Nie udało się. Nic nie zostało pobrane; spróbuj ponownie."
       },
       "beatEditNoScenes": "Ten montaż powstał z twoich klipów, więc nie ma wygenerowanych scen — użyj karty Edycja, żeby dodać na nim tekst.",
-      "backToLibrary": "Biblioteka"
+      "backToLibrary": "Biblioteka",
+      "nextEpisode": {
+        "title": "Odcinek {n} gotowy",
+        "body": "{name} rusza dalej: ta sama postać, ta sama epidemia, historia toczy się dalej.",
+        "cta": "Zrób odcinek {n}",
+        "creating": "Startuje…",
+        "failed": "Nie udało się zacząć kolejnego odcinka.",
+        "insufficient": "Ten odcinek kosztuje {required} kredytów, a masz {balance}.",
+        "topic": "Odcinek {n}"
+      }
     },
     "beatDetails": {
       "title": "Jak powstał ten montaż",

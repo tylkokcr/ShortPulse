@@ -37,7 +37,7 @@ from typing import Any
 
 import httpx
 
-from app.schemas.project import Scene, StockAttribution, VisualMode
+from app.schemas.project import Scene, SceneAudio, SceneVisual, StockAttribution, VisualMode
 from app.services import art_styles
 from app.services.art_styles import ArtStyle
 
@@ -304,9 +304,13 @@ async def generate_scene_visual(
     size: tuple[int, int] | None = None,
     render_size: tuple[int, int] | None = None,
     variant: int = 0,
+    reference: Path | None = None,
 ) -> Scene:
     """Populate scene.visual.asset_path using the requested mode, with a
     stock-media fallback if a local generation mode fails (e.g. no GPU).
+
+    `reference` is a series' character sheet: a scene marked `hero` is
+    drawn from it over the API, so the character looks the same throughout.
 
     `art_style` and `size` only reach the locally generated modes: stock
     footage is whatever was filmed, at whatever the clip's own dimensions
@@ -324,12 +328,16 @@ async def generate_scene_visual(
     try:
         if mode == VisualMode.AI_VIDEO:
             if image_backend(settings) is ImageBackend.REPLICATE:
-                path = await _generate_hosted_video(scene, output_dir, settings, style, size)
+                path = await _generate_hosted_video(
+                    scene, output_dir, settings, style, size, reference
+                )
             else:
                 path = await _generate_ai_video(scene, output_dir, settings, style)
         elif mode == VisualMode.FAST_HYBRID:
             if image_backend(settings) is ImageBackend.REPLICATE:
-                path = await _generate_replicate_image(scene, output_dir, settings, style, size)
+                path = await _generate_replicate_image(
+                    scene, output_dir, settings, style, size, reference
+                )
             else:
                 path = await _generate_fast_hybrid_image(scene, output_dir, settings, style, size)
         elif mode == VisualMode.STOCK_MEDIA:
@@ -429,6 +437,7 @@ async def _generate_hosted_video(
     settings,
     style: ArtStyle | None = None,
     size: tuple[int, int] | None = None,
+    reference: Path | None = None,
 ) -> Path:
     """ai_video over the API: the scene's still, as fast_hybrid draws it,
     then animated by an image-to-video model. Starting from the still keeps
@@ -440,7 +449,7 @@ async def _generate_hosted_video(
     import base64
 
     style = style or art_styles.DEFAULT_ART_STYLE
-    still = await _generate_replicate_image(scene, output_dir, settings, style, size)
+    still = await _generate_replicate_image(scene, output_dir, settings, style, size, reference)
     image_s = scene.visual.predict_time_s or 0.0
     output_path = output_dir / f"scene_{scene.index:02d}.mp4"
     prediction = await _replicate_predict(
@@ -626,6 +635,55 @@ def _replicate_image_input(
     }
 
 
+def _reference_input(scene: Scene, style: ArtStyle, size, reference: Path) -> dict:
+    """Kontext's inputs: the character sheet and an instruction to put that
+    same person in this scene, in the style. Measured: the face, hair and
+    clothes held across a ferry, a night street and a market stall."""
+    import base64
+
+    width, height = replicate_size_for(*(size or SDXL_SIZE_BY_ORIENTATION["vertical"]))
+    orientation = "landscape" if width > height else "square" if width == height else "vertical"
+    action = scrub_excluded(scene.visual.prompt, scene.visual.negative_prompt or "")
+    return {
+        "input_image": "data:image/png;base64," + base64.b64encode(reference.read_bytes()).decode(),
+        "prompt": (
+            "Show this same person, with the same face, hair and clothes, in a new scene: "
+            f"{action}. {style.build_prompt('the scene')}. Keep this exact drawing style."
+        ),
+        "aspect_ratio": _FLUX_ASPECT[orientation],
+        "output_format": "png",
+    }
+
+
+async def generate_character_sheet(
+    look: str, output_path: Path, settings, style: ArtStyle | None = None
+) -> Path:
+    """A series character drawn once, full length on a plain background:
+    the reference every scene they are in is drawn from."""
+
+    style = style or art_styles.DEFAULT_ART_STYLE
+    sheet = Scene(
+        index=0,
+        duration_s=3,
+        visual=SceneVisual(
+            prompt=(
+                f"full body character design of {look}, standing, front view, "
+                "whole figure in frame, plain light background"
+            )
+        ),
+        audio=SceneAudio(voiceover_line=""),
+    )
+    prediction = await _replicate_predict(
+        {
+            "version": settings.replicate_image_model,
+            "input": _replicate_image_input(sheet, style, None, settings),
+        },
+        settings,
+    )
+    await _download(_replicate_output_url(prediction), output_path)
+    return output_path
+
+
 async def _replicate_call(
     client: httpx.AsyncClient,
     method: str,
@@ -776,12 +834,32 @@ async def _generate_replicate_image(
     settings,
     style: ArtStyle | None = None,
     size: tuple[int, int] | None = None,
+    reference: Path | None = None,
 ) -> Path:
     """fast_hybrid over the API. Same signature and same output filename as
     the local generator, which is what keeps the render engine's
     extension-based dispatch and the caller's fallback both unchanged."""
     output_path = output_dir / f"scene_{scene.index:02d}.png"
     style = style or art_styles.DEFAULT_ART_STYLE
+
+    if reference is not None and scene.hero and reference.is_file():
+        try:
+            prediction = await _replicate_predict(
+                {
+                    "version": settings.replicate_reference_model,
+                    "input": _reference_input(scene, style, size, reference),
+                },
+                settings,
+            )
+            await _download(_replicate_output_url(prediction), output_path)
+            scene.visual.predict_time_s = (prediction.get("metrics") or {}).get("predict_time")
+            return output_path
+        except Exception:
+            # The scene without its character beats a stock clip.
+            logger.warning(
+                "Scene %s could not be drawn from the character sheet; drawing it plain",
+                scene.index, exc_info=True,
+            )
 
     model = settings.replicate_image_model
     try:

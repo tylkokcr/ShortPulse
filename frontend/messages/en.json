@@ -571,6 +571,10 @@
         "what_if": {
           "name": "What if?",
           "hint": "A hypothetical, then a chain of consequences that grows over time. Real numbers; the cartoon look is in the AI visuals mode."
+        },
+        "outbreak": {
+          "name": "Outbreak series",
+          "hint": "A survival story told episode by episode: the same character, the spread on a map, a rising count, each episode ending on a cliffhanger. Fiction, no gore."
         }
       },
       "topic": "Topic",
@@ -591,6 +595,13 @@
         "spin": "What if the Earth stopped spinning?",
         "internet": "What if the internet went down for a week?",
         "language": "What if everyone spoke the same language?"
+      },
+      "outbreakPlaceholder": "e.g. A zombie outbreak starts in London one night",
+      "outbreakSuggestions": {
+        "city": "A zombie outbreak starts in London",
+        "school": "The outbreak starts at a school",
+        "island": "An outbreak on a holiday island",
+        "metro": "Outbreak on the midnight subway"
       }
     },
     "outro": {
@@ -1122,7 +1133,16 @@
         "regenerate": "That didn't work. Nothing was charged; try again."
       },
       "beatEditNoScenes": "This edit was cut from your clips, so it has no generated scenes — use the Edit tab to add text over it.",
-      "backToLibrary": "Library"
+      "backToLibrary": "Library",
+      "nextEpisode": {
+        "title": "Episode {n} is ready",
+        "body": "Pick up where {name} left off: the same character, the same outbreak, the story continues.",
+        "cta": "Make episode {n}",
+        "creating": "Starting…",
+        "failed": "Couldn't start the next episode.",
+        "insufficient": "This episode costs {required} credits and you have {balance}.",
+        "topic": "Episode {n}"
+      }
     },
     "beatDetails": {
       "title": "How this edit was made",

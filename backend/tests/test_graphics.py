@@ -111,3 +111,20 @@ def test_braces_from_the_model_cannot_open_an_override_block():
     scenes = [_scene(0), _scene(1, SceneGraphic(tally="{\\\\fs400}huge", icon="game"))]
     line = next(x for x in graphics.events(scenes, graphics.Plan(), "&H0000D7FF", "en", "M") if "huge" in x)
     assert "\\fs400" not in line
+
+
+def test_a_series_says_which_episode_it_is_and_counts_up():
+    from app.schemas.project import MapSpec
+
+    scenes = [_scene(i, SceneGraphic(tally="Radyo", icon="radio") if i == 2 else None) for i in range(4)]
+    scenes[1].map = MapSpec(focus=["TUR"], action="spread")
+    script = ScriptOutput(
+        topic="x", hook="h", scenes=scenes, total_duration_s=12, episode=3,
+        counter=GraphicCounter(label="Enfekte", start=12, end=240_000),
+    )
+    config = SimpleNamespace(info_graphics=None, script_format="outbreak", language="tr")
+    plan = graphics.plan_from(config, script)
+    assert plan is not None and plan.tag == "KURGU · BÖLÜM 3"
+    lines = [x for x in graphics.events(scenes, plan, "&H0000D7FF", "tr", "M") if "GfxCounter" in x]
+    assert lines[1].split(",")[2] == "0:00:03.30"  # with the first spread, not before
+    assert lines[-1].rstrip().endswith("240.000")

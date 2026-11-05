@@ -59,7 +59,7 @@ def enabled(config) -> bool:
     "what if?" writes the data for them, a free topic does not."""
     if config.info_graphics is not None:
         return bool(config.info_graphics)
-    return str(config.script_format) == "what_if"
+    return str(config.script_format) in ("what_if", "outbreak")
 
 
 def plan_for(project) -> Plan | None:
@@ -73,12 +73,20 @@ def plan_from(config, script) -> Plan | None:
         return None
     if not (script.counter or any(s.graphic for s in script.scenes)):
         return None
-    return Plan(
-        counter=script.counter,
-        title=script.tally_title,
-        tag=_TAG.get(str(getattr(config, "language", "en")), _TAG["en"]),
-    )
+    language = str(getattr(config, "language", "en"))
+    if str(getattr(config, "script_format", "")) == "outbreak":
+        tag = _SERIES_TAG.get(language, _SERIES_TAG["en"]).format(n=script.episode)
+    else:
+        tag = _TAG.get(language, _TAG["en"])
+    return Plan(counter=script.counter, title=script.tally_title, tag=tag)
 
+
+# The same label on a series, with the episode.
+_SERIES_TAG = {
+    "tr": "KURGU · BÖLÜM {n}", "en": "FICTION · EPISODE {n}", "pl": "FIKCJA · ODCINEK {n}",
+    "de": "FIKTION · FOLGE {n}", "es": "FICCIÓN · EPISODIO {n}", "fr": "FICTION · ÉPISODE {n}",
+    "pt": "FICÇÃO · EPISÓDIO {n}", "it": "FINZIONE · EPISODIO {n}", "ru": "ВЫМЫСЕЛ · СЕРИЯ {n}",
+}
 
 # The honesty label in the corner of every "what if?" video.
 _TAG = {
@@ -214,8 +222,14 @@ def events(
         vanish = next(
             (i for i, s in enumerate(scenes) if s.map and s.map.action == "vanish"), None
         )
+        spread = next(
+            (i for i, s in enumerate(scenes) if s.map and s.map.action == "spread"), None
+        )
         if vanish is not None:
             first = scene_start_ms(scenes, vanish) + (2300 if scenes[vanish].card else 500)
+        elif spread is not None:
+            # An outbreak's count climbs as the red first spreads.
+            first = scene_start_ms(scenes, spread) + 300
         label = _clean(c.label)[:28]
         out.append(
             f"Dialogue: 2,{_ts(0)},{_ts(total)},GfxCounter,,0,0,0,,"

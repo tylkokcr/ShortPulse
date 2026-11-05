@@ -86,6 +86,22 @@ async def create_project(
             detail={"error": refusal.code, "reason": refusal.reason},
         ) from refusal
 
+    # The episode this one continues must be the caller's own, finished,
+    # and a series; the new one is that series' next, in its language.
+    if config.continues_from:
+        previous = await _visible_project(config.continues_from, user_id)
+        if (
+            previous.script is None
+            or str(previous.config.script_format) != ScriptFormat.OUTBREAK
+            or str(previous.status) != "complete"
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail={"error": "not_a_series", "reason": "Only a finished episode can be continued."},
+            )
+        config.script_format = ScriptFormat.OUTBREAK
+        config.language = previous.config.language
+
     # Refuse to sell a mode this install cannot run.
     #
     # The pipeline falls back to stock footage when generation fails, which
@@ -124,11 +140,14 @@ async def create_project(
     config.voice = narration.resolve(config.voice, config.language, str(config.script_format))
 
     factual = config.script_format == ScriptFormat.WHAT_IF
+    # A story told across episodes needs the stronger writer too, without
+    # the cooler temperature facts get.
+    strong = factual or config.script_format == ScriptFormat.OUTBREAK
     config.llm = LLMConfig(
         provider=LLMProvider(settings.llm_provider),
         model=(
             await script_engine.resolve_fact_model(settings)
-            if factual and settings.llm_provider == "openai" and settings.fact_llm_model
+            if strong and settings.llm_provider == "openai" and settings.fact_llm_model
             else settings.llm_model
         ),
         base_url=settings.ollama_base_url,

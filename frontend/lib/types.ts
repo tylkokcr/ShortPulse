@@ -140,6 +140,9 @@ export interface ScriptOutput {
   total_duration_s: number;
   call_to_action?: string | null;
   post?: PostCopy | null;
+  /** A series (the outbreak format): who it follows and which episode. */
+  character?: { name: string; look: string } | null;
+  episode?: number;
 }
 
 export interface VoiceConfig {
@@ -239,7 +242,7 @@ export interface BeatEditSpec {
   music_start_s?: number | null;
 }
 
-export type ScriptFormat = "free" | "what_if";
+export type ScriptFormat = "free" | "what_if" | "outbreak";
 
 export interface ProjectConfig {
   id: string;
@@ -280,6 +283,8 @@ export interface ProjectConfig {
    *  unless turned off — a held frame reads as a slideshow. */
   zoom_punch?: boolean;
   info_graphics?: boolean | null;
+  /** The episode this one continues (outbreak series). */
+  continues_from?: string | null;
   music: MusicConfig;
   outro: OutroConfig;
   created_at: string;

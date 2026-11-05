@@ -24,6 +24,7 @@ from app.core.config import get_settings
 from app.engines.graphics import ICONS
 from app.schemas.project import (
     CardRow,
+    Character,
     GraphicCounter,
     IdCard,
     LLMConfig,
@@ -53,10 +54,16 @@ FORMAT_SCENE_COUNT: dict[str, dict[VideoLength, tuple[int, int]]] = {
         VideoLength.MEDIUM: (14, 17),
         VideoLength.LONG: (20, 24),
     },
+    "outbreak": {
+        VideoLength.SHORT: (9, 11),
+        VideoLength.MEDIUM: (14, 17),
+        VideoLength.LONG: (20, 24),
+    },
 }
 _SCENE_LENGTH = {
     "free": "3 to 5 seconds of spoken voiceover (roughly 8-14 words)",
     "what_if": "2 to 3 seconds of spoken voiceover (roughly 5-10 words) — one punchy idea",
+    "outbreak": "2 to 3 seconds of spoken voiceover (roughly 5-10 words) — one beat of the story",
 }
 
 
@@ -311,6 +318,68 @@ Türkiye", 85000000); for other premises only if one well-established \
 number fits, otherwise leave it out. Every scene with a tally gets an \
 icon — pick the nearest one rather than none.
 """,
+    "outbreak": """\
+This video is one episode of a fictional outbreak series — a zombie-style \
+epidemic told as a tense survival story about one person. Follow these:
+- The topic names where it starts ("A zombie outbreak starts in \
+Istanbul"). If it does not, pick a well-known city that fits the topic.
+- Episode 1 opens cold, mid-event, with the time and the place: "Day 1. \
+3:12 a.m. Istanbul. The first call comes in…" — that is the FIRST scene's \
+"voiceover_line". A later episode opens with one line recapping where we \
+left off ("Last time, Deniz made it to the ferry…") and continues from \
+exactly that moment.
+- One main character, the survivor, named in the second or third scene \
+and followed through the episode: what they see, decide and do, told in \
+the present tense, third person, short lines. Concrete choices beat \
+description: "Deniz grabs the radio, not the food." Two or three other \
+people at most, unnamed or first names only.
+- Time moves forward and is said out loud ("By 6 a.m.", "Noon, day \
+two"); the threat grows each beat: one case, a hospital, a district, the \
+bridges, the city.
+- End on a cliffhanger in the second-to-last scene — a sound, a door, \
+a choice not yet made — and make the last scene the hook for the next \
+episode in the script's language: "Episode 2 tomorrow. Follow so you \
+don't miss it." Never resolve the danger.
+- Suspense, never gore: no blood, no bites shown, no wounds, no bodies. \
+The infected are distant silhouettes, shadows behind glass, a shape at \
+the end of a corridor. No real people or celebrities, no real disease \
+names, no blaming any nationality, religion or group, no weapons \
+instructions. Fiction, and it says so.
+- "…" is a held breath for the narrator: two to four times a script.
+- "visual_prompt": an illustrated scene, framed simply. A scene the main \
+character is in gets "hero": true, and its prompt says what they are \
+doing and where, calling them only "the woman" or "the man" (or "the \
+girl"/"the boy") — never their name and never their looks, which come \
+from their character sheet. Other scenes ("hero" left out): places, \
+streets, crowds from far away, objects, screens. Never text or maps in \
+the picture.
+- Add a top-level "character": {"name": "<a first name common in the \
+script's language>", "look": "<in plain English: adult or teen, age, \
+hair, skin, one distinctive piece of clothing in a colour, a bag>"}. In \
+a later episode, keep the character you are given, exactly.
+- Add a top-level "recap": in English, three to five sentences of what \
+has happened so far in the series, this episode included, ending on the \
+cliffhanger — the next episode is written from it alone.
+- On-screen graphics: every scene object also carries
+  "tally": 1-3 words in the script's language for what was lost or found \
+in this beat, as a row on a growing list ("Bridges closed", "Radio", \
+"Ferry"); the first scene and the last have none;
+  "icon": exactly one word from this list, the closest match: {icons};
+  "stamp": only on the two or three biggest moments, 1-2 punchy words in \
+the script's language ("LOCKDOWN");
+  "chapter": on the scenes that open a new beat — four to six of them, \
+the first included — the time, in the script's language ("DAY 1 · 03:12");
+  "map": three or four scenes show the spread on a glowing map instead of \
+a picture — always one early on, then as it reaches new places. As \
+{"focus": ["<the country, in English>"], "action": "spread", "places": \
+[{"name": "<in the script's language>", "lat": .., "lon": ..}]}: the \
+first place is where it started, the others where it has reached by \
+then (up to three, coordinates you are sure of).
+Add a top-level "tally_title" in the script's language ("Day one"), a \
+top-level "counter" for the infected, rising: {"label": "<Infected, in \
+the script's language>", "start": <small, or where the last episode \
+ended>, "end": <where this episode ends>}, and "music_mood": "suspense".
+""",
 }
 
 
@@ -532,8 +601,12 @@ async def generate_script(
     visual_mode: str = "fast_hybrid",
     max_attempts: int = 3,
     script_format: str = "free",
+    previous: ScriptOutput | None = None,
 ) -> ScriptOutput:
     """Run the LLM and convert its response into a validated ScriptOutput.
+
+    `previous` is the episode this one continues (outbreak series): its
+    recap, character and count are where this one starts.
 
     Local models occasionally produce a response where every scene is
     malformed in the same way for a given topic (e.g. leaving
@@ -545,7 +618,8 @@ async def generate_script(
     for attempt in range(1, max_attempts + 1):
         try:
             return await _generate_script_once(
-                topic, config, raw_script, video_length, language, visual_mode, script_format
+                topic, config, raw_script, video_length, language, visual_mode, script_format,
+                previous,
             )
         except ScriptGenerationError as exc:
             last_error = exc
@@ -562,9 +636,12 @@ async def _generate_script_once(
     language: str,
     visual_mode: str = "fast_hybrid",
     script_format: str = "free",
+    previous: ScriptOutput | None = None,
 ) -> ScriptOutput:
     system_prompt = _build_system_prompt(video_length, language, visual_mode, script_format)
     user_prompt = _build_user_prompt(topic, raw_script)
+    if previous is not None and not raw_script:
+        user_prompt += "\n\n" + _previous_episode(previous)
     facts: list[str] = []
     if script_format == "what_if" and not raw_script:
         # Facts first, then the story: a model asked to be vivid and correct
@@ -589,7 +666,34 @@ async def _generate_script_once(
         parsed = await _review_what_if(parsed, topic, language, video_length, config, facts)
     if visual_mode != "stock_media":
         await _rewrite_badly_framed_prompts(parsed, config)
-    return _to_script_output(topic, parsed, video_length, script_format, language)
+    script = _to_script_output(topic, parsed, video_length, script_format, language)
+    if previous is not None:
+        # The same person, whatever the model wrote: the look is what their
+        # character sheet was drawn from, and the sheet is reused.
+        script.character = previous.character or script.character
+        script.episode = min(previous.episode + 1, 99)
+    return script
+
+
+def _previous_episode(previous: ScriptOutput) -> str:
+    """What the next episode is written from."""
+    parts = [f"This is episode {min(previous.episode + 1, 99)} of the series."]
+    if previous.recap:
+        parts.append(f"The story so far: {previous.recap}")
+    if previous.character:
+        parts.append(
+            f'The main character, unchanged — use exactly this "character": '
+            f'{{"name": "{previous.character.name}", "look": "{previous.character.look}"}}'
+        )
+    if previous.counter:
+        parts.append(
+            f"The infected count stood at {previous.counter.end} at the end of the last "
+            "episode: start this episode's counter there."
+        )
+    last = previous.scenes[-2].audio.voiceover_line if len(previous.scenes) > 1 else ""
+    if last:
+        parts.append(f"The last episode's cliffhanger line: {last}")
+    return "\n".join(parts)
 
 
 WHAT_IF_REVIEW_PROMPT = """\
@@ -1113,11 +1217,18 @@ def _scene_map(raw: object) -> MapSpec | None:
     try:
         return MapSpec(
             focus=codes,
-            action=action if action in ("glow", "vanish", "mark") else "glow",
+            action=action if action in ("glow", "vanish", "mark", "spread") else "glow",
             places=[p for p in places if p.name][:3],
         )
     except ValidationError:
         return None
+
+
+def _character(raw: object) -> Character | None:
+    if not isinstance(raw, dict):
+        return None
+    name, look = _short(raw.get("name"), 32), _short(raw.get("look"), 300)
+    return Character(name=name, look=look) if name and look else None
 
 
 def _known_for(raw: object, limit: int = 26) -> str | None:
@@ -1159,12 +1270,17 @@ def _card(raw: object) -> IdCard | None:
     return IdCard(title=title, rows=rows[:4])
 
 
-def _counter(raw: object) -> GraphicCounter | None:
+def _counter(raw: object, rising: bool = False) -> GraphicCounter | None:
     if not isinstance(raw, dict):
         return None
     try:
         label = _short(raw.get("label"), 40)
         start, end = int(raw.get("start")), int(raw.get("end", 0))  # type: ignore[arg-type]
+        if rising:
+            # An outbreak's count goes up, from a handful to thousands.
+            if not label or start < 0 or end <= start or end < 100:
+                return None
+            return GraphicCounter(label=label, start=start, end=end)
         # A counter worth watching fall: one country counted as "1" came back
         # from a model, and a number that drops from 1 to 0 is no counter.
         if not label or start <= end or start < 1000:
@@ -1241,6 +1357,7 @@ def _to_script_output(
                 graphic=_scene_graphic(raw_scene),
                 map=_scene_map(raw_scene.get("map")),
                 card=raw_scene.get("card") is True,
+                hero=raw_scene.get("hero") is True,
             )
         except (ValueError, TypeError, AttributeError, ValidationError) as exc:
             logger.warning("Skipping scene %d (%s): %r", raw_index, exc, raw_scene)
@@ -1302,7 +1419,7 @@ def _to_script_output(
     # the model: in the first two real cards it listed a stock exchange
     # and a river and counted Japan's sea area, whatever the rules said.
     card = _card(parsed.get("card"))
-    counter = _counter(parsed.get("counter"))
+    counter = _counter(parsed.get("counter"), rising=script_format == "outbreak")
     vanished = next(
         (s.map.focus[0] for s in scenes if s.map and s.map.action == "vanish" and s.map.focus),
         None,
@@ -1350,6 +1467,8 @@ def _to_script_output(
             counter=counter,
             tally_title=_short(parsed.get("tally_title"), 40),
             card=card,
+            character=_character(parsed.get("character")) if script_format == "outbreak" else None,
+            recap=_short(parsed.get("recap"), 1200) if script_format == "outbreak" else None,
         )
     except ValidationError as exc:
         raise ScriptGenerationError(f"Malformed script structure: {exc}") from exc

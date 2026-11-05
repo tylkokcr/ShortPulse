@@ -150,7 +150,7 @@ export const useShortPulseStore = create<ShortPulseState>((set, get) => ({
       subtitles: captionStyleFor(draft),
       censor_profanity: draft.censorProfanity,
       zoom_punch: draft.zoomPunch,
-      info_graphics: draft.scriptFormat === "what_if" ? draft.infoGraphics : null,
+      info_graphics: draft.scriptFormat === "free" ? null : draft.infoGraphics,
       music: {
         ...DEFAULT_MUSIC_CONFIG,
         enabled: draft.musicEnabled,

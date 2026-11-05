@@ -266,3 +266,56 @@ def test_known_for_is_cut_at_an_item_or_a_word_never_mid_word():
     assert _known_for("Hazelnuts") == "Hazelnuts"
     assert _known_for("The oldest film festival in the whole world") == "The oldest film festival"
     assert _known_for(None) is None
+
+
+def test_an_outbreak_episode_keeps_its_survivor_and_counts_up():
+    from app.engines.script_engine import _to_script_output
+
+    scenes = [{"voiceover_line": str(i), "visual_prompt": "p"} for i in range(5)]
+    scenes[2]["hero"] = True
+    scenes[3]["map"] = {
+        "focus": ["Turkey"], "action": "spread",
+        "places": [{"name": "İstanbul", "lat": 41.0, "lon": 28.97}],
+    }
+    parsed = {
+        "scenes": scenes,
+        "character": {"name": "Deniz", "look": "a woman in her twenties, a mustard yellow jacket"},
+        "recap": "Day one: Deniz reached the ferry as the bridges closed.",
+        "counter": {"label": "Enfekte", "start": 1, "end": 24000},
+    }
+    script = _to_script_output("x", parsed, VideoLength.SHORT, "outbreak", "tr")
+    assert script.character is not None and script.character.name == "Deniz"
+    assert script.recap and script.episode == 1
+    assert [s.hero for s in script.scenes] == [False, False, True, False, False]
+    assert script.scenes[3].map is not None and script.scenes[3].map.action == "spread"
+    assert script.counter is not None and (script.counter.start, script.counter.end) == (1, 24000)
+    # A "what if?" counter still has to fall.
+    assert _to_script_output("x", parsed, VideoLength.SHORT, "what_if").counter is None
+
+
+def test_the_next_episode_is_written_from_the_last_ones_recap():
+    from app.engines.script_engine import _previous_episode
+    from app.schemas.project import Character, GraphicCounter, ScriptOutput
+
+    previous = ScriptOutput(
+        topic="x", hook="h",
+        scenes=[_s(i) for i in range(4)],
+        total_duration_s=12,
+        character=Character(name="Deniz", look="a woman, yellow jacket"),
+        recap="Deniz made it to the ferry.",
+        counter=GraphicCounter(label="Enfekte", start=1, end=24000),
+        episode=1,
+    )
+    prompt = _previous_episode(previous)
+    assert "episode 2" in prompt and "Deniz made it to the ferry." in prompt
+    assert '"name": "Deniz"' in prompt and "24000" in prompt
+    assert "line 2" in prompt  # the cliffhanger, second to last
+
+
+def _s(i):
+    from app.schemas.project import Scene, SceneAudio, SceneVisual
+
+    return Scene(
+        index=i, duration_s=3, visual=SceneVisual(prompt="p"),
+        audio=SceneAudio(voiceover_line=f"line {i}"),
+    )

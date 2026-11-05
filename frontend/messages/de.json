@@ -571,6 +571,10 @@
         "what_if": {
           "name": "Was wäre, wenn?",
           "hint": "Eine Annahme, dann eine Kette von Folgen, die mit der Zeit wächst. Echte Zahlen; der Cartoon-Look gibt es im KI-Bilder-Modus."
+        },
+        "outbreak": {
+          "name": "Ausbruch-Serie",
+          "hint": "Eine Überlebensgeschichte in Folgen: dieselbe Figur, die Ausbreitung auf der Karte, ein steigender Zähler, jede Folge endet mit einem Cliffhanger. Fiktion, ohne Blut."
         }
       },
       "topic": "Thema",
@@ -591,6 +595,13 @@
         "spin": "Wenn die Erde aufhörte, sich zu drehen?",
         "internet": "Wenn das Internet eine Woche ausfiele?",
         "language": "Wenn alle dieselbe Sprache sprächen?"
+      },
+      "outbreakPlaceholder": "z. B. In Berlin bricht nachts eine Zombie-Epidemie aus",
+      "outbreakSuggestions": {
+        "city": "In Berlin bricht eine Zombie-Epidemie aus",
+        "school": "Der Ausbruch beginnt in einer Schule",
+        "island": "Ausbruch auf einer Urlaubsinsel",
+        "metro": "Ausbruch in der Mitternachts-U-Bahn"
       }
     },
     "outro": {
@@ -1122,7 +1133,16 @@
         "regenerate": "Das hat nicht geklappt. Es wurde nichts berechnet; versuch es erneut."
       },
       "beatEditNoScenes": "Dieser Edit wurde aus deinen Clips geschnitten und hat daher keine generierten Szenen — nutze den Tab Bearbeiten, um Text darüberzulegen.",
-      "backToLibrary": "Bibliothek"
+      "backToLibrary": "Bibliothek",
+      "nextEpisode": {
+        "title": "Folge {n} ist fertig",
+        "body": "Weiter, wo {name} aufgehört hat: dieselbe Figur, derselbe Ausbruch, die Geschichte geht weiter.",
+        "cta": "Folge {n} erstellen",
+        "creating": "Wird gestartet…",
+        "failed": "Die nächste Folge konnte nicht gestartet werden.",
+        "insufficient": "Diese Folge kostet {required} Credits, du hast {balance}.",
+        "topic": "Folge {n}"
+      }
     },
     "beatDetails": {
       "title": "So wurde dieser Edit gemacht",

@@ -104,6 +104,7 @@ class Settings:
     ):
         self.replicate_api_token = token
         self.replicate_image_model = model
+        self.replicate_reference_model = "black-forest-labs/flux-kontext-dev"
         self.replicate_timeout_s = timeout
         self.sdxl_num_inference_steps = steps
         self.sdxl_guidance_scale = guidance
@@ -243,6 +244,56 @@ async def test_a_scene_flux_fails_is_drawn_on_the_fallback_model(monkeypatch, sc
     assert [c["version"] for c in created] == ["black-forest-labs/flux-dev", "owner/sdxl:abc123"]
     # The SDXL inputs, negative prompt and all.
     assert "moon" in created[1]["input"]["negative_prompt"]
+    assert path.exists()
+
+
+async def test_a_hero_scene_is_drawn_from_the_character_sheet(monkeypatch, scene, tmp_path):
+    """The same face in every scene: the sheet goes to Kontext with the
+    scene's action. A scene without the character is drawn as usual."""
+    fake = _serve(monkeypatch, FakeReplicate())
+    sheet = tmp_path / "character.png"
+    sheet.write_bytes(b"\x89PNG sheet")
+    settings = Settings(model="black-forest-labs/flux-dev")
+
+    scene.hero = True
+    await visual_engine._generate_replicate_image(scene, tmp_path, settings, reference=sheet)
+    sent = fake.created
+    assert sent["version"] == "black-forest-labs/flux-kontext-dev"
+    assert sent["input"]["input_image"].startswith("data:image/png;base64,")
+    assert "same face" in sent["input"]["prompt"] and "a lone hiker" in sent["input"]["prompt"]
+
+    scene.hero = False
+    await visual_engine._generate_replicate_image(scene, tmp_path, settings, reference=sheet)
+    versions = [
+        json.loads(r.content)["version"] for r in fake.requests
+        if r.method == "POST" and r.url.path == "/v1/predictions"
+    ]
+    assert versions == ["black-forest-labs/flux-kontext-dev", "black-forest-labs/flux-dev"]
+
+
+async def test_a_hero_scene_kontext_fails_is_drawn_plain(monkeypatch, scene, tmp_path):
+    class KontextDown(FakeReplicate):
+        def __call__(self, request):
+            if request.method == "POST" and request.url.path == "/v1/predictions":
+                if "kontext" in json.loads(request.content)["version"]:
+                    self.requests.append(request)
+                    return httpx.Response(201, content=json.dumps(_prediction("failed")))
+            return super().__call__(request)
+
+    fake = _serve(monkeypatch, KontextDown())
+    sheet = tmp_path / "character.png"
+    sheet.write_bytes(b"\x89PNG sheet")
+    scene.hero = True
+
+    path = await visual_engine._generate_replicate_image(
+        scene, tmp_path, Settings(model="black-forest-labs/flux-dev"), reference=sheet
+    )
+
+    versions = [
+        json.loads(r.content)["version"] for r in fake.requests
+        if r.method == "POST" and r.url.path == "/v1/predictions"
+    ]
+    assert versions == ["black-forest-labs/flux-kontext-dev", "black-forest-labs/flux-dev"]
     assert path.exists()
 
 

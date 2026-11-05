@@ -286,9 +286,10 @@ def _layers(shot: MapShot, width: int, height: int):
 
     if shot.card and not shot.focus:
         # A card about no country: the night sky alone.
-        return base, base, project
+        return base, base, project, base, None
 
     subject_mask = np.zeros((big_h, big_w), np.uint8)
+    land_mask = np.zeros((big_h, big_w), np.uint8)
     edges = np.zeros((big_h, big_w), np.uint8)
     land = base.copy()
     for c in _countries():
@@ -304,6 +305,7 @@ def _layers(shot: MapShot, width: int, height: int):
         if c["a3"] in shot.focus:
             cv2.fillPoly(subject_mask, polys, 255, lineType=cv2.LINE_AA)
         cv2.fillPoly(land, polys, _LAND, lineType=cv2.LINE_AA)
+        cv2.fillPoly(land_mask, polys, 255)
         cv2.polylines(edges, polys, True, 255, 2, lineType=cv2.LINE_AA)
     # Every border faintly lit in gold, the subject brightly: the look of
     # the night maps these videos use.
@@ -327,7 +329,13 @@ def _layers(shot: MapShot, width: int, height: int):
     hole = hole * (1 - m) + np.array(_BG_BOTTOM, np.float32) * m
     ghost = cv2.GaussianBlur(outline.astype(np.float32), (0, 0), 3)[..., None] / 255.0
     hole += ghost * np.array(_EDGE, np.float32) * 0.5
-    return np.clip(lit, 0, 255).astype(np.uint8), np.clip(hole, 0, 255).astype(np.uint8), project
+    return (
+        np.clip(lit, 0, 255).astype(np.uint8),
+        np.clip(hole, 0, 255).astype(np.uint8),
+        project,
+        dark,
+        land_mask,
+    )
 
 
 def frames(shot: MapShot, width: int, height: int, fps: int, total_frames: int, label_font=None):
@@ -336,7 +344,8 @@ def frames(shot: MapShot, width: int, height: int, fps: int, total_frames: int, 
     import numpy as np
     from PIL import Image, ImageDraw, ImageFont
 
-    lit, hole, project = _layers(shot, width, height)
+    lit, hole, project, dark, land_mask = _layers(shot, width, height)
+    spread = shot.action == "spread" and not shot.gone
     big_h, big_w = lit.shape[:2]
     font = label_font or ImageFont.truetype(str(FONT), 42)
     marks = [(p, project(p.lon, p.lat)) for p in shot.places[:4]]
@@ -355,6 +364,9 @@ def frames(shot: MapShot, width: int, height: int, fps: int, total_frames: int, 
         f = k / max(total_frames - 1, 1)
         if shot.gone:
             frame = hole
+        elif spread:
+            # An outbreak: the country unlit, the infection drawn on top.
+            frame = dark
         elif shot.action == "vanish":
             # Lit, a flicker, then out — over the first second and a half;
             # behind a card, once the card has been read.
@@ -371,6 +383,8 @@ def frames(shot: MapShot, width: int, height: int, fps: int, total_frames: int, 
         y0 = (big_h - height / z) / 2
         m = np.array([[z, 0, -x0 * z], [0, z, -y0 * z]], dtype=np.float32)
         out = cv2.warpAffine(frame, m, (width, height), flags=cv2.INTER_LINEAR)
+        if spread and land_mask is not None:
+            out = _infection(out, land_mask, m, marks, x0, y0, z, t, width, height)
         if shot.card:
             out = _draw_card(out, shot.card, t, width, height, shot.language)
         if marks:
@@ -384,8 +398,9 @@ def frames(shot: MapShot, width: int, height: int, fps: int, total_frames: int, 
                 pulse = (t * 1.4 + i * 0.3) % 1.0
                 r = 10 + 34 * pulse
                 a = int(200 * (1 - pulse) * appear)
-                draw.ellipse((x - r, y - r, x + r, y + r), outline=(255, 190, 70, a), width=4)
-                draw.ellipse((x - 9, y - 9, x + 9, y + 9), fill=(255, 205, 90, int(255 * appear)))
+                ring, dot = ((255, 70, 55), (255, 95, 80)) if spread else ((255, 190, 70), (255, 205, 90))
+                draw.ellipse((x - r, y - r, x + r, y + r), outline=(*ring, a), width=4)
+                draw.ellipse((x - 9, y - 9, x + 9, y + 9), fill=(*dot, int(255 * appear)))
                 text = _uppercase(place.name, shot.language)
                 tw = draw.textlength(text, font=font)
                 tx = min(max(x + 18, 20), width - tw - 20)
@@ -395,6 +410,41 @@ def frames(shot: MapShot, width: int, height: int, fps: int, total_frames: int, 
                 )
             out = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
         yield out
+
+
+# BGR: the infection's glow.
+_RED = (40, 50, 235)
+
+
+def _infection(out, land_mask, m, marks, x0: float, y0: float, z: float, t: float,
+               width: int, height: int):
+    """An outbreak spreading over the land from each marked place in turn —
+    the first is where it started — as a red glow that grows and pulses,
+    kept off the sea. Computed at a quarter of the size: it is a blur."""
+    import cv2
+    import numpy as np
+
+    q = 4
+    sw, sh = width // q, height // q
+    land = cv2.resize(
+        cv2.warpAffine(land_mask, m, (width, height), flags=cv2.INTER_NEAREST), (sw, sh)
+    ).astype(np.float32) / 255.0
+    ys, xs = np.mgrid[0:sh, 0:sw].astype(np.float32)
+    heat = np.zeros((sh, sw), np.float32)
+    for i, (_, (bx, by)) in enumerate(marks):
+        grow = min(max((t - 0.3 - i * 0.6) / 2.5, 0.0), 1.0)
+        if grow <= 0:
+            continue
+        reach = (0.24 if i == 0 else 0.13) * width * (1 - (1 - grow) ** 2) / q + 1.0
+        x, y = (bx - x0) * z / q, (by - y0) * z / q
+        # A fourth power: a solid core with a visible front, not a haze.
+        d2 = ((xs - x) ** 2 + (ys - y) ** 2) / (reach * reach)
+        heat += np.exp(-(d2 * d2))
+    pulse = 0.85 + 0.15 * math.sin(t * 5.0)
+    heat = np.clip(heat, 0.0, 1.0) * land * pulse
+    big = cv2.resize(heat, (width, height), interpolation=cv2.INTER_LINEAR)[..., None]
+    lit = out.astype(np.float32) * (1 - big * 0.35) + big * np.array(_RED, np.float32) * 0.95
+    return np.clip(lit, 0, 255).astype(np.uint8)
 
 
 def _draw_card(frame, card, t: float, width: int, height: int, language: str = "en"):

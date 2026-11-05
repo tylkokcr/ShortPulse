@@ -571,6 +571,10 @@
         "what_if": {
           "name": "Ne olurdu?",
           "hint": "Bir varsayım, ardından zamanla büyüyen sonuçlar zinciri. Gerçek rakamlarla; çizgi film görünümü AI görsel modunda."
+        },
+        "outbreak": {
+          "name": "Salgın dizisi",
+          "hint": "Bölüm bölüm bir hayatta kalma hikâyesi: aynı karakter, haritada yayılan salgın, artan sayaç, her bölüm merakla biter. Kurgudur; kan ve vahşet yok."
         }
       },
       "topic": "Konu",
@@ -591,6 +595,13 @@
         "spin": "Dünya dönmeyi bıraksaydı?",
         "internet": "İnternet bir hafta kapansaydı?",
         "language": "Herkes aynı dili konuşsaydı?"
+      },
+      "outbreakPlaceholder": "örn. İstanbul'da bir gece zombi salgını başlıyor",
+      "outbreakSuggestions": {
+        "city": "İstanbul'da zombi salgını başlıyor",
+        "school": "Salgın okulda başlıyor",
+        "island": "Tatil adasında salgın",
+        "metro": "Gece yarısı metroda salgın"
       }
     },
     "outro": {
@@ -1122,7 +1133,16 @@
         "regenerate": "Bu işe yaramadı. Hiçbir ücret alınmadı; tekrar dene."
       },
       "beatEditNoScenes": "Bu edit senin kliplerinden kesildi, bu yüzden üretilmiş sahnesi yok — üstüne yazı eklemek için Edit sekmesini kullan.",
-      "backToLibrary": "Kütüphane"
+      "backToLibrary": "Kütüphane",
+      "nextEpisode": {
+        "title": "{n}. bölüm hazır",
+        "body": "{name} kaldığı yerden devam etsin: aynı karakter, aynı salgın, hikâye kaldığı yerden sürer.",
+        "cta": "{n}. bölümü üret",
+        "creating": "Hazırlanıyor…",
+        "failed": "Sonraki bölüm başlatılamadı.",
+        "insufficient": "Bu bölüm {required} krediye mal oluyor, sendeyse {balance} var.",
+        "topic": "{n}. bölüm"
+      }
     },
     "beatDetails": {
       "title": "Bu edit nasıl yapıldı",

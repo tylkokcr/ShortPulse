@@ -450,6 +450,12 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             message="Generating scene breakdown with the LLM...",
             phase="script",
         )
+        # The episode this one continues, for its recap, character and count.
+        previous = (
+            await project_store.get_project(config.continues_from)
+            if config.continues_from
+            else None
+        )
         with timings.stage("script"):
             script = await script_engine.generate_script(
                 topic=config.topic,
@@ -461,6 +467,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 # for prose here would be generated and then discarded.
                 visual_mode=str(config.visual_mode),
                 script_format=str(config.script_format),
+                previous=previous.script if previous else None,
             )
         # What the whole render should keep out of frame, stamped onto
         # every scene the LLM just wrote. Per scene rather than read from
@@ -541,6 +548,15 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
         limit = asyncio.Semaphore(visual_concurrency)
         completed = 0
 
+        # A series character is drawn once, before any scene: every scene
+        # they are in is drawn from this sheet. A continuing episode reuses
+        # the last one's, so the face carries over.
+        reference: Path | None = None
+        if script.character and any(s.hero for s in script.scenes):
+            reference = await _character_sheet(
+                script.character.look, paths, previous, config, settings
+            )
+
         async def build_visual(scene: Scene) -> None:
             nonlocal completed
             async with limit:
@@ -589,6 +605,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                         art_style=art_styles.by_id(config.art_style),
                         size=visual_engine.sdxl_size_for(render_width, render_height),
                         render_size=(render_width, render_height),
+                        reference=reference,
                     )
             # Reported on completion rather than on start: with several in
             # flight, "scene 3 of 5" as a starting announcement would jump
@@ -1983,3 +2000,32 @@ class RenderTaskQueue:
                     async with self._ready:
                         self._running_heavy -= 1
                         self._ready.notify_all()
+
+
+def character_sheet_path(root: Path) -> Path:
+    """Where a project keeps its series character's sheet: outside
+    visuals/, which is discarded once the render is done, because the next
+    episode is drawn from it (core/storage.discard_intermediates)."""
+    return root / "series" / "character.png"
+
+
+async def _character_sheet(look: str, root: Path, previous, config, settings) -> Path | None:
+    """The series character's reference sheet: the previous episode's when
+    there is one, else drawn now. None when it cannot be had — the scenes
+    are then drawn without it rather than not at all."""
+    path = character_sheet_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if previous is not None:
+        earlier = character_sheet_path(project_dir(previous.config.id))
+        if earlier.is_file():
+            shutil.copyfile(earlier, path)
+            return path
+    if visual_engine.image_backend(settings) is not visual_engine.ImageBackend.REPLICATE:
+        return None
+    try:
+        return await visual_engine.generate_character_sheet(
+            look, path, settings, art_styles.by_id(config.art_style)
+        )
+    except Exception:
+        logger.warning("Could not draw the character sheet", exc_info=True)
+        return None

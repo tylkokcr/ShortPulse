@@ -163,6 +163,10 @@ class Settings(BaseSettings):
         "adirik/realvisxl-v4.0:"
         "85a58cc71587cc27539b7c83eb1ce4aea02feedfb9a9fae0598cebc110a3d695"
     )
+    # Draws a series' character into a scene from their character sheet, so
+    # the same face, hair and clothes come back in every scene and every
+    # episode (FLUX.1 Kontext [dev], ~$0.025 an image, like FLUX itself).
+    replicate_reference_model: str = "black-forest-labs/flux-kontext-dev"
     # Wall clock for one image, covering the retries, the queue and the
     # generation. A prediction still running when this expires is
     # cancelled: it bills for the seconds it burns whether or not anyone

@@ -82,3 +82,15 @@ def test_a_card_scene_borrows_the_videos_country():
     card = IdCard(title="Polska", rows=[CardRow(label="a", value="b"), CardRow(label="c", value="d")])
     shot = maps.card_shot(scenes, 1, card)
     assert shot.focus == ["POL"] and shot.gone and shot.card == ("Polska", [("a", "b"), ("c", "d")])
+
+
+@pytest.mark.skipif(not maps.available(), reason="needs OpenCV")
+def test_an_outbreak_spreads_red_from_where_it_started():
+    shot = maps.MapShot(
+        focus=["TUR"], action="spread",
+        places=[maps.Place("İstanbul", 41.01, 28.97), maps.Place("Ankara", 39.93, 32.86)],
+    )
+    frames = list(maps.frames(shot, 180, 320, 10, 30))
+    red = [float(f[..., 2].astype(int).mean() - f[..., 0].astype(int).mean()) for f in frames]
+    # No red before it starts, more red as it spreads.
+    assert red[0] < red[15] < red[-1]

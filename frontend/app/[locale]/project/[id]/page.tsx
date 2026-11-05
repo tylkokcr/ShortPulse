@@ -1,12 +1,13 @@
 "use client";
 
 import { use, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, ListTree, Pencil, Plus, Scissors } from "lucide-react";
+import { ArrowLeft, ArrowRight, Biohazard, ListTree, Pencil, Plus, Scissors } from "lucide-react";
 import { useTranslations } from "next-intl";
 import clsx from "clsx";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useShortPulseStore } from "@/lib/store";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { AppShell } from "@/components/layout/AppShell";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { RenderPreview } from "@/components/render/RenderPreview";
@@ -15,7 +16,14 @@ import { StockCredits } from "@/components/render/StockCredits";
 import { EditPanel } from "@/components/render/EditPanel";
 import { PublishPanel } from "@/components/render/PublishPanel";
 import { BeatEditDetails } from "@/components/render/BeatEditDetails";
-import { getCredits, getProject, getStreamToken, regenerateScene, submitFeedback } from "@/lib/api";
+import {
+  createProject,
+  getCredits,
+  getProject,
+  getStreamToken,
+  regenerateScene,
+  submitFeedback,
+} from "@/lib/api";
 import { InsufficientCreditsError } from "@/lib/api";
 import type { Project } from "@/lib/types";
 
@@ -273,6 +281,9 @@ function Project({ id }: { id: string }) {
               ) : (
                 <PublishPanel project={project} />
               ))}
+            {project?.status === "complete" &&
+              project.config.script_format === "outbreak" &&
+              project.script?.character && <NextEpisode project={project} />}
           </div>
         </div>
         )}
@@ -347,6 +358,68 @@ function ClipList({ project }: { project: Project }) {
           );
         })}
       </div>
+    </Card>
+  );
+}
+
+/**
+ * The next episode of an outbreak series, one click from the last.
+ *
+ * Everything the series is — the format, the language, the look, the
+ * voice — is carried over from this episode, and the server reads its
+ * recap and character sheet from `continues_from`. Nothing to fill in,
+ * which is the point: a cliffhanger wants the next episode now.
+ */
+function NextEpisode({ project }: { project: Project }) {
+  const t = useTranslations("app.project");
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const next = (project.script?.episode ?? 1) + 1;
+  const name = project.script?.character?.name ?? "";
+
+  async function start() {
+    setBusy(true);
+    setError(null);
+    const c = project.config;
+    try {
+      const created = await createProject({
+        topic: `${c.topic.split(" · ")[0]} · ${t("nextEpisode.topic", { n: next })}`.slice(0, 200),
+        continues_from: c.id,
+        script_format: "outbreak",
+        language: c.language,
+        visual_mode: c.visual_mode,
+        art_style: c.art_style,
+        aspect_ratio: c.aspect_ratio,
+        video_length: c.video_length,
+        voice: c.voice,
+        music: c.music,
+        subtitles: c.subtitles,
+        info_graphics: c.info_graphics,
+      });
+      router.push(`/project/${created.config.id}`);
+    } catch (err) {
+      setError(
+        err instanceof InsufficientCreditsError
+          ? t("nextEpisode.insufficient", { required: err.required, balance: err.balance })
+          : t("nextEpisode.failed")
+      );
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card className="flex flex-col gap-3 p-4">
+      <div className="flex items-center gap-2">
+        <Biohazard size={15} className="text-accent" />
+        <h2 className="text-sm font-semibold">{t("nextEpisode.title", { n: project.script?.episode ?? 1 })}</h2>
+      </div>
+      <p className="text-xs leading-relaxed text-white/50">{t("nextEpisode.body", { name })}</p>
+      <Button onClick={start} disabled={busy} className="w-fit">
+        {busy ? t("nextEpisode.creating") : t("nextEpisode.cta", { n: next })}
+        {!busy && <ArrowRight size={14} />}
+      </Button>
+      {error && <p className="text-xs text-red-400">{error}</p>}
     </Card>
   );
 }

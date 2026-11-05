@@ -196,7 +196,7 @@ class MapSpec(BaseModel):
     script is read), what happens to them, and places to mark."""
 
     focus: list[str] = Field(default_factory=list, max_length=4)
-    action: str = Field(default="glow", pattern="^(glow|vanish|mark)$")
+    action: str = Field(default="glow", pattern="^(glow|vanish|mark|spread)$")
     places: list[MapPlace] = Field(default_factory=list, max_length=4)
 
 
@@ -227,6 +227,15 @@ class IdCard(BaseModel):
     rows: list[CardRow] = Field(min_length=2, max_length=4)
 
 
+class Character(BaseModel):
+    """The one person a series follows."""
+
+    name: str = Field(max_length=32)
+    # What they look like, in plain English for the image model: age,
+    # hair, skin, clothes — the same words every episode.
+    look: str = Field(max_length=300)
+
+
 class Scene(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     index: int
@@ -240,6 +249,9 @@ class Scene(BaseModel):
     map: MapSpec | None = None
     # This scene shows the script's IdCard instead of its picture.
     card: bool = False
+    # The series' character is in this scene: drawn from its reference
+    # sheet so it looks the same in every scene and every episode.
+    hero: bool = False
 
     model_config = ConfigDict(use_enum_values=True)
 
@@ -294,6 +306,11 @@ class ScriptOutput(BaseModel):
     counter: GraphicCounter | None = None
     tally_title: str | None = Field(default=None, max_length=40)
     card: IdCard | None = None
+    # A series (the outbreak format): who it follows, which episode this
+    # is, and what has happened so far — read by the next episode.
+    character: Character | None = None
+    episode: int = Field(default=1, ge=1, le=99)
+    recap: str | None = Field(default=None, max_length=1200)
     # The library category the soundtrack is drawn from when nobody picked
     # a track (see render_manager). None: the default track.
     music_mood: str | None = None
@@ -477,6 +494,10 @@ class ScriptFormat(StrEnum):
     # "What would happen if ...": a chain of consequences, each one bigger
     # and further in time than the last.
     WHAT_IF = "what_if"
+    # An outbreak told as a series: one named survivor, the spread on a
+    # map, an infected count going up, and every episode ending on a
+    # cliffhanger the next one picks up from.
+    OUTBREAK = "outbreak"
 
 
 class BeatEditLook(StrEnum):
@@ -560,6 +581,10 @@ class ProjectConfig(BaseModel):
     # Info graphics and their sound effects (engines/graphics.py). None: the
     # format decides — on for "what if?", which writes the data for them.
     info_graphics: bool | None = None
+    # The episode this one continues (outbreak series): its script's recap
+    # and character are read, and its character sheet is reused, so the
+    # story and the face carry on. Checked to be the caller's own project.
+    continues_from: str | None = Field(default=None, pattern=r"^[0-9a-fA-F-]{36}$")
     # Set only on uploads, and only when the caller asked for a dub: the
     # language the video should come out speaking. `language` above stays
     # what it always was, the language the source is *in*, because the

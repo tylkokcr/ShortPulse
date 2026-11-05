@@ -215,6 +215,8 @@ async def regenerate_scene(
             size=visual_engine.sdxl_size_for(width, height),
             render_size=(width, height),
             variant=scene.visual.revision,
+            # A series character re-rolled still looks like themselves.
+            reference=paths / "series" / "character.png",
         )
 
         # Pinned to the length it already had, so the timeline cannot move.

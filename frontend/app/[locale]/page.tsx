@@ -211,7 +211,7 @@ function CreateVideo() {
     finishing: (
       <>
         <OutroToggle />
-        {draft.scriptFormat === "what_if" && (
+        {draft.scriptFormat !== "free" && (
           <GraphicsToggle
             className="border-t border-border pt-4"
             checked={draft.infoGraphics}
@@ -239,7 +239,7 @@ function CreateVideo() {
     audio: t("summary.audio", { voice: voiceLabel, music: musicLabel }),
     finishing: [
       draft.outroEnabled ? t("summary.outroOn") : t("summary.outroOff"),
-      ...(draft.scriptFormat === "what_if"
+      ...(draft.scriptFormat !== "free"
         ? [draft.infoGraphics ? t("graphics.summaryOn") : t("graphics.summaryOff")]
         : []),
       draft.zoomPunch ? t("punch.summaryOn") : t("punch.summaryOff"),
