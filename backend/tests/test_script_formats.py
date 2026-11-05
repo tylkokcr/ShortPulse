@@ -401,3 +401,16 @@ async def test_the_story_edit_changes_only_the_spoken_lines(monkeypatch):
     monkeypatch.setattr(script_engine, "_call_llm", short)
     kept = await script_engine._edit_story(parsed, "tr", LLMConfig())
     assert kept["scenes"][1]["voiceover_line"] == "Radyoyu seçer."
+
+
+def test_an_outbreak_has_two_maps_at_most_and_always_a_count():
+    from app.engines.script_engine import _to_script_output
+
+    spread = {"focus": ["Turkey"], "action": "spread",
+              "places": [{"name": "İstanbul", "lat": 41.0, "lon": 28.97}]}
+    scenes = [{"voiceover_line": str(i), "visual_prompt": "p", "map": spread} for i in range(7)]
+    script = _to_script_output("x", {"scenes": scenes}, VideoLength.SHORT, "outbreak", "tr")
+    maps_at = [s.index for s in script.scenes if s.map]
+    assert maps_at == [1, 3]  # not the opening, not back to back, two
+    assert script.counter is not None and script.counter.label == "Enfekte"
+    assert script.counter.end > script.counter.start

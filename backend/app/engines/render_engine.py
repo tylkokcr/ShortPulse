@@ -27,7 +27,7 @@ from pathlib import Path
 
 from app.core.config import FONTS_DIR
 from app.engines.subtitle_engine import absolute_words, build_ass_subtitles
-from app.schemas.project import MusicConfig, Scene, SubtitleStyle
+from app.schemas.project import MusicConfig, Scene, SubtitleStyle, VisualMode
 from app.services import profanity, reframe
 
 logger = logging.getLogger(__name__)
@@ -398,9 +398,15 @@ async def _render_video_scene_clip(
     ffmpeg_binary: str,
     duration: float,
     punch: bool = True,
+    ffprobe_binary: str | None = None,
 ) -> None:
     """Scale-to-fill + center-crop a stock/AI video clip to the target
-    aspect ratio, looping it if it's shorter than the scene's voiceover."""
+    aspect ratio, looping it if it's shorter than the scene's voiceover.
+
+    Not a generated clip: that is one take with a beginning and an end
+    (she turns to the window), and looped it jumps back to the start in
+    plain view. It is slowed by up to a third to fit, then holds its last
+    frame."""
     # Same reasoning as _render_image_scene_clip: pin both streams to the
     # same frame-quantized length explicitly instead of trusting
     # `-shortest`, which left video and audio a few tens of ms apart.
@@ -411,13 +417,22 @@ async def _render_video_scene_clip(
     # nothing else — no cut, no emphasis. The punch is the whole
     # difference between a scene and a slide.
     motion = f",{punch_filter(scene.index, target, exact_duration)}" if punch else ""
+    generated = str(scene.visual.mode) == VisualMode.AI_VIDEO and ffprobe_binary is not None
+    fit = ""
+    if generated:
+        clip_s = await _probe_duration_ms(Path(str(scene.visual.asset_path)), str(ffprobe_binary)) / 1000
+        stretch = min(max(exact_duration / clip_s, 1.0), 1.35) if clip_s > 0 else 1.0
+        fit = (
+            f"setpts={stretch:.4f}*PTS,"
+            f"tpad=stop_mode=clone:stop_duration={exact_duration:.3f},"
+        )
     video_filter = (
-        f"scale={target.width}:{target.height}:force_original_aspect_ratio=increase,"
+        f"{fit}scale={target.width}:{target.height}:force_original_aspect_ratio=increase,"
         f"crop={target.width}:{target.height}{motion},fps={target.fps},format=yuv420p"
     )
 
     args = [
-        "-stream_loop", "-1",
+        *([] if generated else ["-stream_loop", "-1"]),
         "-i", str(scene.visual.asset_path),
         "-i", str(scene.audio.audio_path),
         "-t", f"{exact_duration:.6f}",
@@ -498,7 +513,8 @@ async def render_scene_clip(
         )
     elif ext in _VIDEO_EXTENSIONS:
         await _render_video_scene_clip(
-            clip_scene, target, output_path, ffmpeg_binary, duration, punch=punch
+            clip_scene, target, output_path, ffmpeg_binary, duration, punch=punch,
+            ffprobe_binary=ffprobe_binary,
         )
     else:
         raise RenderError(f"Unrecognized visual asset type: {ext}")

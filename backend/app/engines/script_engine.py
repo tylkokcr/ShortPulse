@@ -57,7 +57,7 @@ FORMAT_SCENE_COUNT: dict[str, dict[VideoLength, tuple[int, int]]] = {
     # Fewer, fuller scenes: a story needs sentences with room in them, and
     # an animated scene is a six-second clip.
     "outbreak": {
-        VideoLength.SHORT: (7, 9),
+        VideoLength.SHORT: (7, 8),
         VideoLength.MEDIUM: (11, 13),
         VideoLength.LONG: (15, 18),
     },
@@ -66,7 +66,7 @@ _SCENE_LENGTH = {
     "free": "3 to 5 seconds of spoken voiceover (roughly 8-14 words)",
     "what_if": "2 to 3 seconds of spoken voiceover (roughly 5-10 words) — one punchy idea",
     "outbreak": (
-        "4 to 6 seconds of spoken voiceover (roughly 10-18 words) — one moment of the "
+        "3 to 5 seconds of spoken voiceover (roughly 9-14 words) — one moment of the "
         "story, told with room to breathe"
     ),
 }
@@ -376,6 +376,8 @@ the picture. The infected and anything threatening are never drawn as \
 creatures, monsters, animals or cartoon characters — only as a dark human \
 silhouette, a shadow on a wall, a hand on frosted glass, far away or out \
 of focus. End every "visual_prompt" with "tense, dark, cinematic lighting".
+- The last scene's picture is the place at dawn or night, with no people \
+in it.
 - Every scene also gets "motion": one sentence in English for animating \
 the picture — what moves (a head turns, rain streaks, a door swings, a \
 silhouette staggers out of fog) and how the camera moves (slow push-in, \
@@ -396,8 +398,9 @@ in this beat, as a row on a growing list ("Bridges closed", "Radio", \
 the script's language ("LOCKDOWN");
   "chapter": on the scenes that open a new beat — four to six of them, \
 the first included — the time, in the script's language ("DAY 1 · 03:12");
-  "map": three or four scenes show the spread on a glowing map instead of \
-a picture — always one early on, then as it reaches new places. As \
+  "map": two scenes (never more, never the first scene, never two in a \
+row) show the spread on a glowing map instead of a picture — once early \
+on, once when it has reached somewhere new. As \
 {"focus": ["<the country, in English>"], "action": "spread", "places": \
 [{"name": "<in the script's language>", "lat": .., "lon": ..}]}: the \
 first place is where it started, the others where it has reached by \
@@ -885,7 +888,11 @@ a gifted human storyteller and will hold a listener for the whole minute.
 - Keep every scene, in order, and what happens in it; keep names, times \
 and places. The first line stays the cold open with the time; the last \
 line stays the call to follow for the next episode.
-- Each line is 10 to 18 words, one moment, said out loud easily.
+- Each line is 9 to 14 words, one moment, said out loud easily — the \
+whole episode is under fifty seconds.
+- Plain beats poetic: every image must make literal sense (a voice is \
+not "hoarse like the smell of iodine"); at most one figure of speech in \
+the whole episode.
 - Sensory and specific: a sound, a smell, a texture, a light, a local \
 detail only someone from there would know. Cut anything generic.
 - Rhythm: vary sentence length; let some lines be fragments or a single \
@@ -1319,6 +1326,26 @@ def _scene_map(raw: object) -> MapSpec | None:
         return None
 
 
+_INFECTED = {
+    "tr": "Enfekte", "en": "Infected", "pl": "Zarażeni", "de": "Infizierte",
+    "es": "Infectados", "fr": "Infectés", "pt": "Infectados", "it": "Infetti",
+}
+
+
+def _limit_outbreak_maps(scenes: list[Scene]) -> None:
+    """At most two maps, never the opening and never back to back: three of
+    eight scenes in the first animated episode were maps, the first one
+    included, and it opened on a dark screen."""
+    kept = 0
+    for i, scene in enumerate(scenes):
+        if not scene.map:
+            continue
+        if i == 0 or kept >= 2 or (i > 0 and scenes[i - 1].map):
+            scene.map = None
+        else:
+            kept += 1
+
+
 def _mark_hero_scenes(scenes: list[Scene], name: str) -> None:
     """When the model marked no scene as the character's, the scenes that
     say their name are theirs (never the first: it sets the scene)."""
@@ -1563,6 +1590,15 @@ def _to_script_output(
     character = _character(parsed.get("character")) if script_format == "outbreak" else None
     if character:
         _mark_hero_scenes(scenes, character.name)
+    if script_format == "outbreak":
+        _limit_outbreak_maps(scenes)
+        if counter is None:
+            # Fiction counts too: an episode without its rising number lost
+            # the one graphic that says how bad it is getting.
+            counter = GraphicCounter(
+                label=_INFECTED.get((language or "en").split("-")[0], _INFECTED["en"]),
+                start=1, end=2400,
+            )
 
     hook = parsed.get("hook", scenes[0].audio.voiceover_line)
     call_to_action = parsed.get("call_to_action")

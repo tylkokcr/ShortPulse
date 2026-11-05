@@ -193,6 +193,7 @@ def image_backend(settings) -> ImageBackend | None:
 # time and the rest of the wall clock is the model booting, which happens
 # once and is shared by everything behind it.
 _REMOTE_SCENE_CONCURRENCY = 2
+_REMOTE_VIDEO_CONCURRENCY = 5
 
 # How deep a stock search looks, which is also how many distinct clips a
 # scene can be re-rolled through before it starts repeating.
@@ -217,9 +218,11 @@ def scene_concurrency(mode: VisualMode, settings) -> int:
     """
     if mode == VisualMode.STOCK_MEDIA:
         return _REMOTE_SCENE_CONCURRENCY
-    if mode in (VisualMode.FAST_HYBRID, VisualMode.AI_VIDEO) and (
-        image_backend(settings) is ImageBackend.REPLICATE
-    ):
+    if mode == VisualMode.AI_VIDEO and image_backend(settings) is ImageBackend.REPLICATE:
+        # A Hailuo clip is 70-190s of predict time; two at a time made the
+        # first animated episode's pictures take eleven minutes.
+        return _REMOTE_VIDEO_CONCURRENCY
+    if mode == VisualMode.FAST_HYBRID and image_backend(settings) is ImageBackend.REPLICATE:
         return _REMOTE_SCENE_CONCURRENCY
     return 1
 
@@ -663,7 +666,9 @@ def _reference_input(scene: Scene, style: ArtStyle, size, reference: Path) -> di
         "input_image": "data:image/png;base64," + base64.b64encode(reference.read_bytes()).decode(),
         "prompt": (
             f"Show {who}, keeping exactly the same face, hair, body and clothes, in a new "
-            f"scene: {action}. {style.build_prompt('the scene')}. Keep this exact drawing style."
+            f"scene: {action}. Their pose and facial expression fit this moment, not the "
+            f"reference picture's. {style.build_prompt('the scene')}. Keep this exact "
+            "drawing style."
         ),
         "aspect_ratio": _FLUX_ASPECT[orientation],
         "output_format": "png",
@@ -690,8 +695,8 @@ async def generate_character_sheet(
         duration_s=3,
         visual=SceneVisual(
             prompt=(
-                f"full body character design of {look}, adult proportions, standing, "
-                "front view, whole figure in frame, plain light background"
+                f"full body character design of {look}, adult proportions, neutral "
+                "expression, standing, front view, whole figure in frame, plain light background"
             )
         ),
         audio=SceneAudio(voiceover_line=""),
