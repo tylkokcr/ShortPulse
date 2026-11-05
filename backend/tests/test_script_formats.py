@@ -319,3 +319,50 @@ def _s(i):
         index=i, duration_s=3, visual=SceneVisual(prompt="p"),
         audio=SceneAudio(voiceover_line=f"line {i}"),
     )
+
+
+async def test_a_failed_model_listing_is_retried_within_a_minute(monkeypatch):
+    """Not pinned to the everyday model for an hour, as it was right after a
+    deploy: the next ask lists again once the minute is up."""
+    import httpx
+
+    from app.engines import script_engine
+
+    class Settings:
+        fact_llm_model = "auto"
+        fact_llm_candidates = ["gpt-5.4"]
+        llm_model = "gpt-4.1-mini"
+        openai_api_key = "sk-test"
+
+    calls = {"n": 0}
+
+    def handler(request):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return httpx.Response(503)
+        return httpx.Response(200, json={"data": [{"id": "gpt-5.4"}]})
+
+    real = httpx.AsyncClient
+    monkeypatch.setattr(
+        script_engine.httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(handler))
+    )
+    monkeypatch.setattr(script_engine, "_fact_model_cache", None)
+    clock = {"t": 1000.0}
+    monkeypatch.setattr("time.monotonic", lambda: clock["t"])
+
+    assert await script_engine.resolve_fact_model(Settings()) == "gpt-4.1-mini"
+    clock["t"] += 61
+    assert await script_engine.resolve_fact_model(Settings()) == "gpt-5.4"
+    clock["t"] += 600  # a success is kept
+    assert await script_engine.resolve_fact_model(Settings()) == "gpt-5.4" and calls["n"] == 2
+
+
+def test_scenes_that_name_the_survivor_are_theirs_when_none_were_marked():
+    from app.engines.script_engine import _to_script_output
+
+    scenes = [{"voiceover_line": line, "visual_prompt": "p"} for line in (
+        "Gün 1. Deniz uyanır.", "Sirenler susar.", "Deniz radyoyu seçer.", "Kapı açılır.",
+    )]
+    parsed = {"scenes": scenes, "character": {"name": "Deniz", "look": "a woman"}}
+    script = _to_script_output("x", parsed, VideoLength.SHORT, "outbreak", "tr")
+    assert [s.hero for s in script.scenes] == [False, False, True, False]

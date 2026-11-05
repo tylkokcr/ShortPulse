@@ -509,9 +509,14 @@ async def resolve_fact_model(settings) -> str:
     global _fact_model_cache
     if settings.fact_llm_model and settings.fact_llm_model != "auto":
         return settings.fact_llm_model
-    if _fact_model_cache and time.monotonic() - _fact_model_cache[0] < 3600:
+    if _fact_model_cache and time.monotonic() < _fact_model_cache[0]:
         return _fact_model_cache[1]
     chosen = settings.llm_model
+    # An answer is kept for the hour; a failure for a minute. A listing that
+    # failed once, right after a deploy, used to pin every script for the
+    # next hour to the everyday model — the second episode of the first
+    # outbreak series was written by it, and read like it.
+    ttl = 60.0
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             response = await client.get(
@@ -521,9 +526,10 @@ async def resolve_fact_model(settings) -> str:
             response.raise_for_status()
             have = {m.get("id") for m in response.json().get("data", [])}
         chosen = next((m for m in settings.fact_llm_candidates if m in have), settings.llm_model)
+        ttl = 3600.0
     except Exception:  # noqa: BLE001 - the everyday model still writes a script
         logger.warning("Could not list OpenAI models; using %s", chosen, exc_info=True)
-    _fact_model_cache = (time.monotonic(), chosen)
+    _fact_model_cache = (time.monotonic() + ttl, chosen)
     logger.info("Fact-bound scripts are written by %s", chosen)
     return chosen
 
@@ -672,6 +678,8 @@ async def _generate_script_once(
         # character sheet was drawn from, and the sheet is reused.
         script.character = previous.character or script.character
         script.episode = min(previous.episode + 1, 99)
+        if script.character:
+            _mark_hero_scenes(script.scenes, script.character.name)
     return script
 
 
@@ -1224,6 +1232,16 @@ def _scene_map(raw: object) -> MapSpec | None:
         return None
 
 
+def _mark_hero_scenes(scenes: list[Scene], name: str) -> None:
+    """When the model marked no scene as the character's, the scenes that
+    say their name are theirs (never the first: it sets the scene)."""
+    if any(s.hero for s in scenes):
+        return
+    for scene in scenes[1:]:
+        if name.casefold() in scene.audio.voiceover_line.casefold():
+            scene.hero = True
+
+
 def _character(raw: object) -> Character | None:
     if not isinstance(raw, dict):
         return None
@@ -1452,6 +1470,13 @@ def _to_script_output(
         if chosen.graphic:
             chosen.graphic.stamp = None
 
+    # A series character is drawn from their sheet only in scenes marked
+    # "hero", and the model forgot to mark any in the first second episode.
+    # A scene that says their name has them in it.
+    character = _character(parsed.get("character")) if script_format == "outbreak" else None
+    if character:
+        _mark_hero_scenes(scenes, character.name)
+
     hook = parsed.get("hook", scenes[0].audio.voiceover_line)
     call_to_action = parsed.get("call_to_action")
 
@@ -1467,7 +1492,7 @@ def _to_script_output(
             counter=counter,
             tally_title=_short(parsed.get("tally_title"), 40),
             card=card,
-            character=_character(parsed.get("character")) if script_format == "outbreak" else None,
+            character=character,
             recap=_short(parsed.get("recap"), 1200) if script_format == "outbreak" else None,
         )
     except ValidationError as exc:
