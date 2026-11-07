@@ -2053,7 +2053,13 @@ def voice_for_scene(scene: Scene, script, voice: VoiceConfig) -> VoiceConfig:
     speaker = next((m for m in cast if m.name == scene.speaker), cast[0])
     if not speaker.voice_id:
         return voice
-    return voice.model_copy(update={"voice_id": speaker.voice_id})
+    from app.services.narration import provider_for
+
+    # The engine follows the voice: an ElevenLabs id sent to MiniMax failed
+    # the first acted episode with "voice id not exist".
+    return voice.model_copy(
+        update={"voice_id": speaker.voice_id, "provider": provider_for(speaker.voice_id)}
+    )
 
 
 def cast_sheet_path(root: Path, name: str) -> Path:

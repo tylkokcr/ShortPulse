@@ -484,6 +484,9 @@ def test_each_line_is_spoken_in_its_speakers_voice():
         "minimax:Turkish_CalmWoman", "minimax:Lively_Girl", "minimax:Turkish_CalmWoman",
     ]
     assert all(v.rate == "-6%" for v in voices)
+    assert [str(v.provider) for v in voices] == ["minimax"] * 3
+    script.cast[1].voice_id = "elevenlabs:Kuon"
+    assert str(voice_for_scene(scenes[1], script, base).provider) == "elevenlabs"
 
 
 def test_a_story_line_is_acted_from_known_tags_only():
