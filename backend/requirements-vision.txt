@@ -13,4 +13,4 @@
 #
 # headless, not the plain wheel: the full build links GUI toolkits that a
 # container has no use for and that pull in a dozen X11 libraries.
-opencv-python-headless>=4.9
+opencv-python-headless>=5.0.0.93
