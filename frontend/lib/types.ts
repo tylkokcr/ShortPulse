@@ -142,6 +142,7 @@ export interface ScriptOutput {
   post?: PostCopy | null;
   /** A series (the outbreak format): who it follows and which episode. */
   character?: { name: string; look: string } | null;
+  cast?: { name: string; role?: string; voice_id?: string | null }[];
   episode?: number;
 }
 
@@ -242,7 +243,7 @@ export interface BeatEditSpec {
   music_start_s?: number | null;
 }
 
-export type ScriptFormat = "free" | "what_if" | "outbreak";
+export type ScriptFormat = "free" | "what_if" | "outbreak" | "story";
 
 export interface ProjectConfig {
   id: string;

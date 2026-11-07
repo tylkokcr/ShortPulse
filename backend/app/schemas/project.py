@@ -240,6 +240,20 @@ class Character(BaseModel):
     look: str = Field(max_length=300)
 
 
+class CastMember(BaseModel):
+    """Someone in a story series: who they are, what they look like (plain
+    English, for the image model) and the voice they speak in."""
+
+    name: str = Field(max_length=32)
+    role: str = Field(default="", max_length=60)
+    gender: str = Field(default="", max_length=12)  # woman | man | girl | boy
+    age: int | None = Field(default=None, ge=1, le=110)
+    look: str = Field(max_length=300)
+    # Assigned on the server from the language's pool (services/voices),
+    # kept with the series so episode two sounds like episode one.
+    voice_id: str | None = Field(default=None, max_length=80)
+
+
 class Scene(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     index: int
@@ -256,6 +270,10 @@ class Scene(BaseModel):
     # The series' character is in this scene: drawn from its reference
     # sheet so it looks the same in every scene and every episode.
     hero: bool = False
+    # A story series: who says this line ("narrator" or a cast name), and
+    # who is in the picture (up to two, each drawn from their sheet).
+    speaker: str | None = Field(default=None, max_length=32)
+    cast: list[str] = Field(default_factory=list, max_length=2)
 
     model_config = ConfigDict(use_enum_values=True)
 
@@ -313,6 +331,7 @@ class ScriptOutput(BaseModel):
     # A series (the outbreak format): who it follows, which episode this
     # is, and what has happened so far — read by the next episode.
     character: Character | None = None
+    cast: list[CastMember] = Field(default_factory=list, max_length=5)
     episode: int = Field(default=1, ge=1, le=99)
     recap: str | None = Field(default=None, max_length=1200)
     # The library category the soundtrack is drawn from when nobody picked
@@ -502,6 +521,10 @@ class ScriptFormat(StrEnum):
     # map, an infected count going up, and every episode ending on a
     # cliffhanger the next one picks up from.
     OUTBREAK = "outbreak"
+    # A drama told in episodes, about two minutes each: a first-person
+    # narrator, a cast who speak in their own voices, short shots, and a
+    # cliffhanger. The format of the serialised family thrillers on Reels.
+    STORY = "story"
 
 
 class BeatEditLook(StrEnum):

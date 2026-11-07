@@ -325,3 +325,20 @@ def test_the_sale_is_dated_and_starts_from_a_price_charged_for_30_days():
     assert pack.price_now(before) == pack.price_cents
     assert pack.price_now(during) == pack.sale_price_cents < pack.price_cents
     assert pack.price_now(after) == pack.price_cents
+
+
+def test_a_story_episode_is_priced_by_its_shots():
+    """Two minutes of story is ~45 pictures and voices; at the per-video
+    price it would cost less than it costs to make."""
+    from app.schemas.project import ProjectConfig, ScriptFormat, VideoLength, VisualMode
+
+    def price(mode, length, fmt=ScriptFormat.STORY):
+        return credits.cost_for(
+            ProjectConfig(topic="x", visual_mode=mode, video_length=length, script_format=fmt)
+        )
+
+    assert price(VisualMode.FAST_HYBRID, VideoLength.MEDIUM) == 30
+    assert price(VisualMode.AI_VIDEO, VideoLength.MEDIUM) == 150
+    assert price(VisualMode.FAST_HYBRID, VideoLength.SHORT) == 15
+    # Other formats keep the per-video price.
+    assert price(VisualMode.FAST_HYBRID, VideoLength.MEDIUM, ScriptFormat.OUTBREAK) == 12

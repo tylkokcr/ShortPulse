@@ -508,3 +508,33 @@ async def test_an_animated_scene_is_acted_out_by_hailuo_with_its_motion(monkeypa
     assert video["input"]["first_frame_image"].startswith("data:image/png;base64,")
     assert video["input"]["duration"] == 6 and "image" not in video["input"]
     assert "she turns toward the window" in video["input"]["prompt"]
+
+
+async def test_two_people_in_frame_go_to_kontext_on_one_sheet(monkeypatch, scene, tmp_path):
+    """Kontext takes one picture: two sheets side by side, left and right
+    named in the prompt with their looks."""
+    import base64
+    import io
+
+    from PIL import Image
+
+    fake = _serve(monkeypatch, FakeReplicate())
+    sheets = []
+    for name, colour, look in (("a", "red", "auburn hair"), ("b", "blue", "trimmed beard")):
+        path = tmp_path / f"{name}.png"
+        Image.new("RGB", (300, 600), colour).save(path)
+        path.with_suffix(".txt").write_text(look)
+        sheets.append(path)
+
+    await visual_engine._generate_replicate_image(
+        scene, tmp_path, Settings(model="black-forest-labs/flux-dev"), references=sheets
+    )
+
+    sent = fake.created["input"]
+    assert fake.created["version"] == "black-forest-labs/flux-kontext-dev"
+    both = Image.open(io.BytesIO(base64.b64decode(sent["input_image"].split(",", 1)[1])))
+    assert both.width == 1024 and both.height == 1024  # two 512-wide halves
+    assert both.getpixel((10, 10))[0] > 200 and both.getpixel((1000, 10))[2] > 200
+    assert "on the left (auburn hair)" in sent["prompt"]
+    assert "on the right (trimmed beard)" in sent["prompt"]
+    assert "never smiling" not in sent["prompt"]  # a story's mood is the moment's

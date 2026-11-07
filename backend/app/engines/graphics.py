@@ -59,7 +59,7 @@ def enabled(config) -> bool:
     "what if?" writes the data for them, a free topic does not."""
     if config.info_graphics is not None:
         return bool(config.info_graphics)
-    return str(config.script_format) in ("what_if", "outbreak")
+    return str(config.script_format) in ("what_if", "outbreak", "story")
 
 
 def plan_for(project) -> Plan | None:
@@ -71,10 +71,11 @@ def plan_for(project) -> Plan | None:
 def plan_from(config, script) -> Plan | None:
     if not script or not enabled(config):
         return None
-    if not (script.counter or any(s.graphic for s in script.scenes)):
+    series = str(getattr(config, "script_format", "")) in ("outbreak", "story")
+    if not (script.counter or series or any(s.graphic for s in script.scenes)):
         return None
     language = str(getattr(config, "language", "en"))
-    if str(getattr(config, "script_format", "")) == "outbreak":
+    if str(getattr(config, "script_format", "")) in ("outbreak", "story"):
         tag = _SERIES_TAG.get(language, _SERIES_TAG["en"]).format(n=script.episode)
     else:
         tag = _TAG.get(language, _TAG["en"])

@@ -575,6 +575,10 @@
         "outbreak": {
           "name": "Serial o epidemii",
           "hint": "Historia przetrwania odcinek po odcinku: ta sama postać, epidemia na mapie, rosnący licznik, każdy odcinek kończy się w napięciu. Fikcja, bez drastycznych scen. Dla ruchomych scen wybierz tryb Animated w stylu wizualnym."
+        },
+        "story": {
+          "name": "Serial fabularny",
+          "hint": "Dramat albo thriller w odcinkach po około 2 minuty: narrator w pierwszej osobie, postacie mówiące własnymi głosami, każdy odcinek kończy się w napięciu. Wybierz dowolny styl rysunku."
         }
       },
       "topic": "Temat",
@@ -602,6 +606,13 @@
         "school": "Epidemia zaczyna się w szkole",
         "island": "Epidemia na wakacyjnej wyspie",
         "metro": "Epidemia w nocnym metrze"
+      },
+      "storyPlaceholder": "np. Mój mąż co noc o 3:00 schodzi do kuchni",
+      "storySuggestions": {
+        "kitchen": "Mój mąż co noc o 3:00 schodzi do kuchni",
+        "neighbour": "Nowy sąsiad nigdy nie wychodzi z domu",
+        "letter": "W starym liście mamy było moje imię",
+        "basement": "Piwnica szkoły jest zawsze zamknięta"
       }
     },
     "outro": {
@@ -1229,6 +1240,10 @@
     "pixel": {
       "name": "Pixel art",
       "description": "Wyraziste 16-bitowe sprite'y, ograniczona paleta."
+    },
+    "vector": {
+      "name": "Wektorowa historia",
+      "description": "Grube kontury, płaskie stonowane kolory, proste twarze: wygląd seriali fabularnych."
     }
   },
   "files": {

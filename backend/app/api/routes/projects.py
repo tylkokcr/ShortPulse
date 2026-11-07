@@ -90,16 +90,17 @@ async def create_project(
     # and a series; the new one is that series' next, in its language.
     if config.continues_from:
         previous = await _visible_project(config.continues_from, user_id)
+        series = (ScriptFormat.OUTBREAK, ScriptFormat.STORY)
         if (
             previous.script is None
-            or str(previous.config.script_format) != ScriptFormat.OUTBREAK
+            or str(previous.config.script_format) not in series
             or str(previous.status) != "complete"
         ):
             raise HTTPException(
                 status_code=422,
                 detail={"error": "not_a_series", "reason": "Only a finished episode can be continued."},
             )
-        config.script_format = ScriptFormat.OUTBREAK
+        config.script_format = ScriptFormat(str(previous.config.script_format))
         config.language = previous.config.language
 
     # Refuse to sell a mode this install cannot run.
@@ -142,7 +143,7 @@ async def create_project(
     factual = config.script_format == ScriptFormat.WHAT_IF
     # A story told across episodes needs the stronger writer too, without
     # the cooler temperature facts get.
-    strong = factual or config.script_format == ScriptFormat.OUTBREAK
+    strong = factual or config.script_format in (ScriptFormat.OUTBREAK, ScriptFormat.STORY)
     config.llm = LLMConfig(
         provider=LLMProvider(settings.llm_provider),
         model=(

@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from app.api.deps import billing_for, current_user_id, db_pool
 from app.core.config import get_settings
 from app.engines import visual_engine
-from app.schemas.project import ProjectConfig, ProjectSource, VideoLength, VisualMode
+from app.schemas.project import ProjectConfig, ProjectSource, ScriptFormat, VideoLength, VisualMode
 from app.services import credits, payments
 
 logger = logging.getLogger(__name__)
@@ -73,6 +73,21 @@ def _pricing_table() -> dict[str, int]:
         for mode in VisualMode
         for length in VideoLength
     }
+    # A story episode has its own table (credits._STORY_COST).
+    quotes.update(
+        {
+            f"story:{mode.value}:{length.value}": credits.cost_for(
+                ProjectConfig(
+                    topic="quote",
+                    visual_mode=mode,
+                    video_length=length,
+                    script_format=ScriptFormat.STORY,
+                )
+            )
+            for mode in VisualMode
+            for length in VideoLength
+        }
+    )
     # The upload prices, quoted the same way and for the same reason: the
     # panel that offers them hardcoded "1 credit" and was wrong about a
     # dub and about every clip count.

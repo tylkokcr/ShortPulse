@@ -186,7 +186,22 @@ def cost_for(config: ProjectConfig) -> int:
         return DUB_COST if config.dub_language else AUTOCAPTION_COST
     mode = VisualMode(config.visual_mode)
     length = VideoLength(config.video_length)
+    if str(config.script_format) == "story":
+        return _STORY_COST[mode][length]
     return _MODE_COST[mode] * _LENGTH_MULTIPLIER[length]
+
+
+# A story episode is shots, not scenes: two minutes is about 45 of them —
+# a picture and a voice each, against 8-10 for any other video of that
+# length — so it is priced by its own table. Stills at MEDIUM: ~45 x
+# ($0.025 image + $0.003 voice) plus the script, ~$1.4, at 30 credits
+# (above cost on the biggest pack's sale price, 6.3 cents a credit).
+# Animated: ~45 Hailuo clips at ~$0.19, ~$8.5, at 150.
+_STORY_COST = {
+    VisualMode.STOCK_MEDIA: {VideoLength.SHORT: 6, VideoLength.MEDIUM: 12, VideoLength.LONG: 18},
+    VisualMode.FAST_HYBRID: {VideoLength.SHORT: 15, VideoLength.MEDIUM: 30, VideoLength.LONG: 45},
+    VisualMode.AI_VIDEO: {VideoLength.SHORT: 75, VideoLength.MEDIUM: 150, VideoLength.LONG: 220},
+}
 
 
 # ---------------------------------------------------------------------

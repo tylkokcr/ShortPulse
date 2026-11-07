@@ -575,6 +575,10 @@
         "outbreak": {
           "name": "Outbreak series",
           "hint": "A survival story told episode by episode: the same character, the spread on a map, a rising count, each episode ending on a cliffhanger. Fiction, no gore. For moving scenes, pick Animated as the visual style."
+        },
+        "story": {
+          "name": "Story series",
+          "hint": "A drama or thriller in episodes of about 2 minutes: a first-person narrator, characters speaking in their own voices, every episode ending on a cliffhanger. Pick any drawing style."
         }
       },
       "topic": "Topic",
@@ -602,6 +606,13 @@
         "school": "The outbreak starts at a school",
         "island": "An outbreak on a holiday island",
         "metro": "Outbreak on the midnight subway"
+      },
+      "storyPlaceholder": "e.g. My husband goes down to the kitchen at 3 a.m. every night",
+      "storySuggestions": {
+        "kitchen": "My husband goes to the kitchen at 3 a.m. every night",
+        "neighbour": "Our new neighbour never leaves the house",
+        "letter": "My name was in my mother's old letter",
+        "basement": "The school basement is always locked"
       }
     },
     "outro": {
@@ -1229,6 +1240,10 @@
     "pixel": {
       "name": "Pixel Art",
       "description": "Chunky 16-bit sprites, limited palette."
+    },
+    "vector": {
+      "name": "Vector Story",
+      "description": "Thick outlines, flat muted colours, simple faces: the serialised-story look."
     }
   },
   "files": {

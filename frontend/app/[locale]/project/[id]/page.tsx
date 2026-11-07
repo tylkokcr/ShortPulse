@@ -282,8 +282,10 @@ function Project({ id }: { id: string }) {
                 <PublishPanel project={project} />
               ))}
             {project?.status === "complete" &&
-              project.config.script_format === "outbreak" &&
-              project.script?.character && <NextEpisode project={project} />}
+              ((project.config.script_format === "outbreak" && project.script?.character) ||
+                (project.config.script_format === "story" && project.script?.cast?.length)) && (
+                <NextEpisode project={project} />
+              )}
           </div>
         </div>
         )}
@@ -376,7 +378,7 @@ function NextEpisode({ project }: { project: Project }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const next = (project.script?.episode ?? 1) + 1;
-  const name = project.script?.character?.name ?? "";
+  const name = project.script?.character?.name ?? project.script?.cast?.[0]?.name ?? "";
 
   async function start() {
     setBusy(true);
@@ -386,7 +388,7 @@ function NextEpisode({ project }: { project: Project }) {
       const created = await createProject({
         topic: `${c.topic.split(" · ")[0]} · ${t("nextEpisode.topic", { n: next })}`.slice(0, 200),
         continues_from: c.id,
-        script_format: "outbreak",
+        script_format: c.script_format,
         language: c.language,
         visual_mode: c.visual_mode,
         art_style: c.art_style,

@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 import shutil
 import time
 import uuid
@@ -44,6 +45,7 @@ from app.schemas.project import (
     Segment,
     VideoLength,
     VisualMode,
+    VoiceConfig,
 )
 from app.services import (
     art_styles,
@@ -516,7 +518,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 )
                 await audio_engine.process_scene_audio(
                     scene,
-                    config.voice,
+                    voice_for_scene(scene, script, config.voice),
                     paths / "audio",
                     whisper_model_size=settings.whisper_model_size,
                     whisper_device=settings.whisper_device,
@@ -556,6 +558,8 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             reference = await _character_sheet(
                 script.character.look, paths, previous, config, settings
             )
+        # A story's cast: one sheet for each person who is ever in frame.
+        cast_sheets = await _cast_sheets(script, paths, previous, config, settings)
 
         async def build_visual(scene: Scene) -> None:
             nonlocal completed
@@ -606,6 +610,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                         size=visual_engine.sdxl_size_for(render_width, render_height),
                         render_size=(render_width, render_height),
                         reference=reference,
+                        references=[cast_sheets[n] for n in scene.cast if n in cast_sheets],
                     )
             # Reported on completion rather than on start: with several in
             # flight, "scene 3 of 5" as a starting announcement would jump
@@ -2031,3 +2036,60 @@ async def _character_sheet(look: str, root: Path, previous, config, settings) ->
     except Exception:
         logger.warning("Could not draw the character sheet", exc_info=True)
         return None
+
+
+def voice_for_scene(scene: Scene, script, voice: VoiceConfig) -> VoiceConfig:
+    """Who says this line, in their own voice: a story's cast member when
+    they are speaking, else the narrator — the first of the cast, whose
+    voice is the story's. Everything but the voice is the project's."""
+    cast = getattr(script, "cast", None) or []
+    if not cast:
+        return voice
+    speaker = next((m for m in cast if m.name == scene.speaker), cast[0])
+    if not speaker.voice_id:
+        return voice
+    return voice.model_copy(update={"voice_id": speaker.voice_id})
+
+
+def cast_sheet_path(root: Path, name: str) -> Path:
+    """A cast member's character sheet, outside visuals/ like the outbreak
+    survivor's, so the next episode is drawn from it."""
+    slug = re.sub(r"[^a-z0-9]+", "-", name.casefold()).strip("-") or "member"
+    return root / "series" / "cast" / f"{slug}.png"
+
+
+async def _cast_sheets(script, root: Path, previous, config, settings) -> dict[str, Path]:
+    """Each cast member who appears in a picture, drawn once — or copied
+    from the previous episode — and described in words beside the sheet."""
+    in_frame = {name for scene in script.scenes for name in scene.cast}
+    members = [m for m in script.cast if m.name in in_frame]
+    if not members:
+        return {}
+    out: dict[str, Path] = {}
+    todo = []
+    for member in members:
+        path = cast_sheet_path(root, member.name)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        look = ", ".join(
+            p for p in (f"{member.age}-year-old {member.gender}" if member.age else member.gender,
+                        member.look) if p
+        )
+        earlier = cast_sheet_path(project_dir(previous.config.id), member.name) if previous else None
+        if earlier is not None and earlier.is_file():
+            shutil.copyfile(earlier, path)
+            path.with_suffix(".txt").write_text(look, encoding="utf-8")
+            out[member.name] = path
+        else:
+            todo.append((member.name, look, path))
+    if todo and visual_engine.image_backend(settings) is visual_engine.ImageBackend.REPLICATE:
+        style = art_styles.by_id(config.art_style)
+
+        async def draw(name: str, look: str, path: Path) -> None:
+            try:
+                await visual_engine.generate_character_sheet(look, path, settings, style)
+                out[name] = path
+            except Exception:
+                logger.warning("Could not draw %s's character sheet", name, exc_info=True)
+
+        await asyncio.gather(*(draw(*job) for job in todo))
+    return out

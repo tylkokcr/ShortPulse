@@ -575,6 +575,10 @@
         "outbreak": {
           "name": "Ausbruch-Serie",
           "hint": "Eine Überlebensgeschichte in Folgen: dieselbe Figur, die Ausbreitung auf der Karte, ein steigender Zähler, jede Folge endet mit einem Cliffhanger. Fiktion, ohne Blut. Für bewegte Szenen wähle beim Bildstil den Modus Animated."
+        },
+        "story": {
+          "name": "Story-Serie",
+          "hint": "Ein Drama oder Thriller in Folgen von etwa 2 Minuten: eine Ich-Erzählerin, Figuren mit eigenen Stimmen, jede Folge endet mit einem Cliffhanger. Zeichenstil frei wählbar."
         }
       },
       "topic": "Thema",
@@ -602,6 +606,13 @@
         "school": "Der Ausbruch beginnt in einer Schule",
         "island": "Ausbruch auf einer Urlaubsinsel",
         "metro": "Ausbruch in der Mitternachts-U-Bahn"
+      },
+      "storyPlaceholder": "z. B. Mein Mann geht jede Nacht um 3 Uhr in die Küche",
+      "storySuggestions": {
+        "kitchen": "Mein Mann geht jede Nacht um 3 Uhr in die Küche",
+        "neighbour": "Unser neuer Nachbar geht nie aus dem Haus",
+        "letter": "In Mamas altem Brief stand mein Name",
+        "basement": "Der Schulkeller ist immer abgeschlossen"
       }
     },
     "outro": {
@@ -1229,6 +1240,10 @@
     "pixel": {
       "name": "Pixel-Art",
       "description": "Klobige 16-Bit-Sprites, begrenzte Palette."
+    },
+    "vector": {
+      "name": "Vektor-Story",
+      "description": "Dicke Konturen, flache gedeckte Farben, einfache Gesichter: der Look serieller Geschichten."
     }
   },
   "files": {

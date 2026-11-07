@@ -25,6 +25,11 @@ _DELIVERY: dict[str, str] = {
         "consequence; a short pause before the final twist, then land it. Vary "
         "pitch and pace; never flat or monotone."
     ),
+    "story": (
+        "An intimate first-person storyteller recalling what happened to them, "
+        "like telling a close friend late at night: quiet, personal, a catch in the "
+        "voice at the turns, unhurried. Never flat or monotone."
+    ),
     "outbreak": (
         "A tense thriller narrator telling a survival story as it happens. Low and "
         "urgent, quickening as the danger grows, a held breath before each reveal, "
@@ -57,7 +62,7 @@ def resolve(voice: VoiceConfig, language: str, script_format: str) -> VoiceConfi
         # modelled on take their time and let lines land.
         rate=(
             "-6%"
-            if script_format in ("what_if", "outbreak") and provider == TTSProvider.MINIMAX
+            if script_format in ("what_if", "outbreak", "story") and provider == TTSProvider.MINIMAX
             else "+0%"
         ),
         # Only OpenAI's model reads instructions; MiniMax picks the emotion

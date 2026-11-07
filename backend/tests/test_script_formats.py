@@ -414,3 +414,73 @@ def test_an_outbreak_has_two_maps_at_most_and_always_a_count():
     assert maps_at == [1, 3]  # not the opening, not back to back, two
     assert script.counter is not None and script.counter.label == "Enfekte"
     assert script.counter.end > script.counter.start
+
+
+def test_a_story_has_a_cast_speakers_and_at_most_two_in_frame():
+    from app.engines.script_engine import _to_script_output
+
+    parsed = {
+        "cast": [
+            {"name": "Zehra", "role": "narrator", "gender": "woman", "age": 34, "look": "auburn hair"},
+            {"name": "Emir", "role": "husband", "gender": "man", "age": 38, "look": "beard"},
+            {"name": "Zehra", "gender": "woman", "look": "duplicate"},
+            {"name": "Ada", "role": "daughter", "gender": "girl", "age": 6, "look": "pigtails"},
+        ],
+        "scenes": [
+            {"voiceover_line": "Kocam aynayı üç kez siliyor.", "visual_prompt": "p",
+             "speaker": "narrator", "cast": ["Emir"]},
+            {"voiceover_line": "Baba!", "visual_prompt": "p", "speaker": "ada",
+             "cast": ["Ada", "Emir", "Zehra"]},
+            {"voiceover_line": "Ne oldu?", "visual_prompt": "p", "speaker": "Kemal",
+             "cast": ["Kemal"]},
+        ],
+        "recap": "Zehra noticed the mirror.",
+    }
+    script = _to_script_output("x", parsed, VideoLength.MEDIUM, "story", "tr")
+    assert [m.name for m in script.cast] == ["Zehra", "Emir", "Ada"]
+    assert [s.speaker for s in script.scenes] == ["narrator", "Ada", "narrator"]
+    assert script.scenes[1].cast == ["Ada", "Emir"] and script.scenes[2].cast == []
+    assert script.recap
+
+
+def test_every_cast_member_gets_their_own_voice_the_narrator_a_native_one():
+    from app.schemas.project import CastMember
+    from app.services.voices import assign_cast_voices
+
+    cast = [
+        CastMember(name="Zehra", gender="woman", age=34, look="x"),
+        CastMember(name="Emir", gender="man", age=38, look="x"),
+        CastMember(name="Ada", gender="girl", age=6, look="x"),
+        CastMember(name="Melis", gender="woman", age=33, look="x"),
+        CastMember(name="Nuri", gender="man", age=70, look="x"),
+    ]
+    assign_cast_voices(cast, "tr")
+    voices = [m.voice_id for m in cast]
+    assert voices[0] == "minimax:Turkish_CalmWoman" and voices[1] == "minimax:Turkish_Trustworthyman"
+    assert voices[2] in ("minimax:Lively_Girl", "minimax:Sweet_Girl_2", "minimax:Exuberant_Girl")
+    assert len(set(voices)) == 5
+    # Kept once given: episode two sounds like episode one.
+    cast[0].voice_id = "minimax:Wise_Woman"
+    assign_cast_voices(cast, "tr")
+    assert cast[0].voice_id == "minimax:Wise_Woman"
+
+
+def test_each_line_is_spoken_in_its_speakers_voice():
+    from app.schemas.project import CastMember, ScriptOutput, VoiceConfig
+    from app.services.render_manager import voice_for_scene
+
+    scenes = [_s(0), _s(1), _s(2)]
+    scenes[0].speaker, scenes[1].speaker, scenes[2].speaker = "narrator", "Ada", "Kemal"
+    script = ScriptOutput(
+        topic="x", hook="h", scenes=scenes, total_duration_s=9,
+        cast=[
+            CastMember(name="Zehra", look="x", voice_id="minimax:Turkish_CalmWoman"),
+            CastMember(name="Ada", look="x", voice_id="minimax:Lively_Girl"),
+        ],
+    )
+    base = VoiceConfig(voice_id="minimax:Turkish_Trustworthyman", rate="-6%")
+    voices = [voice_for_scene(s, script, base) for s in scenes]
+    assert [v.voice_id for v in voices] == [
+        "minimax:Turkish_CalmWoman", "minimax:Lively_Girl", "minimax:Turkish_CalmWoman",
+    ]
+    assert all(v.rate == "-6%" for v in voices)

@@ -100,3 +100,31 @@ async def test_an_unknown_episode_is_not_found(api):
             "/api/projects", json={"topic": "next", "continues_from": str(uuid.uuid4())}
         )
     assert response.status_code == 404
+
+
+async def test_the_next_episode_draws_its_cast_from_the_last_ones_sheets(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from app.schemas.project import CastMember
+    from app.services import render_manager
+
+    monkeypatch.setattr(render_manager, "project_dir", lambda pid: tmp_path / pid)
+    earlier = render_manager.cast_sheet_path(tmp_path / "ep1", "Zehra")
+    earlier.parent.mkdir(parents=True)
+    earlier.write_bytes(b"\x89PNG zehra")
+
+    scene = Scene(index=0, duration_s=3, visual=SceneVisual(prompt="p"),
+                  audio=SceneAudio(voiceover_line="l"), cast=["Zehra"])
+    script = ScriptOutput(
+        topic="x", hook="h", total_duration_s=3, scenes=[scene],
+        cast=[CastMember(name="Zehra", gender="woman", age=34, look="auburn hair")],
+    )
+    previous = SimpleNamespace(config=SimpleNamespace(id="ep1"))
+    settings = SimpleNamespace(visual_provider="local", replicate_api_token=None)
+
+    sheets = await render_manager._cast_sheets(
+        script, tmp_path / "ep2", previous, SimpleNamespace(art_style="vector"), settings
+    )
+
+    assert sheets["Zehra"].read_bytes() == b"\x89PNG zehra"
+    assert "34-year-old woman, auburn hair" in sheets["Zehra"].with_suffix(".txt").read_text()

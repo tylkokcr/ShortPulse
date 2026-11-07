@@ -37,6 +37,7 @@ const FALLBACK: ArtStyle[] = [
   { id: "comic", name: "Comic", description: "Inked outlines, halftone shading.", sample: "comic.jpg", is_default: false },
   { id: "clay", name: "Claymation", description: "Plasticine models.", sample: "clay.jpg", is_default: false },
   { id: "flat", name: "Flat Cartoon", description: "Flat-colour explainer drawings.", sample: "flat.jpg", is_default: false },
+  { id: "vector", name: "Vector Story", description: "Thick outlines, flat muted colours.", sample: "vector.jpg", is_default: false },
   { id: "pixel", name: "Pixel Art", description: "Chunky 16-bit sprites.", sample: "pixel.jpg", is_default: false },
 ];
 

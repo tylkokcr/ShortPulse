@@ -136,7 +136,7 @@ function CreateVideo() {
   // Quoted from the same table the backend charges from, so the number
   // shown here is the number taken. Absent on a self-hosted install.
   const price = credits?.enabled
-    ? credits.pricing[`${draft.visualMode}:${draft.videoLength}`]
+    ? credits.pricing[`${draft.scriptFormat === "story" ? "story:" : ""}${draft.visualMode}:${draft.videoLength}`]
     : undefined;
 
   const lengthLabel = t(`length.${draft.videoLength}`);

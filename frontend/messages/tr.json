@@ -575,6 +575,10 @@
         "outbreak": {
           "name": "Salgın dizisi",
           "hint": "Bölüm bölüm bir hayatta kalma hikâyesi: aynı karakter, haritada yayılan salgın, artan sayaç, her bölüm merakla biter. Kurgudur; kan ve vahşet yok. Hareketli sahneler için görsel stilde Animasyonlu modu seç."
+        },
+        "story": {
+          "name": "Hikâye dizisi",
+          "hint": "Bölüm bölüm, yaklaşık 2 dakikalık bir dram ya da gerilim: birinci ağızdan anlatıcı, kendi sesiyle konuşan karakterler, her bölüm merakla biter. Çizim stilini istediğin gibi seç."
         }
       },
       "topic": "Konu",
@@ -602,6 +606,13 @@
         "school": "Salgın okulda başlıyor",
         "island": "Tatil adasında salgın",
         "metro": "Gece yarısı metroda salgın"
+      },
+      "storyPlaceholder": "örn. Kocam her gece saat 3'te mutfağa iniyor",
+      "storySuggestions": {
+        "kitchen": "Kocam her gece saat 3'te mutfağa iniyor",
+        "neighbour": "Yeni komşumuz hiç dışarı çıkmıyor",
+        "letter": "Annemin eski mektubunda benim adım yazıyordu",
+        "basement": "Okulun bodrum katı hep kilitli"
       }
     },
     "outro": {
@@ -1229,6 +1240,10 @@
     "pixel": {
       "name": "Piksel Sanatı",
       "description": "İri 16-bit karakterler, sınırlı renk paleti."
+    },
+    "vector": {
+      "name": "Vektör Hikâye",
+      "description": "Kalın konturlar, düz soluk renkler, sade yüzler: dizi hikâyelerinin görünümü."
     }
   },
   "files": {

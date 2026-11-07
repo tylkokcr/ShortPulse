@@ -308,6 +308,7 @@ async def generate_scene_visual(
     render_size: tuple[int, int] | None = None,
     variant: int = 0,
     reference: Path | None = None,
+    references: list[Path] | None = None,
 ) -> Scene:
     """Populate scene.visual.asset_path using the requested mode, with a
     stock-media fallback if a local generation mode fails (e.g. no GPU).
@@ -332,14 +333,14 @@ async def generate_scene_visual(
         if mode == VisualMode.AI_VIDEO:
             if image_backend(settings) is ImageBackend.REPLICATE:
                 path = await _generate_hosted_video(
-                    scene, output_dir, settings, style, size, reference
+                    scene, output_dir, settings, style, size, reference, references
                 )
             else:
                 path = await _generate_ai_video(scene, output_dir, settings, style)
         elif mode == VisualMode.FAST_HYBRID:
             if image_backend(settings) is ImageBackend.REPLICATE:
                 path = await _generate_replicate_image(
-                    scene, output_dir, settings, style, size, reference
+                    scene, output_dir, settings, style, size, reference, references
                 )
             else:
                 path = await _generate_fast_hybrid_image(scene, output_dir, settings, style, size)
@@ -441,6 +442,7 @@ async def _generate_hosted_video(
     style: ArtStyle | None = None,
     size: tuple[int, int] | None = None,
     reference: Path | None = None,
+    references: list[Path] | None = None,
 ) -> Path:
     """ai_video over the API: the scene's still, as fast_hybrid draws it,
     then animated by an image-to-video model. Starting from the still keeps
@@ -452,7 +454,9 @@ async def _generate_hosted_video(
     import base64
 
     style = style or art_styles.DEFAULT_ART_STYLE
-    still = await _generate_replicate_image(scene, output_dir, settings, style, size, reference)
+    still = await _generate_replicate_image(
+        scene, output_dir, settings, style, size, reference, references
+    )
     image_s = scene.visual.predict_time_s or 0.0
     output_path = output_dir / f"scene_{scene.index:02d}.mp4"
     image = "data:image/png;base64," + base64.b64encode(still.read_bytes()).decode()
@@ -651,23 +655,65 @@ def _replicate_image_input(
     }
 
 
-def _reference_input(scene: Scene, style: ArtStyle, size, reference: Path) -> dict:
-    """Kontext's inputs: the character sheet and an instruction to put that
-    same person in this scene, in the style. Measured: the face, hair and
-    clothes held across a ferry, a night street and a market stall."""
+def _sheet_image(sheets: list[Path]) -> bytes:
+    """One sheet as it is; two side by side at one height — Kontext takes a
+    single picture, and two people on one sheet held both faces in a test
+    of three kitchen and doorway scenes."""
+    if len(sheets) == 1:
+        return sheets[0].read_bytes()
+    import io
+
+    from PIL import Image
+
+    height = 1024
+    parts = []
+    for sheet in sheets:
+        with Image.open(sheet) as opened:
+            rgb = opened.convert("RGB")
+            parts.append(rgb.resize((max(1, round(rgb.width * height / rgb.height)), height)))
+    both = Image.new("RGB", (sum(p.width for p in parts), height), "white")
+    x = 0
+    for part in parts:
+        both.paste(part, (x, 0))
+        x += part.width
+    buffer = io.BytesIO()
+    both.save(buffer, "PNG")
+    return buffer.getvalue()
+
+
+def _reference_input(
+    scene: Scene, style: ArtStyle, size, sheets: list[Path], tense: bool = True
+) -> dict:
+    """Kontext's inputs: the character sheet(s) and an instruction to put
+    those same people in this scene, in the style. Measured: the face, hair
+    and clothes held across a ferry, a night street and a market stall."""
     import base64
 
     width, height = replicate_size_for(*(size or SDXL_SIZE_BY_ORIENTATION["vertical"]))
     orientation = "landscape" if width > height else "square" if width == height else "vertical"
     action = scrub_excluded(scene.visual.prompt, scene.visual.negative_prompt or "")
-    look = character_look(reference)
-    who = f"this same person ({look})" if look else "this same person"
+    looks = [character_look(s) for s in sheets]
+    if len(sheets) == 2:
+        who = (
+            "these two people from the reference — the one on the left"
+            + (f" ({looks[0]})" if looks[0] else "")
+            + " and the one on the right"
+            + (f" ({looks[1]})" if looks[1] else "")
+            + " —"
+        )
+    else:
+        who = f"this same person ({looks[0]})" if looks[0] else "this same person"
+    mood = (
+        "worried and tense, never smiling"
+        if tense
+        else "whatever this moment calls for"
+    )
     return {
-        "input_image": "data:image/png;base64," + base64.b64encode(reference.read_bytes()).decode(),
+        "input_image": "data:image/png;base64," + base64.b64encode(_sheet_image(sheets)).decode(),
         "prompt": (
-            f"Show {who}, keeping exactly the same face, hair, body and clothes, in a new "
-            f"scene: {action}. Their pose and facial expression fit this moment, not the "
-            "reference picture's: worried and tense, never smiling. "
+            f"Show {who} keeping exactly the same faces, hair, bodies and clothes, in a new "
+            f"scene: {action}. Poses and facial expressions fit this moment, not the "
+            f"reference picture's: {mood}. "
             f"{style.build_prompt('the scene')}. Keep this exact drawing style."
         ),
         "aspect_ratio": _FLUX_ASPECT[orientation],
@@ -866,6 +912,7 @@ async def _generate_replicate_image(
     style: ArtStyle | None = None,
     size: tuple[int, int] | None = None,
     reference: Path | None = None,
+    references: list[Path] | None = None,
 ) -> Path:
     """fast_hybrid over the API. Same signature and same output filename as
     the local generator, which is what keeps the render engine's
@@ -873,12 +920,17 @@ async def _generate_replicate_image(
     output_path = output_dir / f"scene_{scene.index:02d}.png"
     style = style or art_styles.DEFAULT_ART_STYLE
 
-    if reference is not None and scene.hero and reference.is_file():
+    # The people in this picture, as character sheets: a story's cast in
+    # frame (up to two), or an outbreak's survivor in a hero scene.
+    sheets = [r for r in (references or []) if r.is_file()][:2]
+    if not sheets and reference is not None and scene.hero and reference.is_file():
+        sheets = [reference]
+    if sheets:
         try:
             prediction = await _replicate_predict(
                 {
                     "version": settings.replicate_reference_model,
-                    "input": _reference_input(scene, style, size, reference),
+                    "input": _reference_input(scene, style, size, sheets, tense=not references),
                 },
                 settings,
             )
@@ -894,10 +946,10 @@ async def _generate_replicate_image(
 
     model = settings.replicate_image_model
     drawn = scene
-    if reference is not None and scene.hero and (look := character_look(reference)):
+    if looks := [look for look in (character_look(s) for s in sheets) if look]:
         # Drawn without the sheet: at least described the same way.
         drawn = scene.model_copy(deep=True)
-        drawn.visual.prompt = f"{scene.visual.prompt}, the person is {look}"
+        drawn.visual.prompt = f"{scene.visual.prompt}, the people are: {'; '.join(looks)}"
     try:
         prediction = await _replicate_predict(
             {"version": model, "input": _replicate_image_input(drawn, style, size, settings)},

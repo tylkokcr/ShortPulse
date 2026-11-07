@@ -24,6 +24,7 @@ from app.core.config import get_settings
 from app.engines.graphics import ICONS
 from app.schemas.project import (
     CardRow,
+    CastMember,
     Character,
     GraphicCounter,
     IdCard,
@@ -56,6 +57,13 @@ FORMAT_SCENE_COUNT: dict[str, dict[VideoLength, tuple[int, int]]] = {
     },
     # Fewer, fuller scenes: a story needs sentences with room in them, and
     # an animated scene is a six-second clip.
+    # A shot each: one sentence of narration or one line of dialogue. Two
+    # minutes of the reference series was about fifty of them.
+    "story": {
+        VideoLength.SHORT: (18, 24),
+        VideoLength.MEDIUM: (38, 48),
+        VideoLength.LONG: (55, 65),
+    },
     "outbreak": {
         VideoLength.SHORT: (7, 8),
         VideoLength.MEDIUM: (11, 13),
@@ -65,6 +73,9 @@ FORMAT_SCENE_COUNT: dict[str, dict[VideoLength, tuple[int, int]]] = {
 _SCENE_LENGTH = {
     "free": "3 to 5 seconds of spoken voiceover (roughly 8-14 words)",
     "what_if": "2 to 3 seconds of spoken voiceover (roughly 5-10 words) — one punchy idea",
+    "story": (
+        "1 to 4 seconds — a shot: one sentence of narration or one line of dialogue"
+    ),
     "outbreak": (
         "3 to 5 seconds of spoken voiceover (roughly 9-14 words) — one moment of the "
         "story, told with room to breathe"
@@ -322,6 +333,56 @@ with the label naming it in the script's language ("Population of \
 Türkiye", 85000000); for other premises only if one well-established \
 number fits, otherwise leave it out. Every scene with a tally gets an \
 icon — pick the nearest one rather than none.
+""",
+    "story": """\
+This video is one episode of a fictional drama series, told the way the \
+serialised family thrillers on Reels and TikTok are told. Follow these:
+- The narrator is the main character, speaking in the first person, past \
+tense, intimate, like telling a friend what happened ("Beş yıl önce…", \
+"I should have noticed…").
+- The topic is the premise. Genre follows it: a thriller, a family drama, \
+a mystery, a comedy of errors.
+- Episode 1 opens on a strange, everyday detail that hooks at once ("My \
+husband wipes the bathroom mirror exactly three times a day."), then a \
+flash of the moment it all broke, then "Until…" back into how it began. \
+A later episode opens exactly where the last one stopped, with no recap \
+line.
+- Show it as scenes: most shots are a line of narration OR a line of \
+dialogue spoken by the person who says it, short and natural ("Mom?", \
+"Don't open that."). Dialogue makes up a third to a half of the lines. \
+The narrator never repeats what a line just said.
+- A cast of two to four people, the narrator first. Concrete, local, \
+believable people and places for the script's language.
+- Plain, spoken, native in the script's language; sensory, specific; vary \
+the rhythm; no clichés, no explaining feelings.
+- Turns and reveals every few lines; end on a cliffhanger line, then a \
+last scene saying the next episode is coming, in the script's language \
+("Next episode soon."), spoken by the narrator.
+- Suspense, never gore: no blood, wounds or bodies shown; no suicide or \
+self-harm, no sexual violence, nothing that harms a child; no real people \
+or brands. Fiction.
+- Every scene object also carries:
+  "speaker": "narrator" or the exact name of the cast member saying the \
+line;
+  "cast": the names of the people in the picture, zero, one or two;
+  "visual_prompt": an illustrated shot of the moment — a close-up of a \
+face, two people at a table, a door ajar, a hand on a phone, a hallway — \
+calling people only "the woman", "the man", "the girl", "the boy" (with \
+"on the left"/"on the right" when two), never by name and never \
+describing their looks, which come from their character sheets. Never \
+text in the picture;
+  "motion": one sentence in English for animating it (what moves, the \
+camera);
+  "chapter": only on the two or three scenes that jump in time or place, \
+1-3 words in the script's language ("ONE YEAR AGO", "THAT NIGHT").
+- Add a top-level "cast": [{"name": "<first name, common in the script's \
+language>", "role": "<narrator / husband / best friend / daughter…>", \
+"gender": "woman" | "man" | "girl" | "boy", "age": <number>, "look": \
+"<in plain English: hair, skin, one distinctive piece of clothing in a \
+colour, glasses or not>"}], the narrator first. In a later episode, keep \
+the cast you are given, exactly.
+- Add a top-level "recap": in English, three to five sentences of the \
+whole series so far, ending on this episode's cliffhanger.
 """,
     "outbreak": """\
 This video is one episode of a fictional outbreak series — a zombie-style \
@@ -702,8 +763,8 @@ async def _generate_script_once(
     # library of real footage — somebody filmed it properly.
     if script_format == "what_if" and not raw_script:
         parsed = await _review_what_if(parsed, topic, language, video_length, config, facts)
-    if script_format == "outbreak" and not raw_script:
-        parsed = await _edit_story(parsed, language, config)
+    if script_format in ("outbreak", "story") and not raw_script:
+        parsed = await _edit_story(parsed, language, config, script_format)
     if visual_mode != "stock_media":
         await _rewrite_badly_framed_prompts(parsed, config)
     script = _to_script_output(topic, parsed, video_length, script_format, language)
@@ -712,8 +773,17 @@ async def _generate_script_once(
         # character sheet was drawn from, and the sheet is reused.
         script.character = previous.character or script.character
         script.episode = min(previous.episode + 1, 99)
+        if previous.cast:
+            # The same people and the same voices; lines spoken by a name
+            # the model dropped fall back to the narrator.
+            script.cast = [m.model_copy() for m in previous.cast]
+            _tidy_story_scenes(script.scenes, script.cast)
         if script.character:
             _mark_hero_scenes(script.scenes, script.character.name)
+    if script.cast:
+        from app.services.voices import assign_cast_voices
+
+        assign_cast_voices(script.cast, language)
     return script
 
 
@@ -726,6 +796,15 @@ def _previous_episode(previous: ScriptOutput) -> str:
         parts.append(
             f'The main character, unchanged — use exactly this "character": '
             f'{{"name": "{previous.character.name}", "look": "{previous.character.look}"}}'
+        )
+    if previous.cast:
+        cast = [
+            {"name": m.name, "role": m.role, "gender": m.gender, "age": m.age, "look": m.look}
+            for m in previous.cast
+        ]
+        parts.append(
+            "The cast, unchanged — use exactly this \"cast\": "
+            + json.dumps(cast, ensure_ascii=False)
         )
     if previous.counter:
         parts.append(
@@ -882,16 +961,15 @@ async def _review_what_if(
 
 STORY_EDIT_PROMPT = """\
 You are a celebrated {language_name} novelist who also writes audio \
-dramas, editing one episode of a short survival thriller before it is \
+dramas, editing one episode of a short serialised story before it is \
 recorded. You get the episode as JSON. Rewrite ONLY each scene's \
 "voiceover_line", in {language_name}, so it sounds like it was written by \
-a gifted human storyteller and will hold a listener for the whole minute.
+a gifted human storyteller and will hold a listener to the end.
 
 - Keep every scene, in order, and what happens in it; keep names, times \
-and places. The first line stays the cold open with the time; the last \
-line stays the call to follow for the next episode.
-- Each line is 9 to 14 words, one moment, said out loud easily — the \
-whole episode is under fifty seconds.
+and places, and who speaks each line ("speaker"). The first line stays \
+the hook; the last line stays the one about the next episode.
+{lengths}
 - Plain beats poetic: every image must make literal sense (a voice is \
 not "hoarse like the smell of iodine"); at most one figure of speech in \
 the whole episode.
@@ -913,7 +991,22 @@ changed. Respond with ONLY the JSON.
 """
 
 
-async def _edit_story(parsed: dict, language: str, config: LLMConfig) -> dict:
+_EDIT_LENGTHS = {
+    "outbreak": (
+        "- Each line is 9 to 14 words, one moment, said out loud easily — the \n"
+        "whole episode is under fifty seconds."
+    ),
+    "story": (
+        "- A line of dialogue is what that person would really say, short and \n"
+        "natural (one to eight words); a line of narration six to fourteen words. \n"
+        "The narrator never repeats what a line of dialogue just said."
+    ),
+}
+
+
+async def _edit_story(
+    parsed: dict, language: str, config: LLMConfig, script_format: str = "outbreak"
+) -> dict:
     """A novelist's pass over a series episode: the first draft follows the
     structure — times, maps, cliffhanger — and reads like a summary of
     itself ("Deniz kapıyı kilitler. Radyoyu seçer."). Only the spoken lines
@@ -924,7 +1017,10 @@ async def _edit_story(parsed: dict, language: str, config: LLMConfig) -> dict:
     try:
         raw = await _call_llm(
             config,
-            STORY_EDIT_PROMPT.format(language_name=LANGUAGE_NAMES.get(language, language)),
+            STORY_EDIT_PROMPT.format(
+                language_name=LANGUAGE_NAMES.get(language, language),
+                lengths=_EDIT_LENGTHS.get(script_format, _EDIT_LENGTHS["outbreak"]),
+            ),
             _json.dumps(parsed, ensure_ascii=False),
         )
         edited = _extract_json(raw)
@@ -1348,6 +1444,45 @@ def _limit_outbreak_maps(scenes: list[Scene]) -> None:
             kept += 1
 
 
+def _cast(raw: object) -> list[CastMember]:
+    """The story's cast, at most four, names unique."""
+    if not isinstance(raw, list):
+        return []
+    out: list[CastMember] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        name, look = _short(item.get("name"), 32), _short(item.get("look"), 300)
+        if not name or not look or any(m.name.casefold() == name.casefold() for m in out):
+            continue
+        try:
+            age = int(item["age"]) if item.get("age") is not None else None
+        except (TypeError, ValueError):
+            age = None
+        try:
+            out.append(CastMember(
+                name=name, look=look, role=_short(item.get("role"), 60) or "",
+                gender=(_short(item.get("gender"), 12) or "").lower(),
+                age=age if age is None or 1 <= age <= 110 else None,
+            ))
+        except ValidationError:
+            continue
+        if len(out) == 4:
+            break
+    return out
+
+
+def _tidy_story_scenes(scenes: list[Scene], cast: list[CastMember]) -> None:
+    """Speakers and people in frame named as the cast is: a speaker not in
+    the cast is the narrator; a name in frame not in the cast is dropped."""
+    names = {m.name.casefold(): m.name for m in cast}
+    for scene in scenes:
+        speaker = (scene.speaker or "").casefold()
+        scene.speaker = names.get(speaker, "narrator")
+        scene.cast = [names[n.casefold()] for n in scene.cast if n.casefold() in names][:2]
+        scene.hero = False
+
+
 def _mark_hero_scenes(scenes: list[Scene], name: str) -> None:
     """When the model marked no scene as the character's, the scenes that
     say their name are theirs (never the first: it sets the scene)."""
@@ -1492,6 +1627,11 @@ def _to_script_output(
                 map=_scene_map(raw_scene.get("map")),
                 card=raw_scene.get("card") is True,
                 hero=raw_scene.get("hero") is True,
+                speaker=_short(raw_scene.get("speaker"), 32),
+                cast=[
+                    n for n in (_short(x, 32) for x in raw_scene.get("cast") or [] if isinstance(x, str))
+                    if n
+                ][:2] if isinstance(raw_scene.get("cast"), list) else [],
             )
         except (ValueError, TypeError, AttributeError, ValidationError) as exc:
             logger.warning("Skipping scene %d (%s): %r", raw_index, exc, raw_scene)
@@ -1602,6 +1742,11 @@ def _to_script_output(
                 start=1, end=2400,
             )
 
+    cast: list[CastMember] = []
+    if script_format == "story":
+        cast = _cast(parsed.get("cast"))
+        _tidy_story_scenes(scenes, cast)
+
     hook = parsed.get("hook", scenes[0].audio.voiceover_line)
     call_to_action = parsed.get("call_to_action")
 
@@ -1618,7 +1763,12 @@ def _to_script_output(
             tally_title=_short(parsed.get("tally_title"), 40),
             card=card,
             character=character,
-            recap=_short(parsed.get("recap"), 1200) if script_format == "outbreak" else None,
+            recap=(
+                _short(parsed.get("recap"), 1200)
+                if script_format in ("outbreak", "story")
+                else None
+            ),
+            cast=cast,
         )
     except ValidationError as exc:
         raise ScriptGenerationError(f"Malformed script structure: {exc}") from exc

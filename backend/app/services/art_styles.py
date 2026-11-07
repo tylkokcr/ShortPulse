@@ -159,6 +159,20 @@ ART_STYLES: tuple[ArtStyle, ...] = (
         sample="flat.jpg",
     ),
     ArtStyle(
+        id="vector",
+        name="Vector Story",
+        description="Thick outlines, flat muted colours, simple faces: the serialised-story look.",
+        # The look of the family-thriller series on Reels: tried on two cast
+        # sheets and two shared scenes (2026-11-07), faces held across them.
+        prompt_template=(
+            "flat 2d vector illustration, thick dark outlines, flat muted colors, minimal "
+            "shading, simple faces with small dot eyes, plain domestic interiors, motion "
+            "comic story style, {prompt}"
+        ),
+        negative_prompt=f"{_BASE_NEGATIVE}, {_ANTI_PHOTO}, 3d render, gradients, text",
+        sample="vector.jpg",
+    ),
+    ArtStyle(
         id="pixel",
         name="Pixel Art",
         description="Chunky 16-bit sprites, limited palette.",

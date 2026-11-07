@@ -169,3 +169,51 @@ def by_id(voice_id: str) -> Voice | None:
 
 def for_language(language: str) -> list[Voice]:
     return [*_hosted(language), *(voice for voice in VOICES if voice.language == language)]
+
+
+# The voices a story series' cast is given, by who they are. Heard on one
+# Turkish line each (2026-11-07, ~/Downloads/shortpulse-ses-4): all of them
+# distinct, men 90-110 Hz, women 155-230, girls 290-330. A language's own
+# voices come first; the rest speak it through MiniMax's language boost.
+_CAST_POOL: dict[str, tuple[str, ...]] = {
+    "woman": ("Wise_Woman", "Calm_Woman", "Inspirational_girl", "Lovely_Girl"),
+    "man": ("Deep_Voice_Man", "Elegant_Man", "Casual_Guy", "Determined_Man"),
+    "girl": ("Lively_Girl", "Sweet_Girl_2", "Exuberant_Girl"),
+    "boy": ("Decent_Boy", "Young_Knight"),
+    "older_woman": ("Abbess", "Wise_Woman"),
+    "older_man": ("Patient_Man", "Deep_Voice_Man"),
+}
+_NATIVE_CAST: dict[str, dict[str, tuple[str, ...]]] = {
+    "tr": {"woman": ("Turkish_CalmWoman",), "man": ("Turkish_Trustworthyman",)},
+    "de": {"man": ("German_FriendlyMan",), "woman": ("German_SweetLady",)},
+}
+
+
+def _cast_kind(gender: str, age: int | None) -> str:
+    g = (gender or "").strip().lower()
+    if g in ("girl", "boy"):
+        return g
+    child = age is not None and age < 14
+    older = age is not None and age >= 60
+    if g in ("woman", "female", "f"):
+        return "girl" if child else "older_woman" if older else "woman"
+    if g in ("man", "male", "m"):
+        return "boy" if child else "older_man" if older else "man"
+    return "woman"
+
+
+def assign_cast_voices(cast, language: str) -> None:
+    """Give every cast member without one a MiniMax voice, each a different
+    one where the pool allows: the first member (the narrator) gets the
+    language's own voice of their kind when there is one."""
+    used = {m.voice_id for m in cast if m.voice_id}
+    lang = (language or "en").split("-")[0]
+    for member in cast:
+        if member.voice_id:
+            continue
+        kind = _cast_kind(member.gender, member.age)
+        base = kind.removeprefix("older_")
+        pool = (*_NATIVE_CAST.get(lang, {}).get(base, ()), *_CAST_POOL[kind])
+        choice = next((f"minimax:{v}" for v in pool if f"minimax:{v}" not in used), None)
+        member.voice_id = choice or f"minimax:{pool[0]}"
+        used.add(member.voice_id)

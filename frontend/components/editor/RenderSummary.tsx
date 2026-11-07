@@ -63,7 +63,7 @@ export function RenderSummary() {
   const scenes = SCENES[draft.videoLength];
   const perScene = SECONDS_PER_SCENE[draft.visualMode];
   const cost = credits?.enabled
-    ? credits.pricing[`${draft.visualMode}:${draft.videoLength}`]
+    ? credits.pricing[`${draft.scriptFormat === "story" ? "story:" : ""}${draft.visualMode}:${draft.videoLength}`]
     : undefined;
 
   const balance = credits?.balance ?? 0;

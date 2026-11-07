@@ -1,10 +1,10 @@
 "use client";
 
 import clsx from "clsx";
-import { Biohazard, HelpCircle, PenLine, Shuffle } from "lucide-react";
+import { Biohazard, BookOpen, HelpCircle, PenLine, Shuffle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useShortPulseStore } from "@/lib/store";
-import type { ScriptFormat } from "@/lib/types";
+import type { ScriptFormat, VideoLength } from "@/lib/types";
 
 /**
  * Topics that have actually been through this pipeline end to end — the
@@ -16,17 +16,20 @@ const SUGGESTIONS: Record<ScriptFormat, readonly string[]> = {
   free: ["honey", "ocean", "cats", "sleep"],
   what_if: ["moon", "spin", "internet", "language"],
   outbreak: ["city", "school", "island", "metro"],
+  story: ["kitchen", "neighbour", "letter", "basement"],
 };
 // The messages key each format's suggestions and placeholder live under.
 const SUGGESTION_KEYS: Record<ScriptFormat, string> = {
   free: "suggestions",
   what_if: "whatIfSuggestions",
   outbreak: "outbreakSuggestions",
+  story: "storySuggestions",
 };
 const PLACEHOLDERS: Record<ScriptFormat, string> = {
   free: "topicPlaceholder",
   what_if: "whatIfPlaceholder",
   outbreak: "outbreakPlaceholder",
+  story: "storyPlaceholder",
 };
 
 /**
@@ -37,15 +40,24 @@ const PLACEHOLDERS: Record<ScriptFormat, string> = {
  * takes its style back with it, unless the style was changed meanwhile:
  * otherwise "free" kept the cartoon look and its preview.
  */
-const FORMATS: { id: ScriptFormat; icon: typeof PenLine; artStyle?: string }[] = [
+const FORMATS: {
+  id: ScriptFormat;
+  icon: typeof PenLine;
+  artStyle?: string;
+  videoLength?: VideoLength;
+}[] = [
   { id: "free", icon: PenLine },
   { id: "what_if", icon: HelpCircle, artStyle: "flat" },
   // A series with one recurring character: the 3D toon look carries a face
   // from scene to scene best.
   { id: "outbreak", icon: Biohazard, artStyle: "toon3d" },
+  // Episodes of about two minutes in the serialised-story look; any other
+  // style can be picked afterwards.
+  { id: "story", icon: BookOpen, artStyle: "vector", videoLength: "medium" },
 ];
 
 const DEFAULT_ART_STYLE = useShortPulseStore.getInitialState().draft.artStyle;
+const DEFAULT_VIDEO_LENGTH = useShortPulseStore.getInitialState().draft.videoLength;
 
 /**
  * Topic/script input. Users either type a topic (LLM writes the script)
@@ -72,7 +84,18 @@ export function ScriptEditor() {
                 const artStyle =
                   format.artStyle ??
                   (leaving?.artStyle && leaving.artStyle === draft.artStyle ? DEFAULT_ART_STYLE : undefined);
-                setDraft({ scriptFormat: format.id, ...(artStyle ? { artStyle } : {}) });
+                // The length a format chose goes back with it too, unless
+                // it was changed meanwhile.
+                const videoLength =
+                  format.videoLength ??
+                  (leaving?.videoLength && leaving.videoLength === draft.videoLength
+                    ? DEFAULT_VIDEO_LENGTH
+                    : undefined);
+                setDraft({
+                  scriptFormat: format.id,
+                  ...(artStyle ? { artStyle } : {}),
+                  ...(videoLength ? { videoLength } : {}),
+                });
               }}
               aria-pressed={draft.scriptFormat === format.id}
               className={clsx(
