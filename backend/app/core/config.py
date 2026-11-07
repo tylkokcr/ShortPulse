@@ -64,6 +64,10 @@ class Settings(BaseSettings):
         "minimax/speech-2.6-hd:f8d19a70bcf8809cdaa7abfe82e4d73840a21dc0697717f1462a8a31b1c1da13"
     )
     minimax_tts_voice: str = "English_CaptivatingStoryteller"
+    # ElevenLabs v3 on Replicate, for a story's cast: the one model tried
+    # that acts a line — "[scared]" moved a man's voice from 85 to 188 Hz
+    # where MiniMax's emotions left it within 84-125.
+    elevenlabs_tts_model: str = "elevenlabs/v3"
     # A language's own MiniMax voice, where one was chosen by ear.
     minimax_voice_by_language: dict[str, str] = {
         "tr": "Turkish_Trustworthyman",
@@ -186,6 +190,8 @@ class Settings(BaseSettings):
     # 480p). The Wan id below is the cheap fallback, ~$0.05 a scene:
     # wan-video/wan-2.2-i2v-fast:4eaf2b01d3bf70d8a2e00b219efeb7cb415855ad18b7dacdc4cae664a73a6eea
     replicate_video_model: str = "minimax/hailuo-2.3-fast"
+    # A story's shots: short, mostly people talking — see visual_engine.
+    replicate_story_video_model: str = "bytedance/seedance-1-lite"
     # A clip is 80s of predict time when warm, and a whole episode's
     # scenes are asked for at once.
     replicate_video_timeout_s: float = 480.0

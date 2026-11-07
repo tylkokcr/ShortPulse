@@ -202,10 +202,26 @@ def _cast_kind(gender: str, age: int | None) -> str:
     return "woman"
 
 
-def assign_cast_voices(cast, language: str) -> None:
-    """Give every cast member without one a MiniMax voice, each a different
-    one where the pool allows: the first member (the narrator) gets the
-    language's own voice of their kind when there is one."""
+# ElevenLabs v3's voices, by who they sound like: measured on one Turkish
+# line each (2026-11-07, ~/Downloads/shortpulse-ses-7) — men 81-138 Hz,
+# women 155-232, Kuon and Fin far above. Ordered so the first two of a
+# kind are far apart in pitch: two women at 219 and 178 Hz, not 219 and
+# 222, which is how two women in one story came to sound like one.
+_ELEVEN_POOL: dict[str, tuple[str, ...]] = {
+    "woman": ("Hope", "Jane", "Rachel", "Monika", "Arabella", "Sarah"),
+    "man": ("Mark", "Roger", "Austin", "Dave", "Paul", "James"),
+    "girl": ("Kuon", "Blondie"),
+    "boy": ("Fin", "Drew"),
+    "older_woman": ("Alexandra", "Rachel"),
+    "older_man": ("Reginald", "Grimblewood"),
+}
+
+
+def assign_cast_voices(cast, language: str, provider: str = "minimax") -> None:
+    """Give every cast member without one a voice, each a different one
+    where the pool allows. On MiniMax the first member (the narrator) gets
+    the language's own voice of their kind when there is one; ElevenLabs
+    speaks every language with the same voices."""
     used = {m.voice_id for m in cast if m.voice_id}
     lang = (language or "en").split("-")[0]
     for member in cast:
@@ -213,7 +229,10 @@ def assign_cast_voices(cast, language: str) -> None:
             continue
         kind = _cast_kind(member.gender, member.age)
         base = kind.removeprefix("older_")
-        pool = (*_NATIVE_CAST.get(lang, {}).get(base, ()), *_CAST_POOL[kind])
-        choice = next((f"minimax:{v}" for v in pool if f"minimax:{v}" not in used), None)
-        member.voice_id = choice or f"minimax:{pool[0]}"
+        if provider == "elevenlabs":
+            prefix, pool = "elevenlabs:", _ELEVEN_POOL[kind]
+        else:
+            prefix, pool = "minimax:", (*_NATIVE_CAST.get(lang, {}).get(base, ()), *_CAST_POOL[kind])
+        choice = next((f"{prefix}{v}" for v in pool if f"{prefix}{v}" not in used), None)
+        member.voice_id = choice or f"{prefix}{pool[0]}"
         used.add(member.voice_id)

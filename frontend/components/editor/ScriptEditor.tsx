@@ -3,6 +3,7 @@
 import clsx from "clsx";
 import { Biohazard, BookOpen, HelpCircle, PenLine, Shuffle } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { listVisualModes } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
 import type { ScriptFormat, VideoLength } from "@/lib/types";
 
@@ -45,6 +46,8 @@ const FORMATS: {
   icon: typeof PenLine;
   artStyle?: string;
   videoLength?: VideoLength;
+  // Moving pictures by default, where this install animates over an API.
+  animated?: boolean;
 }[] = [
   { id: "free", icon: PenLine },
   { id: "what_if", icon: HelpCircle, artStyle: "flat" },
@@ -53,7 +56,7 @@ const FORMATS: {
   { id: "outbreak", icon: Biohazard, artStyle: "toon3d" },
   // Episodes of about two minutes in the serialised-story look; any other
   // style can be picked afterwards.
-  { id: "story", icon: BookOpen, artStyle: "vector", videoLength: "medium" },
+  { id: "story", icon: BookOpen, artStyle: "vector", videoLength: "medium", animated: true },
 ];
 
 const DEFAULT_ART_STYLE = useShortPulseStore.getInitialState().draft.artStyle;
@@ -95,7 +98,25 @@ export function ScriptEditor() {
                   scriptFormat: format.id,
                   ...(artStyle ? { artStyle } : {}),
                   ...(videoLength ? { videoLength } : {}),
+                  // Leaving an animated-by-default format takes the
+                  // animation back with it.
+                  ...(leaving?.animated && !format.animated && draft.visualMode === "ai_video"
+                    ? { visualMode: "fast_hybrid" as const, aiVideoAcknowledged: false }
+                    : {}),
                 });
+                if (format.animated) {
+                  // A story without motion looked like a slideshow. Only
+                  // where animation runs over an API: on a local GPU it
+                  // means a tens-of-GB download nobody asked for.
+                  listVisualModes()
+                    .then((modes) => {
+                      const hosted = modes.some(
+                        (m) => m.mode === "ai_video" && m.available && m.backend === "replicate"
+                      );
+                      if (hosted) setDraft({ visualMode: "ai_video", aiVideoAcknowledged: true });
+                    })
+                    .catch(() => {});
+                }
               }}
               aria-pressed={draft.scriptFormat === format.id}
               className={clsx(

@@ -196,11 +196,12 @@ def cost_for(config: ProjectConfig) -> int:
 # length — so it is priced by its own table. Stills at MEDIUM: ~45 x
 # ($0.025 image + $0.003 voice) plus the script, ~$1.4, at 30 credits
 # (above cost on the biggest pack's sale price, 6.3 cents a credit).
-# Animated: ~45 Hailuo clips at ~$0.19, ~$8.5, at 150.
+# Animated: ~45 four-second Seedance Lite clips at 480p (~$0.07) with
+# ElevenLabs voices, ~$5, at 100.
 _STORY_COST = {
     VisualMode.STOCK_MEDIA: {VideoLength.SHORT: 6, VideoLength.MEDIUM: 12, VideoLength.LONG: 18},
     VisualMode.FAST_HYBRID: {VideoLength.SHORT: 15, VideoLength.MEDIUM: 30, VideoLength.LONG: 45},
-    VisualMode.AI_VIDEO: {VideoLength.SHORT: 75, VideoLength.MEDIUM: 150, VideoLength.LONG: 220},
+    VisualMode.AI_VIDEO: {VideoLength.SHORT: 50, VideoLength.MEDIUM: 100, VideoLength.LONG: 150},
 }
 
 

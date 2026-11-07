@@ -309,6 +309,7 @@ async def generate_scene_visual(
     variant: int = 0,
     reference: Path | None = None,
     references: list[Path] | None = None,
+    video_model: str | None = None,
 ) -> Scene:
     """Populate scene.visual.asset_path using the requested mode, with a
     stock-media fallback if a local generation mode fails (e.g. no GPU).
@@ -333,7 +334,7 @@ async def generate_scene_visual(
         if mode == VisualMode.AI_VIDEO:
             if image_backend(settings) is ImageBackend.REPLICATE:
                 path = await _generate_hosted_video(
-                    scene, output_dir, settings, style, size, reference, references
+                    scene, output_dir, settings, style, size, reference, references, video_model
                 )
             else:
                 path = await _generate_ai_video(scene, output_dir, settings, style)
@@ -443,6 +444,7 @@ async def _generate_hosted_video(
     size: tuple[int, int] | None = None,
     reference: Path | None = None,
     references: list[Path] | None = None,
+    video_model: str | None = None,
 ) -> Path:
     """ai_video over the API: the scene's still, as fast_hybrid draws it,
     then animated by an image-to-video model. Starting from the still keeps
@@ -467,8 +469,18 @@ async def _generate_hosted_video(
         "shimmer, a slow, smooth camera movement"
     )
     prompt = f"{style.name} animation. {scene.visual.prompt}. {motion}. Keep the drawing style."
-    model = settings.replicate_video_model
-    if "hailuo" in model.lower():
+    model = video_model or settings.replicate_video_model
+    if "seedance" in model.lower():
+        # Seedance 1 Lite for a story's shots: on a flat vector close-up it
+        # was the one of four that made a man talk — mouth, blink, a glance
+        # — and in 21s at 480p. Four seconds, its shortest, as a shot is.
+        width, height = replicate_size_for(*(size or SDXL_SIZE_BY_ORIENTATION["vertical"]))
+        orientation = "landscape" if width > height else "square" if width == height else "vertical"
+        video_input = {
+            "image": image, "prompt": prompt, "duration": 4, "resolution": "480p",
+            "aspect_ratio": _FLUX_ASPECT[orientation],
+        }
+    elif "hailuo" in model.lower():
         # Hailuo 2.3 Fast: six seconds at 768p, and the one of four models
         # tried on the same outbreak still that acted the scene out — she
         # turned, and a figure came out of the fog — at a third of

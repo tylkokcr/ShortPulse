@@ -76,7 +76,12 @@ async def synthesize_scene_audio(
     """
     suffix = "wav" if voice.provider == TTSProvider.PIPER else "mp3"
     output_path = output_dir / f"scene_{scene.index:02d}.{suffix}"
-    await synthesize_line(scene.audio.voiceover_line, voice, output_path, language)
+    text = scene.audio.voiceover_line
+    if voice.provider == TTSProvider.ELEVENLABS and scene.audio.tone:
+        # The acting notes go in front of the line, as v3 reads them.
+        tags = [t.strip() for t in scene.audio.tone.split(",") if t.strip()][:2]
+        text = "".join(f"[{t}] " for t in tags) + text
+    await synthesize_line(text, voice, output_path, language)
     return output_path
 
 
@@ -104,6 +109,8 @@ async def synthesize_line(
         await _synthesize_openai(cleaned, voice, output_path)
     elif voice.provider == TTSProvider.MINIMAX:
         await _synthesize_minimax(cleaned, voice, output_path, language)
+    elif voice.provider == TTSProvider.ELEVENLABS:
+        await _synthesize_elevenlabs(cleaned, voice, output_path, language)
     elif voice.provider == TTSProvider.EDGE_TTS:
         await _synthesize_edge_tts(cleaned, voice, output_path)
     elif voice.provider == TTSProvider.PIPER:
@@ -114,6 +121,46 @@ async def synthesize_line(
         raise ValueError(f"Unsupported TTS provider: {voice.provider}")
 
     return output_path
+
+
+ELEVENLABS_VOICE_PREFIX = "elevenlabs:"
+
+
+async def _synthesize_elevenlabs(
+    text: str, voice: VoiceConfig, output_path: Path, language: str
+) -> None:
+    """One line through ElevenLabs v3 on Replicate, as MP3, acted from the
+    tags at its front. A little below the model's default stability, which
+    is where its delivery varies the most without losing the voice."""
+    from app.core.config import get_settings
+    from app.engines.visual_engine import _replicate_output_url, _replicate_predict
+
+    settings = get_settings()
+    if not settings.replicate_api_token:
+        raise RuntimeError("ElevenLabs narration needs REPLICATE_API_TOKEN")
+    name = voice.voice_id.removeprefix(ELEVENLABS_VOICE_PREFIX) or "Hope"
+    spoken = re.sub(r"\s*(?:…|\.{3})\s*", "… ", text).strip()
+    match = re.fullmatch(r"([+-]\d+)%", voice.rate or "")
+    speed = min(1.2, max(0.7, 1 + int(match.group(1)) / 100)) if match else 1.0
+    prediction = await _replicate_predict(
+        {
+            "version": settings.elevenlabs_tts_model,
+            "input": {
+                "prompt": spoken,
+                "voice": name,
+                "language_code": (language or "en").split("-")[0],
+                "stability": 0.4,
+                "speed": speed,
+            },
+        },
+        settings,
+    )
+    import httpx
+
+    async with httpx.AsyncClient(timeout=60) as client:
+        response = await client.get(_replicate_output_url(prediction))
+        response.raise_for_status()
+        output_path.write_bytes(response.content)
 
 
 OPENAI_VOICE_PREFIX = "openai:"

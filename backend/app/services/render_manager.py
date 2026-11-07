@@ -611,6 +611,11 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                         render_size=(render_width, render_height),
                         reference=reference,
                         references=[cast_sheets[n] for n in scene.cast if n in cast_sheets],
+                        video_model=(
+                            settings.replicate_story_video_model
+                            if str(config.script_format) == "story"
+                            else None
+                        ),
                     )
             # Reported on completion rather than on start: with several in
             # flight, "scene 3 of 5" as a starting announcement would jump

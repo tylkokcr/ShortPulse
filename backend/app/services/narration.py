@@ -72,6 +72,8 @@ def resolve(voice: VoiceConfig, language: str, script_format: str) -> VoiceConfi
 
 
 def provider_for(voice_id: str) -> TTSProvider:
+    if voice_id.startswith("elevenlabs:"):
+        return TTSProvider.ELEVENLABS
     if voice_id.startswith("minimax:"):
         return TTSProvider.MINIMAX
     if voice_id.startswith("openai:"):

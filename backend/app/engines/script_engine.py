@@ -371,8 +371,11 @@ calling people only "the woman", "the man", "the girl", "the boy" (with \
 "on the left"/"on the right" when two), never by name and never \
 describing their looks, which come from their character sheets. Never \
 text in the picture;
-  "motion": one sentence in English for animating it (what moves, the \
-camera);
+  "motion": one sentence in English for animating it — the speaker's \
+mouth moving as they talk, a blink, a glance, a hand, the camera;
+  "tone": how the line is said, one or two of: {tones} — what the moment \
+calls for, never the same for every line (narration mostly "softly", \
+"tense" or "nervous"; dialogue as the person feels it);
   "chapter": only on the two or three scenes that jump in time or place, \
 1-3 words in the script's language ("ONE YEAR AGO", "THAT NIGHT").
 - Add a top-level "cast": [{"name": "<first name, common in the script's \
@@ -495,7 +498,9 @@ def _build_system_prompt(
         scene_length=_SCENE_LENGTH.get(script_format, _SCENE_LENGTH["free"]),
         # The icon list is the renderer's (graphics.ICONS), so a word the
         # model is offered is always one that can be drawn.
-        format_rules=FORMAT_RULES.get(script_format, "").replace("{icons}", ", ".join(ICONS)),
+        format_rules=FORMAT_RULES.get(script_format, "")
+        .replace("{icons}", ", ".join(ICONS))
+        .replace("{tones}", ", ".join(TONES)),
     )
 
 
@@ -783,7 +788,10 @@ async def _generate_script_once(
     if script.cast:
         from app.services.voices import assign_cast_voices
 
-        assign_cast_voices(script.cast, language)
+        # A story is acted, so its cast speaks through ElevenLabs.
+        assign_cast_voices(
+            script.cast, language, "elevenlabs" if script_format == "story" else "minimax"
+        )
     return script
 
 
@@ -1444,6 +1452,21 @@ def _limit_outbreak_maps(scenes: list[Scene]) -> None:
             kept += 1
 
 
+# ElevenLabs v3 delivery tags a story line may carry: the ones that read
+# as acting in a test, and nothing a line could smuggle in.
+TONES = (
+    "whispers", "softly", "tense", "nervous", "scared", "sad", "crying", "sighs",
+    "angry", "shouting", "laughs", "excited", "curious", "surprised", "shocked",
+    "firm", "tired", "sarcastic",
+)
+
+
+def _tone(raw: object) -> str | None:
+    words = raw if isinstance(raw, list) else str(raw or "").replace("[", ",").replace("]", ",").split(",")
+    kept = [w.strip().lower() for w in words if isinstance(w, str) and w.strip().lower() in TONES]
+    return ", ".join(dict.fromkeys(kept[:2])) or None
+
+
 def _cast(raw: object) -> list[CastMember]:
     """The story's cast, at most four, names unique."""
     if not isinstance(raw, list):
@@ -1479,7 +1502,12 @@ def _tidy_story_scenes(scenes: list[Scene], cast: list[CastMember]) -> None:
     for scene in scenes:
         speaker = (scene.speaker or "").casefold()
         scene.speaker = names.get(speaker, "narrator")
-        scene.cast = [names[n.casefold()] for n in scene.cast if n.casefold() in names][:2]
+        in_frame = [names[n.casefold()] for n in scene.cast if n.casefold() in names]
+        # Whoever speaks a line is seen saying it: a voice changing over a
+        # shot of someone else is what made two people sound like one.
+        if scene.speaker != "narrator" and scene.speaker not in in_frame:
+            in_frame = [scene.speaker, *in_frame]
+        scene.cast = in_frame[:2]
         scene.hero = False
 
 
@@ -1622,7 +1650,7 @@ def _to_script_output(
                 index=len(scenes),
                 duration_s=duration_s,
                 visual=SceneVisual(prompt=visual_prompt, motion=_short(raw_scene.get("motion"), 400)),
-                audio=SceneAudio(voiceover_line=voiceover_line),
+                audio=SceneAudio(voiceover_line=voiceover_line, tone=_tone(raw_scene.get("tone"))),
                 graphic=_scene_graphic(raw_scene),
                 map=_scene_map(raw_scene.get("map")),
                 card=raw_scene.get("card") is True,

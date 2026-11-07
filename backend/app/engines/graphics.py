@@ -52,6 +52,9 @@ class Plan:
     counter: GraphicCounter | None = None
     title: str | None = None
     tag: str | None = None
+    # The punch, flash and whoosh on every cut. Not on a story: at 45 shots
+    # an episode it was a flash every three seconds under a quiet drama.
+    effects: bool = True
 
 
 def enabled(config) -> bool:
@@ -79,7 +82,12 @@ def plan_from(config, script) -> Plan | None:
         tag = _SERIES_TAG.get(language, _SERIES_TAG["en"]).format(n=script.episode)
     else:
         tag = _TAG.get(language, _TAG["en"])
-    return Plan(counter=script.counter, title=script.tally_title, tag=tag)
+    return Plan(
+        counter=script.counter,
+        title=script.tally_title,
+        tag=tag,
+        effects=str(getattr(config, "script_format", "")) != "story",
+    )
 
 
 # The same label on a series, with the episode.

@@ -35,6 +35,10 @@ class TTSProvider(StrEnum):
     # Turkish by ear, side by side on one script. The hosted default when
     # there is a Replicate token.
     MINIMAX = "minimax"
+    # ElevenLabs v3 over Replicate: acts a line from tags in it ("[whispers]",
+    # "[scared]"). A story's cast speaks through it — MiniMax read the same
+    # line flat under nine different emotions.
+    ELEVENLABS = "elevenlabs"
     EDGE_TTS = "edge_tts"
     PIPER = "piper"
     COQUI_XTTS = "coqui_xtts"
@@ -134,6 +138,9 @@ class Segment(BaseModel):
 
 class SceneAudio(BaseModel):
     voiceover_line: str
+    # How the line is acted, as ElevenLabs v3 tags without brackets
+    # ("whispers, scared"). Spoken, never shown: captions read the line.
+    tone: str | None = Field(default=None, max_length=60)
     audio_path: str | None = None
     duration_ms: int | None = None
     words: list[Word] = Field(default_factory=list)

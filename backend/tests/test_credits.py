@@ -338,7 +338,7 @@ def test_a_story_episode_is_priced_by_its_shots():
         )
 
     assert price(VisualMode.FAST_HYBRID, VideoLength.MEDIUM) == 30
-    assert price(VisualMode.AI_VIDEO, VideoLength.MEDIUM) == 150
+    assert price(VisualMode.AI_VIDEO, VideoLength.MEDIUM) == 100
     assert price(VisualMode.FAST_HYBRID, VideoLength.SHORT) == 15
     # Other formats keep the per-video price.
     assert price(VisualMode.FAST_HYBRID, VideoLength.MEDIUM, ScriptFormat.OUTBREAK) == 12

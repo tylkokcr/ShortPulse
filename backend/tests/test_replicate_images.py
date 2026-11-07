@@ -538,3 +538,24 @@ async def test_two_people_in_frame_go_to_kontext_on_one_sheet(monkeypatch, scene
     assert "on the left (auburn hair)" in sent["prompt"]
     assert "on the right (trimmed beard)" in sent["prompt"]
     assert "never smiling" not in sent["prompt"]  # a story's mood is the moment's
+
+
+async def test_a_story_shot_is_animated_by_seedance_for_four_seconds(monkeypatch, scene, tmp_path):
+    fake = _serve(monkeypatch, FakeReplicate())
+    settings = Settings(model="black-forest-labs/flux-dev")
+    settings.replicate_video_model = "minimax/hailuo-2.3-fast"
+    settings.replicate_video_timeout_s = 480.0
+    scene.visual.motion = "he talks, his mouth moving; he blinks"
+
+    await visual_engine._generate_hosted_video(
+        scene, tmp_path, settings, size=(1080, 1920), video_model="bytedance/seedance-1-lite"
+    )
+
+    video = [
+        json.loads(r.content) for r in fake.requests
+        if r.method == "POST" and r.url.path == "/v1/predictions"
+    ][-1]
+    assert video["version"] == "bytedance/seedance-1-lite"
+    assert video["input"]["duration"] == 4 and video["input"]["resolution"] == "480p"
+    assert video["input"]["aspect_ratio"] == "9:16"
+    assert "his mouth moving" in video["input"]["prompt"]

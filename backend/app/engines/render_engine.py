@@ -752,10 +752,17 @@ async def render_project(
     subtitles and music. `on_scene_rendered(index, total)` is an optional
     async callback for progress reporting (see render_manager.py)."""
     clip_paths: list[Path] = []
-    for scene in scenes:
+    for i, scene in enumerate(scenes):
+        # A breath more where the next line is someone else's: back to back,
+        # two voices in a dialogue ran into each other.
+        nxt = scenes[i + 1] if i + 1 < len(scenes) else None
+        handover = bool(
+            nxt is not None and scene.speaker and nxt.speaker and nxt.speaker != scene.speaker
+        )
         clip_path = await render_scene_clip(
-            scene, target, output_dir, ffmpeg_binary, ffprobe_binary, scene_gap_s, punch=punch,
-            sound_effects=graphics_plan is not None,
+            scene, target, output_dir, ffmpeg_binary, ffprobe_binary,
+            scene_gap_s + (0.25 if handover else 0.0), punch=punch,
+            sound_effects=graphics_plan is not None and getattr(graphics_plan, "effects", True),
         )
         clip_paths.append(clip_path)
         if on_scene_rendered:
