@@ -369,8 +369,11 @@ line;
 face, two people at a table, a door ajar, a hand on a phone, a hallway — \
 calling people only "the woman", "the man", "the girl", "the boy" (with \
 "on the left"/"on the right" when two), never by name and never \
-describing their looks, which come from their character sheets. Never \
-text in the picture;
+describing their looks, which come from their character sheets. Only the \
+people listed in "cast" are in the picture: a shot with an empty "cast" \
+shows a place or an object and nobody at all. Never text in the picture. \
+Never blood, wounds, monsters, zombies or ghosts: whatever frightens is \
+only implied — a shadow under a door, an empty chair, a light left on;
   "motion": one short sentence in English for animating it, small \
 movements only — the speaker's mouth moving as they talk, a blink, a \
 glance, a slight turn of the head; never hands gesturing, people \
@@ -1511,6 +1514,11 @@ def _tidy_story_scenes(scenes: list[Scene], cast: list[CastMember]) -> None:
             in_frame = [scene.speaker, *in_frame]
         scene.cast = in_frame[:2]
         scene.hero = False
+        if not scene.cast and "no people" not in scene.visual.prompt:
+            # Nobody from the cast in frame means nobody: left to itself the
+            # image model filled empty shots with strangers, one of them a
+            # bloodied woman in the first second episode.
+            scene.visual.prompt = f"{scene.visual.prompt.rstrip('. ')}, no people in the picture"
 
 
 def _mark_hero_scenes(scenes: list[Scene], name: str) -> None:

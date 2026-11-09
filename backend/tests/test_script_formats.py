@@ -553,3 +553,20 @@ def test_whoever_speaks_a_line_is_in_its_shot():
     script = _to_script_output("x", parsed, VideoLength.MEDIUM, "story", "tr")
     assert script.scenes[0].cast == ["Cem", "Elif"]
     assert script.scenes[1].cast == []
+
+
+def test_a_story_shot_with_nobody_in_it_shows_nobody():
+    from app.engines.script_engine import _to_script_output
+
+    parsed = {
+        "cast": [{"name": "Leyla", "gender": "woman", "age": 30, "look": "x"}],
+        "scenes": [
+            {"voiceover_line": "Kapı aralıktı.", "visual_prompt": "a kitchen door ajar at night.",
+             "speaker": "narrator", "cast": []},
+            {"voiceover_line": "Kim var orada?", "visual_prompt": "the woman at the door",
+             "speaker": "Leyla", "cast": ["Leyla"]},
+        ],
+    }
+    script = _to_script_output("x", parsed, VideoLength.MEDIUM, "story", "tr")
+    assert script.scenes[0].visual.prompt == "a kitchen door ajar at night, no people in the picture"
+    assert "no people" not in script.scenes[1].visual.prompt
