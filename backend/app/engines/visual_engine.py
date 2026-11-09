@@ -476,9 +476,25 @@ async def _generate_hosted_video(
         # — and in 21s at 480p. Four seconds, its shortest, as a shot is.
         width, height = replicate_size_for(*(size or SDXL_SIZE_BY_ORIENTATION["vertical"]))
         orientation = "landscape" if width > height else "square" if width == height else "vertical"
+        # Small and calm, always: big gestures and light changes are where
+        # it smeared a face and turned a nose orange, and a camera told to
+        # move invented a new room. On the same still, this wording kept
+        # the woman as drawn, talking and blinking (480p; 720p drifted).
+        calm = (
+            "Subtle, minimal animation: only mouths, eyes and heads move — speaking, a "
+            "blink, a slight turn; hands stay still; faces, colours and the room stay "
+            "exactly as drawn; no new people or objects; the camera stays still. "
+        )
         video_input = {
-            "image": image, "prompt": prompt, "duration": 4, "resolution": "480p",
+            "image": image,
+            "prompt": calm + f"{motion}. Keep the {style.name} style.",
+            "duration": 4,
+            "resolution": "480p",
             "aspect_ratio": _FLUX_ASPECT[orientation],
+            # A told-to-push-in camera walked past the door and lost it; the
+            # Ken Burns-free still frame is steadier, and a cut every few
+            # seconds is motion enough.
+            "camera_fixed": True,
         }
     elif "hailuo" in model.lower():
         # Hailuo 2.3 Fast: six seconds at 768p, and the one of four models

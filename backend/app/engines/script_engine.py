@@ -371,8 +371,10 @@ calling people only "the woman", "the man", "the girl", "the boy" (with \
 "on the left"/"on the right" when two), never by name and never \
 describing their looks, which come from their character sheets. Never \
 text in the picture;
-  "motion": one sentence in English for animating it — the speaker's \
-mouth moving as they talk, a blink, a glance, a hand, the camera;
+  "motion": one short sentence in English for animating it, small \
+movements only — the speaker's mouth moving as they talk, a blink, a \
+glance, a slight turn of the head; never hands gesturing, people \
+walking in, or the camera moving;
   "tone": how the line is said, one or two of: {tones} — what the moment \
 calls for, never the same for every line (narration mostly "softly", \
 "tense" or "nervous"; dialogue as the person feels it);
