@@ -79,3 +79,40 @@ def provider_for(voice_id: str) -> TTSProvider:
     if voice_id.startswith("openai:"):
         return TTSProvider.OPENAI
     return TTSProvider.PIPER
+
+
+# How a story line's tone tags are acted, as directions for OpenAI's model.
+_TONE_DIRECTION = {
+    "whispers": "in a trembling whisper", "softly": "softly and warmly",
+    "tense": "tense and low, holding something back", "nervous": "nervous and hesitant",
+    "scared": "frightened, the breath catching", "sad": "sad and heavy",
+    "crying": "through tears, the voice breaking", "sighs": "with a long sigh",
+    "angry": "angry and sharp", "shouting": "shouting, loud and raw",
+    "laughs": "laughing", "excited": "excited and quick", "curious": "curious",
+    "surprised": "surprised", "shocked": "shocked, gasping", "firm": "firm and controlled",
+    "tired": "tired", "sarcastic": "sarcastic",
+}
+
+
+def acting_instructions(member, tone: str | None, narrating: bool, language: str) -> str:
+    """Direction for one line of a story, for a model that takes it (OpenAI):
+    who is speaking, how they feel saying it, and the language."""
+    gender = (member.gender or "").lower()
+    who = f"{member.name}, a {member.age}-year-old {gender}" if member.age else member.name
+    if gender in ("girl", "boy") or (member.age and member.age < 14):
+        who += " — a real child's voice, small and high"
+    how = ", ".join(
+        _TONE_DIRECTION[t.strip()] for t in (tone or "").split(",") if t.strip() in _TONE_DIRECTION
+    )
+    role = (
+        "telling their own story in the first person, intimate, as if confessing to a close "
+        "friend late at night"
+        if narrating
+        else "saying this line in a scene of a gripping audio drama"
+    )
+    name = LANGUAGE_NAMES.get(language, language)
+    return (
+        f"You are voicing {who}, {role}. Say it {how or 'as the moment calls for'}. "
+        "Act it with real emotion like a voice actor: vary pitch, pace and volume, "
+        f"never flat, never robotic. Speak natural {name} with a native accent."
+    )

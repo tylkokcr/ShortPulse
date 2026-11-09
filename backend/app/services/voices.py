@@ -217,6 +217,18 @@ _ELEVEN_POOL: dict[str, tuple[str, ...]] = {
 }
 
 
+# OpenAI's voices for a story's cast, by who they sound like; a child is
+# made one by the line's instructions (narration.acting_instructions).
+_OPENAI_POOL: dict[str, tuple[str, ...]] = {
+    "woman": ("coral", "nova", "sage", "shimmer"),
+    "man": ("ash", "onyx", "verse", "ballad"),
+    "girl": ("shimmer", "nova"),
+    "boy": ("verse", "ash"),
+    "older_woman": ("sage", "coral"),
+    "older_man": ("onyx", "ballad"),
+}
+
+
 def assign_cast_voices(cast, language: str, provider: str = "minimax") -> None:
     """Give every cast member without one a voice, each a different one
     where the pool allows. On MiniMax the first member (the narrator) gets
@@ -229,7 +241,9 @@ def assign_cast_voices(cast, language: str, provider: str = "minimax") -> None:
             continue
         kind = _cast_kind(member.gender, member.age)
         base = kind.removeprefix("older_")
-        if provider == "elevenlabs":
+        if provider == "openai":
+            prefix, pool = "openai:", _OPENAI_POOL[kind]
+        elif provider == "elevenlabs":
             prefix, pool = "elevenlabs:", _ELEVEN_POOL[kind]
         else:
             prefix, pool = "minimax:", (*_NATIVE_CAST.get(lang, {}).get(base, ()), *_CAST_POOL[kind])

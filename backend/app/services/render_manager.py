@@ -518,7 +518,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 )
                 await audio_engine.process_scene_audio(
                     scene,
-                    voice_for_scene(scene, script, config.voice),
+                    voice_for_scene(scene, script, config.voice, config.language),
                     paths / "audio",
                     whisper_model_size=settings.whisper_model_size,
                     whisper_device=settings.whisper_device,
@@ -2052,7 +2052,9 @@ async def _character_sheet(look: str, root: Path, previous, config, settings) ->
         return None
 
 
-def voice_for_scene(scene: Scene, script, voice: VoiceConfig) -> VoiceConfig:
+def voice_for_scene(
+    scene: Scene, script, voice: VoiceConfig, language: str | None = None
+) -> VoiceConfig:
     """Who says this line, in their own voice: a story's cast member when
     they are speaking, else the narrator — the first of the cast, whose
     voice is the story's. Everything but the voice is the project's."""
@@ -2062,13 +2064,21 @@ def voice_for_scene(scene: Scene, script, voice: VoiceConfig) -> VoiceConfig:
     speaker = next((m for m in cast if m.name == scene.speaker), cast[0])
     if not speaker.voice_id:
         return voice
-    from app.services.narration import provider_for
+    from app.schemas.project import TTSProvider
+    from app.services.narration import acting_instructions, provider_for
 
     # The engine follows the voice: an ElevenLabs id sent to MiniMax failed
     # the first acted episode with "voice id not exist".
-    return voice.model_copy(
-        update={"voice_id": speaker.voice_id, "provider": provider_for(speaker.voice_id)}
-    )
+    provider = provider_for(speaker.voice_id)
+    update: dict = {"voice_id": speaker.voice_id, "provider": provider}
+    if provider == TTSProvider.OPENAI:
+        # Every line its own direction: who, how they feel, which language.
+        update["instructions"] = acting_instructions(
+            speaker, scene.audio.tone, scene.speaker == "narrator" or scene.speaker is None,
+            language or "en",
+        )
+        update["rate"] = "+0%"
+    return voice.model_copy(update=update)
 
 
 def cast_sheet_path(root: Path, name: str) -> Path:

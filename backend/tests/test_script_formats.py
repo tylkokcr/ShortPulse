@@ -592,3 +592,32 @@ def test_a_story_happens_in_its_named_places():
     script = _to_script_output("x", parsed, VideoLength.MEDIUM, "story", "tr")
     assert [loc.id for loc in script.locations] == ["kitchen", "bedroom"]
     assert script.scenes[0].location == "kitchen" and script.scenes[1].location is None
+
+
+def test_an_openai_story_line_is_directed_as_its_speaker_feels_it():
+    from app.schemas.project import CastMember, ScriptOutput, VoiceConfig
+    from app.services.render_manager import voice_for_scene
+    from app.services.voices import assign_cast_voices
+
+    cast = [
+        CastMember(name="Elif", gender="woman", age=32, look="x"),
+        CastMember(name="Ada", gender="girl", age=7, look="x"),
+    ]
+    assign_cast_voices(cast, "tr", "openai")
+    assert [m.voice_id for m in cast] == ["openai:coral", "openai:shimmer"]
+
+    scenes = [_s(0), _s(1)]
+    scenes[0].speaker, scenes[0].audio.tone = "narrator", "tense"
+    scenes[1].speaker, scenes[1].audio.tone = "Ada", "whispers, scared"
+    script = ScriptOutput(topic="x", hook="h", scenes=scenes, total_duration_s=6, cast=cast)
+    base = VoiceConfig(voice_id="minimax:Turkish_CalmWoman", rate="-6%")
+
+    narrator = voice_for_scene(scenes[0], script, base, "tr")
+    assert str(narrator.provider) == "openai" and narrator.voice_id == "openai:coral"
+    assert "first person" in narrator.instructions and "tense and low" in narrator.instructions
+    assert "Turkish" in narrator.instructions
+
+    child = voice_for_scene(scenes[1], script, base, "tr")
+    assert child.voice_id == "openai:shimmer"
+    assert "child's voice" in child.instructions
+    assert "trembling whisper" in child.instructions and "frightened" in child.instructions

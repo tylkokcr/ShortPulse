@@ -808,12 +808,15 @@ async def _generate_script_once(
         if script.character:
             _mark_hero_scenes(script.scenes, script.character.name)
     if script.cast:
-        from app.services.voices import assign_cast_voices
+        from app.services.voices import assign_cast_voices, openai_enabled
 
-        # A story is acted, so its cast speaks through ElevenLabs.
-        assign_cast_voices(
-            script.cast, language, "elevenlabs" if script_format == "story" else "minimax"
-        )
+        # A story is acted: OpenAI's voices take a direction for every line
+        # ("in a trembling whisper"), which ElevenLabs' preset voices,
+        # reading Turkish, still did flat.
+        provider = "minimax"
+        if script_format == "story":
+            provider = "openai" if openai_enabled() else "elevenlabs"
+        assign_cast_voices(script.cast, language, provider)
     return script
 
 
