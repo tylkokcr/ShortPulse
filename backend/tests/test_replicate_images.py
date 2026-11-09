@@ -559,3 +559,27 @@ async def test_a_story_shot_is_animated_by_seedance_for_four_seconds(monkeypatch
     assert video["input"]["duration"] == 4 and video["input"]["resolution"] == "480p"
     assert video["input"]["aspect_ratio"] == "9:16"
     assert "his mouth moving" in video["input"]["prompt"]
+
+
+async def test_a_story_shot_is_drawn_from_its_place_and_people_at_once(monkeypatch, scene, tmp_path):
+    from PIL import Image
+
+    fake = _serve(monkeypatch, FakeReplicate())
+    place = tmp_path / "kitchen.png"
+    Image.new("RGB", (60, 100), "green").save(place)
+    sheet = tmp_path / "leyla.png"
+    Image.new("RGB", (60, 100), "red").save(sheet)
+    sheet.with_suffix(".txt").write_text("30-year-old woman, maroon cardigan")
+
+    await visual_engine._generate_replicate_image(
+        scene, tmp_path, Settings(model="black-forest-labs/flux-dev"),
+        references=[sheet], place=place, shot_model="bytedance/seedream-4.5", size=(1080, 1920),
+    )
+
+    sent = fake.created
+    assert sent["version"] == "bytedance/seedream-4.5"
+    assert len(sent["input"]["image_input"]) == 2
+    prompt = sent["input"]["prompt"]
+    assert prompt.startswith("Image 1 is the place")
+    assert "Image 2 is 30-year-old woman, maroon cardigan" in prompt
+    assert "no white bars" in prompt and sent["input"]["aspect_ratio"] == "9:16"

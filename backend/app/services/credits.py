@@ -192,16 +192,16 @@ def cost_for(config: ProjectConfig) -> int:
 
 
 # A story episode is shots, not scenes: two minutes is about 45 of them —
-# a picture and a voice each, against 8-10 for any other video of that
-# length — so it is priced by its own table. Stills at MEDIUM: ~45 x
-# ($0.025 image + $0.003 voice) plus the script, ~$1.4, at 30 credits
-# (above cost on the biggest pack's sale price, 6.3 cents a credit).
-# Animated: ~45 four-second Seedance Lite clips at 480p (~$0.07) with
-# ElevenLabs voices, ~$5, at 100.
+# a picture and an acted voice each, against 8-10 for any other video of
+# that length — so it is priced by its own table. Stills at MEDIUM: ~45 x
+# (~$0.04 Seedream picture from its place and cast + an ElevenLabs line)
+# plus the script and the sheets, ~$2.5, at 40 credits (above cost on the
+# biggest pack's sale price, 6.3 cents a credit). Animated: plus ~45
+# four-second Seedance Lite clips (~$0.07), ~$5.5, at 120.
 _STORY_COST = {
     VisualMode.STOCK_MEDIA: {VideoLength.SHORT: 6, VideoLength.MEDIUM: 12, VideoLength.LONG: 18},
-    VisualMode.FAST_HYBRID: {VideoLength.SHORT: 15, VideoLength.MEDIUM: 30, VideoLength.LONG: 45},
-    VisualMode.AI_VIDEO: {VideoLength.SHORT: 50, VideoLength.MEDIUM: 100, VideoLength.LONG: 150},
+    VisualMode.FAST_HYBRID: {VideoLength.SHORT: 20, VideoLength.MEDIUM: 40, VideoLength.LONG: 60},
+    VisualMode.AI_VIDEO: {VideoLength.SHORT: 60, VideoLength.MEDIUM: 120, VideoLength.LONG: 180},
 }
 
 

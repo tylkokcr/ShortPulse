@@ -68,6 +68,7 @@ async def synthesize_scene_audio(
     voice: VoiceConfig,
     output_dir: Path,
     language: str = "en",
+    context: tuple[str, str] | None = None,
 ) -> Path:
     """Generate the voiceover audio for a single scene and return its path.
 
@@ -81,7 +82,7 @@ async def synthesize_scene_audio(
         # The acting notes go in front of the line, as v3 reads them.
         tags = [t.strip() for t in scene.audio.tone.split(",") if t.strip()][:2]
         text = "".join(f"[{t}] " for t in tags) + text
-    await synthesize_line(text, voice, output_path, language)
+    await synthesize_line(text, voice, output_path, language, context=context)
     return output_path
 
 
@@ -91,8 +92,12 @@ async def synthesize_line(
     output_path: Path,
     language: str = "en",
     length_scale: float | None = None,
+    context: tuple[str, str] | None = None,
 ) -> Path:
     """Speak one line to `output_path`.
+
+    `context` is the lines either side, which ElevenLabs reads to pitch
+    this one as part of a conversation rather than as a line on its own.
 
     Split out of `synthesize_scene_audio` so the voice-preview endpoint
     goes through the same provider dispatch a real render does — a preview
@@ -110,7 +115,7 @@ async def synthesize_line(
     elif voice.provider == TTSProvider.MINIMAX:
         await _synthesize_minimax(cleaned, voice, output_path, language)
     elif voice.provider == TTSProvider.ELEVENLABS:
-        await _synthesize_elevenlabs(cleaned, voice, output_path, language)
+        await _synthesize_elevenlabs(cleaned, voice, output_path, language, context)
     elif voice.provider == TTSProvider.EDGE_TTS:
         await _synthesize_edge_tts(cleaned, voice, output_path)
     elif voice.provider == TTSProvider.PIPER:
@@ -127,11 +132,17 @@ ELEVENLABS_VOICE_PREFIX = "elevenlabs:"
 
 
 async def _synthesize_elevenlabs(
-    text: str, voice: VoiceConfig, output_path: Path, language: str
+    text: str,
+    voice: VoiceConfig,
+    output_path: Path,
+    language: str,
+    context: tuple[str, str] | None = None,
 ) -> None:
     """One line through ElevenLabs v3 on Replicate, as MP3, acted from the
-    tags at its front. A little below the model's default stability, which
-    is where its delivery varies the most without losing the voice."""
+    tags at its front, at its most expressive stability ("creative"): at
+    0.4 the first acted episodes read as having no feeling at all, and on
+    one whispered, frightened line 0.0 took the voice from 76-120 Hz to
+    84-372."""
     from app.core.config import get_settings
     from app.engines.visual_engine import _replicate_output_url, _replicate_predict
 
@@ -149,8 +160,10 @@ async def _synthesize_elevenlabs(
                 "prompt": spoken,
                 "voice": name,
                 "language_code": (language or "en").split("-")[0],
-                "stability": 0.4,
+                "stability": 0.0,
                 "speed": speed,
+                "previous_text": (context or ("", ""))[0][:400],
+                "next_text": (context or ("", ""))[1][:400],
             },
         },
         settings,
@@ -819,6 +832,7 @@ async def process_scene_audio(
     whisper_device: str = "cpu",
     whisper_compute_type: str = "int8",
     language: str | None = None,
+    context: tuple[str, str] | None = None,
 ) -> Scene:
     """Full audio pipeline for one scene: synthesize -> transcribe -> attach
     timing data. Returns the scene with `audio.audio_path` and
@@ -826,7 +840,7 @@ async def process_scene_audio(
     """
     import asyncio
 
-    audio_path = await synthesize_scene_audio(scene, voice, output_dir, language or "en")
+    audio_path = await synthesize_scene_audio(scene, voice, output_dir, language or "en", context)
     words = await asyncio.to_thread(
         transcribe_word_timestamps,
         audio_path,

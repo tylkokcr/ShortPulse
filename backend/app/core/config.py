@@ -192,6 +192,11 @@ class Settings(BaseSettings):
     replicate_video_model: str = "minimax/hailuo-2.3-fast"
     # A story's shots: short, mostly people talking — see visual_engine.
     replicate_story_video_model: str = "bytedance/seedance-1-lite"
+    # A story's pictures, drawn from the place and the people in them at
+    # once: of four models given a kitchen and two cast sheets, Seedream
+    # 4.5 kept the room and both faces and still chose its own angles
+    # (Nano Banana drew every shot from the same wide angle). ~$0.04.
+    replicate_story_image_model: str = "bytedance/seedream-4.5"
     # A clip is 80s of predict time when warm, and a whole episode's
     # scenes are asked for at once.
     replicate_video_timeout_s: float = 480.0

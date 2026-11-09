@@ -261,6 +261,14 @@ class CastMember(BaseModel):
     voice_id: str | None = Field(default=None, max_length=80)
 
 
+class Location(BaseModel):
+    """A place a story keeps returning to, drawn once so every shot there is
+    the same room."""
+
+    id: str = Field(max_length=24)
+    look: str = Field(max_length=300)
+
+
 class Scene(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     index: int
@@ -281,6 +289,8 @@ class Scene(BaseModel):
     # who is in the picture (up to two, each drawn from their sheet).
     speaker: str | None = Field(default=None, max_length=32)
     cast: list[str] = Field(default_factory=list, max_length=2)
+    # Which of the story's locations this shot is in.
+    location: str | None = Field(default=None, max_length=24)
 
     model_config = ConfigDict(use_enum_values=True)
 
@@ -339,6 +349,7 @@ class ScriptOutput(BaseModel):
     # is, and what has happened so far — read by the next episode.
     character: Character | None = None
     cast: list[CastMember] = Field(default_factory=list, max_length=5)
+    locations: list[Location] = Field(default_factory=list, max_length=6)
     episode: int = Field(default=1, ge=1, le=99)
     recap: str | None = Field(default=None, max_length=1200)
     # The library category the soundtrack is drawn from when nobody picked

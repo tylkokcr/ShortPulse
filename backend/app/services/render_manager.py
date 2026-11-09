@@ -524,6 +524,14 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                     whisper_device=settings.whisper_device,
                     whisper_compute_type=settings.whisper_compute_type,
                     language=config.language,
+                    # The lines either side, for engines that act a line
+                    # as part of the conversation (ElevenLabs).
+                    context=(
+                        script.scenes[i - 1].audio.voiceover_line if i > 0 else "",
+                        script.scenes[i + 1].audio.voiceover_line
+                        if i + 1 < len(script.scenes)
+                        else "",
+                    ),
                 )
 
         # 3. Visual generation per scene -----------------------------------------
@@ -558,8 +566,11 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             reference = await _character_sheet(
                 script.character.look, paths, previous, config, settings
             )
-        # A story's cast: one sheet for each person who is ever in frame.
+        # A story's cast: one sheet for each person who is ever in frame,
+        # and its places, one plate each.
         cast_sheets = await _cast_sheets(script, paths, previous, config, settings)
+        plates = await _location_plates(script, paths, previous, config, settings)
+        story = str(config.script_format) == "story"
 
         async def build_visual(scene: Scene) -> None:
             nonlocal completed
@@ -611,11 +622,9 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                         render_size=(render_width, render_height),
                         reference=reference,
                         references=[cast_sheets[n] for n in scene.cast if n in cast_sheets],
-                        video_model=(
-                            settings.replicate_story_video_model
-                            if str(config.script_format) == "story"
-                            else None
-                        ),
+                        video_model=settings.replicate_story_video_model if story else None,
+                        place=plates.get(scene.location or ""),
+                        shot_model=settings.replicate_story_image_model if story else None,
                     )
             # Reported on completion rather than on start: with several in
             # flight, "scene 3 of 5" as a starting announcement would jump
@@ -2101,6 +2110,42 @@ async def _cast_sheets(script, root: Path, previous, config, settings) -> dict[s
                 out[name] = path
             except Exception:
                 logger.warning("Could not draw %s's character sheet", name, exc_info=True)
+
+        await asyncio.gather(*(draw(*job) for job in todo))
+    return out
+
+
+def location_plate_path(root: Path, location_id: str) -> Path:
+    """A story place's plate, kept with the series like the cast sheets."""
+    slug = re.sub(r"[^a-z0-9]+", "-", location_id.casefold()).strip("-") or "place"
+    return root / "series" / "locations" / f"{slug}.png"
+
+
+async def _location_plates(script, root: Path, previous, config, settings) -> dict[str, Path]:
+    """Each place a shot happens in, drawn once — or copied from the
+    previous episode, so episode two is in the same rooms."""
+    used = {scene.location for scene in script.scenes if scene.location}
+    places = [loc for loc in getattr(script, "locations", []) if loc.id in used]
+    out: dict[str, Path] = {}
+    todo = []
+    for loc in places:
+        path = location_plate_path(root, loc.id)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        earlier = location_plate_path(project_dir(previous.config.id), loc.id) if previous else None
+        if earlier is not None and earlier.is_file():
+            shutil.copyfile(earlier, path)
+            out[loc.id] = path
+        else:
+            todo.append((loc.id, loc.look, path))
+    if todo and visual_engine.image_backend(settings) is visual_engine.ImageBackend.REPLICATE:
+        style = art_styles.by_id(config.art_style)
+
+        async def draw(loc_id: str, look: str, path: Path) -> None:
+            try:
+                await visual_engine.generate_location_plate(look, path, settings, style)
+                out[loc_id] = path
+            except Exception:
+                logger.warning("Could not draw location %s", loc_id, exc_info=True)
 
         await asyncio.gather(*(draw(*job) for job in todo))
     return out

@@ -34,7 +34,7 @@ from app.core.config import Settings, project_dir
 from app.engines import graphics, render_engine, subtitle_engine, visual_engine
 from app.schemas.project import EditSpec, Layout, Project, Scene, VisualMode
 from app.services import art_styles, editing
-from app.services.render_manager import cast_sheet_path, resolution_for
+from app.services.render_manager import cast_sheet_path, location_plate_path, resolution_for
 
 logger = logging.getLogger(__name__)
 
@@ -218,6 +218,17 @@ async def regenerate_scene(
             # A series character re-rolled still looks like themselves.
             reference=paths / "series" / "character.png",
             references=[cast_sheet_path(paths, name) for name in scene.cast],
+            place=location_plate_path(paths, scene.location) if scene.location else None,
+            shot_model=(
+                settings.replicate_story_image_model
+                if str(project.config.script_format) == "story"
+                else None
+            ),
+            video_model=(
+                settings.replicate_story_video_model
+                if str(project.config.script_format) == "story"
+                else None
+            ),
         )
 
         # Pinned to the length it already had, so the timeline cannot move.

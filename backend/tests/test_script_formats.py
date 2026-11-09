@@ -522,7 +522,7 @@ async def test_an_elevenlabs_line_carries_its_tags_but_the_captions_do_not(monke
 
     spoken = {}
 
-    async def fake_line(text, voice, path, language="en", length_scale=None):
+    async def fake_line(text, voice, path, language="en", length_scale=None, context=None):
         spoken["text"] = text
         return path
 
@@ -570,3 +570,25 @@ def test_a_story_shot_with_nobody_in_it_shows_nobody():
     script = _to_script_output("x", parsed, VideoLength.MEDIUM, "story", "tr")
     assert script.scenes[0].visual.prompt == "a kitchen door ajar at night, no people in the picture"
     assert "no people" not in script.scenes[1].visual.prompt
+
+
+def test_a_story_happens_in_its_named_places():
+    from app.engines.script_engine import _to_script_output
+
+    parsed = {
+        "cast": [{"name": "Leyla", "gender": "woman", "age": 30, "look": "x"}],
+        "locations": [
+            {"id": "Kitchen", "look": "small green kitchen, wooden table"},
+            {"id": "kitchen", "look": "duplicate"},
+            {"id": "bedroom", "look": "dark blue bedroom"},
+        ],
+        "scenes": [
+            {"voiceover_line": "a", "visual_prompt": "p", "speaker": "narrator",
+             "cast": ["Leyla"], "location": "kitchen"},
+            {"voiceover_line": "b", "visual_prompt": "p", "speaker": "narrator",
+             "cast": [], "location": "garage"},
+        ],
+    }
+    script = _to_script_output("x", parsed, VideoLength.MEDIUM, "story", "tr")
+    assert [loc.id for loc in script.locations] == ["kitchen", "bedroom"]
+    assert script.scenes[0].location == "kitchen" and script.scenes[1].location is None

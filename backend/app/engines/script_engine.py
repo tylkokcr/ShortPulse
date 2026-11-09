@@ -30,6 +30,7 @@ from app.schemas.project import (
     IdCard,
     LLMConfig,
     LLMProvider,
+    Location,
     MapPlace,
     MapSpec,
     PostCopy,
@@ -381,6 +382,7 @@ walking in, or the camera moving;
   "tone": how the line is said, one or two of: {tones} — what the moment \
 calls for, never the same for every line (narration mostly "softly", \
 "tense" or "nervous"; dialogue as the person feels it);
+  "location": the id of the place the shot is in, from "locations" below;
   "chapter": only on the two or three scenes that jump in time or place, \
 1-3 words in the script's language ("ONE YEAR AGO", "THAT NIGHT").
 - Add a top-level "cast": [{"name": "<first name, common in the script's \
@@ -389,6 +391,13 @@ language>", "role": "<narrator / husband / best friend / daughter…>", \
 "<in plain English: hair, skin, one distinctive piece of clothing in a \
 colour, glasses or not>"}], the narrator first. In a later episode, keep \
 the cast you are given, exactly.
+- Add a top-level "locations": the two to five places the story happens \
+in, as [{"id": "<one english word: kitchen, bedroom, hallway, office…>", \
+"look": "<in plain English: the room, its colours, furniture and one \
+or two details that make it recognisable>"}]. Every shot happens in one \
+of them, so each place looks the same every time it is seen. In a later \
+episode, keep the locations you are given and add new ones only if the \
+story moves somewhere new.
 - Add a top-level "recap": in English, three to five sentences of the \
 whole series so far, ending on this episode's cliffhanger.
 """,
@@ -788,6 +797,14 @@ async def _generate_script_once(
             # the model dropped fall back to the narrator.
             script.cast = [m.model_copy() for m in previous.cast]
             _tidy_story_scenes(script.scenes, script.cast)
+        if previous.locations:
+            # The same rooms; a place the model added this episode stays.
+            known = {loc.id for loc in previous.locations}
+            script.locations = [
+                *previous.locations,
+                *(loc for loc in script.locations if loc.id not in known),
+            ][:6]
+            _tidy_locations(script.scenes, script.locations)
         if script.character:
             _mark_hero_scenes(script.scenes, script.character.name)
     if script.cast:
@@ -818,6 +835,11 @@ def _previous_episode(previous: ScriptOutput) -> str:
         parts.append(
             "The cast, unchanged — use exactly this \"cast\": "
             + json.dumps(cast, ensure_ascii=False)
+        )
+    if previous.locations:
+        parts.append(
+            "The locations so far — keep these ids and looks: "
+            + json.dumps([{"id": loc.id, "look": loc.look} for loc in previous.locations])
         )
     if previous.counter:
         parts.append(
@@ -1466,6 +1488,34 @@ TONES = (
 )
 
 
+def _slug(raw: object) -> str | None:
+    text = re.sub(r"[^a-z0-9]+", "-", str(raw or "").casefold()).strip("-")[:24]
+    return text or None
+
+
+def _locations(raw: object) -> list[Location]:
+    if not isinstance(raw, list):
+        return []
+    out: list[Location] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        slug, look = _slug(item.get("id")), _short(item.get("look"), 300)
+        if slug and look and all(loc.id != slug for loc in out):
+            out.append(Location(id=slug, look=look))
+        if len(out) == 6:
+            break
+    return out
+
+
+def _tidy_locations(scenes: list[Scene], locations: list[Location]) -> None:
+    """A shot's place is one of the story's, or none (drawn freely)."""
+    known = {loc.id for loc in locations}
+    for scene in scenes:
+        if scene.location not in known:
+            scene.location = None
+
+
 def _tone(raw: object) -> str | None:
     words = raw if isinstance(raw, list) else str(raw or "").replace("[", ",").replace("]", ",").split(",")
     kept = [w.strip().lower() for w in words if isinstance(w, str) and w.strip().lower() in TONES]
@@ -1665,6 +1715,7 @@ def _to_script_output(
                 map=_scene_map(raw_scene.get("map")),
                 card=raw_scene.get("card") is True,
                 hero=raw_scene.get("hero") is True,
+                location=_slug(raw_scene.get("location")),
                 speaker=_short(raw_scene.get("speaker"), 32),
                 cast=[
                     n for n in (_short(x, 32) for x in raw_scene.get("cast") or [] if isinstance(x, str))
@@ -1781,9 +1832,12 @@ def _to_script_output(
             )
 
     cast: list[CastMember] = []
+    locations: list[Location] = []
     if script_format == "story":
         cast = _cast(parsed.get("cast"))
         _tidy_story_scenes(scenes, cast)
+        locations = _locations(parsed.get("locations"))
+        _tidy_locations(scenes, locations)
 
     hook = parsed.get("hook", scenes[0].audio.voiceover_line)
     call_to_action = parsed.get("call_to_action")
@@ -1807,6 +1861,7 @@ def _to_script_output(
                 else None
             ),
             cast=cast,
+            locations=locations,
         )
     except ValidationError as exc:
         raise ScriptGenerationError(f"Malformed script structure: {exc}") from exc
