@@ -166,7 +166,8 @@ async def test_the_amount_charged_comes_from_the_server_table(monkeypatch):
 
     assert url == "https://checkout.stripe.test/s"
     line = captured["line_items"][0]["price_data"]
-    assert line["unit_amount"] == pack_by_id("starter").price_cents
+    # What a checkout started now charges: the sale price while SALE runs.
+    assert line["unit_amount"] == pack_by_id("starter").price_now()
     # The buyer is identified in signed metadata, not in the return URL.
     assert captured["metadata"] == {"pack_id": "starter", "user_id": "user-1"}
     assert captured["client_reference_id"] == "user-1"
@@ -459,7 +460,7 @@ async def test_tax_is_carved_out_of_the_advertised_price(monkeypatch):
     assert captured["automatic_tax"] == {"enabled": True}
     price = captured["line_items"][0]["price_data"]
     assert price["tax_behavior"] == "inclusive"
-    assert price["unit_amount"] == pack_by_id("starter").price_cents
+    assert price["unit_amount"] == pack_by_id("starter").price_now()
 
 
 async def test_the_currency_is_a_deployment_setting(monkeypatch):
