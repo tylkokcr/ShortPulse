@@ -2105,14 +2105,41 @@ async def _cast_sheets(script, root: Path, previous, config, settings) -> dict[s
         style = art_styles.by_id(config.art_style)
 
         async def draw(name: str, look: str, path: Path) -> None:
-            try:
-                await visual_engine.generate_character_sheet(look, path, settings, style)
+            if await _with_retries(
+                lambda: visual_engine.generate_character_sheet(look, path, settings, style),
+                f"{name}'s character sheet",
+            ):
                 out[name] = path
-            except Exception:
-                logger.warning("Could not draw %s's character sheet", name, exc_info=True)
 
         await asyncio.gather(*(draw(*job) for job in todo))
+        missing = [name for name, _, _ in todo if name not in out]
+        if missing:
+            # Without a sheet a person is drawn from words alone, a new
+            # stranger every shot: one rate-limited episode came out with an
+            # old woman, a blond boy and three different husbands. Better to
+            # stop and refund than to deliver that.
+            raise RuntimeError(
+                "The image service was too busy to draw "
+                + ", ".join(missing)
+                + "; your credits were refunded. Please try again in a few minutes."
+            )
     return out
+
+
+async def _with_retries(make, what: str, attempts: int = 3, wait_s: float = 20.0) -> bool:
+    """Run a one-off drawing a few times before giving up: the sheets a whole
+    episode is drawn from were the first thing lost to Replicate rate
+    limits (167 429s in one evening)."""
+    for attempt in range(1, attempts + 1):
+        try:
+            await make()
+            return True
+        except Exception:
+            logger.warning("Could not draw %s (attempt %d/%d)", what, attempt, attempts,
+                           exc_info=True)
+            if attempt < attempts:
+                await asyncio.sleep(wait_s * attempt)
+    return False
 
 
 def location_plate_path(root: Path, location_id: str) -> Path:
@@ -2141,11 +2168,11 @@ async def _location_plates(script, root: Path, previous, config, settings) -> di
         style = art_styles.by_id(config.art_style)
 
         async def draw(loc_id: str, look: str, path: Path) -> None:
-            try:
-                await visual_engine.generate_location_plate(look, path, settings, style)
+            if await _with_retries(
+                lambda: visual_engine.generate_location_plate(look, path, settings, style),
+                f"location {loc_id}",
+            ):
                 out[loc_id] = path
-            except Exception:
-                logger.warning("Could not draw location %s", loc_id, exc_info=True)
 
         await asyncio.gather(*(draw(*job) for job in todo))
     return out

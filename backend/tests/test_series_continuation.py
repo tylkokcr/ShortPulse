@@ -128,3 +128,39 @@ async def test_the_next_episode_draws_its_cast_from_the_last_ones_sheets(tmp_pat
 
     assert sheets["Zehra"].read_bytes() == b"\x89PNG zehra"
     assert "34-year-old woman, auburn hair" in sheets["Zehra"].with_suffix(".txt").read_text()
+
+
+async def test_a_story_stops_rather_than_draw_its_cast_from_words(tmp_path, monkeypatch):
+    """A rate-limited episode came out with a new stranger every shot: when
+    a cast member's sheet cannot be drawn after retries, the render fails
+    (and is refunded) instead."""
+    from types import SimpleNamespace
+
+    import pytest as _pytest
+
+    from app.engines import visual_engine
+    from app.schemas.project import CastMember
+    from app.services import render_manager
+
+    calls = {"n": 0}
+
+    async def busy(*args, **kwargs):
+        calls["n"] += 1
+        raise RuntimeError("429")
+
+    async def no_wait(_s):
+        return None
+
+    monkeypatch.setattr(visual_engine, "generate_character_sheet", busy)
+    monkeypatch.setattr(visual_engine, "image_backend", lambda s: visual_engine.ImageBackend.REPLICATE)
+    monkeypatch.setattr(render_manager.asyncio, "sleep", no_wait)
+    scene = Scene(index=0, duration_s=3, visual=SceneVisual(prompt="p"),
+                  audio=SceneAudio(voiceover_line="l"), cast=["Elif"])
+    script = ScriptOutput(topic="x", hook="h", total_duration_s=3, scenes=[scene],
+                          cast=[CastMember(name="Elif", gender="woman", age=32, look="x")])
+
+    with _pytest.raises(RuntimeError, match="Elif"):
+        await render_manager._cast_sheets(
+            script, tmp_path, None, SimpleNamespace(art_style="vector"), SimpleNamespace()
+        )
+    assert calls["n"] == 3

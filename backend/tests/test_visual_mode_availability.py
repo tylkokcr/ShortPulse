@@ -131,7 +131,7 @@ def test_a_token_makes_ai_video_available_without_torch(monkeypatch):
     _no_local_diffusion(monkeypatch)
     settings = Settings(replicate="r8_test", provider="replicate")
     assert visual_engine.unavailable_reason(VisualMode.AI_VIDEO, settings) is None
-    assert visual_engine.scene_concurrency(VisualMode.AI_VIDEO, settings) == 5
+    assert visual_engine.scene_concurrency(VisualMode.AI_VIDEO, settings) == 3
 
 
 def test_the_fast_hybrid_reason_names_both_routes(monkeypatch):
