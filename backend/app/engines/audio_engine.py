@@ -162,8 +162,9 @@ async def _synthesize_elevenlabs(
                 "language_code": (language or "en").split("-")[0],
                 "stability": 0.0,
                 "speed": speed,
-                "previous_text": (context or ("", ""))[0][:400],
-                "next_text": (context or ("", ""))[1][:400],
+                # previous_text/next_text are in the schema, but v3 refuses
+                # them ("not yet supported with the 'eleven_v3' model"):
+                # an episode failed on it. `context` waits for that.
             },
         },
         settings,
