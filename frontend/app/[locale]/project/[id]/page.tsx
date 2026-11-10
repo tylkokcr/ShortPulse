@@ -262,7 +262,12 @@ function Project({ id }: { id: string }) {
             )}
           </div>
 
-          <div className="flex flex-col gap-4">
+          {/* Kept in view beside a long scene list: a two-minute story is
+              forty-odd scenes, and scrolling down to scene thirty left the
+              video it was being checked against off the top of the page.
+              Taller than the window (the publish panel under the player),
+              it scrolls on its own. */}
+          <div className="flex flex-col gap-4 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-7rem)] lg:self-start lg:overflow-y-auto lg:pb-2 [scrollbar-width:thin]">
             <RenderPreview
               projectId={id}
               videoRef={videoRef}
