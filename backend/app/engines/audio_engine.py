@@ -16,6 +16,7 @@ import logging
 import re
 import subprocess
 import tempfile
+import threading
 from collections.abc import Callable
 from pathlib import Path
 
@@ -26,6 +27,10 @@ logger = logging.getLogger(__name__)
 # faster-whisper loads a multi-hundred-MB model; keep a process-wide cache
 # so every scene transcription doesn't reload it from disk.
 _whisper_model_cache: dict[str, object] = {}
+# Voiceovers are synthesised a few at once; transcription, which shares the
+# cached model (and its first load) between their threads, goes one at a
+# time.
+_whisper_lock = threading.Lock()
 
 _EMOJI_PATTERN = re.compile(
     "["
@@ -899,14 +904,13 @@ async def process_scene_audio(
     import asyncio
 
     audio_path = await synthesize_scene_audio(scene, voice, output_dir, language or "en", context)
-    words = await asyncio.to_thread(
-        transcribe_word_timestamps,
-        audio_path,
-        whisper_model_size,
-        whisper_device,
-        whisper_compute_type,
-        language,
-    )
+    def transcribe_serially() -> list[Word]:
+        with _whisper_lock:
+            return transcribe_word_timestamps(
+                audio_path, whisper_model_size, whisper_device, whisper_compute_type, language
+            )
+
+    words = await asyncio.to_thread(transcribe_serially)
 
     # The captions say what the script says; Whisper only says when.
     words = align_to_script(words, scene.audio.voiceover_line)

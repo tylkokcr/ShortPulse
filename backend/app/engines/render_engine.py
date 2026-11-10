@@ -751,22 +751,33 @@ async def render_project(
     estimate — see render_scene_clip), then concat and finalize with
     subtitles and music. `on_scene_rendered(index, total)` is an optional
     async callback for progress reporting (see render_manager.py)."""
-    clip_paths: list[Path] = []
-    for i, scene in enumerate(scenes):
+    # Three clips encoding at once: one at a time, a 45-shot story spent
+    # two to three minutes here on a machine with cores to spare.
+    clip_limit = asyncio.Semaphore(3)
+    rendered = 0
+
+    async def one_clip(i: int, scene: Scene) -> Path:
+        nonlocal rendered
         # A breath more where the next line is someone else's: back to back,
         # two voices in a dialogue ran into each other.
         nxt = scenes[i + 1] if i + 1 < len(scenes) else None
         handover = bool(
             nxt is not None and scene.speaker and nxt.speaker and nxt.speaker != scene.speaker
         )
-        clip_path = await render_scene_clip(
-            scene, target, output_dir, ffmpeg_binary, ffprobe_binary,
-            scene_gap_s + (0.25 if handover else 0.0), punch=punch,
-            sound_effects=graphics_plan is not None and getattr(graphics_plan, "effects", True),
-        )
-        clip_paths.append(clip_path)
+        async with clip_limit:
+            clip_path = await render_scene_clip(
+                scene, target, output_dir, ffmpeg_binary, ffprobe_binary,
+                scene_gap_s + (0.25 if handover else 0.0), punch=punch,
+                sound_effects=graphics_plan is not None and getattr(graphics_plan, "effects", True),
+            )
+        rendered += 1
         if on_scene_rendered:
-            await on_scene_rendered(scene.index + 1, len(scenes))
+            await on_scene_rendered(rendered, len(scenes))
+        return clip_path
+
+    clip_paths: list[Path] = list(
+        await asyncio.gather(*(one_clip(i, scene) for i, scene in enumerate(scenes)))
+    )
 
     extra_styles: list[str] | None = None
     extra_events: list[str] | None = None

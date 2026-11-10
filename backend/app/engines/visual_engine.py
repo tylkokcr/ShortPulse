@@ -193,7 +193,7 @@ def image_backend(settings) -> ImageBackend | None:
 # time and the rest of the wall clock is the model booting, which happens
 # once and is shared by everything behind it.
 _REMOTE_SCENE_CONCURRENCY = 2
-_REMOTE_VIDEO_CONCURRENCY = 3
+_REMOTE_VIDEO_CONCURRENCY = 6
 
 # How deep a stock search looks, which is also how many distinct clips a
 # scene can be re-rolled through before it starts repeating.
@@ -221,7 +221,8 @@ def scene_concurrency(mode: VisualMode, settings) -> int:
     if mode == VisualMode.AI_VIDEO and image_backend(settings) is ImageBackend.REPLICATE:
         # A Hailuo clip is 70-190s of predict time; two at a time made the
         # first animated episode's pictures take eleven minutes, and five
-        # drew 429s by the hundred on a 45-shot story. Three.
+        # drew 429s by the hundred on a 45-shot story — with the balance
+        # run low, which is what throttled it. Six, on a funded account.
         return _REMOTE_VIDEO_CONCURRENCY
     if mode == VisualMode.FAST_HYBRID and image_backend(settings) is ImageBackend.REPLICATE:
         return _REMOTE_SCENE_CONCURRENCY

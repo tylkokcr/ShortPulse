@@ -505,34 +505,44 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
 
         # 2. Audio synthesis + transcription per scene --------------------------
         with timings.stage("audio_and_transcription"):
-            for i, scene in enumerate(script.scenes):
+            # A few lines at a time: one after another, a 45-line story spent
+            # three and a half minutes here waiting on the voice API.
+            voice_limit = asyncio.Semaphore(4)
+            voiced = 0
+
+            async def voice_scene(i: int, scene: Scene) -> None:
+                nonlocal voiced
+                async with voice_limit:
+                    await audio_engine.process_scene_audio(
+                        scene,
+                        voice_for_scene(scene, script, config.voice, config.language),
+                        paths / "audio",
+                        whisper_model_size=settings.whisper_model_size,
+                        whisper_device=settings.whisper_device,
+                        whisper_compute_type=settings.whisper_compute_type,
+                        language=config.language,
+                        # The lines either side, for engines that act a line
+                        # as part of the conversation.
+                        context=(
+                            script.scenes[i - 1].audio.voiceover_line if i > 0 else "",
+                            script.scenes[i + 1].audio.voiceover_line
+                            if i + 1 < len(script.scenes)
+                            else "",
+                        ),
+                    )
+                voiced += 1
                 await _emit(
                     project_id,
                     stage=RenderStage.AUDIO_SYNTHESIS,
-                    progress_pct=10 + (i / total_scenes) * 20,
-                    message=f"Synthesizing voiceover for scene {i + 1}/{total_scenes}...",
+                    progress_pct=10 + (voiced / total_scenes) * 20,
+                    message=f"Synthesizing voiceover for scene {voiced}/{total_scenes}...",
                     phase="voice",
-                    phase_args={"n": i + 1, "total": total_scenes},
-                    current_scene=i + 1,
+                    phase_args={"n": voiced, "total": total_scenes},
+                    current_scene=voiced,
                     total_scenes=total_scenes,
                 )
-                await audio_engine.process_scene_audio(
-                    scene,
-                    voice_for_scene(scene, script, config.voice, config.language),
-                    paths / "audio",
-                    whisper_model_size=settings.whisper_model_size,
-                    whisper_device=settings.whisper_device,
-                    whisper_compute_type=settings.whisper_compute_type,
-                    language=config.language,
-                    # The lines either side, for engines that act a line
-                    # as part of the conversation (ElevenLabs).
-                    context=(
-                        script.scenes[i - 1].audio.voiceover_line if i > 0 else "",
-                        script.scenes[i + 1].audio.voiceover_line
-                        if i + 1 < len(script.scenes)
-                        else "",
-                    ),
-                )
+
+            await asyncio.gather(*(voice_scene(i, s) for i, s in enumerate(script.scenes)))
 
         # 3. Visual generation per scene -----------------------------------------
         if config.visual_mode == VisualMode.AI_VIDEO and not visual_engine.is_model_fully_cached(
