@@ -691,6 +691,67 @@ def _replicate_image_input(
     }
 
 
+_CHECK_PROMPT = (
+    "You check one frame of a cartoon series for continuity. {refs}The LAST image is the new frame. "
+    "First compare each person's face, hair, skin tone and clothing colours with their sheet, then "
+    'answer in JSON only: {{"reason": "<one sentence>", "same_people": true|false, '
+    '"extra_people": true|false}}. '
+    "same_people is true only if every character on the sheets appears in the frame and is "
+    "recognisably the same person as their sheet — face shape, hair, skin tone, clothing colours; "
+    "a different pose, angle or expression is fine. extra_people is true if anyone not on the sheets "
+    "is clearly visible (tiny background silhouettes do not count)."
+)
+
+
+async def check_shot(shot: Path, sheets: list[Path], settings) -> bool:
+    """Whether a story shot shows its people as their sheets show them, and
+    nobody else. An unreadable answer or a failed check passes: this is a
+    second look, never a reason to lose a shot."""
+    import base64
+
+    model = getattr(settings, "replicate_shot_checker_model", "") or ""
+    if not model:
+        return True
+
+    def uri(path: Path) -> str:
+        return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode()
+
+    refs = (
+        f"The first {len(sheets)} image(s) are the character sheet(s) of the people who should "
+        "be in it. "
+        if sheets
+        else "There should be no people in this frame at all, so same_people is true. "
+    )
+    try:
+        prediction = await _replicate_predict(
+            {
+                "version": model,
+                "input": {
+                    "prompt": _CHECK_PROMPT.format(refs=refs),
+                    "images": [*(uri(s) for s in sheets), uri(shot)],
+                    "temperature": 0,
+                    # Allowed to think: without it two of eight test frames
+                    # came back wrong (a look-alike passed, a pair failed).
+                    "thinking_budget": 1024,
+                    "dynamic_thinking": False,
+                },
+            },
+            settings,
+        )
+        output = prediction.get("output")
+        text = "".join(output) if isinstance(output, list) else str(output or "")
+        # Read the two answers, not the JSON: the model has come back with
+        # it fenced, and once cut short after the first field.
+        same = re.search(r'"same_people"\s*:\s*(true|false)', text)
+        extra = re.search(r'"extra_people"\s*:\s*(true|false)', text)
+        if same is None:
+            raise ValueError(f"no verdict in {text[:120]!r}")
+        return same.group(1) == "true" and not (extra and extra.group(1) == "true")
+    except Exception:
+        logger.warning("Could not check shot %s", shot.name, exc_info=True)
+        return True
+
+
 def _story_shot_input(
     scene: Scene, style: ArtStyle, size, place: Path | None, sheets: list[Path]
 ) -> dict:
@@ -1020,10 +1081,15 @@ async def _generate_replicate_image(
     style = style or art_styles.DEFAULT_ART_STYLE
 
     if shot_model and ((place is not None and place.is_file()) or references):
-        # Asked three times before falling back: the fallbacks are what drew
-        # strangers in a husband's place (a suit, a brown jacket, a
-        # different cartoon) — they do not hold a face from a sheet.
-        for attempt in range(3):
+        # Drawn, then checked against the sheets of the people meant to be
+        # in it, and drawn again when they are not those people — up to
+        # story_shot_draws times; the last drawing is kept if none passes.
+        # Failures to draw count as tries too, before falling back: the
+        # fallbacks are what drew strangers in a husband's place.
+        sheets_in = [r for r in (references or []) if r.is_file()][:2]
+        tries = max(1, int(getattr(settings, "story_shot_draws", 3)))
+        drawn_any = False
+        for attempt in range(tries):
             try:
                 prediction = await _replicate_predict(
                     {
@@ -1033,15 +1099,22 @@ async def _generate_replicate_image(
                     settings,
                 )
                 await _download(_replicate_output_url(prediction), output_path)
+                drawn_any = True
                 scene.visual.predict_time_s = (prediction.get("metrics") or {}).get("predict_time")
                 scene.visual.drawn_with = shot_model
-                return output_path
+                scene.visual.draws = attempt + 1
             except Exception:
                 logger.warning(
-                    "Story shot %s could not be drawn from its references (attempt %d/3)",
-                    scene.index, attempt + 1, exc_info=True,
+                    "Story shot %s could not be drawn from its references (attempt %d/%d)",
+                    scene.index, attempt + 1, tries, exc_info=True,
                 )
                 await asyncio.sleep(5 * (attempt + 1))
+                continue
+            if attempt + 1 == tries or await check_shot(output_path, sheets_in, settings):
+                return output_path
+            logger.info("Story shot %s: people did not match their sheets; redrawing", scene.index)
+        if drawn_any:
+            return output_path
 
     # The people in this picture, as character sheets: a story's cast in
     # frame (up to two), or an outbreak's survivor in a hero scene.

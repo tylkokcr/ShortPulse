@@ -202,6 +202,12 @@ class Settings(BaseSettings):
     # 4.5 kept the room and both faces and still chose its own angles
     # (Nano Banana drew every shot from the same wide angle). ~$0.04.
     replicate_story_image_model: str = "bytedance/seedream-4.5"
+    # Looks at each story shot beside the sheets of the people meant to be
+    # in it, and has it redrawn when they are not those people: Seedream
+    # alone still drew the husband as an old man in a hat or a bald baby in
+    # some shots. Seven of seven right on a test of good and wrong frames.
+    replicate_shot_checker_model: str = "google/gemini-2.5-flash"
+    story_shot_draws: int = 3
     # A clip is 80s of predict time when warm, and a whole episode's
     # scenes are asked for at once.
     replicate_video_timeout_s: float = 480.0

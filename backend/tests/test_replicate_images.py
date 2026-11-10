@@ -583,3 +583,43 @@ async def test_a_story_shot_is_drawn_from_its_place_and_people_at_once(monkeypat
     assert prompt.startswith("Image 1 is the place")
     assert "Image 2 is 30-year-old woman, maroon cardigan" in prompt
     assert "no white bars" in prompt and sent["input"]["aspect_ratio"] == "9:16"
+
+
+async def test_a_story_shot_whose_people_do_not_match_is_redrawn(monkeypatch, scene, tmp_path):
+    """Seedream sometimes drew the husband as someone else; each shot is
+    checked against the sheets and drawn again until it matches."""
+    from PIL import Image
+
+    verdicts = iter(['{"same_people": false, "extra_people": false}',
+                     '```json\n{"same_people": true, "extra_people": false}\n```'])
+
+    class Checked(FakeReplicate):
+        def __call__(self, request):
+            if request.method == "POST" and request.url.path == "/v1/predictions":
+                body = json.loads(request.content)
+                if body["version"].startswith("google/"):
+                    self.requests.append(request)
+                    return httpx.Response(201, content=json.dumps(
+                        _prediction(output=[next(verdicts)])))
+            return super().__call__(request)
+
+    fake = _serve(monkeypatch, Checked())
+    sheet = tmp_path / "emre.png"
+    Image.new("RGB", (60, 100), "grey").save(sheet)
+    settings = Settings(model="black-forest-labs/flux-dev")
+    settings.replicate_shot_checker_model = "google/gemini-2.5-flash"
+    settings.story_shot_draws = 3
+
+    await visual_engine._generate_replicate_image(
+        scene, tmp_path, settings, references=[sheet], shot_model="bytedance/seedream-4.5",
+    )
+
+    versions = [
+        json.loads(r.content)["version"] for r in fake.requests
+        if r.method == "POST" and r.url.path == "/v1/predictions"
+    ]
+    assert versions == [
+        "bytedance/seedream-4.5", "google/gemini-2.5-flash",
+        "bytedance/seedream-4.5", "google/gemini-2.5-flash",
+    ]
+    assert scene.visual.draws == 2
