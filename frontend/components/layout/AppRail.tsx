@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Coins, FolderOpen, Github, Library, LogOut, PanelLeftClose, PanelLeftOpen, Share2, Wand2 } from "lucide-react";
+import { Clapperboard, Coins, FolderOpen, Github, Library, LogOut, PanelLeftClose, PanelLeftOpen, Share2, Wand2 } from "lucide-react";
 import clsx from "clsx";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -75,6 +75,8 @@ export function AppRail() {
   // logo's beat says what the product is called.
   const items = [
     { href: "/", icon: Wand2, label: t("studio"), motion: "flick" },
+    // Made in episodes, so they get their own place: see app/series.
+    { href: "/series", icon: Clapperboard, label: t("series"), motion: "flick" },
     { href: "/library", icon: Library, label: t("library"), motion: "lean" },
     { href: "/files", icon: FolderOpen, label: t("files"), motion: "pulse" },
     ...(publishes

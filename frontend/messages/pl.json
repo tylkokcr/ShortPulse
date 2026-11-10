@@ -19,7 +19,8 @@
     "accent": "Kolor akcentu",
     "language": "Język",
     "creditsRemaining": "Pozostałe kredyty — kliknij, by doładować",
-    "files": "Moje pliki"
+    "files": "Moje pliki",
+    "series": "Seriale"
   },
   "howItWorks": {
     "eyebrow": "Jak to działa",
@@ -613,7 +614,8 @@
         "neighbour": "Nowy sąsiad nigdy nie wychodzi z domu",
         "letter": "W starym liście mamy było moje imię",
         "basement": "Piwnica szkoły jest zawsze zamknięta"
-      }
+      },
+      "seriesLink": "Robisz coś w odcinkach? Seriale →"
     },
     "outro": {
       "toggle": "Dodaj planszę końcową z logo",
@@ -1167,6 +1169,107 @@
       "tempo": "Tempo",
       "cuts": "Cięcia",
       "note": "Aby wypróbować inny styl lub fragment utworu, zacznij nowy montaż — klipy wybierzesz z Moich plików."
+    },
+    "series": {
+      "title": "Seriale",
+      "intro": "Filmy, które toczą się odcinek po odcinku: te same postacie i miejsca, każdy odcinek kończy się w napięciu. Zacznij serial, kolejne odcinki robisz jednym kliknięciem.",
+      "start": "Zacznij serial",
+      "mine": "Moje seriale",
+      "loading": "Ładowanie…",
+      "none": "Nie masz jeszcze serialu.",
+      "startFirst": "Zacznij pierwszy serial",
+      "episodes": "{count, plural, one {# odcinek} few {# odcinki} many {# odcinków} other {# odcinka}}",
+      "working": "W przygotowaniu",
+      "viewSeries": "Zobacz serial",
+      "formats": {
+        "story": {
+          "name": "Serial fabularny",
+          "short": "Dramat, thriller albo zagadka w pierwszej osobie; postacie mówią własnymi głosami.",
+          "body": "Jak seriale na Reels: zaczyna się od dziwnego szczegółu, postacie mówią własnymi głosami, każdy odcinek kończy się w napięciu.",
+          "points": {
+            "a": "Odcinki po około 2 minuty, ~45 ujęć",
+            "b": "Każda postać ma swój głos i stałą twarz",
+            "c": "Obsada i miejsca przechodzą między odcinkami"
+          }
+        },
+        "outbreak": {
+          "name": "Serial o epidemii",
+          "short": "Epidemia, która zaczyna się w mieście, oczami jednej ocalałej osoby.",
+          "body": "Epidemia zaczynająca się w mieście, opowiedziana oczami jednej osoby: rozprzestrzenianie na mapie, rosnący licznik, każdy odcinek w napięciu.",
+          "points": {
+            "a": "Epidemia na mapie i licznik zarażonych",
+            "b": "Ta sama postać, ta sama twarz w każdym odcinku",
+            "c": "Napięcie bez drastycznych scen"
+          }
+        }
+      },
+      "newTitle": "Nowy serial",
+      "newIntro": "Podaj pomysł. AI napisze postacie, miejsca i pierwszy odcinek; każdy kolejny zaczyna się tam, gdzie skończył poprzedni.",
+      "premise": {
+        "story": "Pomysł na historię",
+        "outbreak": "Gdzie i jak się zaczyna?"
+      },
+      "genre": "Gatunek",
+      "genres": {
+        "thriller": "Thriller",
+        "drama": "Dramat",
+        "mystery": "Zagadka",
+        "comedy": "Komedia",
+        "romance": "Romans"
+      },
+      "setting": {
+        "story": "Gdzie się dzieje?",
+        "outbreak": "Miasto"
+      },
+      "settingPlaceholder": {
+        "story": "np. stara kamienica w Warszawie",
+        "outbreak": "np. Warszawa"
+      },
+      "optional": "(opcjonalnie)",
+      "language": "Język",
+      "style": "Styl rysunku",
+      "motion": "Obraz",
+      "motions": {
+        "ai_video": {
+          "name": "Animowany",
+          "hint": "Postacie mówią i mrugają; każde ujęcie to krótka animacja."
+        },
+        "fast_hybrid": {
+          "name": "Ilustracje",
+          "hint": "Każde ujęcie to rysunek z ruchem kamery. Taniej i szybciej."
+        }
+      },
+      "credits": "{count} kredytów",
+      "length": "Długość odcinka",
+      "lengths": {
+        "short": "Krótki ({seconds} s)",
+        "medium": "Standardowy ({seconds} s)"
+      },
+      "summary": {
+        "title": "Jeden odcinek",
+        "length": "Długość",
+        "seconds": "{seconds} s",
+        "shots": "Ujęcia",
+        "voices": "Głosy",
+        "voicesValue": {
+          "story": "Osobny dla każdej postaci",
+          "outbreak": "Narrator"
+        },
+        "time": "Przygotowanie",
+        "minutes": "~{minutes} min",
+        "cost": "Za odcinek",
+        "balance": "Saldo: {balance} kredytów",
+        "next": "Gdy odcinek będzie gotowy, na jego stronie pojawi się „Zrób kolejny odcinek” z tymi samymi postaciami i miejscami."
+      },
+      "insufficient": "Ten odcinek kosztuje {required} kredytów, a masz {balance}.",
+      "failed": "Nie udało się zacząć serialu.",
+      "creating": "Startuje…",
+      "create": "Zacznij serial i zrób 1. odcinek",
+      "notFound": "Nie znaleziono serialu.",
+      "back": "Wróć do seriali",
+      "making": "Odcinek {n} w przygotowaniu…",
+      "cast": "Obsada",
+      "episode": "Odcinek {n}"
     }
   },
   "tour": {

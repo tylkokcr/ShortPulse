@@ -470,6 +470,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                 visual_mode=str(config.visual_mode),
                 script_format=str(config.script_format),
                 previous=previous.script if previous else None,
+                brief=script_engine.series_brief(config.series_genre, config.series_setting),
             )
         # What the whole render should keep out of frame, stamped onto
         # every scene the LLM just wrote. Per scene rather than read from

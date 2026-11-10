@@ -19,7 +19,8 @@
     "accent": "Accent",
     "language": "Language",
     "creditsRemaining": "Credits remaining — click to top up",
-    "files": "My files"
+    "files": "My files",
+    "series": "Series"
   },
   "howItWorks": {
     "eyebrow": "How it works",
@@ -613,7 +614,8 @@
         "neighbour": "Our new neighbour never leaves the house",
         "letter": "My name was in my mother's old letter",
         "basement": "The school basement is always locked"
-      }
+      },
+      "seriesLink": "Making something in episodes? Series →"
     },
     "outro": {
       "toggle": "Add a branded outro card",
@@ -1167,6 +1169,107 @@
       "tempo": "Tempo",
       "cuts": "Cuts",
       "note": "To try another style or part of the song, start a new edit — your clips can be picked from My files."
+    },
+    "series": {
+      "title": "Series",
+      "intro": "Videos that continue episode by episode: the same characters and places, each episode ending on a cliffhanger. Start a series, then make each next episode in one click.",
+      "start": "Start a series",
+      "mine": "My series",
+      "loading": "Loading…",
+      "none": "No series yet.",
+      "startFirst": "Start your first series",
+      "episodes": "{count, plural, one {# episode} other {# episodes}}",
+      "working": "In the making",
+      "viewSeries": "View series",
+      "formats": {
+        "story": {
+          "name": "Story series",
+          "short": "A first-person drama, thriller or mystery; characters speak in their own voices.",
+          "body": "Like the serialised stories on Reels: it opens on an odd detail, characters speak in their own voices, every episode ends on a cliffhanger.",
+          "points": {
+            "a": "Episodes of about 2 minutes, ~45 shots",
+            "b": "Each character's own voice and fixed face",
+            "c": "Cast and places carry over between episodes"
+          }
+        },
+        "outbreak": {
+          "name": "Outbreak series",
+          "short": "An outbreak starting in a city, following one survivor.",
+          "body": "An outbreak starting in a city, told through one survivor: the spread on a map, a rising count, every episode ending on a cliffhanger.",
+          "points": {
+            "a": "The spread on a map and an infected counter",
+            "b": "The same character, the same face, every episode",
+            "c": "Suspense, no gore"
+          }
+        }
+      },
+      "newTitle": "New series",
+      "newIntro": "Give the idea. The AI writes the characters, the places and the first episode; each next one picks up where it left off.",
+      "premise": {
+        "story": "The story's idea",
+        "outbreak": "Where and how does it start?"
+      },
+      "genre": "Genre",
+      "genres": {
+        "thriller": "Thriller",
+        "drama": "Drama",
+        "mystery": "Mystery",
+        "comedy": "Comedy",
+        "romance": "Romance"
+      },
+      "setting": {
+        "story": "Where is it set?",
+        "outbreak": "City"
+      },
+      "settingPlaceholder": {
+        "story": "e.g. an old apartment block in London",
+        "outbreak": "e.g. London"
+      },
+      "optional": "(optional)",
+      "language": "Language",
+      "style": "Drawing style",
+      "motion": "Pictures",
+      "motions": {
+        "ai_video": {
+          "name": "Animated",
+          "hint": "Characters talk and blink; every shot is a short animation."
+        },
+        "fast_hybrid": {
+          "name": "Stills",
+          "hint": "Every shot a drawing with camera movement. Cheaper and faster."
+        }
+      },
+      "credits": "{count} credits",
+      "length": "Episode length",
+      "lengths": {
+        "short": "Short ({seconds}s)",
+        "medium": "Standard ({seconds}s)"
+      },
+      "summary": {
+        "title": "One episode",
+        "length": "Length",
+        "seconds": "{seconds}s",
+        "shots": "Shots",
+        "voices": "Voices",
+        "voicesValue": {
+          "story": "One per character",
+          "outbreak": "Narrator"
+        },
+        "time": "Made in",
+        "minutes": "~{minutes} min",
+        "cost": "Per episode",
+        "balance": "Your balance: {balance} credits",
+        "next": "When an episode is done, its page offers “Make the next episode”, with the same characters and places."
+      },
+      "insufficient": "This episode costs {required} credits and you have {balance}.",
+      "failed": "Couldn't start the series.",
+      "creating": "Starting…",
+      "create": "Start the series and make episode 1",
+      "notFound": "This series wasn't found.",
+      "back": "Back to series",
+      "making": "Episode {n} is being made…",
+      "cast": "Cast",
+      "episode": "Episode {n}"
     }
   },
   "tour": {

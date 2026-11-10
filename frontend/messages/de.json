@@ -19,7 +19,8 @@
     "accent": "Akzentfarbe",
     "language": "Sprache",
     "creditsRemaining": "Verbleibende Credits — zum Aufladen klicken",
-    "files": "Meine Dateien"
+    "files": "Meine Dateien",
+    "series": "Serien"
   },
   "howItWorks": {
     "eyebrow": "So funktioniert es",
@@ -613,7 +614,8 @@
         "neighbour": "Unser neuer Nachbar geht nie aus dem Haus",
         "letter": "In Mamas altem Brief stand mein Name",
         "basement": "Der Schulkeller ist immer abgeschlossen"
-      }
+      },
+      "seriesLink": "Etwas in Folgen machen? Serien →"
     },
     "outro": {
       "toggle": "Gebrandete Abspannkarte hinzufügen",
@@ -1167,6 +1169,107 @@
       "tempo": "Tempo",
       "cuts": "Schnitte",
       "note": "Um einen anderen Stil oder Songteil zu probieren, starte einen neuen Edit — deine Clips kannst du aus Meinen Dateien wählen."
+    },
+    "series": {
+      "title": "Serien",
+      "intro": "Videos, die Folge für Folge weitergehen: dieselben Figuren und Orte, jede Folge endet mit einem Cliffhanger. Starte eine Serie, jede weitere Folge mit einem Klick.",
+      "start": "Serie starten",
+      "mine": "Meine Serien",
+      "loading": "Wird geladen…",
+      "none": "Noch keine Serie.",
+      "startFirst": "Erste Serie starten",
+      "episodes": "{count, plural, one {# Folge} other {# Folgen}}",
+      "working": "In Arbeit",
+      "viewSeries": "Serie ansehen",
+      "formats": {
+        "story": {
+          "name": "Story-Serie",
+          "short": "Ein Drama, Thriller oder Rätsel in der Ich-Form; Figuren sprechen mit eigenen Stimmen.",
+          "body": "Wie die Fortsetzungsgeschichten auf Reels: beginnt mit einem seltsamen Detail, Figuren sprechen mit eigenen Stimmen, jede Folge endet mit einem Cliffhanger.",
+          "points": {
+            "a": "Folgen von etwa 2 Minuten, ~45 Einstellungen",
+            "b": "Jede Figur mit eigener Stimme und festem Gesicht",
+            "c": "Besetzung und Orte bleiben von Folge zu Folge"
+          }
+        },
+        "outbreak": {
+          "name": "Ausbruch-Serie",
+          "short": "Ein Ausbruch, der in einer Stadt beginnt, aus Sicht einer Überlebenden.",
+          "body": "Ein Ausbruch, der in einer Stadt beginnt, erzählt durch eine Überlebende: die Ausbreitung auf der Karte, ein steigender Zähler, jede Folge mit Cliffhanger.",
+          "points": {
+            "a": "Ausbreitung auf der Karte und Infiziertenzähler",
+            "b": "Dieselbe Figur, dasselbe Gesicht in jeder Folge",
+            "c": "Spannung, kein Blut"
+          }
+        }
+      },
+      "newTitle": "Neue Serie",
+      "newIntro": "Gib die Idee vor. Die KI schreibt Figuren, Orte und die erste Folge; jede weitere setzt dort an, wo die letzte endete.",
+      "premise": {
+        "story": "Die Idee der Geschichte",
+        "outbreak": "Wo und wie beginnt es?"
+      },
+      "genre": "Genre",
+      "genres": {
+        "thriller": "Thriller",
+        "drama": "Drama",
+        "mystery": "Rätsel",
+        "comedy": "Komödie",
+        "romance": "Romanze"
+      },
+      "setting": {
+        "story": "Wo spielt es?",
+        "outbreak": "Stadt"
+      },
+      "settingPlaceholder": {
+        "story": "z. B. ein Altbau in Berlin",
+        "outbreak": "z. B. Berlin"
+      },
+      "optional": "(optional)",
+      "language": "Sprache",
+      "style": "Zeichenstil",
+      "motion": "Bilder",
+      "motions": {
+        "ai_video": {
+          "name": "Animiert",
+          "hint": "Figuren sprechen und blinzeln; jede Einstellung eine kurze Animation."
+        },
+        "fast_hybrid": {
+          "name": "Standbilder",
+          "hint": "Jede Einstellung eine Zeichnung mit Kamerabewegung. Günstiger und schneller."
+        }
+      },
+      "credits": "{count} Credits",
+      "length": "Folgenlänge",
+      "lengths": {
+        "short": "Kurz ({seconds} s)",
+        "medium": "Standard ({seconds} s)"
+      },
+      "summary": {
+        "title": "Eine Folge",
+        "length": "Länge",
+        "seconds": "{seconds} s",
+        "shots": "Einstellungen",
+        "voices": "Stimmen",
+        "voicesValue": {
+          "story": "Eine pro Figur",
+          "outbreak": "Erzähler"
+        },
+        "time": "Erstellt in",
+        "minutes": "~{minutes} Min.",
+        "cost": "Pro Folge",
+        "balance": "Dein Guthaben: {balance} Credits",
+        "next": "Ist eine Folge fertig, bietet ihre Seite „Nächste Folge erstellen“ an, mit denselben Figuren und Orten."
+      },
+      "insufficient": "Diese Folge kostet {required} Credits, du hast {balance}.",
+      "failed": "Die Serie konnte nicht gestartet werden.",
+      "creating": "Wird gestartet…",
+      "create": "Serie starten und Folge 1 erstellen",
+      "notFound": "Diese Serie wurde nicht gefunden.",
+      "back": "Zurück zu den Serien",
+      "making": "Folge {n} wird erstellt…",
+      "cast": "Besetzung",
+      "episode": "Folge {n}"
     }
   },
   "tour": {

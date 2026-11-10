@@ -19,7 +19,8 @@
     "accent": "Vurgu rengi",
     "language": "Dil",
     "creditsRemaining": "Kalan kredi — yüklemek için tıkla",
-    "files": "Dosyalarım"
+    "files": "Dosyalarım",
+    "series": "Diziler"
   },
   "howItWorks": {
     "eyebrow": "Nasıl çalışır",
@@ -613,7 +614,8 @@
         "neighbour": "Yeni komşumuz hiç dışarı çıkmıyor",
         "letter": "Annemin eski mektubunda benim adım yazıyordu",
         "basement": "Okulun bodrum katı hep kilitli"
-      }
+      },
+      "seriesLink": "Bölüm bölüm bir dizi mi yapacaksın? Diziler →"
     },
     "outro": {
       "toggle": "Markalı kapanış kartı ekle",
@@ -1167,6 +1169,107 @@
       "tempo": "Tempo",
       "cuts": "Kesim",
       "note": "Başka bir stil ya da şarkının başka bir kısmını denemek için yeni bir edit başlat — kliplerini Dosyalarım'dan seçebilirsin."
+    },
+    "series": {
+      "title": "Diziler",
+      "intro": "Bölüm bölüm devam eden videolar: aynı karakterler, aynı mekânlar, her bölüm merakla biter. Bir dizi başlat, sonraki bölümleri tek tıkla üret.",
+      "start": "Dizi başlat",
+      "mine": "Dizilerim",
+      "loading": "Yükleniyor…",
+      "none": "Henüz bir dizin yok.",
+      "startFirst": "İlk diziyi başlat",
+      "episodes": "{count, plural, one {# bölüm} other {# bölüm}}",
+      "working": "Hazırlanıyor",
+      "viewSeries": "Diziyi gör",
+      "formats": {
+        "story": {
+          "name": "Hikâye dizisi",
+          "short": "Birinci ağızdan dram, gerilim ya da gizem; karakterler kendi sesiyle konuşur.",
+          "body": "Instagram'daki dizi hikâyeler gibi: tuhaf bir ayrıntıyla açılır, karakterler kendi sesleriyle konuşur, her bölüm merakla biter.",
+          "points": {
+            "a": "Yaklaşık 2 dakikalık bölümler, ~45 çekim",
+            "b": "Her karakterin kendi sesi ve sabit yüzü",
+            "c": "Mekânlar ve kadro bölümden bölüme taşınır"
+          }
+        },
+        "outbreak": {
+          "name": "Salgın dizisi",
+          "short": "Bir şehirde başlayan salgın; tek bir hayatta kalanı takip eden gerilim.",
+          "body": "Bir şehirde başlayan salgını tek bir hayatta kalanın gözünden anlatır: haritada yayılan salgın, artan sayaç, her bölüm merakla biter.",
+          "points": {
+            "a": "Haritada yayılan salgın ve enfekte sayacı",
+            "b": "Aynı karakter, her bölümde aynı yüz",
+            "c": "Kan ve vahşet yok, gerilim var"
+          }
+        }
+      },
+      "newTitle": "Yeni dizi",
+      "newIntro": "Önce dizinin fikrini ver. Karakterleri, mekânları ve ilk bölümü yapay zekâ yazar; sonraki bölümler kaldığı yerden devam eder.",
+      "premise": {
+        "story": "Hikâyenin fikri",
+        "outbreak": "Salgın nerede, nasıl başlıyor?"
+      },
+      "genre": "Tür",
+      "genres": {
+        "thriller": "Gerilim",
+        "drama": "Dram",
+        "mystery": "Gizem",
+        "comedy": "Komedi",
+        "romance": "Romantik"
+      },
+      "setting": {
+        "story": "Nerede geçiyor?",
+        "outbreak": "Şehir"
+      },
+      "settingPlaceholder": {
+        "story": "örn. İstanbul'da eski bir apartman",
+        "outbreak": "örn. İstanbul"
+      },
+      "optional": "(isteğe bağlı)",
+      "language": "Dil",
+      "style": "Çizim stili",
+      "motion": "Görüntü",
+      "motions": {
+        "ai_video": {
+          "name": "Hareketli",
+          "hint": "Karakterler konuşur, göz kırpar; her çekim kısa bir animasyon."
+        },
+        "fast_hybrid": {
+          "name": "Görselli",
+          "hint": "Her çekim bir çizim, kamera hareketiyle. Daha ucuz ve hızlı."
+        }
+      },
+      "credits": "{count} kredi",
+      "length": "Bölüm uzunluğu",
+      "lengths": {
+        "short": "Kısa ({seconds} sn)",
+        "medium": "Standart ({seconds} sn)"
+      },
+      "summary": {
+        "title": "Bir bölüm",
+        "length": "Süre",
+        "seconds": "{seconds} sn",
+        "shots": "Çekim",
+        "voices": "Sesler",
+        "voicesValue": {
+          "story": "Karakter başına ayrı",
+          "outbreak": "Anlatıcı"
+        },
+        "time": "Hazırlanma",
+        "minutes": "~{minutes} dk",
+        "cost": "Bölüm başı",
+        "balance": "Bakiyen: {balance} kredi",
+        "next": "Bölüm bitince sayfasında “Sonraki bölümü üret” düğmesi çıkar; aynı karakterler ve mekânlarla devam eder."
+      },
+      "insufficient": "Bu bölüm {required} krediye mal oluyor, sendeyse {balance} var.",
+      "failed": "Dizi başlatılamadı.",
+      "creating": "Başlatılıyor…",
+      "create": "Diziyi başlat ve 1. bölümü üret",
+      "notFound": "Bu dizi bulunamadı.",
+      "back": "Dizilere dön",
+      "making": "{n}. bölüm hazırlanıyor…",
+      "cast": "Kadro",
+      "episode": "{n}. bölüm"
     }
   },
   "tour": {

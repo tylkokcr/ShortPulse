@@ -720,8 +720,11 @@ async def generate_script(
     max_attempts: int = 3,
     script_format: str = "free",
     previous: ScriptOutput | None = None,
+    brief: str | None = None,
 ) -> ScriptOutput:
     """Run the LLM and convert its response into a validated ScriptOutput.
+
+    `brief` is a series' genre and setting, as one line for the writer.
 
     `previous` is the episode this one continues (outbreak series): its
     recap, character and count are where this one starts.
@@ -737,7 +740,7 @@ async def generate_script(
         try:
             return await _generate_script_once(
                 topic, config, raw_script, video_length, language, visual_mode, script_format,
-                previous,
+                previous, brief,
             )
         except ScriptGenerationError as exc:
             last_error = exc
@@ -755,9 +758,12 @@ async def _generate_script_once(
     visual_mode: str = "fast_hybrid",
     script_format: str = "free",
     previous: ScriptOutput | None = None,
+    brief: str | None = None,
 ) -> ScriptOutput:
     system_prompt = _build_system_prompt(video_length, language, visual_mode, script_format)
     user_prompt = _build_user_prompt(topic, raw_script)
+    if brief and not raw_script:
+        user_prompt += f"\n{brief}"
     if previous is not None and not raw_script:
         user_prompt += "\n\n" + _previous_episode(previous)
     facts: list[str] = []
@@ -1904,3 +1910,17 @@ def _to_script_output(
         )
     except ValidationError as exc:
         raise ScriptGenerationError(f"Malformed script structure: {exc}") from exc
+
+
+def series_brief(genre: str | None, setting: str | None) -> str | None:
+    """A series form's genre and setting as a line for the writer. Plain
+    words only: these are typed by a user and go into a prompt."""
+    def clean(text: str | None) -> str:
+        return re.sub(r"[^\w\s,'.-]", "", " ".join((text or "").split()))[:80]
+
+    parts = []
+    if g := clean(genre):
+        parts.append(f"Genre: {g}.")
+    if place := clean(setting):
+        parts.append(f"Set in: {place}.")
+    return " ".join(parts) or None

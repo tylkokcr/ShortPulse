@@ -1,8 +1,9 @@
 "use client";
 
 import clsx from "clsx";
-import { Biohazard, BookOpen, HelpCircle, PenLine, Shuffle } from "lucide-react";
+import { Clapperboard, HelpCircle, PenLine, Shuffle } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { listVisualModes } from "@/lib/api";
 import { useShortPulseStore } from "@/lib/store";
 import type { ScriptFormat, VideoLength } from "@/lib/types";
@@ -51,12 +52,7 @@ const FORMATS: {
 }[] = [
   { id: "free", icon: PenLine },
   { id: "what_if", icon: HelpCircle, artStyle: "flat" },
-  // A series with one recurring character: the 3D toon look carries a face
-  // from scene to scene best.
-  { id: "outbreak", icon: Biohazard, artStyle: "toon3d" },
-  // Episodes of about two minutes in the serialised-story look; any other
-  // style can be picked afterwards.
-  { id: "story", icon: BookOpen, artStyle: "vector", videoLength: "medium", animated: true },
+  // The series formats (outbreak, story) are started from app/series.
 ];
 
 const DEFAULT_ART_STYLE = useShortPulseStore.getInitialState().draft.artStyle;
@@ -132,6 +128,14 @@ export function ScriptEditor() {
           ))}
         </div>
         <p className="mt-1.5 text-xs text-white/40">{t(`formats.${draft.scriptFormat}.hint`)}</p>
+        {/* Series are made in episodes and have their own place. */}
+        <Link
+          href="/series"
+          className="mt-2 inline-flex items-center gap-1.5 text-xs text-accent hover:underline"
+        >
+          <Clapperboard size={12} />
+          {t("seriesLink")}
+        </Link>
       </div>
 
       <div>

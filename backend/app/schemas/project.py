@@ -633,6 +633,11 @@ class ProjectConfig(BaseModel):
     # and character are read, and its character sheet is reused, so the
     # story and the face carry on. Checked to be the caller's own project.
     continues_from: str | None = Field(default=None, pattern=r"^[0-9a-fA-F-]{36}$")
+    # A series' brief beyond its premise, from the series form: the genre
+    # ("thriller", "comedy"…) and where it is set ("İstanbul", "a small
+    # seaside town"). Read by the script writer; a later episode keeps them.
+    series_genre: str | None = Field(default=None, max_length=40)
+    series_setting: str | None = Field(default=None, max_length=80)
     # Set only on uploads, and only when the caller asked for a dub: the
     # language the video should come out speaking. `language` above stays
     # what it always was, the language the source is *in*, because the

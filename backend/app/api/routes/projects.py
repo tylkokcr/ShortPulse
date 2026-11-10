@@ -102,6 +102,8 @@ async def create_project(
             )
         config.script_format = ScriptFormat(str(previous.config.script_format))
         config.language = previous.config.language
+        config.series_genre = previous.config.series_genre
+        config.series_setting = previous.config.series_setting
 
     # Refuse to sell a mode this install cannot run.
     #

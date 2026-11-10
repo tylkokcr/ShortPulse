@@ -39,7 +39,7 @@ export function AppShell({
   /** A key under `nav`, not a label. The rail names these four screens
    *  from the catalogue; passing a literal here printed "Library" next to
    *  a rail reading "Kütüphane". */
-  section: "studio" | "library" | "files" | "connections" | "credits" | "project";
+  section: "studio" | "series" | "library" | "files" | "connections" | "credits" | "project";
   children: React.ReactNode;
   wide?: boolean;
   actions?: React.ReactNode;

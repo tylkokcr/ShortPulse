@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Coins, FolderOpen, Github, Library, Menu, Share2, Wand2, X } from "lucide-react";
+import { Clapperboard, Coins, FolderOpen, Github, Library, Menu, Share2, Wand2, X } from "lucide-react";
 import clsx from "clsx";
 import { useTranslations } from "next-intl";
 import { AccentSwitcher } from "@/components/ui/AccentSwitcher";
@@ -92,6 +92,15 @@ export function MobileNav({ showLibrary }: { showLibrary: boolean }) {
                   icon={Wand2}
                   label={t("studio")}
                   active={here("/")}
+                  onNavigate={() => setOpen(false)}
+                />
+              )}
+              {showLibrary && (
+                <MobileLink
+                  href="/series"
+                  icon={Clapperboard}
+                  label={t("series")}
+                  active={here("/series")}
                   onNavigate={() => setOpen(false)}
                 />
               )}

@@ -286,6 +286,9 @@ export interface ProjectConfig {
   info_graphics?: boolean | null;
   /** The episode this one continues (outbreak series). */
   continues_from?: string | null;
+  /** A series' genre and setting, from the series form. */
+  series_genre?: string | null;
+  series_setting?: string | null;
   music: MusicConfig;
   outro: OutroConfig;
   created_at: string;
