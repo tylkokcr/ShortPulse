@@ -1672,6 +1672,13 @@ def _card(raw: object) -> IdCard | None:
     return IdCard(title=title, rows=rows[:4])
 
 
+def _as_int(value: object) -> int:
+    try:
+        return int(value)  # type: ignore[call-overload]
+    except (TypeError, ValueError):
+        return 0
+
+
 def _counter(raw: object, rising: bool = False) -> GraphicCounter | None:
     if not isinstance(raw, dict):
         return None
@@ -1827,7 +1834,15 @@ def _to_script_output(
     # the model: in the first two real cards it listed a stock exchange
     # and a river and counted Japan's sea area, whatever the rules said.
     card = _card(parsed.get("card"))
-    counter = _counter(parsed.get("counter"), rising=script_format == "outbreak")
+    # An outbreak's count rises — in the outbreak format, and in a story
+    # whose genre is an outbreak (its counter says so by rising).
+    raw_counter = parsed.get("counter")
+    rising = script_format == "outbreak" or (
+        script_format == "story"
+        and isinstance(raw_counter, dict)
+        and _as_int(raw_counter.get("end")) > _as_int(raw_counter.get("start"))
+    )
+    counter = _counter(raw_counter, rising=rising)
     vanished = next(
         (s.map.focus[0] for s in scenes if s.map and s.map.action == "vanish" and s.map.focus),
         None,
@@ -1866,6 +1881,8 @@ def _to_script_output(
     character = _character(parsed.get("character")) if script_format == "outbreak" else None
     if character:
         _mark_hero_scenes(scenes, character.name)
+    if script_format == "story" and any(s.map for s in scenes):
+        _limit_outbreak_maps(scenes)
     if script_format == "outbreak":
         _limit_outbreak_maps(scenes)
         if counter is None:
@@ -1912,14 +1929,53 @@ def _to_script_output(
         raise ScriptGenerationError(f"Malformed script structure: {exc}") from exc
 
 
+# What a brief's genre or kind asks of the writer, beyond its name.
+_BRIEFS = {
+    # A story series' outbreak genre: the outbreak format's graphics, in a
+    # story with a cast and dialogue.
+    "outbreak": (
+        "Genre: a zombie-style outbreak thriller. Besides the cast, also add: in two scenes "
+        "(never the first, never back to back) a \"map\" of the spread — {\"focus\": "
+        "[\"<the country, in English>\"], \"action\": \"spread\", \"places\": [{\"name\": "
+        "\"<in the script's language>\", \"lat\": .., \"lon\": ..}]} with where it started "
+        "first; a top-level \"counter\" of the infected, rising — {\"label\": \"<Infected, in "
+        "the script's language>\", \"start\": <small>, \"end\": <thousands>}; and on the "
+        "scenes that jump in time a \"chapter\" with the day and time (\"DAY 1 · 03:12\"). "
+        "The infected are only ever silhouettes and shadows."
+    ),
+    # What if? kinds.
+    "place": (
+        "Kind: a real country, city or place vanishes or changes. Use maps for the geography "
+        "as the rules say."
+    ),
+    "science": (
+        "Kind: nature and science — a law of nature, a body in space, a species, the climate. "
+        "No maps; tell it with the physical consequences, in the order they would arrive."
+    ),
+    "history": (
+        "Kind: alternate history — one thing in the past went differently. Open on the moment "
+        "it changed, then show how today would differ, decade by decade. Chapter titles are "
+        "years. Maps only if a real country's borders are the point."
+    ),
+    "life": (
+        "Kind: everyday life — a change in how people live (no money, one language, no sleep). "
+        "Tell it through the viewer's own day: morning, work, food, phone, friends. No maps."
+    ),
+}
+
+
 def series_brief(genre: str | None, setting: str | None) -> str | None:
-    """A series form's genre and setting as a line for the writer. Plain
+    """A form's genre (or What if? kind) and setting as lines for the
+    writer. A known key brings its own instructions; anything else is plain
     words only: these are typed by a user and go into a prompt."""
     def clean(text: str | None) -> str:
         return re.sub(r"[^\w\s,'.-]", "", " ".join((text or "").split()))[:80]
 
     parts = []
-    if g := clean(genre):
+    key = (genre or "").strip().lower()
+    if key in _BRIEFS:
+        parts.append(_BRIEFS[key])
+    elif g := clean(genre):
         parts.append(f"Genre: {g}.")
     if place := clean(setting):
         parts.append(f"Set in: {place}.")

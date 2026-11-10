@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { Clapperboard, HelpCircle, PenLine, Shuffle } from "lucide-react";
+import { Clapperboard, PenLine, Shuffle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { listVisualModes } from "@/lib/api";
@@ -51,7 +51,6 @@ const FORMATS: {
   animated?: boolean;
 }[] = [
   { id: "free", icon: PenLine },
-  { id: "what_if", icon: HelpCircle, artStyle: "flat" },
   // The series formats (outbreak, story) are started from app/series.
 ];
 

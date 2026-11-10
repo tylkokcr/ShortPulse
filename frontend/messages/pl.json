@@ -20,7 +20,7 @@
     "language": "Język",
     "creditsRemaining": "Pozostałe kredyty — kliknij, by doładować",
     "files": "Moje pliki",
-    "series": "Seriale"
+    "series": "Formaty"
   },
   "howItWorks": {
     "eyebrow": "Jak to działa",
@@ -1171,7 +1171,7 @@
       "note": "Aby wypróbować inny styl lub fragment utworu, zacznij nowy montaż — klipy wybierzesz z Moich plików."
     },
     "series": {
-      "title": "Seriale",
+      "title": "Formaty",
       "intro": "Filmy, które toczą się odcinek po odcinku: te same postacie i miejsca, każdy odcinek kończy się w napięciu. Zacznij serial, kolejne odcinki robisz jednym kliknięciem.",
       "start": "Zacznij serial",
       "mine": "Moje seriale",
@@ -1201,13 +1201,24 @@
             "b": "Ta sama postać, ta sama twarz w każdym odcinku",
             "c": "Napięcie bez drastycznych scen"
           }
+        },
+        "what_if": {
+          "name": "Co by było?",
+          "short": "Założenie i jego rosnące skutki; jeden film.",
+          "body": "Jeden film o założeniu: intrygujące pytania, prawdziwe fakty i grafiki.",
+          "points": {
+            "a": "Places, science, history or everyday life",
+            "b": "Real facts, counters and lists",
+            "c": "~45s, narrated"
+          }
         }
       },
       "newTitle": "Nowy serial",
       "newIntro": "Podaj pomysł. AI napisze postacie, miejsca i pierwszy odcinek; każdy kolejny zaczyna się tam, gdzie skończył poprzedni.",
       "premise": {
         "story": "Pomysł na historię",
-        "outbreak": "Gdzie i jak się zaczyna?"
+        "outbreak": "Gdzie i jak się zaczyna?",
+        "what_if": "Założenie"
       },
       "genre": "Gatunek",
       "genres": {
@@ -1215,7 +1226,8 @@
         "drama": "Dramat",
         "mystery": "Zagadka",
         "comedy": "Komedia",
-        "romance": "Romans"
+        "romance": "Romans",
+        "outbreak": "Epidemia / apokalipsa"
       },
       "setting": {
         "story": "Gdzie się dzieje?",
@@ -1253,7 +1265,8 @@
         "voices": "Głosy",
         "voicesValue": {
           "story": "Osobny dla każdej postaci",
-          "outbreak": "Narrator"
+          "outbreak": "Narrator",
+          "what_if": "Narrator"
         },
         "time": "Przygotowanie",
         "minutes": "~{minutes} min",
@@ -1269,7 +1282,51 @@
       "back": "Wróć do seriali",
       "making": "Odcinek {n} w przygotowaniu…",
       "cast": "Obsada",
-      "episode": "Odcinek {n}"
+      "episode": "Odcinek {n}",
+      "kind": "Rodzaj",
+      "createWhatIf": "Zrób film",
+      "kinds": {
+        "place": {
+          "name": "Country / city",
+          "hint": "With maps: if a place vanished",
+          "placeholder": "e.g. What if Japan vanished overnight?",
+          "try": {
+            "turkey": "What if Turkey vanished?",
+            "japan": "What if Japan disappeared?",
+            "italy": "What if Italy vanished overnight?"
+          }
+        },
+        "science": {
+          "name": "Nature & science",
+          "hint": "The Moon, the Sun, climate, life",
+          "placeholder": "e.g. What if the Moon vanished?",
+          "try": {
+            "moon": "What if the Moon vanished?",
+            "spin": "What if Earth stopped spinning?",
+            "sun": "What if the Sun went out for an hour?"
+          }
+        },
+        "history": {
+          "name": "Alternate history",
+          "hint": "If one thing in the past went differently",
+          "placeholder": "e.g. What if the internet was never invented?",
+          "try": {
+            "ottoman": "What if the Ottoman Empire never fell?",
+            "internet": "What if the internet was never invented?",
+            "rome": "What if Rome never fell?"
+          }
+        },
+        "life": {
+          "name": "Everyday life",
+          "hint": "If the way we live changed",
+          "placeholder": "e.g. What if money didn't exist?",
+          "try": {
+            "money": "What if there was no money?",
+            "language": "What if everyone spoke one language?",
+            "sleep": "What if nobody needed sleep?"
+          }
+        }
+      }
     }
   },
   "tour": {

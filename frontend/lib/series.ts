@@ -52,8 +52,16 @@ export function seriesOf(all: Series[], projectId: string): Series | undefined {
   return all.find((s) => s.episodes.some((e) => e.config.id === projectId));
 }
 
-/** What a format's episode is, for the form's summary. */
-export const EPISODE_SHAPE: Record<SeriesFormat, Record<"short" | "medium", { seconds: string; shots: string }>> = {
+/** The formats started from the Formats page: a one-off What if? and the
+ *  story series (an outbreak is one of its genres now). */
+export type FormatChoice = "what_if" | "story";
+
+/** What one video of a format is, for the form's summary. */
+export const EPISODE_SHAPE: Record<
+  SeriesFormat | "what_if",
+  Record<"short" | "medium", { seconds: string; shots: string }>
+> = {
   story: { short: { seconds: "~60", shots: "18-24" }, medium: { seconds: "~120", shots: "38-48" } },
   outbreak: { short: { seconds: "~45", shots: "7-8" }, medium: { seconds: "~75", shots: "11-13" } },
+  what_if: { short: { seconds: "~45", shots: "9-11" }, medium: { seconds: "~75", shots: "14-17" } },
 };

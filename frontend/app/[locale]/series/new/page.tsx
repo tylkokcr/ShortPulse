@@ -5,19 +5,19 @@ import clsx from "clsx";
 import {
   ArrowRight,
   BookOpen,
-  Biohazard,
   Check,
   Clapperboard,
   Clock,
   Coins,
   Film,
+  HelpCircle,
   Image as ImageIcon,
   Shuffle,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { createProject, getCredits, InsufficientCreditsError, listArtStyles } from "@/lib/api";
-import { EPISODE_SHAPE, isSeriesFormat, type SeriesFormat } from "@/lib/series";
+import { EPISODE_SHAPE, type FormatChoice } from "@/lib/series";
 import { LANGUAGE_OPTIONS, type ArtStyle, type CreditSummary } from "@/lib/types";
 import { useArtStyleText } from "@/lib/artStyleText";
 import { AppShell } from "@/components/layout/AppShell";
@@ -39,8 +39,17 @@ export default function NewSeriesPage() {
   );
 }
 
-const GENRES = ["thriller", "drama", "mystery", "comedy", "romance"] as const;
-const STYLE_DEFAULT: Record<SeriesFormat, string> = { story: "vector", outbreak: "toon3d" };
+const GENRES = ["thriller", "drama", "mystery", "comedy", "romance", "outbreak"] as const;
+// What if? kinds: the map is one of them, not the format.
+const KINDS = ["place", "science", "history", "life"] as const;
+const KIND_SUGGESTIONS: Record<(typeof KINDS)[number], readonly string[]> = {
+  place: ["turkey", "japan", "italy"],
+  science: ["moon", "spin", "sun"],
+  history: ["ottoman", "internet", "rome"],
+  life: ["money", "language", "sleep"],
+};
+const STYLE_DEFAULT: Record<FormatChoice, string> = { story: "vector", what_if: "flat" };
+const FORMAT_ICONS = { what_if: HelpCircle, story: BookOpen } as const;
 // Photographs of people in a drama read as deepfakes; pixel art cannot act.
 const STYLE_HIDDEN = new Set(["photoreal", "pixel"]);
 const SERIES_LANGUAGES = new Set(["tr", "en", "pl", "de"]);
@@ -55,17 +64,19 @@ function NewSeries() {
   const locale = useLocale();
   const router = useRouter();
 
-  const [format, setFormat] = useState<SeriesFormat>(() => {
+  const [format, setFormat] = useState<FormatChoice>(() => {
     if (typeof window === "undefined") return "story";
     const asked = new URLSearchParams(window.location.search).get("format");
-    return isSeriesFormat(asked ?? "") ? (asked as SeriesFormat) : "story";
+    return asked === "what_if" ? "what_if" : "story";
   });
+  const [kind, setKind] = useState<(typeof KINDS)[number]>("place");
   const [topic, setTopic] = useState("");
   const [genre, setGenre] = useState<string>("thriller");
   const [setting, setSetting] = useState("");
   const [language, setLanguage] = useState(SERIES_LANGUAGES.has(locale) ? locale : "en");
   const [style, setStyle] = useState(STYLE_DEFAULT[format]);
-  const [mode, setMode] = useState<Mode>("ai_video");
+  // A story is animated by default; a What if? is stills, as it always was.
+  const [mode, setMode] = useState<Mode>(format === "story" ? "ai_video" : "fast_hybrid");
   const [length, setLength] = useState<Length>("medium");
   const [styles, setStyles] = useState<ArtStyle[]>([]);
   const [credits, setCredits] = useState<CreditSummary | null>(null);
@@ -77,9 +88,10 @@ function NewSeries() {
     getCredits().then(setCredits).catch(() => setCredits(null));
   }, []);
 
-  function pickFormat(next: SeriesFormat) {
+  function pickFormat(next: FormatChoice) {
     setFormat(next);
     setStyle(STYLE_DEFAULT[next]);
+    setMode(next === "story" ? "ai_video" : "fast_hybrid");
     const url = new URL(window.location.href);
     url.searchParams.set("format", next);
     window.history.replaceState(null, "", url);
@@ -91,10 +103,7 @@ function NewSeries() {
   }, [credits, format, mode, length]);
   const shape = EPISODE_SHAPE[format][length];
   const suggestions =
-    format === "story"
-      ? (["kitchen", "neighbour", "letter", "basement"] as const)
-      : (["city", "school", "island", "metro"] as const);
-  const suggestionKey = format === "story" ? "storySuggestions" : "outbreakSuggestions";
+    format === "story" ? (["kitchen", "neighbour", "letter", "basement"] as const) : KIND_SUGGESTIONS[kind];
 
   async function start() {
     setBusy(true);
@@ -108,8 +117,10 @@ function NewSeries() {
         visual_mode: mode,
         video_length: length,
         aspect_ratio: "9:16",
-        series_genre: format === "story" ? genre : null,
-        series_setting: setting.trim() || null,
+        // What if? carries its kind the way a series carries its genre.
+        series_genre: format === "story" ? genre : kind,
+        series_setting: format === "story" ? setting.trim() || null : null,
+        info_graphics: format === "what_if" ? true : null,
       });
       router.push(`/project/${created.config.id}`);
     } catch (err) {
@@ -135,8 +146,8 @@ function NewSeries() {
         <div className="flex flex-col gap-4">
           {/* Which kind of series */}
           <div className="grid grid-cols-2 gap-3">
-            {(["story", "outbreak"] as const).map((id) => {
-              const Icon = id === "story" ? BookOpen : Biohazard;
+            {(["what_if", "story"] as const).map((id) => {
+              const Icon = FORMAT_ICONS[id];
               return (
                 <button
                   key={id}
@@ -163,15 +174,43 @@ function NewSeries() {
           </div>
 
           <Card className="flex flex-col gap-5 border-border-strong bg-surface-raised">
+            {/* What if? kind */}
+            {format === "what_if" && (
+              <div>
+                <span className="mb-1.5 block text-sm font-medium text-white/70">{t("kind")}</span>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {KINDS.map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setKind(k)}
+                      aria-pressed={kind === k}
+                      className={clsx(
+                        "rounded-lg border p-2.5 text-left transition-colors",
+                        kind === k
+                          ? "border-accent/60 bg-accent/[0.08]"
+                          : "border-border hover:border-border-strong"
+                      )}
+                    >
+                      <span className="block text-xs font-medium">{t(`kinds.${k}.name`)}</span>
+                      <span className="mt-0.5 block text-[11px] leading-snug text-white/40">
+                        {t(`kinds.${k}.hint`)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Premise */}
             <div>
               <label className="mb-1.5 block text-sm font-medium text-white/70">
-                {t(`premise.${format}`)}
+                {t(format === "story" ? "premise.story" : "premise.what_if")}
               </label>
               <input
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                placeholder={tsc(format === "story" ? "storyPlaceholder" : "outbreakPlaceholder")}
+                placeholder={format === "story" ? tsc("storyPlaceholder") : t(`kinds.${kind}.placeholder`)}
                 maxLength={200}
                 className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent"
               />
@@ -184,10 +223,12 @@ function NewSeries() {
                   <button
                     key={id}
                     type="button"
-                    onClick={() => setTopic(tsc(`${suggestionKey}.${id}`))}
+                    onClick={() =>
+                      setTopic(format === "story" ? tsc(`storySuggestions.${id}`) : t(`kinds.${kind}.try.${id}`))
+                    }
                     className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] text-white/50 transition-colors hover:border-accent/50 hover:bg-accent/10 hover:text-white"
                   >
-                    {tsc(`${suggestionKey}.${id}`)}
+                    {format === "story" ? tsc(`storySuggestions.${id}`) : t(`kinds.${kind}.try.${id}`)}
                   </button>
                 ))}
               </div>
@@ -220,19 +261,23 @@ function NewSeries() {
 
             {/* Setting + language */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_160px]">
+              {format === "story" ? (
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-white/70">
-                  {t(`setting.${format}`)}{" "}
+                  {t(genre === "outbreak" ? "setting.outbreak" : "setting.story")}{" "}
                   <span className="text-white/35">{t("optional")}</span>
                 </label>
                 <input
                   value={setting}
                   onChange={(e) => setSetting(e.target.value)}
-                  placeholder={t(`settingPlaceholder.${format}`)}
+                  placeholder={t(genre === "outbreak" ? "settingPlaceholder.outbreak" : "settingPlaceholder.story")}
                   maxLength={80}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent"
                 />
               </div>
+              ) : (
+                <div />
+              )}
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-white/70">{t("language")}</label>
                 <select
@@ -390,10 +435,12 @@ function NewSeries() {
             disabled={busy || topic.trim().length < 3}
             className="w-full"
           >
-            {busy ? t("creating") : t("create")}
+            {busy ? t("creating") : t(format === "story" ? "create" : "createWhatIf")}
             {!busy && <ArrowRight size={15} />}
           </Button>
-          <p className="text-[11px] leading-relaxed text-white/35">{t("summary.next")}</p>
+          {format === "story" && (
+            <p className="text-[11px] leading-relaxed text-white/35">{t("summary.next")}</p>
+          )}
         </Card>
       </div>
     </AppShell>

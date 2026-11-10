@@ -20,7 +20,7 @@
     "language": "Sprache",
     "creditsRemaining": "Verbleibende Credits — zum Aufladen klicken",
     "files": "Meine Dateien",
-    "series": "Serien"
+    "series": "Formate"
   },
   "howItWorks": {
     "eyebrow": "So funktioniert es",
@@ -1171,7 +1171,7 @@
       "note": "Um einen anderen Stil oder Songteil zu probieren, starte einen neuen Edit — deine Clips kannst du aus Meinen Dateien wählen."
     },
     "series": {
-      "title": "Serien",
+      "title": "Formate",
       "intro": "Videos, die Folge für Folge weitergehen: dieselben Figuren und Orte, jede Folge endet mit einem Cliffhanger. Starte eine Serie, jede weitere Folge mit einem Klick.",
       "start": "Serie starten",
       "mine": "Meine Serien",
@@ -1201,13 +1201,24 @@
             "b": "Dieselbe Figur, dasselbe Gesicht in jeder Folge",
             "c": "Spannung, kein Blut"
           }
+        },
+        "what_if": {
+          "name": "Was wäre, wenn?",
+          "short": "Eine Annahme und ihre wachsenden Folgen; ein Video.",
+          "body": "Ein Video über eine Annahme: spannende Fragen, echte Fakten und Grafiken.",
+          "points": {
+            "a": "Places, science, history or everyday life",
+            "b": "Real facts, counters and lists",
+            "c": "~45s, narrated"
+          }
         }
       },
       "newTitle": "Neue Serie",
       "newIntro": "Gib die Idee vor. Die KI schreibt Figuren, Orte und die erste Folge; jede weitere setzt dort an, wo die letzte endete.",
       "premise": {
         "story": "Die Idee der Geschichte",
-        "outbreak": "Wo und wie beginnt es?"
+        "outbreak": "Wo und wie beginnt es?",
+        "what_if": "Die Annahme"
       },
       "genre": "Genre",
       "genres": {
@@ -1215,7 +1226,8 @@
         "drama": "Drama",
         "mystery": "Rätsel",
         "comedy": "Komödie",
-        "romance": "Romanze"
+        "romance": "Romanze",
+        "outbreak": "Ausbruch / Apokalypse"
       },
       "setting": {
         "story": "Wo spielt es?",
@@ -1253,7 +1265,8 @@
         "voices": "Stimmen",
         "voicesValue": {
           "story": "Eine pro Figur",
-          "outbreak": "Erzähler"
+          "outbreak": "Erzähler",
+          "what_if": "Erzähler"
         },
         "time": "Erstellt in",
         "minutes": "~{minutes} Min.",
@@ -1269,7 +1282,51 @@
       "back": "Zurück zu den Serien",
       "making": "Folge {n} wird erstellt…",
       "cast": "Besetzung",
-      "episode": "Folge {n}"
+      "episode": "Folge {n}",
+      "kind": "Art",
+      "createWhatIf": "Video erstellen",
+      "kinds": {
+        "place": {
+          "name": "Country / city",
+          "hint": "With maps: if a place vanished",
+          "placeholder": "e.g. What if Japan vanished overnight?",
+          "try": {
+            "turkey": "What if Turkey vanished?",
+            "japan": "What if Japan disappeared?",
+            "italy": "What if Italy vanished overnight?"
+          }
+        },
+        "science": {
+          "name": "Nature & science",
+          "hint": "The Moon, the Sun, climate, life",
+          "placeholder": "e.g. What if the Moon vanished?",
+          "try": {
+            "moon": "What if the Moon vanished?",
+            "spin": "What if Earth stopped spinning?",
+            "sun": "What if the Sun went out for an hour?"
+          }
+        },
+        "history": {
+          "name": "Alternate history",
+          "hint": "If one thing in the past went differently",
+          "placeholder": "e.g. What if the internet was never invented?",
+          "try": {
+            "ottoman": "What if the Ottoman Empire never fell?",
+            "internet": "What if the internet was never invented?",
+            "rome": "What if Rome never fell?"
+          }
+        },
+        "life": {
+          "name": "Everyday life",
+          "hint": "If the way we live changed",
+          "placeholder": "e.g. What if money didn't exist?",
+          "try": {
+            "money": "What if there was no money?",
+            "language": "What if everyone spoke one language?",
+            "sleep": "What if nobody needed sleep?"
+          }
+        }
+      }
     }
   },
   "tour": {

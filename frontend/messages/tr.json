@@ -20,7 +20,7 @@
     "language": "Dil",
     "creditsRemaining": "Kalan kredi — yüklemek için tıkla",
     "files": "Dosyalarım",
-    "series": "Diziler"
+    "series": "Formatlar"
   },
   "howItWorks": {
     "eyebrow": "Nasıl çalışır",
@@ -1171,7 +1171,7 @@
       "note": "Başka bir stil ya da şarkının başka bir kısmını denemek için yeni bir edit başlat — kliplerini Dosyalarım'dan seçebilirsin."
     },
     "series": {
-      "title": "Diziler",
+      "title": "Formatlar",
       "intro": "Bölüm bölüm devam eden videolar: aynı karakterler, aynı mekânlar, her bölüm merakla biter. Bir dizi başlat, sonraki bölümleri tek tıkla üret.",
       "start": "Dizi başlat",
       "mine": "Dizilerim",
@@ -1201,13 +1201,24 @@
             "b": "Aynı karakter, her bölümde aynı yüz",
             "c": "Kan ve vahşet yok, gerilim var"
           }
+        },
+        "what_if": {
+          "name": "Ne olurdu?",
+          "short": "Bir varsayım ve zamanla büyüyen sonuçları; tek video.",
+          "body": "Bir varsayımı merak uyandıran sorularla, gerçek bilgiler ve grafiklerle anlatan tek video.",
+          "points": {
+            "a": "Ülke, bilim, tarih ya da gündelik hayat",
+            "b": "Gerçek bilgiler, sayaçlar ve listeler",
+            "c": "~45 sn, anlatıcı sesiyle"
+          }
         }
       },
       "newTitle": "Yeni dizi",
       "newIntro": "Önce dizinin fikrini ver. Karakterleri, mekânları ve ilk bölümü yapay zekâ yazar; sonraki bölümler kaldığı yerden devam eder.",
       "premise": {
         "story": "Hikâyenin fikri",
-        "outbreak": "Salgın nerede, nasıl başlıyor?"
+        "outbreak": "Salgın nerede, nasıl başlıyor?",
+        "what_if": "Varsayım"
       },
       "genre": "Tür",
       "genres": {
@@ -1215,7 +1226,8 @@
         "drama": "Dram",
         "mystery": "Gizem",
         "comedy": "Komedi",
-        "romance": "Romantik"
+        "romance": "Romantik",
+        "outbreak": "Salgın / kıyamet"
       },
       "setting": {
         "story": "Nerede geçiyor?",
@@ -1253,7 +1265,8 @@
         "voices": "Sesler",
         "voicesValue": {
           "story": "Karakter başına ayrı",
-          "outbreak": "Anlatıcı"
+          "outbreak": "Anlatıcı",
+          "what_if": "Anlatıcı"
         },
         "time": "Hazırlanma",
         "minutes": "~{minutes} dk",
@@ -1269,7 +1282,51 @@
       "back": "Dizilere dön",
       "making": "{n}. bölüm hazırlanıyor…",
       "cast": "Kadro",
-      "episode": "{n}. bölüm"
+      "episode": "{n}. bölüm",
+      "kind": "Tür",
+      "createWhatIf": "Videoyu üret",
+      "kinds": {
+        "place": {
+          "name": "Ülke / şehir",
+          "hint": "Haritalı: bir yer yok olsaydı",
+          "placeholder": "örn. Japonya bir gece haritadan silinseydi?",
+          "try": {
+            "turkey": "Türkiye haritadan silinseydi?",
+            "japan": "Japonya yok olsaydı?",
+            "italy": "İtalya bir gecede kaybolsaydı?"
+          }
+        },
+        "science": {
+          "name": "Doğa ve bilim",
+          "hint": "Ay, Güneş, iklim, canlılar",
+          "placeholder": "örn. Ay bir gecede yok olsaydı?",
+          "try": {
+            "moon": "Ay yok olsaydı?",
+            "spin": "Dünya dönmeyi bıraksaydı?",
+            "sun": "Güneş bir saatliğine sönseydi?"
+          }
+        },
+        "history": {
+          "name": "Alternatif tarih",
+          "hint": "Geçmişte bir şey farklı olsaydı",
+          "placeholder": "örn. İnternet hiç icat edilmeseydi?",
+          "try": {
+            "ottoman": "Osmanlı hiç dağılmasaydı?",
+            "internet": "İnternet hiç icat edilmeseydi?",
+            "rome": "Roma hiç yıkılmasaydı?"
+          }
+        },
+        "life": {
+          "name": "Gündelik hayat",
+          "hint": "Yaşayış biçimi değişseydi",
+          "placeholder": "örn. Para diye bir şey olmasaydı?",
+          "try": {
+            "money": "Para olmasaydı?",
+            "language": "Herkes aynı dili konuşsaydı?",
+            "sleep": "Kimse uyumak zorunda olmasaydı?"
+          }
+        }
+      }
     }
   },
   "tour": {

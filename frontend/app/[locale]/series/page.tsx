@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, BookOpen, Biohazard, Clapperboard, Plus } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { ArrowRight, BookOpen, Clapperboard, HelpCircle, Plus } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { listProjects } from "@/lib/api";
-import { groupSeries, type Series, type SeriesFormat } from "@/lib/series";
+import { groupSeries, type FormatChoice, type Series } from "@/lib/series";
 import { AppShell } from "@/components/layout/AppShell";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { Card } from "@/components/ui/Card";
@@ -14,9 +14,11 @@ import { Reveal } from "@/components/ui/Reveal";
 import { SeriesCard } from "@/components/series/SeriesCard";
 
 /**
- * Series: videos made in episodes, with a cast and places that carry over.
+ * Formats: the kinds of video with rules and a look of their own — a one-off
+ * What if?, and story series made in episodes, whose cast and places carry
+ * over.
  *
- * Their own place rather than two more chips in the studio's format row:
+ * Their own place rather than more chips in the studio's format row:
  * a series is something you come back to — episode two tomorrow — and
  * what you choose when starting one (a genre, a city, a look for people
  * you will see forty times) is not what a one-off video asks.
@@ -29,13 +31,20 @@ export default function SeriesPage() {
   );
 }
 
-const FORMATS: { id: SeriesFormat; icon: typeof BookOpen }[] = [
+// An outbreak is a story genre now, chosen in the story form.
+const FORMATS: { id: FormatChoice; icon: typeof BookOpen }[] = [
+  { id: "what_if", icon: HelpCircle },
   { id: "story", icon: BookOpen },
-  { id: "outbreak", icon: Biohazard },
 ];
+const WHAT_IF_SAMPLES = new Set(["tr", "en", "pl", "de"]);
 
 function SeriesHub() {
   const t = useTranslations("app.series");
+  const locale = useLocale();
+  const sample = (id: FormatChoice) =>
+    id === "what_if"
+      ? `/showcase/whatif-${WHAT_IF_SAMPLES.has(locale) ? locale : "en"}`
+      : `/series/${id}`;
   const [series, setSeries] = useState<Series[] | null>(null);
 
   useEffect(() => {
@@ -56,8 +65,8 @@ function SeriesHub() {
           <Reveal key={format.id} delay={i * 80}>
             <Card className="flex h-full flex-col gap-4 overflow-hidden p-0 sm:flex-row">
               <video
-                src={`/series/${format.id}.mp4`}
-                poster={`/series/${format.id}.jpg`}
+                src={`${sample(format.id)}.mp4`}
+                poster={`${sample(format.id)}.jpg`}
                 muted
                 loop
                 autoPlay
