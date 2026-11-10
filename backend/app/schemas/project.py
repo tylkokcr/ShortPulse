@@ -187,6 +187,9 @@ class SceneVisual(BaseModel):
     # timed — render_manager sums it into timings.json, where the rest of
     # the stage's cost already lives.
     predict_time_s: float | None = None
+    # Which model actually drew the picture — a story shot can fall back
+    # from its references to weaker ones, and the faces with it.
+    drawn_with: str | None = Field(default=None, max_length=80)
     # How many times this scene's visual has been re-rolled since the
     # render. Three jobs, which is why it is a count and not a flag: it
     # keys the charge so a retried request is free and a second re-roll is

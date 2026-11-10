@@ -1020,22 +1020,28 @@ async def _generate_replicate_image(
     style = style or art_styles.DEFAULT_ART_STYLE
 
     if shot_model and ((place is not None and place.is_file()) or references):
-        try:
-            prediction = await _replicate_predict(
-                {
-                    "version": shot_model,
-                    "input": _story_shot_input(scene, style, size, place, references or []),
-                },
-                settings,
-            )
-            await _download(_replicate_output_url(prediction), output_path)
-            scene.visual.predict_time_s = (prediction.get("metrics") or {}).get("predict_time")
-            return output_path
-        except Exception:
-            logger.warning(
-                "Story shot %s could not be drawn from its references; trying Kontext",
-                scene.index, exc_info=True,
-            )
+        # Asked three times before falling back: the fallbacks are what drew
+        # strangers in a husband's place (a suit, a brown jacket, a
+        # different cartoon) — they do not hold a face from a sheet.
+        for attempt in range(3):
+            try:
+                prediction = await _replicate_predict(
+                    {
+                        "version": shot_model,
+                        "input": _story_shot_input(scene, style, size, place, references or []),
+                    },
+                    settings,
+                )
+                await _download(_replicate_output_url(prediction), output_path)
+                scene.visual.predict_time_s = (prediction.get("metrics") or {}).get("predict_time")
+                scene.visual.drawn_with = shot_model
+                return output_path
+            except Exception:
+                logger.warning(
+                    "Story shot %s could not be drawn from its references (attempt %d/3)",
+                    scene.index, attempt + 1, exc_info=True,
+                )
+                await asyncio.sleep(5 * (attempt + 1))
 
     # The people in this picture, as character sheets: a story's cast in
     # frame (up to two), or an outbreak's survivor in a hero scene.
@@ -1043,16 +1049,22 @@ async def _generate_replicate_image(
     if not sheets and reference is not None and scene.hero and reference.is_file():
         sheets = [reference]
     if sheets:
+        # A story's cast falls back to Kontext Pro, not Dev: Dev let faces
+        # drift from the sheet ("Japanese men" in a Turkish kitchen).
+        reference_model = (
+            "black-forest-labs/flux-kontext-pro" if references else settings.replicate_reference_model
+        )
         try:
             prediction = await _replicate_predict(
                 {
-                    "version": settings.replicate_reference_model,
+                    "version": reference_model,
                     "input": _reference_input(scene, style, size, sheets, tense=not references),
                 },
                 settings,
             )
             await _download(_replicate_output_url(prediction), output_path)
             scene.visual.predict_time_s = (prediction.get("metrics") or {}).get("predict_time")
+            scene.visual.drawn_with = reference_model
             return output_path
         except Exception:
             # The scene without its character beats a stock clip.
@@ -1091,6 +1103,7 @@ async def _generate_replicate_image(
     # Read back by render_manager for timings.json: part of this stage's
     # cost is now an invoice rather than our own wall clock.
     scene.visual.predict_time_s = (prediction.get("metrics") or {}).get("predict_time")
+    scene.visual.drawn_with = str(prediction.get("version") or prediction.get("model") or "plain")
     return output_path
 
 

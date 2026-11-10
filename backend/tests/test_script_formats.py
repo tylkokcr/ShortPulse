@@ -621,3 +621,25 @@ def test_an_openai_story_line_is_directed_as_its_speaker_feels_it():
     assert child.voice_id == "openai:shimmer"
     assert "child's voice" in child.instructions
     assert "trembling whisper" in child.instructions and "frightened" in child.instructions
+
+
+def test_a_shot_of_a_man_gets_the_man_in_the_cast():
+    """The model wrote 'a man in the kitchen' with only the wife in frame,
+    and the picture drew a stranger."""
+    from app.engines.script_engine import _to_script_output
+
+    parsed = {
+        "cast": [
+            {"name": "Elif", "gender": "woman", "age": 34, "look": "x"},
+            {"name": "Murat", "gender": "man", "age": 38, "look": "y"},
+        ],
+        "scenes": [
+            {"voiceover_line": "Sol kaşı durmadı.", "visual_prompt": "close-up of a man in the kitchen",
+             "speaker": "narrator", "cast": ["Elif"]},
+            {"voiceover_line": "x", "visual_prompt": "a woman on the left and a man on the right",
+             "speaker": "narrator", "cast": ["Elif", "Murat"]},
+        ],
+    }
+    script = _to_script_output("x", parsed, VideoLength.MEDIUM, "story", "tr")
+    assert script.scenes[0].cast == ["Murat"]
+    assert script.scenes[1].cast == ["Elif", "Murat"]

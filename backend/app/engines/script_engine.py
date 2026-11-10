@@ -1564,6 +1564,30 @@ def _cast(raw: object) -> list[CastMember]:
     return out
 
 
+_PERSON_WORDS = {"man": "man", "woman": "woman", "girl": "girl", "boy": "boy"}
+
+
+def _match_cast_to_prompt(scene: Scene, cast: list[CastMember]) -> None:
+    """A shot whose picture names one kind of person the cast in it is not
+    gets the cast member who is: a prompt about "a man in the kitchen" with
+    only the wife in frame drew a stranger, as the husband's sheet never
+    reached the picture."""
+    prompt = scene.visual.prompt.lower()
+    named = {
+        kind for word, kind in _PERSON_WORDS.items()
+        if re.search(rf"\b(?:a|the|an)\s+(?:\w+\s+)?{word}\b", prompt)
+    }
+    if len(named) != 1:
+        return
+    kind = next(iter(named))
+    by_name = {m.name: m for m in cast}
+    if any((by_name[n].gender or "").lower() == kind for n in scene.cast if n in by_name):
+        return
+    fits = [m for m in cast if (m.gender or "").lower() == kind]
+    if len(fits) == 1 and len(scene.cast) <= 1:
+        scene.cast = [fits[0].name]
+
+
 def _tidy_story_scenes(scenes: list[Scene], cast: list[CastMember]) -> None:
     """Speakers and people in frame named as the cast is: a speaker not in
     the cast is the narrator; a name in frame not in the cast is dropped."""
@@ -1578,6 +1602,7 @@ def _tidy_story_scenes(scenes: list[Scene], cast: list[CastMember]) -> None:
             in_frame = [scene.speaker, *in_frame]
         scene.cast = in_frame[:2]
         scene.hero = False
+        _match_cast_to_prompt(scene, cast)
         if not scene.cast and "no people" not in scene.visual.prompt:
             # Nobody from the cast in frame means nobody: left to itself the
             # image model filled empty shots with strangers, one of them a

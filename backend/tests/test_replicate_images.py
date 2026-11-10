@@ -531,7 +531,7 @@ async def test_two_people_in_frame_go_to_kontext_on_one_sheet(monkeypatch, scene
     )
 
     sent = fake.created["input"]
-    assert fake.created["version"] == "black-forest-labs/flux-kontext-dev"
+    assert fake.created["version"] == "black-forest-labs/flux-kontext-pro"
     both = Image.open(io.BytesIO(base64.b64decode(sent["input_image"].split(",", 1)[1])))
     assert both.width == 1024 and both.height == 1024  # two 512-wide halves
     assert both.getpixel((10, 10))[0] > 200 and both.getpixel((1000, 10))[2] > 200
