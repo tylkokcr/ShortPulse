@@ -108,7 +108,16 @@ async def synthesize_line(
     where a translated sentence has to land inside the slot the original
     occupied. Left unset everywhere else, which is the voice's natural pace.
     """
-    cleaned = clean_text_for_tts(text)
+    # ElevenLabs acts a line from tags at its front ("[whispers] ...").
+    # The cleaning below drops anything bracketed — rightly, for asides the
+    # model slips into a line — and it dropped these too: every acted line
+    # of the first ElevenLabs episodes reached it without its direction.
+    tags = ""
+    if voice.provider == TTSProvider.ELEVENLABS:
+        match = re.match(r"^((?:\[[a-z ]{2,20}\]\s*)+)", text)
+        if match:
+            tags, text = match.group(1).strip() + " ", text[match.end():]
+    cleaned = tags + clean_text_for_tts(text)
 
     if voice.provider == TTSProvider.OPENAI:
         await _synthesize_openai(cleaned, voice, output_path)
@@ -129,6 +138,11 @@ async def synthesize_line(
 
 
 ELEVENLABS_VOICE_PREFIX = "elevenlabs:"
+# The voices Replicate's elevenlabs/v3 offers, by name.
+_ELEVENLABS_PRESETS = frozenset(
+    "Rachel Drew Clyde Paul Aria Domi Dave Roger Fin Sarah James Jane Juniper Arabella Hope "
+    "Bradford Reginald Gaming Austin Kuon Blondie Priyanka Alexandra Monika Mark Grimblewood".split()
+)
 
 
 async def _synthesize_elevenlabs(
@@ -147,9 +161,14 @@ async def _synthesize_elevenlabs(
     from app.engines.visual_engine import _replicate_output_url, _replicate_predict
 
     settings = get_settings()
+    name = voice.voice_id.removeprefix(ELEVENLABS_VOICE_PREFIX) or "Hope"
+    if settings.elevenlabs_api_key and name not in _ELEVENLABS_PRESETS:
+        # An account voice (an id like "21m00Tcm4TlvDq8ikWAM", not one of
+        # Replicate's preset names): straight to ElevenLabs.
+        await _synthesize_elevenlabs_direct(text, name, output_path, language, settings)
+        return
     if not settings.replicate_api_token:
         raise RuntimeError("ElevenLabs narration needs REPLICATE_API_TOKEN")
-    name = voice.voice_id.removeprefix(ELEVENLABS_VOICE_PREFIX) or "Hope"
     spoken = re.sub(r"\s*(?:…|\.{3})\s*", "… ", text).strip()
     match = re.fullmatch(r"([+-]\d+)%", voice.rate or "")
     speed = min(1.2, max(0.7, 1 + int(match.group(1)) / 100)) if match else 1.0
@@ -175,6 +194,44 @@ async def _synthesize_elevenlabs(
         response = await client.get(_replicate_output_url(prediction))
         response.raise_for_status()
         output_path.write_bytes(response.content)
+
+
+async def _synthesize_elevenlabs_direct(
+    text: str, voice_id: str, output_path: Path, language: str, settings
+) -> None:
+    """One line through the ElevenLabs API with an account voice, as MP3:
+    v3, acted from the tags at the front of the line, at the creative
+    stability that lets them work."""
+    import asyncio
+
+    import httpx
+
+    spoken = re.sub(r"\s*(?:…|\.{3})\s*", "… ", text).strip()
+    payload = {
+        "text": spoken,
+        "model_id": "eleven_v3",
+        "language_code": (language or "en").split("-")[0],
+        "voice_settings": {"stability": 0.0},
+    }
+    async with httpx.AsyncClient(timeout=90) as client:
+        for attempt in range(3):
+            response = await client.post(
+                f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
+                params={"output_format": "mp3_44100_128"},
+                headers={"xi-api-key": settings.elevenlabs_api_key},
+                json=payload,
+            )
+            if response.status_code in (429, 500, 502, 503) and attempt < 2:
+                await asyncio.sleep(3 * (attempt + 1))
+                continue
+            if response.status_code >= 400:
+                # Name the reason: quota, a voice the plan cannot use…
+                raise RuntimeError(
+                    f"ElevenLabs refused the line ({response.status_code}): "
+                    f"{response.text[:300]}"
+                )
+            output_path.write_bytes(response.content)
+            return
 
 
 OPENAI_VOICE_PREFIX = "openai:"

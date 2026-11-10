@@ -808,13 +808,24 @@ async def _generate_script_once(
         if script.character:
             _mark_hero_scenes(script.scenes, script.character.name)
     if script.cast:
+        from app.services import elevenlabs_voices
         from app.services.voices import assign_cast_voices, openai_enabled
 
         # A story is acted: OpenAI's voices take a direction for every line
         # ("in a trembling whisper"), which ElevenLabs' preset voices,
         # reading Turkish, still did flat.
+
         provider = "minimax"
         if script_format == "story":
+            if elevenlabs_voices.enabled():
+                # Native voices from the account's own library. A pool that
+                # cannot be had leaves the others to the fallbacks below.
+                try:
+                    elevenlabs_voices.assign(
+                        script.cast, await elevenlabs_voices.voice_pool(language)
+                    )
+                except Exception:
+                    logger.warning("No ElevenLabs voice pool; falling back", exc_info=True)
             provider = "openai" if openai_enabled() else "elevenlabs"
         assign_cast_voices(script.cast, language, provider)
     return script

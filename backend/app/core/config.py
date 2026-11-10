@@ -68,6 +68,11 @@ class Settings(BaseSettings):
     # that acts a line — "[scared]" moved a man's voice from 85 to 188 Hz
     # where MiniMax's emotions left it within 84-125.
     elevenlabs_tts_model: str = "elevenlabs/v3"
+    # The ElevenLabs account's own key: native voices from the Voice Library
+    # for a story's cast (services/elevenlabs_voices). Without it a story
+    # is voiced by OpenAI, and the Replicate path above remains for the
+    # preset voices.
+    elevenlabs_api_key: str | None = None
     # A language's own MiniMax voice, where one was chosen by ear.
     minimax_voice_by_language: dict[str, str] = {
         "tr": "Turkish_Trustworthyman",
