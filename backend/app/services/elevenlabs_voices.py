@@ -59,7 +59,12 @@ def _speaks(voice: dict, language: str) -> bool:
 
 async def _account_pool(client: httpx.AsyncClient, language: str) -> dict[str, list[str]]:
     response = await client.get(f"{API}/voices")
-    response.raise_for_status()
+    if response.status_code >= 400:
+        # Say why — a key without Voices permission answers 401 and the
+        # body names the missing permission.
+        raise RuntimeError(
+            f"ElevenLabs refused the voice list ({response.status_code}): {response.text[:300]}"
+        )
     pool: dict[str, list[str]] = {k: [] for k in _KINDS}
     for voice in response.json().get("voices", []):
         if not _speaks(voice, language):
@@ -86,7 +91,11 @@ async def _add_from_library(
     if kind.startswith("older_"):
         params["age"] = "old"
     response = await client.get(f"{API}/shared-voices", params=params)
-    response.raise_for_status()
+    if response.status_code >= 400:
+        raise RuntimeError(
+            f"ElevenLabs refused the library search ({response.status_code}): "
+            f"{response.text[:300]}"
+        )
     added: list[str] = []
     for voice in response.json().get("voices", []):
         if len(added) == count:
