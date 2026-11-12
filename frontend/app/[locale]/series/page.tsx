@@ -90,7 +90,7 @@ function SeriesHub() {
                 </ul>
                 <Link href={`/series/new?format=${format.id}`} className="mt-auto w-fit">
                   <Button variant="gradient">
-                    {t("start")}
+                    {t(format.id === "story" ? "start" : "startWhatIf")}
                     <ArrowRight size={15} />
                   </Button>
                 </Link>

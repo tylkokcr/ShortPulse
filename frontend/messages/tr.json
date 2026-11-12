@@ -1172,7 +1172,7 @@
     },
     "series": {
       "title": "Formatlar",
-      "intro": "Bölüm bölüm devam eden videolar: aynı karakterler, aynı mekânlar, her bölüm merakla biter. Bir dizi başlat, sonraki bölümleri tek tıkla üret.",
+      "intro": "Kendi kuralları ve görünümü olan video türleri: tek videoluk “Ne olurdu?” ve bölüm bölüm devam eden hikâye dizileri.",
       "start": "Dizi başlat",
       "mine": "Dizilerim",
       "loading": "Yükleniyor…",
@@ -1272,7 +1272,8 @@
         "minutes": "~{minutes} dk",
         "cost": "Bölüm başı",
         "balance": "Bakiyen: {balance} kredi",
-        "next": "Bölüm bitince sayfasında “Sonraki bölümü üret” düğmesi çıkar; aynı karakterler ve mekânlarla devam eder."
+        "next": "Bölüm bitince sayfasında “Sonraki bölümü üret” düğmesi çıkar; aynı karakterler ve mekânlarla devam eder.",
+        "titleWhatIf": "Bir video"
       },
       "insufficient": "Bu bölüm {required} krediye mal oluyor, sendeyse {balance} var.",
       "failed": "Dizi başlatılamadı.",
@@ -1326,7 +1327,10 @@
             "sleep": "Kimse uyumak zorunda olmasaydı?"
           }
         }
-      }
+      },
+      "startWhatIf": "Video üret",
+      "newWhatIfTitle": "Yeni “Ne olurdu?” videosu",
+      "newWhatIfIntro": "Bir varsayım seç; senaryoyu gerçek bilgilerle yapay zekâ yazar, grafikler ve anlatıcı sesiyle videoya döner."
     }
   },
   "tour": {

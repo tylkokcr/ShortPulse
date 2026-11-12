@@ -77,7 +77,7 @@ function NewSeries() {
   const [style, setStyle] = useState(STYLE_DEFAULT[format]);
   // A story is animated by default; a What if? is stills, as it always was.
   const [mode, setMode] = useState<Mode>(format === "story" ? "ai_video" : "fast_hybrid");
-  const [length, setLength] = useState<Length>("medium");
+  const [length, setLength] = useState<Length>(format === "story" ? "medium" : "short");
   const [styles, setStyles] = useState<ArtStyle[]>([]);
   const [credits, setCredits] = useState<CreditSummary | null>(null);
   const [busy, setBusy] = useState(false);
@@ -92,6 +92,7 @@ function NewSeries() {
     setFormat(next);
     setStyle(STYLE_DEFAULT[next]);
     setMode(next === "story" ? "ai_video" : "fast_hybrid");
+    setLength(next === "story" ? "medium" : "short");
     const url = new URL(window.location.href);
     url.searchParams.set("format", next);
     window.history.replaceState(null, "", url);
@@ -138,8 +139,8 @@ function NewSeries() {
   return (
     <AppShell section="series">
       <div className="animate-fade-up">
-        <h1 className="text-3xl font-semibold tracking-tight">{t("newTitle")}</h1>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/50">{t("newIntro")}</p>
+        <h1 className="text-3xl font-semibold tracking-tight">{t(format === "story" ? "newTitle" : "newWhatIfTitle")}</h1>
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/50">{t(format === "story" ? "newIntro" : "newWhatIfIntro")}</p>
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
@@ -409,7 +410,7 @@ function NewSeries() {
         <Card className="flex flex-col gap-4 lg:sticky lg:top-6">
           <div className="flex items-center gap-2">
             <Clapperboard size={15} className="text-accent" />
-            <h2 className="text-sm font-semibold">{t("summary.title")}</h2>
+            <h2 className="text-sm font-semibold">{t(format === "story" ? "summary.title" : "summary.titleWhatIf")}</h2>
           </div>
           <dl className="flex flex-col gap-3 text-xs">
             <Row label={t("summary.length")} value={t("summary.seconds", { seconds: shape.seconds })} />
