@@ -676,3 +676,25 @@ def test_a_story_with_an_outbreak_gets_its_maps_and_a_rising_count():
     script = _to_script_output("x", parsed, VideoLength.MEDIUM, "story", "tr")
     assert [s.index for s in script.scenes if s.map] == [1, 3]
     assert script.counter is not None and script.counter.end == 4200
+
+
+def test_a_woman_with_two_women_in_the_cast_is_the_narrator_and_a_door_is_a_door():
+    from app.engines.script_engine import _to_script_output
+
+    parsed = {
+        "cast": [
+            {"name": "Elif", "gender": "woman", "age": 31, "look": "x"},
+            {"name": "Cem", "gender": "man", "age": 38, "look": "y"},
+            {"name": "Derya", "gender": "woman", "age": 32, "look": "z"},
+        ],
+        "scenes": [
+            {"voiceover_line": "a", "visual_prompt": "close-up of a woman in the hallway",
+             "speaker": "narrator", "cast": []},
+            {"voiceover_line": "Açma!", "visual_prompt": "a closed old apartment door, a shadow",
+             "speaker": "Cem", "cast": []},
+            {"voiceover_line": "Merhaba.", "visual_prompt": "a woman with glasses at the window",
+             "speaker": "Derya", "cast": []},
+        ],
+    }
+    script = _to_script_output("x", parsed, VideoLength.MEDIUM, "story", "tr")
+    assert [s.cast for s in script.scenes] == [["Elif"], [], ["Derya"]]

@@ -1590,8 +1590,25 @@ def _match_cast_to_prompt(scene: Scene, cast: list[CastMember]) -> None:
     if any((by_name[n].gender or "").lower() == kind for n in scene.cast if n in by_name):
         return
     fits = [m for m in cast if (m.gender or "").lower() == kind]
-    if len(fits) == 1 and len(scene.cast) <= 1:
-        scene.cast = [fits[0].name]
+    if not fits or len(scene.cast) > 1:
+        return
+    # Several who fit (two women): the one speaking, else the narrator —
+    # a shot of "a woman" over the narrator's line is her — else the first.
+    narrator = cast[0] if cast else None
+    pick = next(
+        (m for m in fits if m.name == scene.speaker),
+        narrator if narrator in fits and scene.speaker in (None, "narrator") else fits[0],
+    )
+    scene.cast = [pick.name]
+
+
+def _shows_a_person(prompt: str) -> bool:
+    return bool(
+        re.search(
+            r"\b(?:a|the|an)\s+(?:\w+\s+)?(?:man|woman|girl|boy|person|people|couple)\b",
+            prompt.lower(),
+        )
+    )
 
 
 def _tidy_story_scenes(scenes: list[Scene], cast: list[CastMember]) -> None:
@@ -1604,7 +1621,14 @@ def _tidy_story_scenes(scenes: list[Scene], cast: list[CastMember]) -> None:
         in_frame = [names[n.casefold()] for n in scene.cast if n.casefold() in names]
         # Whoever speaks a line is seen saying it: a voice changing over a
         # shot of someone else is what made two people sound like one.
-        if scene.speaker != "narrator" and scene.speaker not in in_frame:
+        # Unless the shot is of something else (a door, a phone): then the
+        # speaker is heard off-screen, and a sheet for them would have the
+        # check wait for someone the picture never shows.
+        if (
+            scene.speaker != "narrator"
+            and scene.speaker not in in_frame
+            and (in_frame or _shows_a_person(scene.visual.prompt))
+        ):
             in_frame = [scene.speaker, *in_frame]
         scene.cast = in_frame[:2]
         scene.hero = False

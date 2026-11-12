@@ -1110,9 +1110,30 @@ async def _generate_replicate_image(
                 )
                 await asyncio.sleep(5 * (attempt + 1))
                 continue
-            if attempt + 1 == tries or await check_shot(output_path, sheets_in, settings):
+            if await check_shot(output_path, sheets_in, settings):
                 return output_path
             logger.info("Story shot %s: people did not match their sheets; redrawing", scene.index)
+        if drawn_any and sheets_in:
+            # Seedream could not get these people right: Kontext Pro edits
+            # from their sheet, which holds a face better, gets one go.
+            kept = output_path.read_bytes()
+            try:
+                prediction = await _replicate_predict(
+                    {
+                        "version": "black-forest-labs/flux-kontext-pro",
+                        "input": _reference_input(scene, style, size, sheets_in, tense=False),
+                    },
+                    settings,
+                )
+                await _download(_replicate_output_url(prediction), output_path)
+                if await check_shot(output_path, sheets_in, settings):
+                    scene.visual.drawn_with = "black-forest-labs/flux-kontext-pro"
+                    scene.visual.draws = tries + 1
+                    return output_path
+                output_path.write_bytes(kept)
+            except Exception:
+                logger.warning("Kontext Pro could not redraw shot %s", scene.index, exc_info=True)
+                output_path.write_bytes(kept)
         if drawn_any:
             return output_path
 
