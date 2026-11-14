@@ -1,29 +1,29 @@
 # --- Web framework -----------------------------------------------------
-fastapi>=0.111
-uvicorn[standard]>=0.30
-pydantic>=2.7
-pydantic-settings>=2.3
-websockets>=12.0
-httpx>=0.27
-python-multipart>=0.0.9
+fastapi>=0.162.4
+uvicorn[standard]>=0.54.0
+pydantic>=2.14.3
+pydantic-settings>=2.16.2
+websockets>=17.4
+httpx>=0.28.1
+python-multipart>=0.0.33
 
 # --- LLM ------------------------------------------------------------
-openai>=1.35            # optional: only needed if using the OpenAI provider
+openai>=3.49.0            # optional: only needed if using the OpenAI provider
 
 # --- TTS / ASR --------------------------------------------------------
-piper-tts>=1.2            # default: local, MIT-licensed ONNX voices
-edge-tts>=6.1             # optional fallback; free but no commercial licence
-faster-whisper>=1.0
+piper-tts>=1.8.0            # default: local, MIT-licensed ONNX voices
+edge-tts>=7.3.1             # optional fallback; free but no commercial licence
+faster-whisper>=1.2.1
 # faster-whisper decodes audio with av.open(..., metadata_errors="ignore"),
 # and PyAV 19 removed that argument. Unpinned, the next image build picked
 # up 19 and every transcription — captions, dubs, clips — failed with
 # "open() got an unexpected keyword argument 'metadata_errors'". Lift this
 # once a faster-whisper release stops passing it.
-av>=11,<19
+av>=18.1.0,<19
 # Importing a video from a YouTube link (services/link_import.py). Left
 # unpinned above a floor on purpose: YouTube changes its pages often and
 # only a current yt-dlp keeps up — rebuild the image to update it.
-yt-dlp>=2025.1
+yt-dlp>=2026.10.26
 # TTS>=0.22              # optional: Coqui XTTS-v2 voice cloning, uncomment to enable
 
 # --- Visual generation --------------------------------------------------
@@ -32,25 +32,25 @@ yt-dlp>=2025.1
 # because it is ~3GB installed and a stock_media deployment never loads it —
 # every torch/diffusers import in this codebase is inside the function that
 # needs it, so the app starts and renders happily without them.
-pillow>=10.0
+pillow>=13.0.0
 
 # --- Persistence ---------------------------------------------------------
-asyncpg>=0.29           # Postgres driver; Supabase in prod, container locally
+asyncpg>=0.32.0           # Postgres driver; Supabase in prod, container locally
 
 # --- Auth (hosted deployment only; unused when SUPABASE_URL is unset) -----
 # [crypto] pulls in `cryptography`, needed for the ES256/RS256 asymmetric
 # signing keys Supabase issues. Without it PyJWT can only do HMAC.
-pyjwt[crypto]>=2.9
+pyjwt[crypto]>=2.15.1
 
 # --- Payments -----------------------------------------------------------
 # Only needed on a hosted deployment that sells credits. Absent keys, the
 # checkout endpoints report themselves unavailable and everything else runs.
-stripe>=10
+stripe>=16.1.0
 
 # --- Monitoring (optional) ----------------------------------------------
 # Inert without SENTRY_DSN. Worth having on a deployment because the
 # pipeline catches its own failures, so nothing else would report them.
-sentry-sdk[fastapi]>=2
+sentry-sdk[fastapi]>=2.74.0
 
 # --- Rendering --------------------------------------------------------
 ffmpeg-python>=0.2.0     # thin wrapper kept for future use; core pipeline shells out directly
