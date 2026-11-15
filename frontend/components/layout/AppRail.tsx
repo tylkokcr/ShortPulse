@@ -8,7 +8,7 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { Logo } from "@/components/ui/Logo";
 import { AccentSwitcher } from "@/components/ui/AccentSwitcher";
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
-import { getSocialPlatforms } from "@/lib/api";
+import { usePublishes } from "@/lib/usePublishes";
 import { RAIL_STORAGE_KEY } from "@/components/layout/railBoot";
 import { useShortPulseStore } from "@/lib/store";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -38,7 +38,7 @@ export function AppRail() {
 
   // Same rule the header's link follows: a deployment that publishes
   // nowhere does not advertise a page that leads to an empty list.
-  const [publishes, setPublishes] = useState(false);
+  const publishes = usePublishes();
 
   // Mirrors the attribute the boot script wrote, so the button can say
   // which way it goes. The attribute is the truth; this is a label.
@@ -59,15 +59,6 @@ export function AppRail() {
       // Private windows throw. The rail still collapses for this page.
     }
   }
-  useEffect(() => {
-    let live = true;
-    getSocialPlatforms()
-      .then((platforms) => live && setPublishes(platforms.length > 0))
-      .catch(() => undefined);
-    return () => {
-      live = false;
-    };
-  }, []);
 
   // `motion` names the icon's own small movement (see .rail-icon in
   // globals.css): a wand flicks, the books lean, the share node pulses,

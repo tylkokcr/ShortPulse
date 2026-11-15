@@ -176,6 +176,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self._renders = TokenBucketLimiter(capacity=renders_per_hour, per_seconds=3600)
         self._general = TokenBucketLimiter(capacity=requests_per_minute, per_seconds=60)
+        # Reads get five times the allowance: a library page asks for one
+        # signed poster per card, and a library of forty videos plus a
+        # click or two through the rail ran the shared minute dry — the
+        # library errored and the Connections link vanished.
+        self._reads = TokenBucketLimiter(capacity=requests_per_minute * 5, per_seconds=60)
 
     async def dispatch(self, request: Request, call_next):
         if request.url.path in _PUBLIC_PATHS:
@@ -192,7 +197,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         submitting_render = request.method == "POST" and (
             path == "/api/projects" or path.endswith("/regenerate")
         )
-        limiter = self._renders if submitting_render else self._general
+        if submitting_render:
+            limiter = self._renders
+        elif request.method in ("GET", "HEAD"):
+            limiter = self._reads
+        else:
+            limiter = self._general
 
         retry_after = limiter.check(who)
         if retry_after is not None:

@@ -176,11 +176,12 @@ async def test_users_are_throttled_separately_from_each_other():
 
 @pytest.mark.parametrize("path", ["/api/projects"])
 async def test_general_requests_are_capped(path):
+    """Reads too, at five times the per-minute allowance."""
     app = _app(requests_per_minute=3)
     async with _client(app) as client:
-        codes = [(await client.get(path)).status_code for _ in range(5)]
+        codes = [(await client.get(path)).status_code for _ in range(17)]
 
-    assert codes == [200, 200, 200, 429, 429]
+    assert codes == [200] * 15 + [429] * 2
 
 
 async def test_re_rolling_a_scene_draws_on_the_render_budget():
@@ -220,3 +221,15 @@ async def test_editing_stays_on_the_browsing_budget():
         ]
 
     assert codes == [200, 200, 200, 200]
+
+
+async def test_reads_have_a_larger_allowance_than_writes():
+    """A library page reads one signed poster per card; forty cards and a
+    click through the rail used to exhaust the shared minute."""
+    app = _app(requests_per_minute=4)
+    async with _client(app) as client:
+        reads = [(await client.get("/api/projects")).status_code for _ in range(20)]
+        writes = [(await client.post("/api/projects/p/edit", json={})).status_code for _ in range(6)]
+
+    assert reads == [200] * 20
+    assert writes == [200] * 4 + [429] * 2

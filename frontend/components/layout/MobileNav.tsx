@@ -8,7 +8,7 @@ import { AccentSwitcher } from "@/components/ui/AccentSwitcher";
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useShortPulseStore } from "@/lib/store";
-import { getSocialPlatforms } from "@/lib/api";
+import { usePublishes } from "@/lib/usePublishes";
 
 /**
  * The header's links, on a phone.
@@ -25,23 +25,12 @@ import { getSocialPlatforms } from "@/lib/api";
  */
 export function MobileNav({ showLibrary }: { showLibrary: boolean }) {
   const [open, setOpen] = useState(false);
-  const [publishes, setPublishes] = useState(false);
+  const publishes = usePublishes(showLibrary);
   const t = useTranslations("nav");
   const pathname = usePathname();
   const creditsOn = useShortPulseStore((s) => s.credits?.enabled ?? false);
   // Exact for the studio, prefix for the rest — "/" prefixes everything.
   const here = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
-
-  useEffect(() => {
-    if (!showLibrary) return;
-    let live = true;
-    getSocialPlatforms()
-      .then((platforms) => live && setPublishes(platforms.length > 0))
-      .catch(() => undefined);
-    return () => {
-      live = false;
-    };
-  }, [showLibrary]);
 
   useEffect(() => {
     if (!open) return;
