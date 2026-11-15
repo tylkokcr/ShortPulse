@@ -1249,6 +1249,10 @@
         "fast_hybrid": {
           "name": "Ilustracje",
           "hint": "Każde ujęcie to rysunek z ruchem kamery. Taniej i szybciej."
+        },
+        "puppet": {
+          "name": "Stałe postacie",
+          "hint": "Każda postać jest rysowana raz i w każdym ujęciu mówi i reaguje z tą samą twarzą. Najbardziej spójne i najtańsze."
         }
       },
       "credits": "{count} kredytów",

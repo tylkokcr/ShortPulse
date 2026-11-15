@@ -1249,6 +1249,10 @@
         "fast_hybrid": {
           "name": "Stills",
           "hint": "Every shot a drawing with camera movement. Cheaper and faster."
+        },
+        "puppet": {
+          "name": "Fixed characters",
+          "hint": "Each character is drawn once and talks and reacts with the same face in every shot. The most consistent and the cheapest."
         }
       },
       "credits": "{count} credits",

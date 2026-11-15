@@ -24,6 +24,7 @@ from app.engines import (
     audio_engine,
     graphics,
     maps,
+    puppets,
     render_engine,
     script_engine,
     subtitle_engine,
@@ -579,9 +580,15 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             )
         # A story's cast: one sheet for each person who is ever in frame,
         # and its places, one plate each.
-        cast_sheets = await _cast_sheets(script, paths, previous, config, settings)
-        plates = await _location_plates(script, paths, previous, config, settings)
         story = str(config.script_format) == "story"
+        puppet_mode = story and config.puppet
+        cast_sheets = (
+            {} if puppet_mode else await _cast_sheets(script, paths, previous, config, settings)
+        )
+        plates = await _location_plates(script, paths, previous, config, settings)
+        puppet_cast = (
+            await _puppet_cast(script, paths, previous, config, settings) if puppet_mode else {}
+        )
 
         async def build_visual(scene: Scene) -> None:
             nonlocal completed
@@ -598,6 +605,28 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                         height=render_height,
                     )
                     scene.visual.asset_path = str(outro_path)
+                elif puppet_mode and not scene.map:
+                    # Drawn by code from the people's poses and the room.
+                    shot_path = paths / "visuals" / f"scene_{scene.index:02d}_puppet.mp4"
+                    shot_path.parent.mkdir(parents=True, exist_ok=True)
+                    await asyncio.to_thread(
+                        puppets.render_shot,
+                        shot_path,
+                        plates.get(scene.location or ""),
+                        [(n, puppet_cast[n]) for n in scene.cast if n in puppet_cast],
+                        scene.speaker,
+                        scene.audio.tone,
+                        Path(scene.audio.audio_path) if scene.audio.audio_path else None,
+                        (scene.audio.duration_ms or 3000) / 1000 + 1.5,
+                        render_width,
+                        render_height,
+                        config.fps,
+                        settings.ffmpeg_binary,
+                        scene.index,
+                    )
+                    scene.visual.asset_path = str(shot_path)
+                    scene.visual.mode = VisualMode.AI_VIDEO
+                    scene.visual.drawn_with = "puppet"
                 elif (scene.map or (scene.card and script.card)) and maps.available():
                     # Geography is drawn, not generated: an image model
                     # invents borders. Seven seconds covers any scene. The
@@ -2196,4 +2225,42 @@ async def _location_plates(script, root: Path, previous, config, settings) -> di
                 out[loc_id] = path
 
         await asyncio.gather(*(draw(*job) for job in todo))
+    return out
+
+
+async def _puppet_cast(script, root: Path, previous, config, settings) -> dict:
+    """Each cast member in frame as a puppet: drawn once — or copied from the
+    previous episode — then loaded. A person whose poses cannot be drawn
+    stops the render, as a missing sheet does: strangers are worse."""
+    in_frame = {name for scene in script.scenes for name in scene.cast}
+    members = [m for m in script.cast if m.name in in_frame]
+    style = art_styles.by_id(config.art_style)
+    out: dict = {}
+
+    async def ready(member) -> None:
+        folder = puppets.puppet_dir(root, member.name)
+        earlier = puppets.puppet_dir(project_dir(previous.config.id), member.name) if previous else None
+        if earlier is not None and (earlier / "cutout.png").is_file():
+            if folder.exists():
+                shutil.rmtree(folder)
+            shutil.copytree(earlier, folder)
+        else:
+            look = ", ".join(
+                p for p in (f"{member.age}-year-old {member.gender}" if member.age else member.gender,
+                            member.look) if p
+            )
+            await _with_retries(
+                lambda: puppets.draw_puppet(look, folder, settings, style), f"{member.name}'s puppet"
+            )
+        puppet = puppets.load_puppet(folder)
+        if puppet is not None:
+            out[member.name] = puppet
+
+    await asyncio.gather(*(ready(m) for m in members))
+    missing = [m.name for m in members if m.name not in out]
+    if missing:
+        raise RuntimeError(
+            "The image service was too busy to draw " + ", ".join(missing)
+            + "; your credits were refunded. Please try again in a few minutes."
+        )
     return out

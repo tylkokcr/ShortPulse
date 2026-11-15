@@ -12,6 +12,7 @@ import {
   Film,
   HelpCircle,
   Image as ImageIcon,
+  UserRound,
   Shuffle,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -54,7 +55,9 @@ const FORMAT_ICONS = { what_if: HelpCircle, story: BookOpen } as const;
 const STYLE_HIDDEN = new Set(["photoreal", "pixel"]);
 const SERIES_LANGUAGES = new Set(["tr", "en", "pl", "de"]);
 
-type Mode = "ai_video" | "fast_hybrid";
+// "puppet": the people drawn once in a few poses and placed into the rooms
+// by code (engines/puppets.py) — faces never change. Story only.
+type Mode = "ai_video" | "puppet" | "fast_hybrid";
 type Length = "short" | "medium";
 
 function NewSeries() {
@@ -115,7 +118,8 @@ function NewSeries() {
         script_format: format,
         language,
         art_style: style,
-        visual_mode: mode,
+        visual_mode: mode === "puppet" ? "fast_hybrid" : mode,
+        puppet: format === "story" && mode === "puppet",
         video_length: length,
         aspect_ratio: "9:16",
         // What if? carries its kind the way a series carries its genre.
@@ -338,9 +342,17 @@ function NewSeries() {
             {/* Motion */}
             <div>
               <span className="mb-1.5 block text-sm font-medium text-white/70">{t("motion")}</span>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {(["ai_video", "fast_hybrid"] as const).map((m) => {
-                  const Icon = m === "ai_video" ? Film : ImageIcon;
+              <div
+                className={clsx(
+                  "grid grid-cols-1 gap-2",
+                  format === "story" ? "sm:grid-cols-3" : "sm:grid-cols-2"
+                )}
+              >
+                {(format === "story"
+                  ? (["ai_video", "puppet", "fast_hybrid"] as const)
+                  : (["ai_video", "fast_hybrid"] as const)
+                ).map((m) => {
+                  const Icon = m === "ai_video" ? Film : m === "puppet" ? UserRound : ImageIcon;
                   const cost = credits?.pricing?.[`${format === "story" ? "story:" : ""}${m}:${length}`];
                   return (
                     <button

@@ -1249,6 +1249,10 @@
         "fast_hybrid": {
           "name": "Standbilder",
           "hint": "Jede Einstellung eine Zeichnung mit Kamerabewegung. Günstiger und schneller."
+        },
+        "puppet": {
+          "name": "Feste Figuren",
+          "hint": "Jede Figur wird einmal gezeichnet und spricht und reagiert in jeder Einstellung mit demselben Gesicht. Am stimmigsten und am günstigsten."
         }
       },
       "credits": "{count} Credits",

@@ -641,6 +641,9 @@ class ProjectConfig(BaseModel):
     # seaside town"). Read by the script writer; a later episode keeps them.
     series_genre: str | None = Field(default=None, max_length=40)
     series_setting: str | None = Field(default=None, max_length=80)
+    # A story drawn as puppets (engines/puppets.py): each person drawn once
+    # in a few poses and placed into the rooms, so faces never change.
+    puppet: bool = False
     # Set only on uploads, and only when the caller asked for a dub: the
     # language the video should come out speaking. `language` above stays
     # what it always was, the language the source is *in*, because the

@@ -187,6 +187,8 @@ def cost_for(config: ProjectConfig) -> int:
     mode = VisualMode(config.visual_mode)
     length = VideoLength(config.video_length)
     if str(config.script_format) == "story":
+        if config.puppet:
+            return _PUPPET_COST[length]
         return _STORY_COST[mode][length]
     return _MODE_COST[mode] * _LENGTH_MULTIPLIER[length]
 
@@ -198,6 +200,11 @@ def cost_for(config: ProjectConfig) -> int:
 # plus the script and the sheets, ~$2.5, at 40 credits (above cost on the
 # biggest pack's sale price, 6.3 cents a credit). Animated: plus ~45
 # four-second Seedance Lite clips (~$0.07), ~$5.5, at 120.
+# A puppet story draws its people once (a portrait and five face edits
+# each, ~$0.25 a person) and its rooms once; every shot after that is
+# composited here. ~$1 an episode with its voices, less for the next ones.
+_PUPPET_COST = {VideoLength.SHORT: 15, VideoLength.MEDIUM: 25, VideoLength.LONG: 35}
+
 _STORY_COST = {
     VisualMode.STOCK_MEDIA: {VideoLength.SHORT: 6, VideoLength.MEDIUM: 12, VideoLength.LONG: 18},
     VisualMode.FAST_HYBRID: {VideoLength.SHORT: 20, VideoLength.MEDIUM: 40, VideoLength.LONG: 60},

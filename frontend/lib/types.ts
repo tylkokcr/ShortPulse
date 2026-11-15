@@ -289,6 +289,8 @@ export interface ProjectConfig {
   /** A series' genre and setting, from the series form. */
   series_genre?: string | null;
   series_setting?: string | null;
+  /** A story drawn as puppets: each person drawn once, faces never change. */
+  puppet?: boolean;
   music: MusicConfig;
   outro: OutroConfig;
   created_at: string;

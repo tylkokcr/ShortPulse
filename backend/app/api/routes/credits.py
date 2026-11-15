@@ -88,6 +88,19 @@ def _pricing_table() -> dict[str, int]:
             for length in VideoLength
         }
     )
+    quotes.update(
+        {
+            f"story:puppet:{length.value}": credits.cost_for(
+                ProjectConfig(
+                    topic="quote",
+                    video_length=length,
+                    script_format=ScriptFormat.STORY,
+                    puppet=True,
+                )
+            )
+            for length in VideoLength
+        }
+    )
     # The upload prices, quoted the same way and for the same reason: the
     # panel that offers them hardcoded "1 credit" and was wrong about a
     # dub and about every clip count.

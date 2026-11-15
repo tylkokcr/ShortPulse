@@ -46,6 +46,7 @@ export function NextEpisode({ project, compact = false }: { project: Project; co
         info_graphics: c.info_graphics,
         series_genre: c.series_genre,
         series_setting: c.series_setting,
+        puppet: c.puppet,
       });
       router.push(`/project/${created.config.id}`);
     } catch (err) {

@@ -80,6 +80,13 @@ class Puppet:
     alpha: Any
 
 
+def _imread(*args: Any) -> Any:
+    """cv2.imread, typed loosely: its stubs make every use an Optional."""
+    import cv2
+
+    return cv2.imread(*args)
+
+
 def puppet_dir(root: Path, name: str) -> Path:
     import re
 
@@ -157,22 +164,23 @@ def _merge_poses(folder: Path) -> None:
     import cv2
     import numpy as np
 
-    base = cv2.imread(str(folder / "neutral.png"))
+    base = _imread(str(folder / "neutral.png"))
     height, width = base.shape[:2]
     for pose in POSE_EDITS:
         raw = folder / f"{pose}_raw.png"
         if not raw.is_file():
             continue
-        variant = cv2.resize(cv2.imread(str(raw)), (width, height))
+        variant = cv2.resize(_imread(str(raw)), (width, height))
         g1 = cv2.cvtColor(base, cv2.COLOR_BGR2GRAY).astype(np.float32)
         g2 = cv2.cvtColor(variant, cv2.COLOR_BGR2GRAY).astype(np.float32)
         scale = 0.25
         small1 = cv2.resize(g1, None, fx=scale, fy=scale)
         small2 = cv2.resize(g2, None, fx=scale, fy=scale)
-        warp = np.eye(2, 3, dtype=np.float32)
+        warp: Any = np.eye(2, 3, dtype=np.float32)
+        ecc: Any = cv2.findTransformECC
         try:
             criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 200, 1e-6)
-            _, warp = cv2.findTransformECC(small1, small2, warp, cv2.MOTION_AFFINE, criteria, None, 5)
+            _, warp = ecc(small1, small2, warp, cv2.MOTION_AFFINE, criteria, None, 5)
         except cv2.error:
             logger.warning("Could not align pose %s in %s", pose, folder.name)
         warp[:, 2] /= scale
@@ -183,7 +191,7 @@ def _merge_poses(folder: Path) -> None:
         diff = cv2.absdiff(
             cv2.GaussianBlur(variant, (0, 0), 2), cv2.GaussianBlur(base, (0, 0), 2)
         ).max(axis=2)
-        mask = (diff > 28).astype(np.uint8) * 255
+        mask: Any = (diff > 28).astype(np.uint8) * 255
         mask[int(height * 0.45):] = 0  # the face is in the top of a half-length portrait
         mask = cv2.dilate(mask, np.ones((25, 25), np.uint8))
         soft = cv2.GaussianBlur(mask, (0, 0), 9).astype(np.float32)[..., None] / 255.0
@@ -194,15 +202,15 @@ def _merge_poses(folder: Path) -> None:
 def load_puppet(folder: Path) -> Puppet | None:
     import cv2
 
-    base = cv2.imread(str(folder / "neutral.png"))
-    cut = cv2.imread(str(folder / "cutout.png"), cv2.IMREAD_UNCHANGED)
+    base = _imread(str(folder / "neutral.png"))
+    cut = _imread(str(folder / "cutout.png"), cv2.IMREAD_UNCHANGED)
     if base is None or cut is None or cut.ndim != 3 or cut.shape[2] != 4:
         return None
     height, width = base.shape[:2]
     alpha = cv2.resize(cut[..., 3], (width, height)).astype("float32") / 255.0
     poses = {"neutral": base}
     for pose in POSE_EDITS:
-        image = cv2.imread(str(folder / f"{pose}.png"))
+        image = _imread(str(folder / f"{pose}.png"))
         poses[pose] = image if image is not None else base
     return Puppet(poses=poses, alpha=alpha)
 
@@ -246,7 +254,7 @@ def render_shot(
 
     frames = max(1, round(seconds * fps))
     if plate is not None and plate.is_file():
-        room = cv2.resize(cv2.imread(str(plate)), (width, height))
+        room = cv2.resize(_imread(str(plate)), (width, height))
     else:
         room = np.full((height, width, 3), 40, np.uint8)
     room_f = room.astype(np.float32)

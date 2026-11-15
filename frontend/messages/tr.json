@@ -1249,6 +1249,10 @@
         "fast_hybrid": {
           "name": "Görselli",
           "hint": "Her çekim bir çizim, kamera hareketiyle. Daha ucuz ve hızlı."
+        },
+        "puppet": {
+          "name": "Sabit karakterli",
+          "hint": "Karakterler bir kez çizilir, her çekimde aynı yüzle konuşur ve tepki verir. En tutarlı ve en ucuz."
         }
       },
       "credits": "{count} kredi",
