@@ -887,6 +887,49 @@ async def generate_location_plate(
     return output_path
 
 
+_NIGHT = re.compile(
+    r"\b(?:night(?:time|fall|s)?|midnight|moon(?:light|lit)?|darkness|in the dark|after dark|pitch[- ]black|"
+    r"lights? (?:off|out)|dark (?:room|bedroom|kitchen|hallway|corridor|house|flat|apartment|street)|"
+    r"[1-4] ?a\.?m\.?)\b",
+    re.IGNORECASE,
+)
+
+
+def shot_is_night(prompt: str) -> bool:
+    """Whether a shot happens at night — its plate, drawn by day, would put
+    a 3 a.m. scene in a sunlit kitchen."""
+    return bool(_NIGHT.search(prompt or ""))
+
+
+def night_plate_path(plate: Path) -> Path:
+    return plate.with_name(f"{plate.stem}-night{plate.suffix}")
+
+
+async def generate_night_plate(plate: Path, output_path: Path, settings) -> Path:
+    """The same room at night: the plate edited (Kontext Pro), not drawn
+    again, so it is the same furniture with the lights off."""
+    import base64
+
+    prediction = await _replicate_predict(
+        {
+            "version": "black-forest-labs/flux-kontext-pro",
+            "input": {
+                "input_image": "data:image/png;base64," + base64.b64encode(plate.read_bytes()).decode(),
+                "prompt": (
+                    "Make it the middle of the night: lights off, dark blue shadows, faint "
+                    "moonlight through any window, one dim warm lamp at most. Keep the room, "
+                    "every piece of furniture, the framing and the drawing style exactly the same."
+                ),
+                "aspect_ratio": "match_input_image",
+                "output_format": "png",
+            },
+        },
+        settings,
+    )
+    await _download(_replicate_output_url(prediction), output_path)
+    return output_path
+
+
 async def generate_character_sheet(
     look: str, output_path: Path, settings, style: ArtStyle | None = None
 ) -> Path:

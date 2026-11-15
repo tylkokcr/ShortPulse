@@ -34,7 +34,7 @@ def test_a_puppet_story_costs_less_than_a_drawn_one():
             )
         )
 
-    assert price(True) == 25 and price(True) < price(False)
+    assert price(True) == 30 and price(True) < price(False)
 
 
 @pytest.mark.skipif(not HAVE_CV2 or shutil.which("ffmpeg") is None, reason="needs OpenCV and ffmpeg")
@@ -59,3 +59,34 @@ def test_a_puppet_shot_is_the_room_with_its_people(tmp_path):
         1.0, 180, 320, 10, "ffmpeg",
     )
     assert out.stat().st_size > 1000
+    for framing in ("close", "wide"):
+        out = puppets.render_shot(
+            tmp_path / f"{framing}.mp4", plate, [("Elif", puppet)], "Elif", None, None,
+            1.0, 180, 320, 10, "ffmpeg", 3, framing,
+        )
+        assert out.stat().st_size > 1000
+
+
+def test_shot_sizes_cut_in_and_out():
+    shots = [
+        ([], None, "kitchen"),
+        (["Elif"], "narrator", "kitchen"),
+        (["Elif", "Can"], "Can", "kitchen"),
+        (["Elif", "Can"], "Elif", "kitchen"),
+        (["Elif", "Can"], "Can", "kitchen"),
+        (["Elif", "Can"], "Elif", "kitchen"),
+        (["Elif"], "narrator", "bedroom"),
+    ]
+    sizes = puppets.plan_framing(shots)
+    assert sizes[0] == "wide"
+    assert "close" in sizes[2:6]
+    assert sizes[-1] == "wide"  # arriving somewhere new
+    assert all(not (a == b == c) for a, b, c in zip(sizes, sizes[1:], sizes[2:], strict=False))
+
+
+def test_night_shots_are_told_from_day_ones():
+    from app.engines.visual_engine import shot_is_night
+
+    assert shot_is_night("dark blue bedroom, moonlight on the pillow")
+    assert shot_is_night("the kitchen at 3 a.m., one lamp on")
+    assert not shot_is_night("a dark wooden table by the nightstand, morning sun")

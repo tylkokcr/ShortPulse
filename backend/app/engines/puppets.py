@@ -234,6 +234,35 @@ def _loudness(audio: Path | None, fps: int, frames: int, ffmpeg: str) -> list[fl
     return out
 
 
+def plan_framing(shots: list[tuple[list[str], str | None, str | None]]) -> list[str]:
+    """A shot size for each shot, from (people in frame, speaker, place).
+
+    Every shot at one size is what made the first puppet episode read as a
+    slideshow: the cut changed the picture and nothing else. So, as an edit
+    is cut: a wide shot whenever the story arrives somewhere, a close one on
+    most spoken lines, waist-up for the rest — and never the same size three
+    times running, so a run of lines still cuts in and out."""
+    out: list[str] = []
+    previous_place: str | None = None
+    for k, (people, speaker, place) in enumerate(shots):
+        talking = bool(speaker) and speaker != "narrator" and speaker in people
+        if not people:
+            size = "wide"
+        elif place != previous_place and k > 0:
+            size = "wide"
+        elif talking:
+            size = "close" if (k % 3) != 2 else "medium"
+        elif len(people) == 2:
+            size = "medium"
+        else:
+            size = "medium" if k % 2 else "wide"
+        if len(out) >= 2 and out[-1] == out[-2] == size and people:
+            size = "medium" if size != "medium" else ("close" if talking else "wide")
+        out.append(size)
+        previous_place = place
+    return out
+
+
 def render_shot(
     output: Path,
     plate: Path | None,
@@ -247,8 +276,13 @@ def render_shot(
     fps: int,
     ffmpeg: str = "ffmpeg",
     seed: int = 0,
+    framing: str = "medium",
 ) -> Path:
-    """One shot as a silent MP4: the room, its people, the speaker talking."""
+    """One shot as a silent MP4: the room, its people, the speaker talking.
+
+    `framing` is the shot size (see plan_framing): "close" is the speaker's
+    face filling the frame over the room out of focus, "medium" the people
+    from the waist up, "wide" the whole room with them small in it."""
     import cv2
     import numpy as np
 
@@ -263,9 +297,17 @@ def render_shot(
     face = face_for(tone)
     blink_every = 2.6 + (seed % 5) * 0.3
 
-    # Where each person stands: one centred a little to a side, two apart.
-    if len(cast) == 1:
-        side = -1 if seed % 2 else 1
+    side = -1 if seed % 2 else 1
+    if framing == "close" and cast:
+        # One face, big: whoever speaks, or the first person in frame. The
+        # room behind goes soft, as behind a face shot on a long lens.
+        cast = [next((c for c in cast if c[0] == speaker), cast[0])]
+        room_f = cv2.GaussianBlur(room_f, (0, 0), sigmaX=width / 90)
+        slots = [(0.5 + side * 0.03, 1.3)]
+    elif framing == "wide":
+        slots = [(0.5 + side * 0.12, 0.44)] if len(cast) == 1 else [(0.32, 0.38), (0.68, 0.38)]
+    elif len(cast) == 1:
+        # Where each person stands: one centred a little to a side, two apart.
         slots = [(0.5 + side * 0.06, 0.66)]
     else:
         slots = [(0.3, 0.52), (0.7, 0.52)]
@@ -274,10 +316,18 @@ def render_shot(
         ph, pw = puppet.poses["neutral"].shape[:2]
         h = int(height * size)
         w = int(pw * h / ph)
-        placed.append((name, puppet, int(width * cx - w / 2), height - h + int(height * 0.04), w, h))
+        if framing == "close":
+            # The head (the top fifth of a half-length portrait) just
+            # above the middle; the shoulders run off the bottom.
+            y0 = int(height * 0.4 - h * 0.2)
+        else:
+            y0 = height - h + int(height * 0.04)
+        placed.append((name, puppet, int(width * cx - w / 2), y0, w, h))
     focus = next((p for p in placed if p[0] == speaker), placed[0] if placed else None)
     fx = (focus[2] + focus[4] / 2) if focus else width / 2
     fy = (focus[3] + focus[5] * 0.25) if focus else height / 2
+    # A close shot barely moves; a wide one drifts in a little more.
+    push = {"close": 0.035, "wide": 0.05}.get(framing, 0.07)
 
     proc = subprocess.Popen(
         [ffmpeg, "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgr24",
@@ -309,7 +359,7 @@ def render_shot(
                 part_a = alpha[sy: sy + (yb - ya), sx: sx + (xb - xa)]
                 part_i = image[sy: sy + (yb - ya), sx: sx + (xb - xa)]
                 frame[ya:yb, xa:xb] = frame[ya:yb, xa:xb] * (1 - part_a) + part_i * part_a
-            zoom = 1 + 0.07 * (k / max(frames - 1, 1))
+            zoom = 1 + push * (k / max(frames - 1, 1))
             move = cv2.getRotationMatrix2D((fx, fy), 0, zoom)
             out = cv2.warpAffine(frame.astype(np.uint8), move, (width, height),
                                  borderMode=cv2.BORDER_REFLECT)

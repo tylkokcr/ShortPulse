@@ -202,8 +202,11 @@ def cost_for(config: ProjectConfig) -> int:
 # four-second Seedance Lite clips (~$0.07), ~$5.5, at 120.
 # A puppet story draws its people once (a portrait and five face edits
 # each, ~$0.25 a person) and its rooms once; every shot after that is
-# composited here. ~$1 an episode with its voices, less for the next ones.
-_PUPPET_COST = {VideoLength.SHORT: 15, VideoLength.MEDIUM: 25, VideoLength.LONG: 35}
+# composited here — except the shots with nobody in them (a door, two tea
+# glasses, the empty side of a bed), which are drawn from their prompt over
+# the room, ~$0.04 each and about a third of an episode, plus a night
+# version of a room once. ~$1.7 an episode with its voices, at 30.
+_PUPPET_COST = {VideoLength.SHORT: 18, VideoLength.MEDIUM: 30, VideoLength.LONG: 42}
 
 _STORY_COST = {
     VisualMode.STOCK_MEDIA: {VideoLength.SHORT: 6, VideoLength.MEDIUM: 12, VideoLength.LONG: 18},

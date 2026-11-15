@@ -586,9 +586,28 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             {} if puppet_mode else await _cast_sheets(script, paths, previous, config, settings)
         )
         plates = await _location_plates(script, paths, previous, config, settings)
+        night_plates = await _night_plates(script, plates, previous, settings)
         puppet_cast = (
             await _puppet_cast(script, paths, previous, config, settings) if puppet_mode else {}
         )
+        # Shot sizes for the puppet shots, planned over the whole episode:
+        # a size depends on the shots around it.
+        framings = dict(
+            zip(
+                [s.index for s in script.scenes],
+                puppets.plan_framing(
+                    [(list(s.cast), s.speaker, s.location) for s in script.scenes]
+                ),
+                strict=True,
+            )
+        ) if puppet_mode else {}
+
+        def place_for(scene: Scene) -> Path | None:
+            """The scene's room — by night when the shot is."""
+            loc = scene.location or ""
+            if loc in night_plates and visual_engine.shot_is_night(scene.visual.prompt):
+                return night_plates[loc]
+            return plates.get(loc)
 
         async def build_visual(scene: Scene) -> None:
             nonlocal completed
@@ -605,14 +624,19 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                         height=render_height,
                     )
                     scene.visual.asset_path = str(outro_path)
-                elif puppet_mode and not scene.map:
-                    # Drawn by code from the people's poses and the room.
+                elif puppet_mode and not scene.map and any(n in puppet_cast for n in scene.cast):
+                    # Drawn by code from the people's poses and the room. A
+                    # shot with nobody in it is drawn below instead, from
+                    # its own prompt over the room — the bed, the two tea
+                    # glasses, the shadow under the door: with no face in
+                    # it there is nothing to drift, and the empty plate
+                    # alone left the story's details out of the picture.
                     shot_path = paths / "visuals" / f"scene_{scene.index:02d}_puppet.mp4"
                     shot_path.parent.mkdir(parents=True, exist_ok=True)
                     await asyncio.to_thread(
                         puppets.render_shot,
                         shot_path,
-                        plates.get(scene.location or ""),
+                        place_for(scene),
                         [(n, puppet_cast[n]) for n in scene.cast if n in puppet_cast],
                         scene.speaker,
                         scene.audio.tone,
@@ -623,6 +647,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                         config.fps,
                         settings.ffmpeg_binary,
                         scene.index,
+                        framings.get(scene.index, "medium"),
                     )
                     scene.visual.asset_path = str(shot_path)
                     scene.visual.mode = VisualMode.AI_VIDEO
@@ -663,7 +688,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
                         reference=reference,
                         references=[cast_sheets[n] for n in scene.cast if n in cast_sheets],
                         video_model=settings.replicate_story_video_model if story else None,
-                        place=plates.get(scene.location or ""),
+                        place=place_for(scene),
                         shot_model=settings.replicate_story_image_model if story else None,
                     )
             # Reported on completion rather than on start: with several in
@@ -2223,6 +2248,42 @@ async def _location_plates(script, root: Path, previous, config, settings) -> di
                 f"location {loc_id}",
             ):
                 out[loc_id] = path
+
+        await asyncio.gather(*(draw(*job) for job in todo))
+    return out
+
+
+async def _night_plates(script, plates: dict[str, Path], previous, settings) -> dict[str, Path]:
+    """A night version of each place a shot happens in after dark, edited
+    from its plate once per series — or copied from the previous episode."""
+    night = {
+        s.location for s in script.scenes
+        if s.location in plates and visual_engine.shot_is_night(s.visual.prompt)
+    }
+    out: dict[str, Path] = {}
+    todo = []
+    for loc in sorted(night):
+        path = visual_engine.night_plate_path(plates[loc])
+        earlier = (
+            visual_engine.night_plate_path(location_plate_path(project_dir(previous.config.id), loc))
+            if previous
+            else None
+        )
+        if path.is_file():
+            out[loc] = path
+        elif earlier is not None and earlier.is_file():
+            shutil.copyfile(earlier, path)
+            out[loc] = path
+        else:
+            todo.append((loc, path))
+    if todo and visual_engine.image_backend(settings) is visual_engine.ImageBackend.REPLICATE:
+
+        async def draw(loc: str, path: Path) -> None:
+            if await _with_retries(
+                lambda: visual_engine.generate_night_plate(plates[loc], path, settings),
+                f"night {loc}",
+            ):
+                out[loc] = path
 
         await asyncio.gather(*(draw(*job) for job in todo))
     return out

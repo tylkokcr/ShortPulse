@@ -158,10 +158,7 @@ async def _synthesize_elevenlabs(
     context: tuple[str, str] | None = None,
 ) -> None:
     """One line through ElevenLabs v3 on Replicate, as MP3, acted from the
-    tags at its front, at its most expressive stability ("creative"): at
-    0.4 the first acted episodes read as having no feeling at all, and on
-    one whispered, frightened line 0.0 took the voice from 76-120 Hz to
-    84-372."""
+    tags at its front, at ELEVENLABS_STABILITY."""
     from app.core.config import get_settings
     from app.engines.visual_engine import _replicate_output_url, _replicate_predict
 
@@ -184,7 +181,7 @@ async def _synthesize_elevenlabs(
                 "prompt": spoken,
                 "voice": name,
                 "language_code": (language or "en").split("-")[0],
-                "stability": 0.0,
+                "stability": ELEVENLABS_STABILITY,
                 "speed": speed,
                 # previous_text/next_text are in the schema, but v3 refuses
                 # them ("not yet supported with the 'eleven_v3' model"):
@@ -201,12 +198,20 @@ async def _synthesize_elevenlabs(
         output_path.write_bytes(response.content)
 
 
+# v3's "natural" setting (it takes 0, 0.5 or 1). "Creative" (0.0) was
+# chosen when the first acted episodes had no feeling at 0.4 — but those
+# lines had lost their tags to the text cleanup, which was the real cause.
+# With the tags arriving, 0.0 stuttered: repeated syllables and broken-off
+# words mid-line in the first puppet episode. 0.5 still acts the tags.
+ELEVENLABS_STABILITY = 0.5
+
+
 async def _synthesize_elevenlabs_direct(
     text: str, voice_id: str, output_path: Path, language: str, settings
 ) -> None:
     """One line through the ElevenLabs API with an account voice, as MP3:
-    v3, acted from the tags at the front of the line, at the creative
-    stability that lets them work."""
+    v3, acted from the tags at the front of the line, at
+    ELEVENLABS_STABILITY."""
     import asyncio
 
     import httpx
@@ -216,7 +221,7 @@ async def _synthesize_elevenlabs_direct(
         "text": spoken,
         "model_id": "eleven_v3",
         "language_code": (language or "en").split("-")[0],
-        "voice_settings": {"stability": 0.0},
+        "voice_settings": {"stability": ELEVENLABS_STABILITY},
     }
     async with httpx.AsyncClient(timeout=90) as client:
         for attempt in range(3):
