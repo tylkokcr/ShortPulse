@@ -109,7 +109,8 @@ def test_a_night_chapter_stays_dark_in_the_same_room():
         shot(3, "the kitchen table", "kitchen"),
         shot(4, "the hallway again", "hallway", "Sabah"),
     ]
-    assert night_scenes(scenes) == {1, 2}
+    # The kitchen too: it is in the "Saat üç" chapter.
+    assert night_scenes(scenes) == {1, 2, 3}
 
 
 def test_a_morning_shot_ends_the_night():
@@ -127,3 +128,21 @@ def test_a_morning_shot_ends_the_night():
         shot(3, "two tea glasses by the door"),
     ]
     assert night_scenes(scenes) == {0, 1}
+
+
+def test_a_night_chapter_starts_dark_in_every_room():
+    from app.engines.visual_engine import night_scenes
+    from app.schemas.project import Scene, SceneAudio, SceneGraphic, SceneVisual
+
+    def shot(i: int, prompt: str, place: str, chapter: str | None = None) -> Scene:
+        return Scene(index=i, duration_s=3, location=place, graphic=SceneGraphic(chapter=chapter),
+                     visual=SceneVisual(prompt=prompt), audio=SceneAudio(voiceover_line="x"))
+
+    scenes = [
+        shot(0, "a hallway", "hallway", "ÖĞLEDEN SONRA"),
+        shot(1, "steam from a kettle", "kitchen", "O GECE"),
+        shot(2, "an empty sofa", "livingroom"),
+        shot(3, "the kitchen in the morning sun", "kitchen"),
+        shot(4, "a door", "hallway", "SAAT ALTI"),
+    ]
+    assert night_scenes(scenes) == {1, 2}

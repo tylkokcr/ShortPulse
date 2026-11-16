@@ -915,6 +915,14 @@ _DAY = re.compile(
 )
 
 
+# A chapter heading is in the story's language: "O GECE", "THAT NIGHT",
+# "TEJ NOCY", "IN DER NACHT", "SAAT ÜÇ" — but not "SAAT ALTI" (six).
+_NIGHT_HEADING = re.compile(
+    r"gece|night|midnight|noc[yi]?\b|północ|nacht|saat (?:bir|iki|üç|dört|[1-4])\b",
+    re.IGNORECASE,
+)
+
+
 def shot_is_day(prompt: str) -> bool:
     return bool(_DAY.search(prompt or ""))
 
@@ -928,17 +936,21 @@ def night_scenes(scenes: list[Scene]) -> set[int]:
     out: set[int] = set()
     dark: dict[str | None, bool] = {}
     chapter: str | None = None
+    night_chapter = False
     for scene in scenes:
         heading = scene.graphic.chapter if scene.graphic else None
         if heading and heading != chapter:
             dark, chapter = {}, heading
+            # "O GECE" over a chapter: its first shot in each room is
+            # night too, though its prompt never says so.
+            night_chapter = bool(_NIGHT_HEADING.search(heading))
         prompt = scene.visual.prompt
         if shot_is_day(prompt):
             dark[scene.location] = False
         elif shot_is_night(prompt):
             dark[scene.location] = True
             out.add(scene.index)
-        elif scene.location and dark.get(scene.location):
+        elif dark.get(scene.location, night_chapter):
             out.add(scene.index)
     return out
 
