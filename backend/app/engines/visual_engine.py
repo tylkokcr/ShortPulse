@@ -908,25 +908,38 @@ def shot_is_night(prompt: str) -> bool:
     return bool(_NIGHT.search(prompt or ""))
 
 
+_DAY = re.compile(
+    r"\b(?:morning|daylight|daytime|sunlight|sunlit|sunny|sunshine|afternoon|midday|noon|"
+    r"dawn|sunrise)\b",
+    re.IGNORECASE,
+)
+
+
+def shot_is_day(prompt: str) -> bool:
+    return bool(_DAY.search(prompt or ""))
+
+
 def night_scenes(scenes: list[Scene]) -> set[int]:
-    """The shots that happen at night: each one that says so, and every
-    other shot in the same room within the same chapter — "3 a.m." said
-    once in a run of hallway shots left the next ones in daylight."""
+    """The shots that happen at night: each one that says so, and the shots
+    after it in the same room and chapter until one says it is day — "3
+    a.m." said once in a run of hallway shots left the next ones in
+    daylight, and carrying the dark across a whole chapter put "every
+    morning" in the middle of the night."""
     out: set[int] = set()
-    run: list[Scene] = []
+    dark: dict[str | None, bool] = {}
     chapter: str | None = None
-
-    def close() -> None:
-        dark = {s.location for s in run if s.location and shot_is_night(s.visual.prompt)}
-        out.update(s.index for s in run if s.location in dark or shot_is_night(s.visual.prompt))
-
     for scene in scenes:
         heading = scene.graphic.chapter if scene.graphic else None
         if heading and heading != chapter:
-            close()
-            run, chapter = [], heading
-        run.append(scene)
-    close()
+            dark, chapter = {}, heading
+        prompt = scene.visual.prompt
+        if shot_is_day(prompt):
+            dark[scene.location] = False
+        elif shot_is_night(prompt):
+            dark[scene.location] = True
+            out.add(scene.index)
+        elif scene.location and dark.get(scene.location):
+            out.add(scene.index)
     return out
 
 

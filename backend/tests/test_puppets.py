@@ -110,3 +110,20 @@ def test_a_night_chapter_stays_dark_in_the_same_room():
         shot(4, "the hallway again", "hallway", "Sabah"),
     ]
     assert night_scenes(scenes) == {1, 2}
+
+
+def test_a_morning_shot_ends_the_night():
+    from app.engines.visual_engine import night_scenes
+    from app.schemas.project import Scene, SceneAudio, SceneVisual
+
+    def shot(i: int, prompt: str) -> Scene:
+        return Scene(index=i, duration_s=3, location="hallway",
+                     visual=SceneVisual(prompt=prompt), audio=SceneAudio(voiceover_line="x"))
+
+    scenes = [
+        shot(0, "the hallway at night"),
+        shot(1, "a closed door"),
+        shot(2, "an umbrella by the door, dim morning light"),
+        shot(3, "two tea glasses by the door"),
+    ]
+    assert night_scenes(scenes) == {0, 1}

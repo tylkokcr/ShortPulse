@@ -1086,7 +1086,9 @@ async def edit_cast_member(
         project = await project_store.update_project(project_id, script=project.script)
 
     look = " ".join((edit.look or "").split())
-    in_frame = any(name in scene.cast for scene in project.script.scenes)
+    script = project.script
+    assert script is not None
+    in_frame = any(name in scene.cast for scene in script.scenes)
     if look and look != member.look and not in_frame:
         # Heard but not seen this episode (a voice behind a door): nothing
         # to draw yet. The look is kept for the episode they appear in.
