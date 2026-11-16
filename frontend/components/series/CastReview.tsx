@@ -35,6 +35,12 @@ export function CastReview({
   const t = useTranslations("app.castReview");
   const id = project.config.id;
   const cast = project.script?.cast ?? [];
+  // Someone heard but never seen this episode (a voice behind a door) is
+  // not drawn until an episode shows them.
+  const seen = useMemo(
+    () => new Set((project.script?.scenes ?? []).flatMap((s) => s.cast ?? [])),
+    [project.script]
+  );
   const [token, setToken] = useState<string | null>(null);
   const [voices, setVoices] = useState<CastVoice[]>([]);
   const [approving, setApproving] = useState(false);
@@ -73,6 +79,7 @@ export function CastReview({
             key={member.name}
             projectId={id}
             member={member}
+            seen={seen.has(member.name)}
             token={token}
             voices={voices}
             redrawsLeft={redrawsLeft}
@@ -96,6 +103,7 @@ export function CastReview({
 function MemberCard({
   projectId,
   member,
+  seen,
   token,
   voices,
   redrawsLeft,
@@ -103,6 +111,7 @@ function MemberCard({
 }: {
   projectId: string;
   member: CastMember;
+  seen: boolean;
   token: string | null;
   voices: CastVoice[];
   redrawsLeft: number;
@@ -162,7 +171,11 @@ function MemberCard({
   return (
     <div className="flex gap-3 rounded-lg border border-border p-3">
       <div className="relative aspect-[3/4] w-24 shrink-0 overflow-hidden rounded-md bg-white/[0.03]">
-        {token && (
+        {!seen ? (
+          <div className="flex h-full items-center justify-center p-2 text-center text-[10px] leading-snug text-white/40">
+            {t("notSeen")}
+          </div>
+        ) : token && (
           // A signed, private picture: the optimiser would need the token
           // and would cache what is about to be redrawn.
           // eslint-disable-next-line @next/next/no-img-element
@@ -230,13 +243,22 @@ function MemberCard({
           <Button
             variant="secondary"
             size="sm"
-            disabled={busy !== null || redrawsLeft <= 0 || look.trim().length < 3 || look.trim() === member.look}
+            disabled={
+              busy !== null ||
+              (seen && redrawsLeft <= 0) ||
+              look.trim().length < 3 ||
+              look.trim() === member.look
+            }
             onClick={() => save({ look: look.trim() }, "look")}
           >
             <RefreshCw size={12} />
-            {t("redraw")}
+            {seen ? t("redraw") : t("saveLook")}
           </Button>
-          <span className="text-[10px] text-white/35">{t("redrawsLeft", { count: Math.max(redrawsLeft, 0) })}</span>
+          {seen && (
+            <span className="text-[10px] text-white/35">
+              {t("redrawsLeft", { count: Math.max(redrawsLeft, 0) })}
+            </span>
+          )}
         </div>
         {error && <p className="text-[11px] text-red-400">{error}</p>}
       </div>

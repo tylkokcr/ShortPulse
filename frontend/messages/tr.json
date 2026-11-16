@@ -1365,7 +1365,9 @@
         "older_man": "Yaşlı erkek",
         "girl": "Kız çocuk",
         "boy": "Erkek çocuk"
-      }
+      },
+      "notSeen": "Bu bölümde görünmüyor, yalnızca sesi var",
+      "saveLook": "Kaydet"
     }
   },
   "tour": {

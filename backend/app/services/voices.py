@@ -194,7 +194,8 @@ def _cast_kind(gender: str, age: int | None) -> str:
     if g in ("girl", "boy"):
         return g
     child = age is not None and age < 14
-    older = age is not None and age >= 60
+    # A 58-year-old neighbour got a young woman's voice at 60.
+    older = age is not None and age >= 55
     if g in ("woman", "female", "f"):
         return "girl" if child else "older_woman" if older else "woman"
     if g in ("man", "male", "m"):

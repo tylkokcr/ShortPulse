@@ -193,3 +193,21 @@ async def test_a_new_look_redraws_up_to_the_limit(api, monkeypatch):
     assert ok.json()["config"]["cast_redraws"] == 1
     assert ok.json()["script"]["cast"][0]["look"] == "long red hair"
     assert over.status_code == 429
+
+
+async def test_a_voice_heard_but_not_seen_keeps_its_look_without_a_drawing(api, monkeypatch):
+    from app.services import render_manager
+
+    async def redraw(*args):
+        raise AssertionError("drew someone who is not in any shot")
+
+    monkeypatch.setattr(render_manager, "redraw_cast_member", redraw)
+    pid = await _in_review()
+    project = await project_store.get_project(pid)
+    assert project is not None and project.script is not None
+    project.script.cast.append(CastMember(name="Nermin", gender="woman", age=58, look="grey bun"))
+    await project_store.update_project(pid, script=project.script)
+    async with _client(api) as client:
+        response = await client.post(f"/api/projects/{pid}/cast/Nermin", json={"look": "white hair"})
+    assert response.json()["script"]["cast"][1]["look"] == "white hair"
+    assert response.json()["config"]["cast_redraws"] == 0

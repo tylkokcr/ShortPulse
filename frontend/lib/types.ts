@@ -121,6 +121,9 @@ export interface Scene {
   /** The optional closing card. Drawn locally from the operator's own
    *  text rather than generated, so there is nothing to re-roll. */
   is_outro?: boolean;
+  /** A story's: who is in the picture, and who says the line. */
+  cast?: string[];
+  speaker?: string | null;
 }
 
 /** Title, description and hashtags for the post itself, as opposed to

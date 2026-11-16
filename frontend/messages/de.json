@@ -1365,7 +1365,9 @@
         "older_man": "Älterer Mann",
         "girl": "Mädchen",
         "boy": "Junge"
-      }
+      },
+      "notSeen": "In dieser Folge nur zu hören",
+      "saveLook": "Speichern"
     }
   },
   "tour": {

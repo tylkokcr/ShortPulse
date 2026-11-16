@@ -1086,7 +1086,13 @@ async def edit_cast_member(
         project = await project_store.update_project(project_id, script=project.script)
 
     look = " ".join((edit.look or "").split())
-    if look and look != member.look:
+    in_frame = any(name in scene.cast for scene in project.script.scenes)
+    if look and look != member.look and not in_frame:
+        # Heard but not seen this episode (a voice behind a door): nothing
+        # to draw yet. The look is kept for the episode they appear in.
+        member.look = look
+        project = await project_store.update_project(project_id, script=project.script)
+    elif look and look != member.look:
         if project.config.cast_redraws >= MAX_CAST_REDRAWS:
             raise HTTPException(
                 status_code=429,

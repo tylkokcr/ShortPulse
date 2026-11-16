@@ -1365,7 +1365,9 @@
         "older_man": "Starszy mężczyzna",
         "girl": "Dziewczynka",
         "boy": "Chłopiec"
-      }
+      },
+      "notSeen": "W tym odcinku tylko słychać tę postać",
+      "saveLook": "Zapisz"
     }
   },
   "tour": {

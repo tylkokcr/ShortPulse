@@ -1365,7 +1365,9 @@
         "older_man": "Older man",
         "girl": "Girl",
         "boy": "Boy"
-      }
+      },
+      "notSeen": "Heard, not seen this episode",
+      "saveLook": "Save"
     }
   },
   "tour": {
