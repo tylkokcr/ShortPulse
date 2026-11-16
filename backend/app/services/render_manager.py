@@ -603,6 +603,13 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             )
         ) if puppet_mode else {}
 
+        # A shot that is night only by its chapter says so in its own words
+        # too: drawn from the night plate alone, "the kitchen has no
+        # window" came back in daylight.
+        for scene in script.scenes:
+            if scene.index in at_night and not visual_engine.shot_is_night(scene.visual.prompt):
+                scene.visual.prompt = f"{scene.visual.prompt.rstrip('. ')}, at night, lights off"
+
         def place_for(scene: Scene) -> Path | None:
             """The scene's room — by night when the shot is."""
             loc = scene.location or ""
