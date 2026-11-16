@@ -586,6 +586,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             {} if puppet_mode else await _cast_sheets(script, paths, previous, config, settings)
         )
         plates = await _location_plates(script, paths, previous, config, settings)
+        at_night = visual_engine.night_scenes(script.scenes)
         night_plates = await _night_plates(script, plates, previous, settings)
         puppet_cast = (
             await _puppet_cast(script, paths, previous, config, settings) if puppet_mode else {}
@@ -605,7 +606,7 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
         def place_for(scene: Scene) -> Path | None:
             """The scene's room — by night when the shot is."""
             loc = scene.location or ""
-            if loc in night_plates and visual_engine.shot_is_night(scene.visual.prompt):
+            if loc in night_plates and scene.index in at_night:
                 return night_plates[loc]
             return plates.get(loc)
 
@@ -2256,10 +2257,8 @@ async def _location_plates(script, root: Path, previous, config, settings) -> di
 async def _night_plates(script, plates: dict[str, Path], previous, settings) -> dict[str, Path]:
     """A night version of each place a shot happens in after dark, edited
     from its plate once per series — or copied from the previous episode."""
-    night = {
-        s.location for s in script.scenes
-        if s.location in plates and visual_engine.shot_is_night(s.visual.prompt)
-    }
+    at_night = visual_engine.night_scenes(script.scenes)
+    night = {s.location for s in script.scenes if s.location in plates and s.index in at_night}
     out: dict[str, Path] = {}
     todo = []
     for loc in sorted(night):

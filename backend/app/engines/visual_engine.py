@@ -908,6 +908,28 @@ def shot_is_night(prompt: str) -> bool:
     return bool(_NIGHT.search(prompt or ""))
 
 
+def night_scenes(scenes: list[Scene]) -> set[int]:
+    """The shots that happen at night: each one that says so, and every
+    other shot in the same room within the same chapter — "3 a.m." said
+    once in a run of hallway shots left the next ones in daylight."""
+    out: set[int] = set()
+    run: list[Scene] = []
+    chapter: str | None = None
+
+    def close() -> None:
+        dark = {s.location for s in run if s.location and shot_is_night(s.visual.prompt)}
+        out.update(s.index for s in run if s.location in dark or shot_is_night(s.visual.prompt))
+
+    for scene in scenes:
+        heading = scene.graphic.chapter if scene.graphic else None
+        if heading and heading != chapter:
+            close()
+            run, chapter = [], heading
+        run.append(scene)
+    close()
+    return out
+
+
 def night_plate_path(plate: Path) -> Path:
     return plate.with_name(f"{plate.stem}-night{plate.suffix}")
 

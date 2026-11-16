@@ -90,3 +90,23 @@ def test_night_shots_are_told_from_day_ones():
     assert shot_is_night("dark blue bedroom, moonlight on the pillow")
     assert shot_is_night("the kitchen at 3 a.m., one lamp on")
     assert not shot_is_night("a dark wooden table by the nightstand, morning sun")
+
+
+def test_a_night_chapter_stays_dark_in_the_same_room():
+    from app.engines.visual_engine import night_scenes
+    from app.schemas.project import Scene, SceneAudio, SceneGraphic, SceneVisual
+
+    def shot(i: int, prompt: str, place: str, chapter: str | None = None) -> Scene:
+        return Scene(
+            index=i, duration_s=3, location=place, graphic=SceneGraphic(chapter=chapter),
+            visual=SceneVisual(prompt=prompt), audio=SceneAudio(voiceover_line="x"),
+        )
+
+    scenes = [
+        shot(0, "a sunny hallway", "hallway", "O akşam"),
+        shot(1, "the hallway at 3 a.m.", "hallway", "Saat üç"),
+        shot(2, "a man in the hallway, alarmed", "hallway"),
+        shot(3, "the kitchen table", "kitchen"),
+        shot(4, "the hallway again", "hallway", "Sabah"),
+    ]
+    assert night_scenes(scenes) == {1, 2}
