@@ -6,6 +6,7 @@ import type {
   ReferralSummary,
   MusicTrack,
   CaptionTrack,
+  CastVoice,
   Layout,
   Project,
   ProjectConfig,
@@ -461,6 +462,34 @@ export interface MediaUrl {
  * signed token instead. Fetch a fresh one rather than holding onto it:
  * they expire in minutes.
  */
+/** The voices a cast member may be given in this story's language. */
+export function getCastVoices(projectId: string): Promise<CastVoice[]> {
+  return request<CastVoice[]>(`/projects/${projectId}/cast/voices`);
+}
+
+/** Another voice, or another look (which draws the person again — about a
+ *  minute). 429 once the redraws allowed are used up. */
+export function editCastMember(
+  projectId: string,
+  name: string,
+  edit: { voice_id?: string; look?: string }
+): Promise<Project> {
+  return request<Project>(`/projects/${projectId}/cast/${encodeURIComponent(name)}`, {
+    method: "POST",
+    body: JSON.stringify(edit),
+  });
+}
+
+/** The cast is right: make the episode. */
+export function approveCast(projectId: string): Promise<Project> {
+  return request<Project>(`/projects/${projectId}/cast/approve`, { method: "POST" });
+}
+
+/** A cast member's picture, signed like the scene thumbnails. */
+export function castPortraitUrl(projectId: string, name: string, token: string, version = 0): string {
+  return `${API_BASE}/projects/${projectId}/cast/${encodeURIComponent(name)}/portrait?token=${encodeURIComponent(token)}&v=${version}`;
+}
+
 export function getMediaUrl(projectId: string): Promise<MediaUrl> {
   return request<MediaUrl>(`/projects/${projectId}/media-url`);
 }

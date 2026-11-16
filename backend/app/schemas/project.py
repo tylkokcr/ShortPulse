@@ -85,6 +85,8 @@ class RenderStage(StrEnum):
     VISUAL_GENERATION = "visual_generation"
     SUBTITLE_GENERATION = "subtitle_generation"
     ASSEMBLY = "assembly"
+    # Stopped for the owner to approve a story's cast (see ProjectConfig.review_cast).
+    REVIEW = "review"
     DONE = "done"
     FAILED = "failed"
 
@@ -92,6 +94,7 @@ class RenderStage(StrEnum):
 class ProjectStatus(StrEnum):
     DRAFT = "draft"
     RENDERING = "rendering"
+    REVIEW = "review"
     COMPLETE = "complete"
     FAILED = "failed"
 
@@ -644,6 +647,13 @@ class ProjectConfig(BaseModel):
     # A story drawn as puppets (engines/puppets.py): each person drawn once
     # in a few poses and placed into the rooms, so faces never change.
     puppet: bool = False
+    # A story's first episode stops once its script is written and its
+    # people are drawn, so the owner sees who they will spend forty shots
+    # with — and can change a face or a voice — before the rest is made.
+    # cast_approved and cast_redraws are the server's, never the client's.
+    review_cast: bool = False
+    cast_approved: bool = False
+    cast_redraws: int = 0
     # Set only on uploads, and only when the caller asked for a dub: the
     # language the video should come out speaking. `language` above stays
     # what it always was, the language the source is *in*, because the

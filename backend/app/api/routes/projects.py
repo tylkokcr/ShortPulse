@@ -86,6 +86,15 @@ async def create_project(
             detail={"error": refusal.code, "reason": refusal.reason},
         ) from refusal
 
+    # The server's to set: an approval or a redraw count sent with a new
+    # project would skip the review or the limit on it.
+    config.cast_approved = False
+    config.cast_redraws = 0
+    # Only a story's first episode is reviewed; a later one keeps its cast.
+    config.review_cast = bool(
+        config.review_cast and config.script_format == ScriptFormat.STORY and not config.continues_from
+    )
+
     # The episode this one continues must be the caller's own, finished,
     # and a series; the new one is that series' next, in its language.
     if config.continues_from:
@@ -953,3 +962,148 @@ def content_disposition(disposition: str, title: str, *, fallback: str) -> str:
         f'{disposition}; filename="{ascii_stem}.mp4"; '
         f"filename*=UTF-8''{quote(stem + '.mp4', safe='')}"
     )
+
+
+# --------------------------------------------------------------------------
+# Cast review: a story's first episode stops once its people are drawn
+# (ProjectConfig.review_cast), and these let the owner look at them, change
+# a voice or a face, and carry on.
+# --------------------------------------------------------------------------
+
+# Each redraw is a new portrait and its five expressions (~$0.25 for a
+# puppet) on a price set for one drawing per person.
+MAX_CAST_REDRAWS = 4
+
+
+async def _in_review(project_id: str, user_id: str | None) -> Project:
+    project = await _visible_project(project_id, user_id)
+    if str(project.status) != ProjectStatus.REVIEW or project.script is None:
+        raise HTTPException(
+            status_code=409,
+            detail={"error": "not_in_review", "reason": "This episode is not waiting for a cast review."},
+        )
+    return project
+
+
+@router.get("/{project_id}/cast/{name}/portrait")
+async def cast_portrait(
+    project_id: str,
+    name: str,
+    request: Request,
+    token: str | None = Query(default=None),
+    v: int = Query(default=0),
+    user_id: str | None = Depends(current_user_id),
+) -> FileResponse:
+    """A cast member's picture, for the review cards. Signed like the
+    scene thumbnails, because an <img> cannot send a header. `v` only
+    busts the cache after a redraw."""
+    from app.services.render_manager import cast_portrait as portrait_path
+
+    if token is not None:
+        try:
+            request.app.state.media_signer.verify(project_id, token)
+        except InvalidMediaToken as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        project = await project_store.get_project(project_id)
+        if project is None:
+            raise HTTPException(status_code=404, detail="Project not found")
+    else:
+        project = await _visible_project(project_id, user_id)
+    if project.script is None or name not in {m.name for m in project.script.cast}:
+        raise HTTPException(status_code=404, detail="No such cast member")
+    path = portrait_path(project_dir(project_id), name, project.config.puppet)
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Not drawn")
+    return FileResponse(path, media_type="image/png", headers={"Cache-Control": "private, max-age=3600"})
+
+
+class CastVoice(BaseModel):
+    voice_id: str
+    name: str
+    kind: str
+    preview_url: str | None = None
+
+
+@router.get("/{project_id}/cast/voices", response_model=list[CastVoice])
+async def cast_voices(project_id: str, user_id: str | None = Depends(current_user_id)) -> list[CastVoice]:
+    """The voices a cast member may be given in this story's language —
+    none where the story is not voiced by ElevenLabs, and the page then
+    offers no choice."""
+    from app.services import elevenlabs_voices
+
+    project = await _visible_project(project_id, user_id)
+    if not elevenlabs_voices.enabled():
+        return []
+    try:
+        return [CastVoice(**v) for v in await elevenlabs_voices.voice_choices(project.config.language)]
+    except Exception:  # noqa: BLE001 - no choice is better than a broken page
+        logger.warning("Could not list ElevenLabs voices", exc_info=True)
+        return []
+
+
+@router.post("/{project_id}/cast/approve", response_model=Project)
+async def approve_cast(
+    project_id: str, request: Request, user_id: str | None = Depends(current_user_id)
+) -> Project:
+    """The cast is right: make the episode, from the voices on."""
+    project = await _in_review(project_id, user_id)
+    config = project.config.model_copy(update={"cast_approved": True})
+    project = await project_store.update_project(
+        project_id, config=config, status=ProjectStatus.DRAFT
+    )
+    await request.app.state.render_queue.submit(project)
+    return project
+
+
+class CastEdit(BaseModel):
+    voice_id: str | None = Field(default=None, max_length=80)
+    look: str | None = Field(default=None, min_length=3, max_length=300)
+
+
+@router.post("/{project_id}/cast/{name}", response_model=Project)
+async def edit_cast_member(
+    project_id: str,
+    name: str,
+    edit: CastEdit,
+    user_id: str | None = Depends(current_user_id),
+) -> Project:
+    """Give a cast member another voice, or another look — which draws
+    them again, synchronously (about a minute for a puppet)."""
+    from app.services import elevenlabs_voices
+    from app.services.render_manager import redraw_cast_member
+
+    project = await _in_review(project_id, user_id)
+    assert project.script is not None
+    member = next((m for m in project.script.cast if m.name == name), None)
+    if member is None:
+        raise HTTPException(status_code=404, detail="No such cast member")
+
+    if edit.voice_id and edit.voice_id != member.voice_id:
+        allowed = {v["voice_id"] for v in await elevenlabs_voices.voice_choices(project.config.language)}
+        if edit.voice_id not in allowed:
+            raise HTTPException(status_code=422, detail={"error": "unknown_voice"})
+        member.voice_id = edit.voice_id
+        project = await project_store.update_project(project_id, script=project.script)
+
+    look = " ".join((edit.look or "").split())
+    if look and look != member.look:
+        if project.config.cast_redraws >= MAX_CAST_REDRAWS:
+            raise HTTPException(
+                status_code=429,
+                detail={"error": "redraw_limit", "limit": MAX_CAST_REDRAWS},
+            )
+        try:
+            with project_lock.hold(project_id):
+                previous_look = member.look
+                member.look = look
+                try:
+                    await redraw_cast_member(project, name, get_settings())
+                except Exception as exc:
+                    member.look = previous_look
+                    logger.warning("Cast redraw failed for %s", project_id, exc_info=True)
+                    raise HTTPException(status_code=502, detail={"error": "redraw_failed"}) from exc
+        except project_lock.ProjectBusy as exc:
+            raise HTTPException(status_code=409, detail={"error": "busy"}) from exc
+        config = project.config.model_copy(update={"cast_redraws": project.config.cast_redraws + 1})
+        project = await project_store.update_project(project_id, script=project.script, config=config)
+    return project

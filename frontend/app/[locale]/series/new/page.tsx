@@ -120,6 +120,9 @@ function NewSeries() {
         art_style: style,
         visual_mode: mode === "puppet" ? "fast_hybrid" : mode,
         puppet: format === "story" && mode === "puppet",
+        // Stops once the people are drawn, for a look before the episode is
+        // made: the project page shows them (components/series/CastReview).
+        review_cast: format === "story",
         video_length: length,
         aspect_ratio: "9:16",
         // What if? carries its kind the way a series carries its genre.

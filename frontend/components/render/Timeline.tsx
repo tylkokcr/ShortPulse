@@ -16,6 +16,9 @@ const STAGES: RenderStage[] = [
 
 function stageOrder(stage: RenderStage | undefined): number {
   if (!stage) return -1;
+  // Stopped for the cast review: the script is written, nothing else
+  // has started, so no step is lit as running.
+  if (stage === "review") return 0.5;
   return STAGES.indexOf(stage);
 }
 

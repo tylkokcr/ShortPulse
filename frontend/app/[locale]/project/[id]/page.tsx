@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/Card";
 import { AppShell } from "@/components/layout/AppShell";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { NextEpisode } from "@/components/series/NextEpisode";
+import { CastReview } from "@/components/series/CastReview";
 import { RenderPreview } from "@/components/render/RenderPreview";
 import { TranscriptPanel } from "@/components/render/TranscriptPanel";
 import { StockCredits } from "@/components/render/StockCredits";
@@ -43,6 +44,7 @@ function Project({ id }: { id: string }) {
   const tp = useTranslations("app.publish");
   const activeProject = useShortPulseStore((s) => s.activeProject);
   const bumpVideoVersion = useShortPulseStore((s) => s.bumpVideoVersion);
+  const setActiveProject = useShortPulseStore((s) => s.setActiveProject);
   const setCredits = useShortPulseStore((s) => s.setCredits);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -189,6 +191,17 @@ function Project({ id }: { id: string }) {
               the output panel off screen. min-w-0 lets the column's own
               children wrap or clip instead. */}
           <div className="animate-fade-up flex min-w-0 flex-col gap-4">
+            {/* The status the player panel follows is the store's, so an
+                approval goes there too — that is what starts its polling. */}
+            {project?.status === "review" && (
+              <CastReview
+                project={project}
+                onChange={(updated) => {
+                  setProject(updated);
+                  setActiveProject(updated);
+                }}
+              />
+            )}
             <div className="inline-flex w-fit rounded-md border border-border bg-surface p-1">
               {([
                 { id: "scenes", label: t("tabScenes"), icon: ListTree },

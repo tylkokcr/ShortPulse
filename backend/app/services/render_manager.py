@@ -429,6 +429,50 @@ class StageTimings:
         return payload
 
 
+async def _write_script(config: ProjectConfig, previous, timings: StageTimings):
+    """The scene breakdown, from the LLM, with what the project keeps out of
+    frame stamped on every scene and its outro card appended."""
+    with timings.stage("script"):
+        script = await script_engine.generate_script(
+            topic=config.topic,
+            config=config.llm,
+            raw_script=config.raw_script,
+            video_length=config.video_length,
+            language=config.language,
+            # Stock mode turns this into a keyword search, so asking
+            # for prose here would be generated and then discarded.
+            visual_mode=str(config.visual_mode),
+            script_format=str(config.script_format),
+            previous=previous.script if previous else None,
+            brief=script_engine.series_brief(config.series_genre, config.series_setting),
+        )
+    # What the whole render should keep out of frame, stamped onto
+    # every scene the LLM just wrote. Per scene rather than read from
+    # the config at generation time, so a scene re-rolled later starts
+    # from what the project asked for and can add to it — and so the
+    # stored script says what each picture was actually generated
+    # against, which is the only record after the fact.
+    if config.negative_prompt:
+        for scene in script.scenes:
+            # Added to what the script asked to keep out, not instead.
+            scene.visual.negative_prompt = ", ".join(
+                p for p in (scene.visual.negative_prompt, config.negative_prompt) if p
+            )
+
+    if config.outro.enabled:
+        outro_text = config.outro.text or script.call_to_action or "Thanks for watching!"
+        script.scenes.append(
+            Scene(
+                index=len(script.scenes),
+                duration_s=3,
+                is_outro=True,
+                visual=SceneVisual(prompt="Branded outro card (drawn locally, not AI-generated)"),
+                audio=SceneAudio(voiceover_line=outro_text),
+            )
+        )
+    return script
+
+
 async def run_pipeline(project: Project, settings: Settings) -> None:
     config = project.config
     project_id = config.id
@@ -459,44 +503,14 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             if config.continues_from
             else None
         )
-        with timings.stage("script"):
-            script = await script_engine.generate_script(
-                topic=config.topic,
-                config=config.llm,
-                raw_script=config.raw_script,
-                video_length=config.video_length,
-                language=config.language,
-                # Stock mode turns this into a keyword search, so asking
-                # for prose here would be generated and then discarded.
-                visual_mode=str(config.visual_mode),
-                script_format=str(config.script_format),
-                previous=previous.script if previous else None,
-                brief=script_engine.series_brief(config.series_genre, config.series_setting),
-            )
-        # What the whole render should keep out of frame, stamped onto
-        # every scene the LLM just wrote. Per scene rather than read from
-        # the config at generation time, so a scene re-rolled later starts
-        # from what the project asked for and can add to it — and so the
-        # stored script says what each picture was actually generated
-        # against, which is the only record after the fact.
-        if config.negative_prompt:
-            for scene in script.scenes:
-                # Added to what the script asked to keep out, not instead.
-                scene.visual.negative_prompt = ", ".join(
-                    p for p in (scene.visual.negative_prompt, config.negative_prompt) if p
-                )
-
-        if config.outro.enabled:
-            outro_text = config.outro.text or script.call_to_action or "Thanks for watching!"
-            script.scenes.append(
-                Scene(
-                    index=len(script.scenes),
-                    duration_s=3,
-                    is_outro=True,
-                    visual=SceneVisual(prompt="Branded outro card (drawn locally, not AI-generated)"),
-                    audio=SceneAudio(voiceover_line=outro_text),
-                )
-            )
+        # Back from the cast review: the script and the people are the ones
+        # the owner approved, so nothing above the voices is made again.
+        resuming = bool(config.cast_approved and project.script is not None)
+        if resuming:
+            assert project.script is not None
+            script = project.script
+        else:
+            script = await _write_script(config, previous, timings)
 
         # Saved early so the UI can show the scene breakdown while the slow
         # stages run. Note this snapshot is incomplete — everything below
@@ -504,6 +518,32 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
         # pipeline is what persists that.
         await project_store.update_project(project_id, script=script)
         total_scenes = len(script.scenes)
+
+        story = str(config.script_format) == "story"
+        puppet_mode = story and config.puppet
+        if story and config.review_cast and not config.cast_approved and script.cast:
+            # Drawn now so there are faces to look at; the render picks
+            # them up from disk when it carries on.
+            await _emit(
+                project_id,
+                stage=RenderStage.VISUAL_GENERATION,
+                progress_pct=15,
+                message="Drawing the cast...",
+                phase="cast",
+            )
+            if puppet_mode:
+                await _puppet_cast(script, paths, previous, config, settings)
+            else:
+                await _cast_sheets(script, paths, previous, config, settings)
+            await project_store.update_project(project_id, status=ProjectStatus.REVIEW)
+            await _emit(
+                project_id,
+                stage=RenderStage.REVIEW,
+                progress_pct=20,
+                message="The cast is ready for you to look at.",
+                phase="review",
+            )
+            return
 
         # 2. Audio synthesis + transcription per scene --------------------------
         with timings.stage("audio_and_transcription"):
@@ -580,8 +620,6 @@ async def run_pipeline(project: Project, settings: Settings) -> None:
             )
         # A story's cast: one sheet for each person who is ever in frame,
         # and its places, one plate each.
-        story = str(config.script_format) == "story"
-        puppet_mode = story and config.puppet
         cast_sheets = (
             {} if puppet_mode else await _cast_sheets(script, paths, previous, config, settings)
         )
@@ -2178,7 +2216,10 @@ async def _cast_sheets(script, root: Path, previous, config, settings) -> dict[s
                         member.look) if p
         )
         earlier = cast_sheet_path(project_dir(previous.config.id), member.name) if previous else None
-        if earlier is not None and earlier.is_file():
+        if path.is_file():
+            # Drawn already, for the cast review: the face the owner approved.
+            out[member.name] = path
+        elif earlier is not None and earlier.is_file():
             shutil.copyfile(earlier, path)
             path.with_suffix(".txt").write_text(look, encoding="utf-8")
             out[member.name] = path
@@ -2307,7 +2348,9 @@ async def _puppet_cast(script, root: Path, previous, config, settings) -> dict:
     async def ready(member) -> None:
         folder = puppets.puppet_dir(root, member.name)
         earlier = puppets.puppet_dir(project_dir(previous.config.id), member.name) if previous else None
-        if earlier is not None and (earlier / "cutout.png").is_file():
+        if (folder / "cutout.png").is_file():
+            pass  # drawn already, for the cast review
+        elif earlier is not None and (earlier / "cutout.png").is_file():
             if folder.exists():
                 shutil.rmtree(folder)
             shutil.copytree(earlier, folder)
@@ -2331,3 +2374,36 @@ async def _puppet_cast(script, root: Path, previous, config, settings) -> dict:
             + "; your credits were refunded. Please try again in a few minutes."
         )
     return out
+
+
+def member_look(member) -> str:
+    """What a cast member is drawn from: age and sex, then their look."""
+    return ", ".join(
+        p for p in (f"{member.age}-year-old {member.gender}" if member.age else member.gender,
+                    member.look) if p
+    )
+
+
+def cast_portrait(root: Path, name: str, puppet: bool) -> Path:
+    """The picture of a cast member the review shows: the puppet's portrait
+    or the character sheet, whichever the series is drawn from."""
+    return puppets.puppet_dir(root, name) / "neutral.png" if puppet else cast_sheet_path(root, name)
+
+
+async def redraw_cast_member(project, name: str, settings) -> None:
+    """Draw one cast member again from their (edited) look, in place."""
+    config = project.config
+    member = next(m for m in project.script.cast if m.name == name)
+    root = project_dir(config.id)
+    style = art_styles.by_id(config.art_style)
+    if config.puppet:
+        folder = puppets.puppet_dir(root, name)
+        if folder.exists():
+            shutil.rmtree(folder)
+        await puppets.draw_puppet(member_look(member), folder, settings, style)
+        if puppets.load_puppet(folder) is None:
+            raise RuntimeError(f"{name} could not be drawn")
+    else:
+        path = cast_sheet_path(root, name)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        await visual_engine.generate_character_sheet(member_look(member), path, settings, style)

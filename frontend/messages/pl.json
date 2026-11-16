@@ -851,7 +851,8 @@
         "draft": "szkic",
         "rendering": "renderowanie",
         "complete": "gotowe",
-        "failed": "błąd"
+        "failed": "błąd",
+        "review": "czeka na zatwierdzenie"
       },
       "credits": "{count} kr.",
       "delete": "Usuń projekt",
@@ -1015,8 +1016,11 @@
         "burning": "Wtapiam napisy w wideo...",
         "selecting": "Czytam transkrypcję i szukam momentów wartych publikacji...",
         "selectingPicture": "Szukam momentów w obrazie...",
-        "cuttingClip": "Wycinam klip {n} z {total}..."
-      }
+        "cuttingClip": "Wycinam klip {n} z {total}...",
+        "cast": "Rysowanie obsady...",
+        "review": "Czeka na zatwierdzenie obsady."
+      },
+      "awaitingCast": "Czeka na zatwierdzenie obsady — zobacz karty po lewej."
     },
     "timeline": {
       "script_generation": "Scenariusz",
@@ -1335,6 +1339,32 @@
       "startWhatIf": "Zrób film",
       "newWhatIfTitle": "Nowy film „Co by było?”",
       "newWhatIfIntro": "Wybierz założenie; AI napisze je z prawdziwych faktów i zrobi z niego film z grafikami i narratorem."
+    },
+    "castReview": {
+      "title": "Obsada",
+      "intro": "Zanim powstanie odcinek, rzuć okiem na obsadę: te twarze i głosy zostaną na cały serial. Możesz zmienić głos albo poprawić wygląd i narysować postać od nowa. Zatwierdź, gdy wszystko pasuje.",
+      "approve": "Zatwierdź i zrób odcinek",
+      "approveNote": "Po zatwierdzeniu obsady nie można zmienić.",
+      "approveFailed": "Nie udało się wysłać zatwierdzenia, spróbuj ponownie.",
+      "voice": "Głos",
+      "voiceCurrent": "Obecny głos",
+      "voiceLabel": "{kind} {n}",
+      "listen": "Posłuchaj",
+      "look": "Wygląd (opis po angielsku)",
+      "redraw": "Narysuj ponownie",
+      "redrawsLeft": "{count, plural, =0 {Brak ponownych rysunków} one {Został # rysunek} few {Zostały # rysunki} other {Zostało # rysunków}}",
+      "drawing": "rysowanie…",
+      "redrawLimit": "Limit ponownych rysunków wyczerpany.",
+      "redrawFailed": "Nie udało się narysować, spróbuj za chwilę.",
+      "voiceFailed": "Nie udało się zmienić głosu.",
+      "kinds": {
+        "woman": "Kobieta",
+        "man": "Mężczyzna",
+        "older_woman": "Starsza kobieta",
+        "older_man": "Starszy mężczyzna",
+        "girl": "Dziewczynka",
+        "boy": "Chłopiec"
+      }
     }
   },
   "tour": {

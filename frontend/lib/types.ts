@@ -64,10 +64,13 @@ export type RenderStage =
   | "visual_generation"
   | "subtitle_generation"
   | "assembly"
+  | "review"
   | "done"
   | "failed";
 
-export type ProjectStatus = "draft" | "rendering" | "complete" | "failed";
+/** "review": a story's first episode, stopped for the owner to approve its
+ *  cast before the rest is made (components/series/CastReview). */
+export type ProjectStatus = "draft" | "rendering" | "review" | "complete" | "failed";
 
 export interface Word {
   text: string;
@@ -142,7 +145,7 @@ export interface ScriptOutput {
   post?: PostCopy | null;
   /** A series (the outbreak format): who it follows and which episode. */
   character?: { name: string; look: string } | null;
-  cast?: { name: string; role?: string; voice_id?: string | null }[];
+  cast?: CastMember[];
   episode?: number;
 }
 
@@ -291,6 +294,11 @@ export interface ProjectConfig {
   series_setting?: string | null;
   /** A story drawn as puppets: each person drawn once, faces never change. */
   puppet?: boolean;
+  /** Stop once the cast is drawn, for the owner to approve it. */
+  review_cast?: boolean;
+  cast_approved?: boolean;
+  /** How many faces have been drawn again in the review; the server caps it. */
+  cast_redraws?: number;
   music: MusicConfig;
   outro: OutroConfig;
   created_at: string;
@@ -671,4 +679,23 @@ export interface TrendReport {
   summary: string;
   trends: Trend[];
   songs: { title: string; artist: string; url: string | null; artwork: string | null }[];
+}
+
+/** Someone in a story series. `look` is the English the image model draws
+ *  them from. */
+export interface CastMember {
+  name: string;
+  role?: string;
+  gender?: string;
+  age?: number | null;
+  look: string;
+  voice_id?: string | null;
+}
+
+/** A voice a story's cast member can be given, from the review. */
+export interface CastVoice {
+  voice_id: string;
+  name: string;
+  kind: "woman" | "man" | "older_woman" | "older_man" | "girl" | "boy";
+  preview_url?: string | null;
 }

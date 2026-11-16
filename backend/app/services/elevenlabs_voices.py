@@ -154,3 +154,31 @@ def assign(cast, pool: dict[str, list[str]]) -> None:
         if picks:
             member.voice_id = f"elevenlabs:{picks[0]}"
             used.add(member.voice_id)
+
+
+async def voice_choices(language: str) -> list[dict]:
+    """The account's voices that speak this language, for a person to pick
+    one for a cast member: id, name, who it sounds like, a sample."""
+    from app.core.config import get_settings
+
+    language = (language or "en").split("-")[0]
+    key = get_settings().elevenlabs_api_key
+    async with httpx.AsyncClient(timeout=30, headers={"xi-api-key": key or ""}) as client:
+        response = await client.get(f"{API}/voices")
+        response.raise_for_status()
+    out = []
+    for voice in response.json().get("voices", []):
+        if not _speaks(voice, language):
+            continue
+        labels = voice.get("labels") or {}
+        kind = _kind(labels.get("gender", ""), labels.get("age", ""))
+        if not kind:
+            continue
+        name = str(voice.get("name") or "").removeprefix("ShortPulse ").strip()
+        out.append({
+            "voice_id": f"elevenlabs:{voice['voice_id']}",
+            "name": name[:60],
+            "kind": kind,
+            "preview_url": voice.get("preview_url"),
+        })
+    return out

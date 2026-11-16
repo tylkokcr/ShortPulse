@@ -851,7 +851,8 @@
         "draft": "draft",
         "rendering": "rendering",
         "complete": "complete",
-        "failed": "failed"
+        "failed": "failed",
+        "review": "awaiting review"
       },
       "credits": "{count} cr",
       "delete": "Delete project",
@@ -1015,8 +1016,11 @@
         "burning": "Burning the captions into the video...",
         "selecting": "Reading the transcript for the moments worth posting...",
         "selectingPicture": "Finding moments in the picture...",
-        "cuttingClip": "Cutting clip {n} of {total}..."
-      }
+        "cuttingClip": "Cutting clip {n} of {total}...",
+        "cast": "Drawing the cast...",
+        "review": "Waiting for the cast approval."
+      },
+      "awaitingCast": "Waiting for you to approve the cast — see the cards on the left."
     },
     "timeline": {
       "script_generation": "Script",
@@ -1335,6 +1339,32 @@
       "startWhatIf": "Make a video",
       "newWhatIfTitle": "New “What if?” video",
       "newWhatIfIntro": "Pick a hypothetical; the AI writes it from real facts and turns it into a video with graphics and a narrator."
+    },
+    "castReview": {
+      "title": "The cast",
+      "intro": "Take a look at the cast before the episode is made: these faces and voices stay for the whole series. You can change a voice, or edit a look and have the person drawn again. Approve when it's right.",
+      "approve": "Approve and make the episode",
+      "approveNote": "The cast can't be changed after this.",
+      "approveFailed": "Couldn't send the approval, try again.",
+      "voice": "Voice",
+      "voiceCurrent": "Current voice",
+      "voiceLabel": "{kind} {n}",
+      "listen": "Listen",
+      "look": "Look (described in English)",
+      "redraw": "Draw again",
+      "redrawsLeft": "{count, plural, =0 {No redraws left} one {# redraw left} other {# redraws left}}",
+      "drawing": "drawing…",
+      "redrawLimit": "No redraws left.",
+      "redrawFailed": "Couldn't draw that, try again in a moment.",
+      "voiceFailed": "Couldn't change the voice.",
+      "kinds": {
+        "woman": "Woman",
+        "man": "Man",
+        "older_woman": "Older woman",
+        "older_man": "Older man",
+        "girl": "Girl",
+        "boy": "Boy"
+      }
     }
   },
   "tour": {

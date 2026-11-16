@@ -115,7 +115,7 @@ export function RenderPreview({
     const unsubscribe = subscribeToRenderProgress(projectId, (progress) => {
       if (progress.project_id !== projectId) return;
       setRenderProgress(progress);
-      if (progress.stage === "done" || progress.stage === "failed") {
+      if (progress.stage === "done" || progress.stage === "failed" || progress.stage === "review") {
         getProject(projectId).then(setActiveProject).catch(console.error);
       }
     });
@@ -170,7 +170,9 @@ export function RenderPreview({
     ? "done"
     : isFailed
       ? "failed"
-      : renderProgress?.stage;
+      : status === "review"
+        ? "review"
+        : renderProgress?.stage;
 
   // Mint a fresh link rather than reusing the one the player got: a page
   // left open outlives the token, and a download that 403s looks like the
@@ -234,6 +236,9 @@ export function RenderPreview({
               ? // Render finished, but the signed URL is still being fetched.
                 // "Waiting to start" here would say the opposite of the truth.
                 t("loadingVideo")
+              : status === "review"
+                ? // Stopped on purpose: the cast is waiting beside this.
+                  t("awaitingCast")
               : renderProgress?.phase === "transcribing" && renderProgress.phase_fraction != null
                 ? phaseText(renderProgress, t)
                 : renderProgress?.phase && t.has(`phases.${renderProgress.phase}`)

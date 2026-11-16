@@ -851,7 +851,8 @@
         "draft": "Entwurf",
         "rendering": "rendert",
         "complete": "fertig",
-        "failed": "fehlgeschlagen"
+        "failed": "fehlgeschlagen",
+        "review": "wartet auf Bestätigung"
       },
       "credits": "{count} Cr.",
       "delete": "Projekt löschen",
@@ -1015,8 +1016,11 @@
         "burning": "Untertitel werden ins Video eingebrannt...",
         "selecting": "Transkript wird nach Momenten durchsucht, die sich lohnen...",
         "selectingPicture": "Momente im Bild werden gesucht...",
-        "cuttingClip": "Clip {n} von {total} wird geschnitten..."
-      }
+        "cuttingClip": "Clip {n} von {total} wird geschnitten...",
+        "cast": "Besetzung wird gezeichnet...",
+        "review": "Wartet auf die Bestätigung der Besetzung."
+      },
+      "awaitingCast": "Wartet auf deine Bestätigung der Besetzung — siehe die Karten links."
     },
     "timeline": {
       "script_generation": "Skript",
@@ -1335,6 +1339,32 @@
       "startWhatIf": "Video erstellen",
       "newWhatIfTitle": "Neues „Was wäre, wenn?“-Video",
       "newWhatIfIntro": "Wähle eine Annahme; die KI schreibt sie aus echten Fakten und macht daraus ein Video mit Grafiken und Erzähler."
+    },
+    "castReview": {
+      "title": "Die Besetzung",
+      "intro": "Sieh dir die Besetzung an, bevor die Folge entsteht: Diese Gesichter und Stimmen bleiben für die ganze Serie. Du kannst eine Stimme ändern oder ein Aussehen anpassen und die Person neu zeichnen lassen. Bestätige, wenn alles passt.",
+      "approve": "Bestätigen und Folge erstellen",
+      "approveNote": "Danach lässt sich die Besetzung nicht mehr ändern.",
+      "approveFailed": "Bestätigung fehlgeschlagen, bitte erneut versuchen.",
+      "voice": "Stimme",
+      "voiceCurrent": "Aktuelle Stimme",
+      "voiceLabel": "{kind} {n}",
+      "listen": "Anhören",
+      "look": "Aussehen (auf Englisch beschrieben)",
+      "redraw": "Neu zeichnen",
+      "redrawsLeft": "{count, plural, =0 {Keine Neuzeichnungen mehr} one {# Neuzeichnung übrig} other {# Neuzeichnungen übrig}}",
+      "drawing": "wird gezeichnet…",
+      "redrawLimit": "Keine Neuzeichnungen mehr übrig.",
+      "redrawFailed": "Konnte nicht gezeichnet werden, versuch es gleich noch einmal.",
+      "voiceFailed": "Stimme konnte nicht geändert werden.",
+      "kinds": {
+        "woman": "Frau",
+        "man": "Mann",
+        "older_woman": "Ältere Frau",
+        "older_man": "Älterer Mann",
+        "girl": "Mädchen",
+        "boy": "Junge"
+      }
     }
   },
   "tour": {
