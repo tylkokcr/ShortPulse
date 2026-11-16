@@ -1020,7 +1020,8 @@
         "cast": "Rysowanie obsady...",
         "review": "Czeka na zatwierdzenie obsady."
       },
-      "awaitingCast": "Czeka na zatwierdzenie obsady — zobacz karty po lewej."
+      "awaitingCast": "Czeka na zatwierdzenie obsady — zobacz karty po lewej.",
+      "awaitingLabel": "Czeka na zatwierdzenie"
     },
     "timeline": {
       "script_generation": "Scenariusz",

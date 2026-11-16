@@ -1020,7 +1020,8 @@
         "cast": "Besetzung wird gezeichnet...",
         "review": "Wartet auf die Bestätigung der Besetzung."
       },
-      "awaitingCast": "Wartet auf deine Bestätigung der Besetzung — siehe die Karten links."
+      "awaitingCast": "Wartet auf deine Bestätigung der Besetzung — siehe die Karten links.",
+      "awaitingLabel": "Wartet auf Bestätigung"
     },
     "timeline": {
       "script_generation": "Skript",

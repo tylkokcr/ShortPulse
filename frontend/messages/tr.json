@@ -1020,7 +1020,8 @@
         "cast": "Oyuncular çiziliyor...",
         "review": "Kadro onayını bekliyor."
       },
-      "awaitingCast": "Kadro onayını bekliyor — soldaki kartlara bak."
+      "awaitingCast": "Kadro onayını bekliyor — soldaki kartlara bak.",
+      "awaitingLabel": "Onay bekliyor"
     },
     "timeline": {
       "script_generation": "Metin",

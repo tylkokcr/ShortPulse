@@ -477,3 +477,18 @@ async def test_a_scene_frame_without_a_token_is_still_refused(pool, jwks):
         response = await client.get("/api/projects/p/scenes/0/thumb")
 
     assert response.status_code == 401
+
+
+async def test_a_cast_portrait_reaches_the_review(pool, jwks):
+    """The cast review draws its faces in <img> tags too: without this the
+    first live review showed four broken pictures."""
+    app, _ = _build_app(pool, jwks, require_auth=True)
+    pid = "00000000-0000-4000-8000-000000000001"
+    token, _expires = app.state.media_signer.sign(pid)
+
+    async with _client(app) as client:
+        signed = await client.get(f"/api/projects/{pid}/cast/Elif/portrait?token={token}")
+        bare = await client.get(f"/api/projects/{pid}/cast/Elif/portrait")
+
+    assert signed.status_code != 401
+    assert bare.status_code == 401

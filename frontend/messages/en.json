@@ -1020,7 +1020,8 @@
         "cast": "Drawing the cast...",
         "review": "Waiting for the cast approval."
       },
-      "awaitingCast": "Waiting for you to approve the cast — see the cards on the left."
+      "awaitingCast": "Waiting for you to approve the cast — see the cards on the left.",
+      "awaitingLabel": "Awaiting approval"
     },
     "timeline": {
       "script_generation": "Script",

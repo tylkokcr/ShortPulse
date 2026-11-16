@@ -190,14 +190,14 @@ export function RenderPreview({
     <Card className="flex flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
         <span className="label">
-          {isDone ? t("output") : isFailed ? t("failed") : t("rendering")}
+          {isDone ? t("output") : isFailed ? t("failed") : status === "review" ? t("awaitingLabel") : t("rendering")}
         </span>
         {isDone ? (
           <span className="flex items-center gap-1.5 font-mono text-[10px] text-live">
             <span className="h-1.5 w-1.5 bg-live" />
             {t("ready")}
           </span>
-        ) : !isFailed && renderProgress ? (
+        ) : !isFailed && renderProgress && status !== "review" ? (
           <span className="flex items-center gap-1.5 font-mono text-[10px] text-white/50">
             <Loader2 size={11} className="animate-spin" />
             {Math.round(renderProgress.progress_pct)}%
