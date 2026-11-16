@@ -720,7 +720,9 @@ async def check_shot(shot: Path, sheets: list[Path], settings) -> bool:
         f"The first {len(sheets)} image(s) are the character sheet(s) of the people who should "
         "be in it. "
         if sheets
-        else "There should be no people in this frame at all, so same_people is true. "
+        else "There should be no people in this frame at all, so same_people is true; a face "
+        "drawn on an object — eyes or a mouth on a cupboard, a lamp, a door — counts as "
+        "extra_people. "
     )
     try:
         prediction = await _replicate_predict(
@@ -774,7 +776,12 @@ def _story_shot_input(
             f"Image {len(images)} is {look or 'a person'}: keep exactly that face, hair and clothes"
         )
     if not sheets:
-        parts.append("there are no people in this shot")
+        # "Simple faces with small dot eyes" in a style's words went onto
+        # the kitchen cupboards when there was nobody to give them to.
+        parts.append(
+            "there are no people in this shot, and things are only things: no faces, eyes "
+            "or mouths on furniture, doors or objects"
+        )
     action = scrub_excluded(scene.visual.prompt, scene.visual.negative_prompt or "")
     return {
         "prompt": (
